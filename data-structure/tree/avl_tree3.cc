@@ -37,6 +37,18 @@ struct AVLNode {
   AVLNode* right{};
   int bal_factor{};
   int value{};
+
+  static AVLNode* minimum(AVLNode* x) noexcept {
+    while (x->left != nullptr)
+      x = x->left;
+    return x;
+  }
+
+  static AVLNode* maximum(AVLNode* x) noexcept {
+    while (x->right != nullptr)
+      x = x->right;
+    return x;
+  }
 };
 
 inline AVLNode* avltree_incr(AVLNode* node) noexcept {
@@ -47,7 +59,7 @@ inline AVLNode* avltree_incr(AVLNode* node) noexcept {
   }
   else {
     AVLNode* parent = node->parent;
-    while (node == parent) {
+    while (node == parent->right) {
       node = parent;
       parent = parent->parent;
     }
@@ -68,7 +80,7 @@ inline AVLNode* avltree_decr(AVLNode* node) noexcept {
   }
   else {
     AVLNode* parent = node->parent;
-    while (node == parent) {
+    while (node == parent->left) {
       node = parent;
       parent = parent->parent;
     }
@@ -350,6 +362,137 @@ inline void avltree_insert_rebalance(
   }
 }
 
+inline AVLNode* avltree_erase_rebalance(AVLNode* z, AVLNode& header) noexcept {
+  AVLNode*& root = header.parent;
+  AVLNode*& leftmost = header.left;
+  AVLNode*& rightmost = header.right;
+  AVLNode* y = z;
+  AVLNode* x = nullptr;
+  AVLNode* x_parent = nullptr;
+
+  if (y->left == nullptr) {
+    x = y->right;
+  }
+  else if (y->right == nullptr) {
+    x = y->left;
+  }
+  else {
+    y = y->right;
+    while (y->left != nullptr)
+      y = y->left;
+    x = y->right;
+  }
+
+  if (y != z) {
+    z->left->parent = y;
+    y->left = z->left;
+    if (y != z->right) {
+      x_parent = y->parent;
+      if (x != nullptr)
+        x->parent = y->parent;
+      y->parent->left = x;
+      y->right = z->right;
+      z->right->parent = y;
+    }
+    else {
+      x_parent = y;
+    }
+
+    if (root == z)
+      root = y;
+    else if (z->parent->left == z)
+      z->parent->left = y;
+    else
+      z->parent->right = y;
+
+    y->parent = z->parent;
+    y->bal_factor = z->bal_factor;
+    y = z;
+  }
+  else {
+    x_parent = y->parent;
+    if (x != nullptr)
+      x->parent = y->parent;
+
+    if (root == z) {
+      root = x;
+    }
+    else {
+      if (z->parent->left == z)
+        z->parent->left = x;
+      else
+        z->parent->right = x;
+    }
+
+    if (leftmost == z) {
+      if (z->right == nullptr)
+        leftmost = z->parent;
+      else
+        leftmost = AVLNode::minimum(x);
+    }
+    if (rightmost == z) {
+      if (z->left == nullptr)
+        rightmost = z->parent;
+      else
+        rightmost = AVLNode::maximum(x);
+    }
+  }
+
+  while (x != root) {
+    switch (x_parent->bal_factor) {
+    case 0:
+      x_parent->bal_factor = x == x_parent->right ? -1 : 1;
+      return y;
+    case -1:
+      if (x == x_parent->left) {
+        x_parent->bal_factor = 0;
+        x = x_parent;
+        x_parent = x_parent->parent;
+      }
+      else {
+        AVLNode* a = x_parent->left;
+        if (a->bal_factor == 1) {
+          avltree_rotate_left_right(x_parent, root);
+          x = x_parent->parent;
+          x_parent = x->parent;
+        }
+        else {
+          avltree_rotate_right(x_parent, root);
+          x = x_parent->parent;
+          x_parent = x->parent;
+        }
+        if (x->bal_factor == 1)
+          return y;
+      }
+      break;
+    case 1:
+      if (x == x_parent->right) {
+        x_parent->bal_factor = 0;
+        x = x_parent;
+        x_parent = x_parent->parent;
+      }
+      else {
+        AVLNode* a = x_parent->right;
+        if (a->bal_factor == -1) {
+          avltree_rotate_right_left(x_parent, root);
+          x = x_parent->parent;
+          x_parent = x->parent;
+        }
+        else {
+          avltree_rotate_left(x_parent, root);
+          x = x_parent->parent;
+          x_parent = x->parent;
+        }
+        if (x->bal_factor == -1)
+          return y;
+      }
+      break;
+    }
+  }
+
+  return y;
+}
+
 class AVLTree final : private UnCopyable {
 public:
   using ValueType = int;
@@ -372,10 +515,10 @@ private:
     head_.bal_factor = -2;
   }
 
-  inline Link get_begin() noexcept { return head_.parent; }
-  inline ConstLink get_begin() const noexcept { return head_.parent; }
-  inline Link get_end() noexcept { return &head_; }
-  inline ConstLink get_end() const noexcept { return &head_; }
+  inline Link _get_head() noexcept { return head_.parent; }
+  inline ConstLink _get_head() const noexcept { return head_.parent; }
+  inline Link _get_tail() noexcept { return &head_; }
+  inline ConstLink _get_tail() const noexcept { return &head_; }
 
   inline NodeType* create_node(const ValueType& v) noexcept {
     NodeType* node = new NodeType();
@@ -387,10 +530,16 @@ private:
     delete node;
   }
 
-  inline void insert_aux(NodeType* node, NodeType* parent, const ValueType& x) {
-    NodeType* new_node = create_node(x);
-    bool insert_left = node != nullptr || parent == get_end() || x < parent->value;
-    avltree_insert_rebalance(insert_left, new_node, parent, head_);
+  inline void insert_aux(NodeType* n) noexcept {
+    Link x = _get_head();
+    Link y = _get_tail();
+    while (x != nullptr) {
+      y = x;
+      x = n->value < x->value ? x->left : x->right;
+    }
+
+    bool insert_left = x != nullptr || y == _get_tail() || n->value < y->value;
+    avltree_insert_rebalance(insert_left, n, y, head_);
     ++size_;
   }
 public:
@@ -408,15 +557,18 @@ public:
   inline ConstIter begin() const noexcept { return ConstIter(head_.left); }
   inline Iter end() noexcept { return Iter(&head_); }
   inline ConstIter end() const noexcept { return ConstIter((AVLNode*)&head_); }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline ConstRef get_head() const noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(--end()); }
+  inline ConstRef get_tail() const noexcept { return *(--end()); }
+
+  template <typename Function> inline void for_each(Function&& fn) noexcept {
+    for (auto i = begin(); i != end(); ++i)
+      fn(*i);
+  }
 
   void insert_equal(const ValueType& v) {
-    Link x = get_begin();
-    Link y = get_end();
-    while (x != nullptr) {
-      y = x;
-      x = v < x->value ? x->left : x->right;
-    }
-    insert_aux(x, y, v);
+    insert_aux(create_node(v));
   }
 };
 
@@ -431,8 +583,8 @@ void test_avl3() {
   avl.insert_equal(6);
   avl.insert_equal(3);
 
-  std::cout << avl.size() << std::endl;
-  return;
+  std::cout << "avltree -> size: "
+    << avl.size() << " | empty: " << avl.empty() << std::endl;
 
   for (auto i = avl.begin(); i != avl.end(); ++i)
     std::cout << *i << std::endl;
