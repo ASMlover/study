@@ -520,6 +520,15 @@ private:
   inline Link _get_tail() noexcept { return &head_; }
   inline ConstLink _get_tail() const noexcept { return &head_; }
 
+  void _tear_from(NodeType* x) noexcept {
+    while (x != nullptr) {
+      _tear_from(x->right);
+      auto* y = x->left;
+      destroy_node(x);
+      x = y;
+    }
+  }
+
   inline NodeType* create_node(const ValueType& v) noexcept {
     NodeType* node = new NodeType();
     node->value = v;
@@ -542,13 +551,19 @@ private:
     avltree_insert_rebalance(insert_left, n, y, head_);
     ++size_;
   }
+
+  inline void erase_aux(NodeType* node) noexcept {
+    NodeType* n = avltree_erase_rebalance(node, head_);
+    destroy_node(n);
+    --size_;
+  }
 public:
   AVLTree() noexcept {
     initialize();
   }
 
   ~AVLTree() noexcept {
-    // TODO:
+    clear();
   }
 
   inline bool empty() const noexcept { return size_ == 0; }
@@ -562,14 +577,20 @@ public:
   inline Ref get_tail() noexcept { return *(--end()); }
   inline ConstRef get_tail() const noexcept { return *(--end()); }
 
+  inline void clear() noexcept {
+    _tear_from(_get_head());
+    initialize();
+  }
+
   template <typename Function> inline void for_each(Function&& fn) noexcept {
     for (auto i = begin(); i != end(); ++i)
       fn(*i);
   }
 
-  void insert_equal(const ValueType& v) {
-    insert_aux(create_node(v));
-  }
+  inline void insert(const ValueType& v) { insert_aux(create_node(v)); }
+
+  inline void erase(Iter pos) noexcept { erase_aux(pos.node); }
+  inline void erase(ConstIter pos) noexcept { erase_aux(pos.node); }
 };
 
 }
@@ -577,15 +598,21 @@ public:
 void test_avl3() {
   avl3::AVLTree avl;
 
-  avl.insert_equal(1);
-  avl.insert_equal(33);
-  avl.insert_equal(22);
-  avl.insert_equal(6);
-  avl.insert_equal(3);
+  auto show_avl = [&avl] {
+    std::cout << "\navltree -> size: "
+      << avl.size() << " | empty: " << avl.empty() << std::endl;
 
-  std::cout << "avltree -> size: "
-    << avl.size() << " | empty: " << avl.empty() << std::endl;
+    for (auto i = avl.begin(); i != avl.end(); ++i)
+      std::cout << "avltree node item: " << *i << std::endl;
+  };
 
-  for (auto i = avl.begin(); i != avl.end(); ++i)
-    std::cout << *i << std::endl;
+  avl.insert(1);
+  avl.insert(33);
+  avl.insert(22);
+  avl.insert(6);
+  avl.insert(3);
+  show_avl();
+
+  avl.erase(avl.begin());
+  show_avl();
 }
