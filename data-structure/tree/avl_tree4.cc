@@ -488,6 +488,21 @@ private:
   inline void erase_aux(Node* node) {
     // TODO:
   }
+
+  inline ConstLink find_aux(const ValueType& k) const noexcept {
+    ConstLink x = _head_link();
+    ConstLink y = _tail_link();
+    while (x != nullptr) {
+      if (k == x->value) {
+        y = x;
+        break;
+      }
+      else {
+        x = k < x->value ? _left(x) : _right(x);
+      }
+    }
+    return y;
+  }
 public:
   AVLTree() noexcept {
     initialize();
@@ -514,6 +529,14 @@ public:
   }
 
   inline void insert(const ValueType& x) { insert_aux(create_node(x)); }
+
+  inline Iter find(const ValueType& k) noexcept {
+    return Iter(const_cast<Node*>(find_aux(k)));
+  }
+
+  inline ConstIter find(const ValueType& k) const noexcept {
+    return ConstIter(find_aux(k));
+  }
 };
 
 }
@@ -536,4 +559,6 @@ void test_avl4() {
   t.insert(4);
   t.insert(222);
   show_avl();
+
+  std::cout << "find 33: " << (t.find(33) != t.end()) << std::endl;
 }
