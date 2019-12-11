@@ -113,7 +113,7 @@ inline AVLNodeBase* avlnode_inc(AVLNodeBase* x) noexcept {
     AVLNodeBase* p = x->parent;
     while (x == p->right) {
       x = p;
-      x = p->parent;
+      p = p->parent;
     }
     if (x->right != p)
       x = p;
@@ -139,6 +139,236 @@ inline AVLNodeBase* avlnode_dec(AVLNodeBase* x) noexcept {
     x = p;
   }
   return x;
+}
+
+inline void avlnode_rotate_left(AVLNodeBase* x, AVLNodeBase*& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //           \                 / \
+  //            y               x   b
+  //           / \               \
+  //         [a]  b              [a]
+
+  AVLNodeBase* y = x->right;
+  x->right = y->left;
+  y->left = x;
+  y->parent = x->parent;
+  x->parent = y;
+  if (x->right != nullptr)
+    x->right->parent = x;
+
+  if (x == root) {
+    root = y;
+  }
+  else {
+    if (y->parent->left == x)
+      y->parent->left = y;
+    else
+      y->parent->right = y;
+  }
+
+  // reset the balancing factor
+  if (y->bal_factor == 1) {
+    x->bal_factor = y->bal_factor = 0;
+  }
+  else {
+    x->bal_factor = 1;
+    y->bal_factor = -1;
+  }
+}
+
+inline void avlnode_rotate_right(AVLNodeBase* x, AVLNodeBase*& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //         /                   / \
+  //        y                   a   x
+  //       / \                     /
+  //      a  [b]                 [b]
+
+  AVLNodeBase* y = x->left;
+  x->left = y->right;
+  y->right = x;
+  y->parent = x->parent;
+  x->parent = y;
+  if (x->left != nullptr)
+    x->left->parent = x;
+
+  if (x == root) {
+    root = y;
+  }
+  else {
+    if (y->parent->left == x)
+      y->parent->left = y;
+    else
+      y->parent->right = y;
+  }
+
+  // reset the balancing factor
+  if (y->bal_factor == -1) {
+    x->bal_factor = y->bal_factor = 0;
+  }
+  else {
+    x->bal_factor = -1;
+    y->bal_factor = 1;
+  }
+}
+
+inline void avlnode_rotate_left_right(
+    AVLNodeBase* a, AVLNodeBase*& root) noexcept {
+  //          |                   |                   |
+  //          a                   a                   c
+  //         / \                 / \                 / \
+  //        b  [g]              c  [g]              /   \
+  //       / \                 / \                 b     a
+  //     [d]  c               b   f               / \   / \
+  //         / \             / \                [d]  e f  [g]
+  //        e   f          [d]  e
+
+  AVLNodeBase* b = a->left;
+  AVLNodeBase* c = b->right;
+  a->left = c->right;
+  b->right = c->left;
+  c->left = b;
+  c->right = a;
+  c->parent = a->parent;
+  a->parent = b->parent = c;
+  if (a->left != nullptr)
+    a->left->parent = a;
+  if (b->right != nullptr)
+    b->right->parent = b;
+
+  if (a == root) {
+    root = c;
+  }
+  else {
+    if (c->parent->left == a)
+      c->parent->left = c;
+    else
+      c->parent->right = c;
+  }
+
+  // reset the balancing factor
+  switch (c->bal_factor) {
+  case -1:
+    a->bal_factor = 1;
+    b->bal_factor = 0;
+    break;
+  case 0:
+    a->bal_factor = b->bal_factor = 0;
+    break;
+  case 1:
+    a->bal_factor = 0;
+    b->bal_factor = -1;
+    break;
+  }
+  c->bal_factor = 0;
+}
+
+inline void avlnode_rotate_right_left(
+    AVLNodeBase* a, AVLNodeBase*& root) noexcept {
+  //          |                   |                   |
+  //          a                   a                   c
+  //         / \                 / \                 / \
+  //       [d]  b              [d]  c               /   \
+  //           / \                 / \             a     b
+  //          c  [g]              e   b           / \   / \
+  //         / \                     / \        [d]  e f  [g]
+  //        e   f                   f  [g]
+
+  AVLNodeBase* b = a->right;
+  AVLNodeBase* c = b->left;
+  a->right = c->left;
+  b->left = c->right;
+  c->left = a;
+  c->right = b;
+  c->parent = a->parent;
+  a->parent = b->parent = c;
+  if (a->right != nullptr)
+    a->right->parent = a;
+  if (b->left != nullptr)
+    b->left->parent = b;
+
+  if (a == root) {
+    root = c;
+  }
+  else {
+    if (c->parent->left == a)
+      c->parent->left = c;
+    else
+      c->parent->right = c;
+  }
+
+  // reset the balancing factor
+  switch (c->bal_factor) {
+  case -1:
+    a->bal_factor = 0;
+    b->bal_factor = 1;
+    break;
+  case 0:
+    a->bal_factor = b->bal_factor = 0;
+    break;
+  case 1:
+    a->bal_factor = -1;
+    b->bal_factor = 0;
+    break;
+  }
+  c->bal_factor = 0;
+}
+
+inline void avltree_insert(bool insert_left,
+    AVLNodeBase* x, AVLNodeBase* p, AVLNodeBase& header) noexcept {
+  AVLNodeBase*& root = header.parent;
+
+  // initialize the new node
+  x->parent = p;
+  x->left = x->right = nullptr;
+  x->bal_factor = 0;
+
+  // insert: first node is always insert into left
+  if (insert_left) {
+    p->left = x;
+    if (p == &header)
+      header.parent = header.right = x;
+    else if (p == header.left)
+      header.left = x; // maintian leftmost pointing to the minimum node
+  }
+  else {
+    p->right = x;
+    if (p == header.right)
+      header.right = x; // maintain rightmost pointing to the maximum node
+  }
+
+  // rebalance the factor
+  while (x != root) {
+    switch (x->parent->bal_factor) {
+    case 0:
+      x->parent->bal_factor = x == x->parent->left ? -1 : 1;
+      x = x->parent;
+      break;
+    case 1:
+      if (x == x->parent->left) {
+        x->parent->bal_factor = 0;
+      }
+      else {
+        if (x->bal_factor == -1)
+          avlnode_rotate_right_left(x->parent, root);
+        else
+          avlnode_rotate_left(x->parent, root);
+      }
+      return;
+    case -1:
+      if (x == x->parent->left) {
+        if (x->bal_factor == 1)
+          avlnode_rotate_left_right(x->parent, root);
+        else
+          avlnode_rotate_right(x->parent, root);
+      }
+      else {
+        x->parent->bal_factor = 0;
+      }
+      return;
+    }
+  }
 }
 
 template <typename Tp> struct AVLNode : public AVLNodeBase {
@@ -225,6 +455,39 @@ private:
   static Link _right(Link x) noexcept { return static_cast<Link>(x->right); }
   static ConstLink _right(ConstLink x) noexcept { return static_cast<ConstLink>(x->right); }
 
+  inline Node* create_node(const ValueType& x) {
+    Node* node = Alloc::allocate();
+    try {
+      construct(&node->value, x);
+    }
+    catch (...) {
+      Alloc::deallocate(node);
+      throw;
+    }
+    return node;
+  }
+
+  inline void destroy_node(Node* node) {
+    destroy(&node->value);
+    Alloc::deallocate(node);
+  }
+
+  inline void insert_aux(Node* node) {
+    Link x = _head_link();
+    Link y = _tail_link();
+    while (x != nullptr) {
+      y = x;
+      x = node->value < x->value ? _left(x) : _right(x);
+    }
+
+    bool insert_left = x != nullptr || y == _tail_link() || node->value < y->value;
+    avltree_insert(insert_left, node, y, head_);
+    ++size_;
+  }
+
+  inline void erase_aux(Node* node) {
+    // TODO:
+  }
 public:
   AVLTree() noexcept {
     initialize();
@@ -249,6 +512,28 @@ public:
     for (auto i = begin(); i != end(); ++i)
       fn(*i);
   }
+
+  inline void insert(const ValueType& x) { insert_aux(create_node(x)); }
 };
 
+}
+
+void test_avl4() {
+  avl4::AVLTree<int> t;
+
+  auto show_avl = [&t] {
+    std::cout << "avl-tree -> size: "
+      << t.size() << ", empty: " << t.empty() << std::endl;
+    for (auto i = t.begin(); i != t.end(); ++i)
+      std::cout << "avl-tree item value -> " << *i << std::endl;
+  };
+
+  t.insert(34);
+  t.insert(56);
+  t.insert(33);
+  t.insert(23);
+  t.insert(9);
+  t.insert(4);
+  t.insert(222);
+  show_avl();
 }
