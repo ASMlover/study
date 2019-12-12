@@ -371,6 +371,131 @@ inline void avltree_insert(bool insert_left,
   }
 }
 
+inline AVLNodeBase* avltree_erase(
+    AVLNodeBase* z, AVLNodeBase& header) noexcept {
+  AVLNodeBase*& root = header.parent;
+  AVLNodeBase*& leftmost = header.left;
+  AVLNodeBase*& rightmost = header.right;
+  AVLNodeBase* y = z;
+  AVLNodeBase* x = nullptr;
+  AVLNodeBase* x_parent = nullptr;
+
+  if (y->left == nullptr) {
+    x = y->right;
+  }
+  else if (y->right == nullptr) {
+    x = y->left;
+  }
+  else {
+    y = y->right;
+    while (y->left != nullptr)
+      y = y->left;
+    x = y->right;
+  }
+
+  if (y != z) {
+    z->left->parent = y;
+    y->left = z->left;
+    if (y != z->right) {
+      x_parent = y->parent;
+      if (x != nullptr)
+        x->parent = y->parent;
+      y->parent->left = x;
+      y->right = z->right;
+      z->right->parent = y;
+    }
+    else {
+      x_parent = y;
+    }
+
+    if (root == z)
+      root = y;
+    else if (z->parent->left == z)
+      z->parent->left = y;
+    else
+      z->parent->right = y;
+    y->parent = z->parent;
+    y->bal_factor = z->bal_factor;
+    y = z;
+  }
+  else {
+    x_parent = y->parent;
+    if (x != nullptr)
+      x->parent = y->parent;
+
+    if (root == z) {
+      root = x;
+    }
+    else {
+      if (z->parent->left == z)
+        z->parent->left = x;
+      else
+        z->parent->right = x;
+    }
+
+    if (leftmost == z) {
+      if (z->right == nullptr)
+        leftmost = z->parent;
+      else
+        leftmost = x->get_minimum();
+    }
+    if (rightmost == z) {
+      if (z->left == nullptr)
+        rightmost = z->parent;
+      else
+        rightmost = x->get_maximum();
+    }
+  }
+
+  // rebalancing
+  while (x != root) {
+    switch (x_parent->bal_factor) {
+    case 0:
+      x_parent->bal_factor = x == x_parent->right ? -1 : 1;
+      return y;
+    case -1:
+      if (x == x_parent->left) {
+        x_parent->bal_factor = 0;
+        x = x_parent;
+        x_parent = x_parent->parent;
+      }
+      else {
+        AVLNodeBase* a = x_parent->left;
+        if (a->bal_factor == 1)
+          avlnode_rotate_left_right(x_parent, root);
+        else
+          avlnode_rotate_right(x_parent, root);
+        x = x_parent->parent;
+        x_parent = x->parent;
+
+        if (x->bal_factor == 1)
+          return y;
+      }
+      break;
+    case 1:
+      if (x == x_parent->right) {
+        x_parent->bal_factor = 0;
+        x = x_parent;
+        x_parent = x_parent->parent;
+      }
+      else {
+        AVLNodeBase* a = x_parent->right;
+        if (a->bal_factor == -1)
+          avlnode_rotate_right_left(x_parent, root);
+        else
+          avlnode_rotate_left(x_parent, root);
+        x = x_parent->parent;
+        x_parent = x->parent;
+
+        if (x->bal_factor == -1)
+          return y;
+      }
+      break;
+    }
+  }
+  return y;
+}
+
 template <typename Tp> struct AVLNode : public AVLNodeBase {
   Tp value;
 };
@@ -455,6 +580,15 @@ private:
   static Link _right(Link x) noexcept { return static_cast<Link>(x->right); }
   static ConstLink _right(ConstLink x) noexcept { return static_cast<ConstLink>(x->right); }
 
+  void _erase_all(Node* x) {
+    while (x != nullptr) {
+      _erase_all(_right(x));
+      Node* y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
+
   inline Node* create_node(const ValueType& x) {
     Node* node = Alloc::allocate();
     try {
@@ -486,7 +620,9 @@ private:
   }
 
   inline void erase_aux(Node* node) {
-    // TODO:
+    Node* y = static_cast<Node*>(avltree_erase(node, head_));
+    destroy_node(y);
+    --size_;
   }
 
   inline ConstLink find_aux(const ValueType& k) const noexcept {
@@ -509,7 +645,7 @@ public:
   }
 
   ~AVLTree() noexcept {
-    // TODO:
+    clear();
   }
 
   inline bool empty() const noexcept { return size_ == 0; }
@@ -528,7 +664,14 @@ public:
       fn(*i);
   }
 
+  inline void clear() {
+    _erase_all(_head_link());
+    initialize();
+  }
+
   inline void insert(const ValueType& x) { insert_aux(create_node(x)); }
+
+  inline void erase(ConstIter pos) { erase_aux(pos.node); }
 
   inline Iter find(const ValueType& k) noexcept {
     return Iter(const_cast<Node*>(find_aux(k)));
@@ -561,4 +704,7 @@ void test_avl4() {
   show_avl();
 
   std::cout << "find 33: " << (t.find(33) != t.end()) << std::endl;
+
+  t.erase(t.find(33));
+  show_avl();
 }
