@@ -332,15 +332,17 @@ inline void avltree_erase(BasePtr node, AVLNodeBase& header) noexcept {
   BasePtr orig_node = node;
 
   BasePtr parent = nullptr;
+  BasePtr replace_node = nullptr;
   if (node->left != nullptr && node->right != nullptr) {
     // 取右孩子的最小左孩子和要删除的节点替换
     node = node->right;
     while (node->left != nullptr)
       node = node->left;
+    replace_node = node->right;
     parent = node->parent;
-    if (node->right != nullptr)
-      node->right->parent = parent;
-    avlnode_replace_child(node, node->right, parent, root);
+    if (replace_node != nullptr)
+      replace_node->parent = parent;
+    avlnode_replace_child(node, replace_node, parent, root);
     if (node->parent == orig_node)
       parent = node;
     node->parent = orig_node->parent;
@@ -353,24 +355,26 @@ inline void avltree_erase(BasePtr node, AVLNodeBase& header) noexcept {
       node->right->parent = node;
   }
   else {
-    BasePtr child = node->left != nullptr ? node->left : node->right;
+    replace_node = node->left != nullptr ? node->left : node->right;
     parent = node->parent;
-    avlnode_replace_child(node, child, parent, root);
-    if (child != nullptr)
-      child->parent = parent;
+    avlnode_replace_child(node, replace_node, parent, root);
+    if (replace_node != nullptr)
+      replace_node->parent = parent;
   }
   if (parent != nullptr)
     avlnode_rebalance(parent, root);
 
-  if (root == orig_node) {
-    root = parent;
-  }
-  else {
-    if (min_node == orig_node)
-      min_node = root->get_minimum();
-    else if (max_node = orig_node)
-      max_node = root->get_maximum();
-  }
+  if (root == orig_node)
+    root = replace_node;
+  else if (orig_node->parent->left == orig_node)
+    orig_node->parent->left = replace_node;
+  else
+    orig_node->parent->right = replace_node;
+
+  if (min_node == orig_node || min_node == nullptr)
+    min_node = root != nullptr ? root->get_minimum() : &header;
+  if (max_node == orig_node || max_node == nullptr)
+    max_node = root != nullptr ? root->get_maximum() : &header;
 }
 
 template <typename Tp> struct AVLNode : public AVLNodeBase {
@@ -469,7 +473,17 @@ private:
   inline Link _tail_link() noexcept { return static_cast<Link>(&head_); }
   inline ConstLink _tail_link() const noexcept { return static_cast<ConstLink>(&head_); }
 
+  void _erase_all(Link node) {
+    while (node != nullptr) {
+      _erase_all(_right(node));
+      Link left = _left(node);
+      destroy_node(node);
+      node = left;
+    }
+  }
+
   inline void initialize() noexcept {
+    size_ = 0;
     head_.parent = nullptr;
     head_.left = head_.right = &head_;
     head_.height = 0;
@@ -509,6 +523,9 @@ private:
   }
 
   inline void erase_aux(Node* node) {
+    if (empty())
+      return;
+
     avltree_erase(node, head_);
     destroy_node(node);
     --size_;
@@ -518,7 +535,9 @@ public:
     initialize();
   }
 
-  ~AVLTree() noexcept {}
+  ~AVLTree() noexcept {
+    clear();
+  }
 
   inline bool empty() const noexcept { return size_ == 0; }
   inline SizeType size() const noexcept { return size_; }
@@ -534,8 +553,12 @@ public:
       fn(*i);
   }
 
-  inline void insert(const ValueType& x) { insert_aux(x); }
+  void clear() {
+    _erase_all(_root_link());
+    initialize();
+  }
 
+  inline void insert(const ValueType& x) { insert_aux(x); }
   inline void erase(ConstIter pos) { erase_aux(pos.node()); }
 };
 
@@ -558,14 +581,17 @@ void test_avl5() {
   };
 
   t.insert(45);
-  // t.insert(33);
-  // t.insert(232);
-  // t.insert(56);
-  // t.insert(8);
+  t.insert(33);
+  t.insert(232);
+  t.insert(56);
+  t.insert(8);
+  show_avl();
+
+  t.clear();
   show_avl();
 
   t.erase(t.begin());
-  // for (auto i = t.begin(); i != t.end();)
-  //   t.erase(i++);
+  for (auto i = t.begin(); i != t.end();)
+    t.erase(i++);
   show_avl();
 }
