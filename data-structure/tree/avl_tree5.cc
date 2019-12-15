@@ -127,12 +127,13 @@ inline BasePtr avlnode_next(BasePtr node) noexcept {
       node = node->left;
   }
   else {
-    while (true) {
-      BasePtr last = node;
-      node = node->parent;
-      if (node == nullptr || node == last)
-        break;
+    BasePtr parent = node->parent;
+    while (node == parent->right) {
+      node = parent;
+      parent = parent->parent;
     }
+    if (node->right != parent)
+      node = parent;
   }
   return node;
 }
@@ -145,18 +146,21 @@ inline BasePtr avlnode_prev(BasePtr node) noexcept {
   if (node == nullptr)
     return nullptr;
 
-  if (node->left != nullptr) {
+  if (node->parent->parent == node) {
+    node = node->right;
+  }
+  else if (node->left != nullptr) {
     node = node->left;
     while (node->right != nullptr)
       node = node->right;
   }
   else {
-    while (true) {
-      BasePtr last = node;
-      node = node->parent;
-      if (node == nullptr || node == last)
-        break;
+    BasePtr parent = node->parent;
+    while (node == parent->left) {
+      node = parent;
+      parent = parent->parent;
     }
+    node = parent;
   }
   return node;
 }
@@ -278,7 +282,7 @@ inline BasePtr avlnode_fix_right(BasePtr node, BasePtr& root) noexcept {
 }
 
 inline void avlnode_rebalance(BasePtr node, BasePtr& root) noexcept {
-  while (node != nullptr) {
+  while (node != root) {
     int hl = node->left_height();
     int hr = node->right_height();
     int diff = hl - hr;
@@ -298,24 +302,27 @@ inline void avlnode_rebalance(BasePtr node, BasePtr& root) noexcept {
   }
 }
 
-inline void
-avlnode_rebalance_with_insert(BasePtr node, BasePtr& root) noexcept {
-  node->height = 1;
-  for (node = node->parent; node != nullptr; node = node->parent) {
-    int hl = node->left_height();
-    int hr = node->right_height();
-    int height = std::max(hl, hr) + 1;
+inline void avltree_insert(
+    bool insert_left, BasePtr x, BasePtr p, AVLNodeBase& header) noexcept {
+  AVLNodeBase*& root = header.parent;
 
-    if (node->height == height)
-      break;
-    node->height = height;
+  x->parent = p;
+  x->left = x->right = nullptr;
+  x->height = 0;
 
-    int diff = hl - hr;
-    if (diff <= -2)
-      node = avlnode_fix_left(node, root);
-    else if (diff >= 2)
-      node = avlnode_fix_right(node, root);
+  if (insert_left) {
+    p->left = x;
+    if (p == &header)
+      header.parent = header.right = x;
+    else if (p == header.left)
+      header.left = x;
   }
+  else {
+    p->right = x;
+    if (p == header.right)
+      header.right = x;
+  }
+  avlnode_rebalance(x, root);
 }
 
 template <typename Tp> struct AVLNode : public AVLNodeBase {
@@ -358,6 +365,28 @@ template <typename _Tp, typename _Ref, typename _Ptr> struct AVLIter {
 
   inline Ref operator*() const noexcept { return _node->value; }
   inline Ptr operator->() const noexcept { return &_node->value; }
+
+  inline Self& operator++() noexcept {
+    _node = Node::from(avlnode_next(_node));
+    return *this;
+  }
+
+  inline Self operator++(int) noexcept {
+    Self r(*this);
+    _node = Node::from(avlnode_next(_node));
+    return r;
+  }
+
+  inline Self& operator--() noexcept {
+    _node = Node::from(avlnode_prev(_node));
+    return *this;
+  }
+
+  inline Self operator--(int) noexcept {
+    Self r(*this);
+    _node = Node::from(avlnode_prev(_node));
+    return r;
+  }
 };
 
 template <typename Tp> class AVLTree final : private UnCopyable {
@@ -388,9 +417,91 @@ private:
   inline ConstLink _root_link() const noexcept { return static_cast<ConstLink>(head_.parent); }
   inline Link _tail_link() noexcept { return static_cast<Link>(&head_); }
   inline ConstLink _tail_link() const noexcept { return static_cast<ConstLink>(&head_); }
+
+  inline void initialize() noexcept {
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.height = 0;
+  }
+
+  inline Node* create_node(const ValueType& x) {
+    Node* node = Alloc::allocate();
+    try {
+      construct(&node->value, x);
+    }
+    catch (...) {
+      Alloc::deallocate(node);
+      throw;
+    }
+    return node;
+  }
+
+  inline void destroy_node(Node* node) {
+    destroy(&node->value);
+    Alloc::deallocate(node);
+  }
+
+  inline void insert_aux(const ValueType& value) {
+    Link x = _root_link();
+    Link y = _tail_link();
+    while (x != nullptr) {
+      if (value == x->value)
+        return;
+
+      y = x;
+      x = value < x->value ? _left(x) : _right(x);
+    }
+
+    bool insert_left = x != nullptr || y == _tail_link() || value < y->value;
+    avltree_insert(insert_left, create_node(value), y, head_);
+    ++size_;
+  }
+public:
+  AVLTree() noexcept {
+    initialize();
+  }
+
+  ~AVLTree() noexcept {}
+
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline SizeType size() const noexcept { return size_; }
+  inline Iter begin() noexcept { return Iter(head_.left); }
+  inline ConstIter begin() const noexcept { return ConstIter(head_.left); }
+  inline Iter end() noexcept { return Iter(&head_); }
+  inline ConstIter end() const noexcept { return ConstIter(&head_); }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(--end()); }
+
+  template <typename Function> inline void for_each(Function&& fn) noexcept {
+    for (auto i = begin(); i != end(); ++i)
+      fn(*i);
+  }
+
+  inline void insert(const ValueType& x) { insert_aux(x); }
 };
 
 }
 
 void test_avl5() {
+  avl5::AVLTree<int> t;
+
+  auto show_avl = [&t] {
+    std::cout << "\navltree => {addr: "
+      << &t << ", size: " << t.size() << "}" << std::endl;
+
+    for (auto i = t.begin(); i != t.end(); ++i)
+      std::cout << "avltree item value: " << *i << std::endl;
+
+    if (!t.empty()) {
+      std::cout << "avltree => {"
+        << t.get_head() << ", " << t.get_tail() << "}" << std::endl;
+    }
+  };
+
+  t.insert(45);
+  t.insert(33);
+  t.insert(232);
+  t.insert(56);
+  t.insert(8);
+  show_avl();
 }
