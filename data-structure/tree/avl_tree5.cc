@@ -325,6 +325,54 @@ inline void avltree_insert(
   avlnode_rebalance(x, root);
 }
 
+inline void avltree_erase(BasePtr node, AVLNodeBase& header) noexcept {
+  BasePtr& root = header.parent;
+  BasePtr& min_node = header.left;
+  BasePtr& max_node = header.right;
+  BasePtr orig_node = node;
+
+  BasePtr parent = nullptr;
+  if (node->left != nullptr && node->right != nullptr) {
+    // 取右孩子的最小左孩子和要删除的节点替换
+    node = node->right;
+    while (node->left != nullptr)
+      node = node->left;
+    parent = node->parent;
+    if (node->right != nullptr)
+      node->right->parent = parent;
+    avlnode_replace_child(node, node->right, parent, root);
+    if (node->parent == orig_node)
+      parent = node;
+    node->parent = orig_node->parent;
+    node->left = orig_node->left;
+    node->right = orig_node->right;
+    node->height = orig_node->height;
+    avlnode_replace_child(orig_node, node, node->parent, root);
+    node->left->parent = node;
+    if (node->right != nullptr)
+      node->right->parent = node;
+  }
+  else {
+    BasePtr child = node->left != nullptr ? node->left : node->right;
+    parent = node->parent;
+    avlnode_replace_child(node, child, parent, root);
+    if (child != nullptr)
+      child->parent = parent;
+  }
+  if (parent != nullptr)
+    avlnode_rebalance(parent, root);
+
+  if (root == orig_node) {
+    root = parent;
+  }
+  else {
+    if (min_node == orig_node)
+      min_node = root->get_minimum();
+    else if (max_node = orig_node)
+      max_node = root->get_maximum();
+  }
+}
+
 template <typename Tp> struct AVLNode : public AVLNodeBase {
   using Node = AVLNode<Tp>;
 
@@ -354,6 +402,9 @@ template <typename _Tp, typename _Ref, typename _Ptr> struct AVLIter {
   AVLIter(Node* x) noexcept : _node(x) {}
   AVLIter(const Node* x) noexcept : _node(const_cast<Node*>(x)) {}
   AVLIter(const Iter& x) noexcept : _node(x._node) {}
+
+  inline Node* node() noexcept { return _node; }
+  inline const Node* node() const noexcept { return _node; }
 
   inline bool operator==(const Self& x) const noexcept {
     return _node == x._node;
@@ -456,6 +507,12 @@ private:
     avltree_insert(insert_left, create_node(value), y, head_);
     ++size_;
   }
+
+  inline void erase_aux(Node* node) {
+    avltree_erase(node, head_);
+    destroy_node(node);
+    --size_;
+  }
 public:
   AVLTree() noexcept {
     initialize();
@@ -478,6 +535,8 @@ public:
   }
 
   inline void insert(const ValueType& x) { insert_aux(x); }
+
+  inline void erase(ConstIter pos) { erase_aux(pos.node()); }
 };
 
 }
@@ -499,9 +558,14 @@ void test_avl5() {
   };
 
   t.insert(45);
-  t.insert(33);
-  t.insert(232);
-  t.insert(56);
-  t.insert(8);
+  // t.insert(33);
+  // t.insert(232);
+  // t.insert(56);
+  // t.insert(8);
+  show_avl();
+
+  t.erase(t.begin());
+  // for (auto i = t.begin(); i != t.end();)
+  //   t.erase(i++);
   show_avl();
 }
