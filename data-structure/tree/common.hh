@@ -51,6 +51,8 @@ protected:
 
 namespace Xt {
 
+using std::max;
+
 template <typename T> inline void construct(T* p) noexcept {
   new ((void*)p) T();
 }
