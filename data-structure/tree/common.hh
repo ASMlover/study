@@ -26,6 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <algorithm>
+#include <utility>
+
 class Copyable {
 protected:
   Copyable() noexcept = default;
@@ -45,3 +48,36 @@ protected:
   UnCopyable() noexcept = default;
   ~UnCopyable() noexcept = default;
 };
+
+namespace Xt {
+
+template <typename T> inline void construct(T* p) noexcept {
+  new ((void*)p) T();
+}
+
+template <typename T1, typename T2>
+inline void construct(T1* p, const T2& v) noexcept {
+  new ((void*)p) T1(v);
+}
+
+template <typename T1, typename T2>
+inline void construct(T1* p, T2&& v) noexcept {
+  new ((void*)p) T1(std::forward<T2>(v));
+}
+
+template <typename T, typename... Args>
+inline void construct(T* p, Args&&... args) noexcept {
+  new ((void*)p) T(std::forward<Args>(args)...);
+}
+
+template <typename T> inline void destroy(T* p) noexcept {
+  p->~T();
+}
+
+template <typename T> class SimpleAlloc final : private UnCopyable {
+public:
+  static T* allocate() noexcept { return std::malloc(sizeof(T)); }
+  static void deallocate(T* p) noexcept { std::free(p); }
+};
+
+}
