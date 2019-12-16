@@ -530,6 +530,21 @@ private:
     destroy_node(node);
     --size_;
   }
+
+  inline Link find_aux(const ValueType& k) noexcept {
+    Link x = _root_link();
+    Link y = _tail_link();
+    while (x != nullptr) {
+      if (x->value == k) {
+        y = x;
+        break;
+      }
+      else {
+        x = k < x->value ? _left(x) : _right(x);
+      }
+    }
+    return y;
+  }
 public:
   AVLTree() noexcept {
     initialize();
@@ -560,6 +575,14 @@ public:
 
   inline void insert(const ValueType& x) { insert_aux(x); }
   inline void erase(ConstIter pos) { erase_aux(pos.node()); }
+
+  inline Iter find(const ValueType& k) noexcept {
+    return Iter(find_aux(k));
+  }
+
+  inline ConstIter find(const ValueType& k) const noexcept {
+    return ConstIter(find_aux(k));
+  }
 };
 
 }
@@ -586,6 +609,8 @@ void test_avl5() {
   t.insert(56);
   t.insert(8);
   show_avl();
+
+  std::cout << "find value: " << *t.find(232) << std::endl;
 
   t.clear();
   show_avl();
