@@ -40,16 +40,16 @@ struct AVLNodeBase {
   BasePtr right;
   int height;
 
-  inline int left_height() const noexcept {
+  inline int lheight() const noexcept {
     return left != nullptr ? left->height : 0;
   }
 
-  inline int right_height() const noexcept {
+  inline int rheight() const noexcept {
     return right != nullptr ? right->height : 0;
   }
 
   inline void update_height() noexcept {
-    height = Xt::max(left_height(), right_height()) + 1;
+    height = Xt::max(lheight(), rheight()) + 1;
   }
 
   static inline BasePtr _minimum(BasePtr x) noexcept {
@@ -72,6 +72,61 @@ struct AVLNodeBase {
     return _maximum(const_cast<BasePtr>(x));
   }
 };
+
+inline void _avlnode_replace_child(
+    BasePtr x, BasePtr y, BasePtr p, BasePtr& root) noexcept {
+  if (p != nullptr) {
+    if (p->left == x)
+      p->left = y;
+    else
+      p->right = y;
+  }
+  else {
+    root = y;
+  }
+}
+
+inline BasePtr avlnode_rotate_left(BasePtr x, BasePtr& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //           \                 / \
+  //            y               x   b
+  //           / \               \
+  //         [a]  b              [a]
+
+  BasePtr y = x->right;
+  x->right = y->left;
+  if (x->right != nullptr)
+    x->right->parent = x;
+  y->parent = x->parent;
+
+  _avlnode_replace_child(x, y, x->parent, root);
+  y->left = x;
+  x->parent = y;
+
+  return y;
+}
+
+inline BasePtr avlnode_rotate_right(BasePtr x, BasePtr& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //         /                   / \
+  //        y                   a   x
+  //       / \                     /
+  //      a  [b]                 [b]
+
+  BasePtr y = x->left;
+  x->left = y->right;
+  if (x->left != nullptr)
+    x->left->parent = x;
+  y->parent = x->parent;
+
+  _avlnode_replace_child(x, y, x->parent, root);
+  y->right = x;
+  x->parent = y;
+
+  return y;
+}
 
 template <typename Value> struct AVLNode : public AVLNodeBase {
   Value value;
@@ -172,8 +227,86 @@ struct AVLIter : public AVLIterBase {
   }
 };
 
+template <typename Tp> class AVLTree final : private UnCopyable {
+public:
+  using ValueType = Tp;
+  using SizeType  = std::size_t;
+  using Iter      = AVLIter<Tp, Tp&, Tp*>;
+  using ConstIter = AVLIter<Tp, const Tp&, const Tp*>;
+  using Ref       = Tp&;
+  using ConstRef  = const Tp&;
+private:
+  using Node      = AVLNode<ValueType>;
+  using Link      = Node*;
+  using ConstLink = const Node*;
+  using Alloc     = Xt::SimpleAlloc<Node>;
+
+  SizeType size_{};
+  Node head_{};
+
+  static inline Link _parent(BasePtr x) noexcept { return static_cast<Link>(x->parent); }
+  static inline Link _parent(Link x) noexcept { return static_cast<Link>(x->parent); }
+  static inline Link _left(BasePtr x) noexcept { return static_cast<Link>(x->left); }
+  static inline Link _left(Link x) noexcept { return static_cast<Link>(x->left); }
+  static inline Link _right(BasePtr x) noexcept { return static_cast<Link>(x->right); }
+  static inline Link _right(Link x) noexcept { return static_cast<Link>(x->right); }
+
+  inline Link _root_link() noexcept { return static_cast<Link>(head_.left); }
+  inline Link _tail_link() noexcept { return static_cast<Link>(&head_); }
+
+  inline void initialize() noexcept {
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.height = 0;
+  }
+
+  inline Link create_node(const ValueType& x) {
+    Link tmp = Alloc::create_node();
+    try {
+      Xt::construct(&tmp->value, x);
+    }
+    catch (...) {
+      Alloc::deallocate(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  inline void destroy_node(Link p) {
+    Xt::destroy(&p->value);
+    Alloc::deallocate(p);
+  }
+
+  inline void insert_aux(const ValueType& value) {
+  }
+public:
+  AVLTree() noexcept {
+    initialize();
+  }
+
+  ~AVLTree() noexcept {
+  }
+
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline SizeType size() const noexcept { return size_; }
+  inline Iter begin() noexcept { return Iter(head_.left); }
+  inline ConstIter begin() const noexcept { return ConstIter(head_.left); }
+  inline Iter end() noexcept { return Iter(&head_); }
+  inline ConstIter end() const noexcept { return ConstIter(&head_); }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline ConstRef get_head() const noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(--end()); }
+  inline ConstRef get_tail() const noexcept { return *(--end()); }
+
+  template <typename Function> inline void for_each(Function&& fn) noexcept {
+    for (auto i = begin(); i != end(); ++i)
+      fn(*i);
+  }
+};
+
 }
 
 void test_avl6() {
   avl6::AVLIter<int, int&, int*> i;
+  avl6::AVLTree<int> t;
 }
