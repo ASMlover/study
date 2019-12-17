@@ -76,7 +76,9 @@ struct AVLNodeBase {
 inline void _avlnode_replace_child(
     BasePtr x, BasePtr y, BasePtr p, BasePtr& root) noexcept {
   if (p != nullptr) {
-    if (p->left == x)
+    if (x == root)
+      root = y;
+    else if (p->left == x)
       p->left = y;
     else
       p->right = y;
@@ -104,6 +106,9 @@ inline BasePtr avlnode_rotate_left(BasePtr x, BasePtr& root) noexcept {
   y->left = x;
   x->parent = y;
 
+  x->update_height();
+  y->update_height();
+
   return y;
 }
 
@@ -125,7 +130,141 @@ inline BasePtr avlnode_rotate_right(BasePtr x, BasePtr& root) noexcept {
   y->right = x;
   x->parent = y;
 
+  x->update_height();
+  y->update_height();
+
   return y;
+}
+
+inline BasePtr avlnode_fix_left(BasePtr node, BasePtr& root) noexcept {
+  //          |                   |                   |
+  //          a                   a                   c
+  //         / \                 / \                 / \
+  //       [d]  b              [d]  c               /   \
+  //           / \                 / \             a     b
+  //          c  [g]              e   b           / \   / \
+  //         / \                     / \        [d]  e f  [g]
+  //        e   f                   f  [g]
+
+  BasePtr right = node->right;
+  if (right->lheight() > right->rheight())
+    avlnode_rotate_right(right, root);
+  node = avlnode_rotate_left(node, root);
+
+  return node;
+}
+
+inline BasePtr avlnode_fix_right(BasePtr node, BasePtr& root) noexcept {
+  //          |                   |                   |
+  //          a                   a                   c
+  //         / \                 / \                 / \
+  //        b  [g]              c  [g]              /   \
+  //       / \                 / \                 b     a
+  //     [d]  c               b   f               / \   / \
+  //         / \             / \                [d]  e f  [g]
+  //        e   f          [d]  e
+
+  BasePtr left = node->left;
+  if (left->lheight() < left->rheight())
+    avlnode_rotate_left(left, root);
+  node = avlnode_rotate_right(node, root);
+
+  return node;
+}
+
+inline void avlnode_rebalance(BasePtr node, BasePtr& root) noexcept {
+  while (node != root) {
+    int lh = node->lheight();
+    int rh = node->rheight();
+    int diff = lh - rh;
+    int height = Xt::max(lh, rh) + 1;
+
+    if (node->height != height)
+      node->height = height;
+    else if (diff >= -1 && diff <= 1)
+      break;
+
+    if (diff <= -2)
+      node = avlnode_fix_left(node, root);
+    else if (diff >= 2)
+      node = avlnode_fix_right(node, root);
+
+    node = node->parent;
+  }
+}
+
+inline void avlnode_insert(
+    bool insert_left, BasePtr x, BasePtr p, Base& header) noexcept {
+  BasePtr& root = header.parent;
+
+  x->parent = p;
+  x->left = x->right = nullptr;
+  x->height = 0;
+
+  if (insert_left) {
+    p->left = x;
+    if (p == &header)
+      header.parent = header.right = x;
+    else if (p == header.left)
+      header.left = x;
+  }
+  else {
+    p->right = x;
+    if (p == header.right)
+      header.right = x;
+  }
+  avlnode_rebalance(x, root);
+}
+
+inline void avlnode_erase(BasePtr x, Base& header) noexcept {
+  BasePtr& root = header.parent;
+  BasePtr& lmost = header.left;
+  BasePtr& rmost = header.right;
+  BasePtr orig = x;
+
+  BasePtr p = nullptr;
+  BasePtr y = nullptr;
+  if (x->left != nullptr && x->right != nullptr) {
+    x = x->right;
+    while (x->left != nullptr)
+      x = x->left;
+    y = x->right;
+    p = x->parent;
+    if (y != nullptr)
+      y->parent = p;
+    _avlnode_replace_child(x, y, p, root);
+    if (x->parent == orig)
+      p = x;
+    x->parent = orig->parent;
+    x->left = orig->left;
+    x->right = orig->right;
+    x->height = orig->height;
+    _avlnode_replace_child(orig, x, x->parent, root);
+    x->left->parent = x;
+    if (x->right != nullptr)
+      x->right->parent = x;
+  }
+  else {
+    y = x->left != nullptr ? x->left : x->right;
+    p = x->parent;
+    _avlnode_replace_child(x, y, p, root);
+    if (y != nullptr)
+      y->parent = p;
+  }
+  if (p != nullptr)
+    avlnode_rebalance(p, root);
+
+  if (root == orig)
+    root = y;
+  else if (orig->parent->left == orig)
+    orig->parent->left = y;
+  else
+    orig->parent->right = y;
+
+  if (lmost == orig || lmost == nullptr)
+    lmost = root != nullptr ? Base::_minimum(root) : &header;
+  if (rmost == orig || rmost == nullptr)
+    rmost = root != nullptr ? Base::_maximum(root) : &header;
 }
 
 template <typename Value> struct AVLNode : public AVLNodeBase {
@@ -157,8 +296,8 @@ struct AVLIterBase {
   }
 
   inline void decrement() noexcept {
-    if (_node->parent->parent == _node) {
-      _node = _node->parent;
+    if (_node->parent->parent == _node && _node->height == 0xff) {
+      _node = _node->right;
     }
     else if (_node->left != nullptr) {
       _node = _node->left;
@@ -251,17 +390,20 @@ private:
   static inline Link _right(BasePtr x) noexcept { return static_cast<Link>(x->right); }
   static inline Link _right(Link x) noexcept { return static_cast<Link>(x->right); }
 
-  inline Link _root_link() noexcept { return static_cast<Link>(head_.left); }
+  inline Link _root_link() noexcept { return static_cast<Link>(head_.parent); }
   inline Link _tail_link() noexcept { return static_cast<Link>(&head_); }
+  inline Link _lmost() noexcept { return static_cast<Link>(head_.left); }
+  inline Link _rmost() noexcept { return static_cast<Link>(head_.right); }
 
   inline void initialize() noexcept {
+    size_ = 0;
     head_.parent = nullptr;
     head_.left = head_.right = &head_;
-    head_.height = 0;
+    head_.height = 0xff;
   }
 
   inline Link create_node(const ValueType& x) {
-    Link tmp = Alloc::create_node();
+    Link tmp = Alloc::allocate();
     try {
       Xt::construct(&tmp->value, x);
     }
@@ -278,6 +420,28 @@ private:
   }
 
   inline void insert_aux(const ValueType& value) {
+    Link x = _root_link();
+    Link p = _tail_link();
+    while (x != nullptr) {
+      if (value == x->value)
+        return;
+
+      p = x;
+      x = value < x->value ? _left(x) : _right(x);
+    }
+
+    bool insert_left = x != nullptr || p == _tail_link() || value < p->value;
+    avlnode_insert(insert_left, create_node(value), p, head_);
+    ++size_;
+  }
+
+  inline void erase_aux(Link x) {
+    if (empty())
+      return;
+
+    avlnode_erase(x, head_);
+    destroy_node(x);
+    --size_;
   }
 public:
   AVLTree() noexcept {
@@ -302,11 +466,46 @@ public:
     for (auto i = begin(); i != end(); ++i)
       fn(*i);
   }
+
+  inline void insert(const ValueType& x) { insert_aux(x); }
+  inline void erase(ConstIter pos) { erase_aux(Link(pos._node)); }
 };
 
 }
 
 void test_avl6() {
-  avl6::AVLIter<int, int&, int*> i;
   avl6::AVLTree<int> t;
+  auto show_avl = [&t] {
+    std::cout << "\navl-tree size => " << t.size() << std::endl;
+    if (!t.empty())
+      std::cout << "avl-tree => " << t.get_head() << " <-> " << t.get_tail() << std::endl;
+    for (auto i = t.begin(); i != t.end(); ++i)
+      std::cout << "avl-tree item value: " << *i << std::endl;
+  };
+
+  auto rshow_avl = [&t] {
+    for (auto i = --t.end(); ;) {
+      std::cout << "avl-tree item value reserve: " << *(i--) << std::endl;
+      if (i == t.begin()) {
+        std::cout << "avl-tree item value reserve: " << *i << std::endl;
+        break;
+      }
+    }
+  };
+
+  t.insert(56);
+  t.insert(34);
+  t.insert(78);
+  t.insert(23);
+  t.insert(9);
+  t.insert(231);
+  show_avl();
+
+  t.erase(t.begin());
+  show_avl();
+
+  t.erase(--t.end());
+  show_avl();
+
+  rshow_avl();
 }
