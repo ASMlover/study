@@ -78,7 +78,7 @@ template <typename T> inline void destroy(T* p) noexcept {
 
 template <typename T> class SimpleAlloc final : private UnCopyable {
 public:
-  static T* allocate() noexcept { return std::malloc(sizeof(T)); }
+  static T* allocate() noexcept { return (T*)std::malloc(sizeof(T)); }
   static void deallocate(T* p) noexcept { std::free(p); }
 };
 
