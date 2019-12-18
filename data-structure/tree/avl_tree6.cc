@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <tuple>
 #include "common.hh"
 
 namespace avl6 {
@@ -33,6 +34,8 @@ struct AVLNodeBase;
 using Base          = AVLNodeBase;
 using BasePtr       = Base*;
 using ConstBasePtr  = const Base*;
+
+static constexpr int kHeightMask = 0xff;
 
 struct AVLNodeBase {
   BasePtr parent;
@@ -296,7 +299,7 @@ struct AVLIterBase {
   }
 
   inline void decrement() noexcept {
-    if (_node->parent->parent == _node && _node->height == 0xff) {
+    if (_node->parent->parent == _node && _node->height == kHeightMask) {
       _node = _node->right;
     }
     else if (_node->left != nullptr) {
@@ -395,11 +398,20 @@ private:
   inline Link _lmost() noexcept { return static_cast<Link>(head_.left); }
   inline Link _rmost() noexcept { return static_cast<Link>(head_.right); }
 
+  void _erase_node(Link x) {
+    while (x != nullptr) {
+      _erase_node(_right(x));
+      Link y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
+
   inline void initialize() noexcept {
     size_ = 0;
     head_.parent = nullptr;
     head_.left = head_.right = &head_;
-    head_.height = 0xff;
+    head_.height = kHeightMask;
   }
 
   inline Link create_node(const ValueType& x) {
@@ -419,18 +431,27 @@ private:
     Alloc::deallocate(p);
   }
 
-  inline void insert_aux(const ValueType& value) {
+  inline std::tuple<bool, Link, bool>
+  get_insert_pos(const ValueType& value) noexcept {
     Link x = _root_link();
     Link p = _tail_link();
     while (x != nullptr) {
       if (value == x->value)
-        return;
+        return std::make_tuple(false, p, false);
 
       p = x;
       x = value < x->value ? _left(x) : _right(x);
     }
-
     bool insert_left = x != nullptr || p == _tail_link() || value < p->value;
+
+    return std::make_tuple(true, p, insert_left);
+  }
+
+  inline void insert_aux(const ValueType& value) {
+    auto [r, p, insert_left] = get_insert_pos(value);
+    if (!r)
+      return;
+
     avlnode_insert(insert_left, create_node(value), p, head_);
     ++size_;
   }
@@ -443,12 +464,28 @@ private:
     destroy_node(x);
     --size_;
   }
+
+  inline Link find_aux(const ValueType& key) {
+    Link x = _root_link();
+    Link y = _tail_link();
+    while (x != nullptr) {
+      if (key == x->value) {
+        y = x;
+        break;
+      }
+      else {
+        x = key < x->value ? _left(x) : _right(x);
+      }
+    }
+    return y;
+  }
 public:
   AVLTree() noexcept {
     initialize();
   }
 
   ~AVLTree() noexcept {
+    clear();
   }
 
   inline bool empty() const noexcept { return size_ == 0; }
@@ -467,8 +504,15 @@ public:
       fn(*i);
   }
 
+  inline void clear() {
+    _erase_node(_root_link());
+    initialize();
+  }
+
   inline void insert(const ValueType& x) { insert_aux(x); }
   inline void erase(ConstIter pos) { erase_aux(Link(pos._node)); }
+
+  Iter find(const ValueType& key) { return Iter(find_aux(key)); }
 };
 
 }
@@ -508,4 +552,7 @@ void test_avl6() {
   show_avl();
 
   rshow_avl();
+
+  t.clear();
+  show_avl();
 }
