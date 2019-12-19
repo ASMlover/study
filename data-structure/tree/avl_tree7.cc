@@ -30,9 +30,8 @@
 namespace avl7 {
 
 struct AVLNodeBase;
-using NodeBase      = AVLNodeBase;
-using BasePtr       = NodeBase*;
-using ConstBasePtr  = const NodeBase;
+using BasePtr       = AVLNodeBase*;
+using ConstBasePtr  = const AVLNodeBase*;
 
 static constexpr int kHeightMask = 0xff;
 
@@ -111,7 +110,7 @@ struct AVLIterBase {
   }
 
   void decrement() noexcept {
-    if (_node->parent->parent == _node && _node->height == kHeightMask) {
+    if (_node->height == kHeightMask && _node->parent->parent == _node) {
       _node = _node->right;
     }
     else if (_node->left != nullptr) {
@@ -128,6 +127,33 @@ struct AVLIterBase {
       _node = y;
     }
   }
+};
+
+template <typename _Tp, typename _Ref, typename _Ptr>
+struct AVLIter : public AVLIterBase {
+  using Iter      = AVLIter<_Tp, _Tp&, _Tp*>;
+  using Self      = AVLIter<_Tp, _Ref, _Ptr>;
+  using Ref       = _Ref;
+  using Ptr       = _Ptr;
+  using Link      = AVLNode<_Tp>*;
+  using ConstLink = const AVLNode<_Tp>*;
+
+  AVLIter() noexcept {}
+  AVLIter(BasePtr x) noexcept : AVLIterBase(x) {}
+  AVLIter(ConstBasePtr x) noexcept : AVLIterBase(x) {}
+  AVLIter(const Iter& x) noexcept : AVLIterBase(x._node) {}
+
+  inline Link node() noexcept { return Link(_node); }
+  inline ConstLink node() const noexcept { return ConstLink(_node); }
+
+  inline bool operator==(const Self& r) const noexcept { return _node == r._node; }
+  inline bool operator!=(const Self& r) const noexcept { return _node != r._node; }
+  inline Ref operator*() const noexcept { return Link(_node)->value; }
+  inline Ptr operator->() const noexcept { return &Link(_node)->value; }
+  Self& operator++() noexcept { increment(); return *this; }
+  Self operator++(int) noexcept { Self tmp(*this); increment(); return tmp; }
+  Self& operator--() noexcept { decrement(); return *this; }
+  Self operator--(int) noexcept { Self tmp(*this); decrement(); return tmp; }
 };
 
 }
