@@ -156,7 +156,77 @@ struct AVLIter : public AVLIterBase {
   Self operator--(int) noexcept { Self tmp(*this); decrement(); return tmp; }
 };
 
+template <typename Tp,
+         typename Less = std::less<Tp>, typename Equal = std::equal_to<Tp>>
+class AVLTree final : private UnCopyable {
+public:
+  using ValueType = Tp;
+  using SizeType  = std::size_t;
+  using Iter      = AVLIter<Tp, Tp&, Tp*>;
+  using ConstIter = AVLIter<Tp, const Tp&, const Tp*>;
+  using Ref       = Tp&;
+  using ConstRef  = const Tp&;
+private:
+  using Node      = AVLNode<ValueType>;
+  using Link      = Node*;
+  using ConstLink = const Node*;
+  using Alloc     = Xt::SimpleAlloc<Node>;
+
+  SizeType size_{};
+  Node head_{};
+  Less less_comp_{};
+  Equal equal_comp_{};
+
+  inline Link& _root() noexcept { return (Link&)head_.parent; }
+  inline ConstLink& _root() const noexcept { return (ConstLink&)head_.parent; }
+  inline Link& _tail() noexcept { return (Link&)&head_; }
+  inline ConstLink& _tail() const noexcept { return (ConstLink&)&head_; }
+  inline Link& _lmost() noexcept { return (Link&)head_.left; }
+  inline ConstLink& _lmost() const noexcept { return (ConstLink&)head_.left; }
+  inline Link& _rmost() noexcept { return (Link&)head_.right; }
+  inline ConstLink& _rmost() const noexcept { return (ConstLink&)head_.right; }
+
+  static inline Link _parent(BasePtr& x) noexcept { return Link(x->parent); }
+  static inline ConstLink _parent(ConstBasePtr x) noexcept { return _parent(const_cast<BasePtr>(x)); }
+  static inline Link _left(BasePtr x) noexcept { return Link(x->left); }
+  static inline ConstLink _left(ConstBasePtr x) noexcept { return _left(const_cast<BasePtr>(x)); }
+  static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
+  static inline ConstLink _right(ConstBasePtr x) noexcept { return _right(const_cast<BasePtr>(x)); }
+
+  inline Link get_node(const ValueType& x) { return Alloc::allocate(); }
+  inline void put_node(Link p) { Alloc::deallocate(p); }
+
+  inline void init() noexcept {
+    size_ = 0;
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.height = kHeightMask;
+  }
+
+  Link create_node(const ValueType& x) {
+    Link tmp = get_node(x);
+    try {
+      Xt::construct(&tmp->value, x);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  void destroy_node(Link p) {
+    Xt::destroy(&p->value);
+    put_node(p);
+  }
+public:
+  AVLTree() noexcept { init(); }
+  ~AVLTree() noexcept {}
+};
+
+
 }
 
 void test_avl7() {
+  avl7::AVLTree<int> t;
 }
