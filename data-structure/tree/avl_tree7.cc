@@ -81,6 +81,50 @@ inline void __avlnode_replace_child(
   }
 }
 
+inline BasePtr avlnode_rotate_left(BasePtr x, BasePtr& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //           \                 / \
+  //            y               x   b
+  //           / \               \
+  //         [a]  b              [a]
+
+  BasePtr y = x->right;
+  x->right = y->left;
+  if (x->right != nullptr)
+    x->right->parent = x;
+  y->parent = x->parent;
+  __avlnode_replace_child(x, y, x->parent, root);
+  y->left = x;
+  x->parent = y;
+  x->update_height();
+  y->update_height();
+
+  return y;
+}
+
+inline BasePtr avlnode_rotate_right(BasePtr x, BasePtr& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //         /                   / \
+  //        y                   a   x
+  //       / \                     /
+  //      a  [b]                 [b]
+
+  BasePtr y = x->left;
+  x->left = y->right;
+  if (x->left != nullptr)
+    x->left->parent = x;
+  y->parent = x->parent;
+  __avlnode_replace_child(x, y, x->parent, root);
+  y->right = x;
+  x->parent = y;
+  x->update_height();
+  y->update_height();
+
+  return y;
+}
+
 template <typename ValueType> struct AVLNode : public AVLNodeBase {
   ValueType value;
 };
