@@ -362,7 +362,7 @@ private:
   static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
   static inline ConstLink _right(ConstBasePtr x) noexcept { return _right(const_cast<BasePtr>(x)); }
 
-  inline Link get_node(const ValueType& x) { return Alloc::allocate(); }
+  inline Link get_node() { return Alloc::allocate(); }
   inline void put_node(Link p) { Alloc::deallocate(p); }
 
   inline void init() noexcept {
@@ -373,9 +373,33 @@ private:
   }
 
   Link create_node(const ValueType& x) {
-    Link tmp = get_node(x);
+    Link tmp = get_node();
     try {
       Xt::construct(&tmp->value, x);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  Link create_node(ValueType&& x) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::move(x));
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename... Args> Link create_node(Args&&... args) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::forward<Args>(args)...);
     }
     catch (...) {
       put_node(tmp);
@@ -412,12 +436,47 @@ private:
     }
   }
 
+  void insert_aux(ValueType&& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      avlnode_insert(insert_left, create_node(std::move(value)), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename... Args> void insert_aux(Args&&... args) {
+    Link node = create_node(std::forward<Args>(args)...);
+    auto [r, p, insert_left] = find_insert_pos(node->value);
+    if (r) {
+      avlnode_insert(insert_left, node, p, head_);
+      ++size_;
+    }
+    else {
+      put_node(node);
+    }
+  }
+
   void erase_aux(Link p) {
     if (!empty()) {
       avlnode_erase(p, head_);
       destroy_node(p);
       --size_;
     }
+  }
+
+  inline ConstLink find_aux(const ValueType& key) const noexcept {
+    ConstLink x = _root();
+    ConstLink y = &head_;
+    while (x != nullptr) {
+      if (equal_comp_(key, x->value)) {
+        y = x;
+        break;
+      }
+      else {
+        x = less_comp_(key, x->value) ? _left(x) : _right(x);
+      }
+    }
+    return y;
   }
 public:
   AVLTree() noexcept { init(); }
@@ -440,7 +499,22 @@ public:
   }
 
   void insert(const ValueType& x) { insert_aux(x); }
+  void insert(ValueType&& x) { insert_aux(std::move(x)); }
+
+  template <typename... Args> void insert(Args&&... args) {
+    insert_aux(std::forward<Args>(args)...);
+  }
+
+  void erase(Iter pos) { erase_aux(pos.node()); }
   void erase(ConstIter pos) { erase_aux(pos.node()); }
+
+  Iter find(const ValueType& key) noexcept {
+    return Iter(find_aux(key));
+  }
+
+  ConstIter find(const ValueType& key) const noexcept {
+    return ConstIter(find_aux(key));
+  }
 };
 
 
@@ -476,4 +550,6 @@ void test_avl7() {
   t.erase(t.begin());
   show_avl();
   show_reverse();
+
+  std::cout << "find 45: " << (t.find(45) != t.end()) << std::endl;
 }
