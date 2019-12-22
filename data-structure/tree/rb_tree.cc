@@ -65,6 +65,129 @@ struct RBNodeBase {
   }
 };
 
+inline void __rbnode_replace(
+    BasePtr x, BasePtr y, BasePtr p, BasePtr& root) noexcept {
+  if (root == x)
+    root = y;
+  else if (p->left == x)
+    p->left = y;
+  else
+    p->right = y;
+}
+
+inline void rbnode_rotate_left(BasePtr x, BasePtr& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //           \                 / \
+  //            y               x   b
+  //           / \               \
+  //         [a]  b              [a]
+
+  BasePtr y = x->right;
+  x->right = y->left;
+  if (x->right != nullptr)
+    x->right->parent = x;
+  y->parent = x->parent;
+  __rbnode_replace(x, y, x->parent, root);
+  y->left = x;
+  x->parent = y;
+}
+
+inline void rbnode_rotate_right(BasePtr x, BasePtr& root) noexcept {
+  //          |                   |
+  //          x                   y
+  //         /                   / \
+  //        y                   a   x
+  //       / \                     /
+  //      a  [b]                 [b]
+
+  BasePtr y = x->left;
+  x->left = y->right;
+  if (x->left != nullptr)
+    x->left->parent = x;
+  y->parent = x->parent;
+  __rbnode_replace(x, y, x->parent, root);
+  y->right = x;
+  x->parent = y;
+}
+
+inline void rbnode_rebalance(BasePtr x, BasePtr& root) noexcept {
+  while (x != root && x->parent->color == kColorRed) {
+    if (x->parent->parent->left == x->parent) {
+      //                |
+      //               xpp
+      //               / \
+      //              p  [y]
+      //             / \
+      //           [x] [x]
+
+      BasePtr y = x->parent->parent->right;
+      if (y != nullptr && y->color == kColorRed) {
+        x->parent->color = y->color = kColorBlack;
+        x->parent->parent->color = kColorRed;
+        x = x->parent->parent;
+      }
+      else {
+        if (x->parent->right == x) {
+          x = x->parent;
+          rbnode_rotate_left(x, root);
+        }
+        x->parent->color = kColorBlack;
+        x->parent->parent->color = kColorRed;
+        rbnode_rotate_right(x->parent->parent, root);
+      }
+    }
+    else {
+      //                |
+      //               xpp
+      //               / \
+      //             [y]  p
+      //                 / \
+      //               [x] [x]
+
+      BasePtr y = x->parent->parent->left;
+      if (y != nullptr && y->color == kColorRed) {
+        x->parent->color = y->color = kColorBlack;
+        x->parent->parent->color = kColorRed;
+        x = x->parent->parent;
+      }
+      else {
+        if (x->parent->left == x) {
+          x = x->parent;
+          rbnode_rotate_right(x, root);
+        }
+        x->parent->color = kColorBlack;
+        x->parent->parent->color = kColorRed;
+        rbnode_rotate_left(x->parent->parent, root);
+      }
+    }
+  }
+  root->color = kColorBlack;
+}
+
+inline void rbnode_insert(
+    bool insert_left, BasePtr x, BasePtr p, RBNodeBase& header) noexcept {
+  BasePtr& root = header.parent;
+
+  x->parent = p;
+  x->left = x->right = nullptr;
+  x->color = kColorRed;
+
+  if (insert_left) {
+    p->left = x;
+    if (p == &header)
+      header.parent = header.right = x;
+    else if (p == header.left)
+      header.left = x;
+  }
+  else {
+    p->right = x;
+    if (p == header.right)
+      header.right = x;
+  }
+  rbnode_rebalance(x, root);
+}
+
 template <typename Value> struct RBNode : public RBNodeBase {
   Value value;
 };
@@ -173,6 +296,15 @@ private:
   static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
   static inline ConstLink _right(ConstBasePtr x) noexcept { return _right(const_cast<BasePtr>(x)); }
 
+  void _tear_node(Link x) {
+    while (x != nullptr) {
+      _tear_node(_right(x));
+      Link y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
+
   inline void init() noexcept {
     size_ = 0;
     head_.parent = nullptr;
@@ -200,7 +332,27 @@ private:
     put_node(p);
   }
 
+  inline std::tuple<bool, Link, bool> find_insert_pos(const ValueType& value) {
+    Link x = root();
+    Link p = &head_;
+    while (x != nullptr) {
+      if (value == x->value)
+        return std::make_tuple(false, nullptr, false);
+
+      p = x;
+      x = value < x->value ? _left(x) : _right(x);
+    }
+    bool insert_left = x != nullptr || p == &head_ || value < p->value;
+
+    return std::make_tuple(true, p, insert_left);
+  }
+
   inline void insert_aux(const ValueType& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      rbnode_insert(insert_left, create_node(value), p, head_);
+      ++size_;
+    }
   }
 
   inline void erase_aux(Link p) {
@@ -226,9 +378,11 @@ public:
   }
 
   void clear() {
+    _tear_node(root());
+    init();
   }
 
-  void insert(const ValueType& x) {}
+  void insert(const ValueType& x) { insert_aux(x); }
   void erase(ConstIter pos) {}
 };
 
@@ -236,4 +390,23 @@ public:
 
 void test_rb() {
   rb::RBTree<int> t;
+  auto show_rb = [&t] {
+    std::cout << "\nrb-tree size: " << t.size() << std::endl;
+    if (!t.empty())
+      std::cout << "rb-tree: " << t.get_head() << ", " << t.get_tail() << std::endl;
+
+    for (auto i = t.begin(); i != t.end(); ++i)
+      std::cout << "rb-tree item value: " << *i << std::endl;
+  };
+
+  t.insert(45);
+  t.insert(34);
+  t.insert(78);
+  t.insert(9);
+  t.insert(23);
+  t.insert(-56);
+  show_rb();
+
+  t.clear();
+  show_rb();
 }
