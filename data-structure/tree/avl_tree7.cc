@@ -362,6 +362,15 @@ private:
   static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
   static inline ConstLink _right(ConstBasePtr x) noexcept { return _right(const_cast<BasePtr>(x)); }
 
+  inline void _tear_node(Link x) {
+    while (x != nullptr) {
+      _tear_node(_right(x));
+      Link y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
+
   inline Link get_node() { return Alloc::allocate(); }
   inline void put_node(Link p) { Alloc::deallocate(p); }
 
@@ -480,7 +489,7 @@ private:
   }
 public:
   AVLTree() noexcept { init(); }
-  ~AVLTree() noexcept {}
+  ~AVLTree() noexcept { clear(); }
 
   inline bool empty() const noexcept { return size_ == 0; }
   inline SizeType size() const noexcept { return size_; }
@@ -496,6 +505,11 @@ public:
   template <typename Function> inline void for_each(Function&& fn) {
     for (auto i = begin(); i != end(); ++i)
       fn(*i);
+  }
+
+  void clear() {
+    _tear_node(_root());
+    init();
   }
 
   void insert(const ValueType& x) { insert_aux(x); }
@@ -516,7 +530,6 @@ public:
     return ConstIter(find_aux(key));
   }
 };
-
 
 }
 
@@ -552,4 +565,7 @@ void test_avl7() {
   show_reverse();
 
   std::cout << "find 45: " << (t.find(45) != t.end()) << std::endl;
+
+  t.clear();
+  show_avl();
 }
