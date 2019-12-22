@@ -156,6 +156,84 @@ private:
 
   SizeType size_{};
   Node head_{};
+
+  inline Link& root() noexcept { return (Link&)head_.parent; }
+  inline ConstLink& root() const noexcept { return (ConstLink&)head_.parent; }
+  inline Link& lmost() noexcept { return (Link&)head_.left; }
+  inline ConstLink& lmost() const noexcept { return (ConstLink&)head_.left; }
+  inline Link& rmost() noexcept { return (Link&)head_.right; }
+  inline ConstLink& rmost() const noexcept { return (ConstLink&)head_.right; }
+  inline Link _tail() noexcept { return &head_; }
+  inline ConstLink _tail() const noexcept { return &head_; }
+
+  static inline Link _parent(BasePtr x) noexcept { return Link(x->parent); }
+  static inline ConstLink _parent(ConstBasePtr x) noexcept { return _parent(const_cast<BasePtr>(x)); }
+  static inline Link _left(BasePtr x) noexcept { return Link(x->left); }
+  static inline ConstLink _left(ConstBasePtr x) noexcept { return _left(const_cast<BasePtr>(x)); }
+  static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
+  static inline ConstLink _right(ConstBasePtr x) noexcept { return _right(const_cast<BasePtr>(x)); }
+
+  inline void init() noexcept {
+    size_ = 0;
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.color = kColorRed;
+  }
+
+  inline Link get_node() noexcept { return Alloc::allocate(); }
+  inline void put_node(Link p) noexcept { Alloc::deallocate(p); }
+
+  inline Link create_node(const ValueType& value) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, value);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  inline void destroy_node(Link p) {
+    Xt::destroy(&p->value);
+    put_node(p);
+  }
+
+  inline void insert_aux(const ValueType& value) {
+  }
+
+  inline void erase_aux(Link p) {
+  }
+public:
+  RBTree() noexcept { init(); }
+  ~RBTree() noexcept { clear(); }
+
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline SizeType size() const noexcept { return size_; }
+  inline Iter begin() noexcept { return Iter(head_.left); }
+  inline ConstIter begin() const noexcept { return ConstIter(head_.left); }
+  inline Iter end() noexcept { return Iter(&head_); }
+  inline ConstIter end() const noexcept { return ConstIter(&head_); }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline ConstRef get_head() const noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(--end()); }
+  inline ConstRef get_tail() const noexcept { return *(--end()); }
+
+  template <typename Function> inline void for_each(Function&& fn) {
+    for (auto i = begin(); i != end(); ++i)
+      fn(*i);
+  }
+
+  void clear() {
+  }
+
+  void insert(const ValueType& x) {}
+  void erase(ConstIter pos) {}
 };
 
+}
+
+void test_rb() {
+  rb::RBTree<int> t;
 }
