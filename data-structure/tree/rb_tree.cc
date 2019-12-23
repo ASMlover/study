@@ -111,7 +111,7 @@ inline void rbnode_rotate_right(BasePtr x, BasePtr& root) noexcept {
   x->parent = y;
 }
 
-inline void rbnode_rebalance(BasePtr x, BasePtr& root) noexcept {
+inline void rbnode_insert_fix(BasePtr x, BasePtr& root) noexcept {
   while (x != root && x->parent->color == kColorRed) {
     if (x->parent->parent->left == x->parent) {
       //                |
@@ -185,7 +185,71 @@ inline void rbnode_insert(
     if (p == header.right)
       header.right = x;
   }
-  rbnode_rebalance(x, root);
+  rbnode_insert_fix(x, root);
+}
+
+inline void rbnode_erase_fix(BasePtr x, BasePtr& root) noexcept {
+  BasePtr w;
+  while (x != root && x->color == kColorRed) {
+    if (x == x->parent->left) {
+      w = x->parent->right;
+      if (w->color == kColorRed) {
+        w->color = kColorBlack;
+        x->parent->color = kColorRed;
+        rbnode_rotate_left(x->parent, root);
+        w = x->parent->right;
+      }
+
+      if (w->left->color == kColorBlack && w->right->color == kColorBlack) {
+        w->color = kColorRed;
+        x = x->parent;
+      }
+      else {
+        if (w->right->color == kColorBlack) {
+          w->left->color = kColorBlack;
+          w->color = kColorRed;
+          rbnode_rotate_right(w, root);
+          w = x->parent->right;
+        }
+        w->color = x->parent->color;
+        x->parent->color = kColorBlack;
+        w->right->color = kColorBlack;
+        rbnode_rotate_left(x->parent, root);
+        x = root;
+        break;
+      }
+    }
+    else {
+      w = x->parent->left;
+      if (w->color == kColorRed) {
+        w->color = kColorBlack;
+        x->parent->color = kColorRed;
+        rbnode_rotate_right(x->parent, root);
+        w = w->parent->left;
+      }
+      if (w->left->color == kColorBlack && w->right->color == kColorBlack) {
+        w->color = kColorRed;
+        x = x->parent;
+      }
+      else {
+        if (w->left->color == kColorBlack) {
+          w->right->color = kColorBlack;
+          w->color = kColorRed;
+          rbnode_rotate_left(w, root);
+          w = w->parent->left;
+        }
+        w->color = x->parent->color;
+        x->parent->color = kColorBlack;
+        w->left->color = kColorBlack;
+        rbnode_rotate_right(x->parent, root);
+        x = root;
+        break;
+      }
+    }
+  }
+
+  if (x != nullptr)
+    x->color = kColorBlack;
 }
 
 template <typename Value> struct RBNode : public RBNodeBase {
