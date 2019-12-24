@@ -65,3 +65,55 @@ TREE-PREDECESSOR(x)
     y = y.p
   return y
 ```
+
+**插入**，z作为输入(z.key=v, z.left=NIL, z.right=NIL)
+```
+TREE-INSERT(T, z)
+  y = NIL
+  x = T.root
+  while x != NIL
+    y = x
+    if z.key < x.key
+      x = x.left
+    else x = x.right
+
+  z.p = y
+  if y == NIL
+    T.root = z
+  elseif z.key < y.key
+    y.left = z
+  else y.right = z
+```
+
+**删除**，假设要删除的节点为z
+ * z只有右孩子，直接用右孩子替换z；
+ * z只有左孩子，直接用左孩子替换z；
+ * z既有一个左孩子又有一个右孩子，需要找到z的后继y（位于z的右子树且没有左孩子），需要将y移出原来的位置进行拼接，并替换z；
+   - y是z的右孩子，用y替换z，并仅留下y的右孩子；
+   - y是z的右子树中但并非z的右孩子，先用y右孩子替换y，再用y替换z；
+```
+// TRANSPLANT -> 用另一棵子树替换一棵子树并称为其双亲的孩子节点(u->old, v->new)
+TRANSPLANT(T, u, v)
+  if u.p == NIL
+    T.root = v
+  elseif u == u.p.left
+    u.p.left = v
+  else u.p.right = v
+
+  if v != NIL
+    v.p = u.p
+
+TREE-DELETE(T, z)
+  if z.left == NIL
+    TRANSPLANT(T, z, z.right)
+  elseif z.right == NIL
+    TRANSPLANT(T, z, z.left)
+  else y = TREE-MINIMUM(z.right)
+    if y.p != z
+      TRANSPLANT(T, y, y.right)
+      y.right = z.right
+      y.right.p = y
+    TRANSPLANT(T, z, y)
+    y.left = z.left
+    y.left.p = y
+```
