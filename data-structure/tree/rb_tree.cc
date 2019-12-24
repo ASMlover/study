@@ -75,6 +75,18 @@ inline void __rbnode_replace(
     p->right = y;
 }
 
+inline void __rbnode_transplant(BasePtr x, BasePtr y, BasePtr& root) noexcept {
+  if (x->parent == nullptr)
+    root = y;
+  else if (x->parent->left == x)
+    x->parent->left = y;
+  else
+    x->parent->right = y;
+
+  if (y != nullptr)
+    y->parent = x->parent;
+}
+
 inline void rbnode_rotate_left(BasePtr x, BasePtr& root) noexcept {
   //          |                   |
   //          x                   y
@@ -252,6 +264,46 @@ inline void rbnode_erase_fix(BasePtr x, BasePtr& root) noexcept {
     x->color = kColorBlack;
 }
 
+inline void rbnode_erase(BasePtr x, RBNodeBase& header) noexcept {
+  BasePtr& root = header.parent;
+  BasePtr& lmost = header.left;
+  BasePtr& rmost = header.right;
+  BasePtr orig = x;
+
+  BasePtr y = nullptr;
+  if (x->left != nullptr && x->right != nullptr) {
+    x = x->right;
+    while (x->left != nullptr)
+      x = x->left;
+    y = x->right;
+    if (y != nullptr)
+      y->parent = x->parent;
+    __rbnode_replace(x, y, x->parent, root);
+    x->parent = orig->parent;
+    x->left = orig->left;
+    x->right = orig->right;
+    x->color = orig->color;
+    __rbnode_replace(orig, x, x->parent, root);
+    if (x->right != nullptr)
+      x->right->parent = x;
+  }
+  else {
+    y = x->left != nullptr ? x->left : x->right;
+    __rbnode_replace(x, y, x->parent, root);
+    if (y != nullptr)
+      y->parent = x->parent;
+  }
+  if (y != nullptr && y->color == kColorBlack)
+    rbnode_erase_fix(x, root);
+
+  if (root == orig)
+    root = y;
+  if (lmost == orig || lmost == nullptr)
+    lmost = root != nullptr ? RBNodeBase::_minimum(root) : &header;
+  if (rmost == orig || rmost == nullptr)
+    rmost = root != nullptr ? RBNodeBase::_maximum(root) : &header;
+}
+
 template <typename Value> struct RBNode : public RBNodeBase {
   Value value;
 };
@@ -420,6 +472,11 @@ private:
   }
 
   inline void erase_aux(Link p) {
+    if (!empty()) {
+      rbnode_erase(p, head_);
+      destroy_node(p);
+      --size_;
+    }
   }
 public:
   RBTree() noexcept { init(); }
@@ -447,7 +504,7 @@ public:
   }
 
   void insert(const ValueType& x) { insert_aux(x); }
-  void erase(ConstIter pos) {}
+  void erase(ConstIter pos) { erase_aux(pos.node()); }
 };
 
 }
@@ -469,6 +526,10 @@ void test_rb() {
   t.insert(9);
   t.insert(23);
   t.insert(-56);
+  show_rb();
+
+  t.erase(t.begin());
+  t.erase(--t.end());
   show_rb();
 
   t.clear();
