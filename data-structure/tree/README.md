@@ -117,3 +117,49 @@ TREE-DELETE(T, z)
     y.left = z.left
     y.left.p = y
 ```
+
+## **红黑树**
+**红黑树**是一棵满足以下性质的二叉搜索树：
+ * 每个节点或是红色，或是黑色
+ * 根节点是黑色
+ * 每个叶子节点（NIL）是黑色
+ * 如果一个节点是红色，它的两个子节点都是黑色
+ * 对每个节点，从该节点到其所有后代叶子节点的简单路径上，包含相同数目的黑色节点
+
+**旋转**，当在x上做左旋时，假设其右孩子是y而不是NIL；x可以为其右孩子不是NIL节点的树内任意节点；左旋以x到y的链为之轴进行，使y称为该子树新的根节点，x成y的左孩子，y的左孩子成为x的右孩子；
+```
+        |                         |
+        y    <---LEFT-ROTATE---   x
+       /     ---RIGHT-ROTATE-->  / \
+      x                         a   y
+     / \                           /
+    a   b                         b
+
+LEFT-ROTATE(T, x)
+  y = x.right
+  x.right = y.left
+  if y.left != NIL
+    y.left.p = x
+  y.p = x.p
+  if x.p == NIL
+    T.root = y
+  elseif x == x.p.left
+    x.p.left = y
+  else x.p.right = y
+  y.left = x
+  x.p = y
+
+RIGHT-ROTATE(T, x)
+  x = y.left
+  y.left = x.right
+  if x.right != NIL
+    x.right.p = y
+  x.p = y.p
+  if y.p == NIL
+    T.root = x
+  elseif y.p.left = y
+    y.p.left = x
+  else y.p.right = x
+  x.right = y
+  y.p = x
+```
