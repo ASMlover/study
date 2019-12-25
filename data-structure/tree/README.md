@@ -163,3 +163,53 @@ RIGHT-ROTATE(T, x)
   x.right = y
   y.p = x
 ```
+
+**插入**
+```
+RB-INSERT(T, z)
+  y = NIL
+  x = T.root
+  while x != NIL
+    y = x
+    if z.key < x.key
+      x = x.left
+    else x = x.right
+  z.p = y
+  if y == NIL
+    T.root = z
+  elseif z.key < y.key
+    y.left = z
+  else y.right = z
+  z.left = NIL
+  z.right = NIL
+  z.color = RED
+  RB-INSERT-FIXUP(T, z)
+
+RB-INSERT-FIXUP(T, z)
+  while z.p.color == RED
+    if z.p == z.p.p.left
+      y = z.p.p.right
+      if y.color == RED
+        z.p.color = BLACK               -> case 1
+        y.color = BLACK                 -> case 1
+        z.p.p.color = RED               -> case 1
+        z = z.p.p                       -> case 1
+      else if z == z.p.right
+          z = z.p                       -> case 2
+          LEFT-ROTATE(T, z)             -> case 2
+        z.p.color = BLACK               -> case 3
+        z.p.p.color = RED               -> case 3
+        RIGHT-ROTATE(T, z.p.p)          -> case 3
+    else (same as the then clause with "right" and "left" exchanged)
+  T.root.color = BLACK
+```
+INSERT-FIXUP的几种情况（需要保证z是新插入的节点）：
+ * case1：z的叔叔节点y是红色的：
+   - 将z.p和y都着为黑色，来解决z和z.p都是红色的问题
+   - 将z.p.p着为红色来保持性质5
+   - 将z.p.p作为新节点z来重复while循环
+ * case2：z的叔叔节点y是黑色的且z是一个右孩子
+ * case3：z的叔叔节点y是黑色的且z是一个左孩子
+   - case2和case3，z的叔节点y是黑色，通过z是z.p的右孩子还是左孩子来区别这两种情况
+   - case2中z是它父节点的右孩子，立即实用一个左旋将此情形转换为case3
+   - case3中改变某些节点的颜色再做一次右旋
