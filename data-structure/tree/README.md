@@ -164,7 +164,7 @@ RIGHT-ROTATE(T, x)
   y.p = x
 ```
 
-**插入**
+**插入**，需要花费O(lgn)的时间
 ```
 RB-INSERT(T, z)
   y = NIL
@@ -213,3 +213,45 @@ INSERT-FIXUP的几种情况（需要保证z是新插入的节点）：
    - case2和case3，z的叔节点y是黑色，通过z是z.p的右孩子还是左孩子来区别这两种情况
    - case2中z是它父节点的右孩子，立即实用一个左旋将此情形转换为case3
    - case3中改变某些节点的颜色再做一次右旋
+
+**删除**，需要花费O(lgn)的时间
+ * 始终维持y是从树中删除的节点或移至树内的节点，当z子节点少于2个时，将y指向z，并因此要移除；当z有2个子节点时，将y指向z的后继，y将移动到树中z的位置
+ * 由于y可能变色，y-original-color存储变化前y的颜色，当z有2个子节点时，则y!=z且节点y移至节点z的原始位置，给y赋予和z一样的颜色；在RB-DELETE结束的时候检测y-original-color的颜色，如果它是黑色的，那需要移动或删除y会引起红黑树性质的破坏
+ * 保存节点x的踪迹，使它移至节点y的原始位置上
+ * 因为x移到y的原始位置，x.p总是被设置指向树中y父节点的原始位置，除非z是y的原始父节点；当y的原父节点是z时，因为要删除该节点，则不能让x.p指向y的原始父节点；由于y将在树中向上移动占据z的位置，则将x.p设置为y，使得x.p指向y父节点的原始位置
+ * 最后如果y是黑色，可能引入一个或多个红黑树性质的破坏，所以需要进行修正
+```
+// 删除过程基于TREE-DELETE过程，需要一个特别的TRANSPLANT
+RB-TRANSPLANT(T, u, v)
+  if u.p == NIL
+    T.root = v
+  elseif u == u.p.left
+    u.p.left = v
+  else u.p.right = v
+  v.p = u.p
+
+RB-DELETE(T, z)
+  y = z
+  y-original-color = y.color
+  if z.left == NIL
+    x = z.right
+    RB-TRANSPLANT(T, z, z.right)
+  elseif z.right == NIL
+    x = z.left
+    RB-TRANSPLANT(T, z, z.left)
+  else y = TREE-MINIMUM(z.right)
+    y-original-color = y.color
+    x = y.right
+    if y.p == z
+      x.p = y
+    else RB-TRANSPLANT(T, y, y.right)
+      y.right = z.right
+      y.right.p = y
+    RB-TRANSPLANT(T, z, y)
+    y.left = z.left
+    y.left.p = y
+    y.color = z.color
+
+  if y-original-color == BLACK
+    RB-DELETE-FIXUP(T, x)
+```
