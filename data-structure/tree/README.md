@@ -149,7 +149,7 @@ LEFT-ROTATE(T, x)
   y.left = x
   x.p = y
 
-RIGHT-ROTATE(T, x)
+RIGHT-ROTATE(T, y)
   x = y.left
   y.left = x.right
   if x.right != NIL
