@@ -325,6 +325,30 @@ private:
     return tmp;
   }
 
+  inline Link create_node(ValueType&& value) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::move(value));
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename... Args> inline Link create_node(Args&&... args) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::forward<Args>(args)...);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
   inline void destroy_node(Link p) {
     Xt::destroy(&p->value);
     put_node(p);
@@ -352,6 +376,26 @@ private:
       ++size_;
     }
   }
+
+  inline void insert_aux(ValueType&& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      details::insert(insert_left, create_node(std::move(value)), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename... Args> inline void insert_aux(Args&&... args) {
+    Link x = create_node(std::forward<Args>(args)...);
+    auto [r, p, insert_left] = find_insert_pos(x->value);
+    if (r) {
+      details::insert(insert_left, x, p, head_);
+      ++size_;
+    }
+    else {
+      destroy_node(x);
+    }
+  }
 public:
   RBTree() noexcept { init(); }
   ~RBTree() noexcept { clear(); }
@@ -371,6 +415,11 @@ public:
   }
 
   void insert(const ValueType& x) { insert_aux(x); }
+  void insert(ValueType&& x) { insert_aux(std::move(x)); }
+
+  template <typename... Args> void insert(Args&&... args) {
+    insert_aux(std::forward<Args>(args)...);
+  }
 
   template <typename Function> inline void for_each(Function&& fn) {
     for (auto i = begin(); i != end(); ++i)
@@ -391,8 +440,11 @@ void test_rb2() {
                 << std::endl;
     }
     t.for_each([](int value) {
-        std::cout << "rb-tree item value: " << value << std::endl;
+        std::cout << "rb-tree (beg->end) item value: " << value << std::endl;
         });
+
+    for (auto i = t.end(); i != t.begin();)
+      std::cout << "rb-tree (end->beg) item value: " << *(--i) << std::endl;
   };
 
   t.insert(45);
