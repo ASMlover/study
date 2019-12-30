@@ -227,6 +227,81 @@ namespace details {
 
     insert_fixup(x, root);
   }
+
+  inline void erase_fixup(BasePtr x, BasePtr& root) noexcept {
+    while (x != root && x->is_black()) {
+      if (x == x->parent->left) {
+        BasePtr w = x->parent->right;
+        if (w->is_red()) {
+          w->set_black();
+          x->parent->set_red();
+          left_rotate(x->parent, root);
+          w = x->parent->right;
+        }
+
+        if (w->left->is_black() && w->right->is_black()) {
+          w->set_red();
+          x = x->parent;
+        }
+        else {
+          if (w->right->is_black()) {
+            w->left->set_black();
+            w->set_red();
+            right_rotate(w, root);
+            w = x->parent->right;
+          }
+          w->color = x->parent->color;
+          x->parent->set_black();
+          w->right->set_black();
+          left_rotate(x->parent, root);
+          x = root;
+        }
+      }
+    }
+    x->set_black();
+  }
+
+  inline void erase_transplant(BasePtr u, BasePtr v, BasePtr& root) noexcept {
+    transplant(u, v, root);
+    v->parent = u->parent;
+  }
+
+  inline void erase(BasePtr z, RBNodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+    BasePtr& lmost = header.left;
+    BasePtr& rmost = header.right;
+
+    BasePtr y = z;
+    ColorType y_original_color = y->color;
+    BasePtr x = nullptr;
+    if (z->left == nullptr) {
+      x = z->right;
+      erase_transplant(z, z->right, root);
+    }
+    else if (z->right == nullptr) {
+      x = z->left;
+      erase_transplant(z, z->left, root);
+    }
+    else {
+      y = RBNodeBase::minimum(z->right);
+      y_original_color = y->color;
+      x = y->right;
+      if (y->parent == z) {
+        x->parent = y;
+      }
+      else {
+        y->right = z->right;
+        y->right->parent = y;
+      }
+      erase_transplant(z, y, root);
+      y->left = z->left;
+      y->left->parent = y;
+      y->color = z->color;
+    }
+
+    if (y_original_color == kColorBlack)
+      erase_fixup(x, root);
+  }
 }
 
 template <typename Value> struct RBNode : public RBNodeBase {
