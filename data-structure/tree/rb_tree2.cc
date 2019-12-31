@@ -257,6 +257,33 @@ namespace details {
           x = root;
         }
       }
+      else {
+        BasePtr w = x->parent->left;
+        if (w->is_red()) {
+          w->set_black();
+          x->parent->set_red();
+          right_rotate(x->parent, root);
+          w = x->parent->left;
+        }
+
+        if (w->left->is_black() && w->right->is_black()) {
+          w->set_red();
+          x = x->parent;
+        }
+        else {
+          if (w->left->is_black()) {
+            w->right->set_black();
+            w->set_red();
+            left_rotate(w, root);
+            w = x->parent->left;
+          }
+          w->color = x->parent->color;
+          x->parent->set_black();
+          w->left->set_black();
+          right_rotate(x->parent, root);
+          x = root;
+        }
+      }
     }
     x->set_black();
   }
@@ -276,11 +303,9 @@ namespace details {
     BasePtr x = nullptr;
     if (z->left == nullptr) {
       x = z->right;
-      erase_transplant(z, z->right, root);
     }
     else if (z->right == nullptr) {
       x = z->left;
-      erase_transplant(z, z->left, root);
     }
     else {
       y = RBNodeBase::minimum(z->right);
@@ -298,6 +323,10 @@ namespace details {
       y->left->parent = y;
       y->color = z->color;
     }
+    if (lmost == z)
+      lmost = z->right == nullptr ? z->parent : RBNodeBase::minimum(x);
+    if (rmost == z)
+      rmost = z->left == nullptr ? z->parent : RBNodeBase::maximum(x);
 
     if (y_original_color == kColorBlack)
       erase_fixup(x, root);
@@ -332,6 +361,7 @@ struct RBIter : public RBIterBase {
   RBIter(ConstBasePtr x) noexcept : RBIterBase(x) {}
   RBIter(const Iter& x) noexcept : RBIterBase(x._node) {}
 
+  inline Link node() noexcept { return Link(_node); }
   inline bool operator==(const Self& x) const noexcept { return _node == x._node; }
   inline bool operator!=(const Self& x) const noexcept { return _node != x._node; }
   inline Ref operator*() const noexcept { return Link(_node)->value; }
@@ -471,6 +501,14 @@ private:
       destroy_node(x);
     }
   }
+
+  inline void erase_aux(Link p) {
+    if (!empty()) {
+      details::erase(p, head_);
+      destroy_node(p);
+      --size_;
+    }
+  }
 public:
   RBTree() noexcept { init(); }
   ~RBTree() noexcept { clear(); }
@@ -495,6 +533,8 @@ public:
   template <typename... Args> void insert(Args&&... args) {
     insert_aux(std::forward<Args>(args)...);
   }
+
+  void erase(ConstIter pos) { erase_aux(pos.node()); }
 
   template <typename Function> inline void for_each(Function&& fn) {
     for (auto i = begin(); i != end(); ++i)
@@ -529,5 +569,9 @@ void test_rb2() {
   t.insert(234);
   t.insert(9);
   t.insert(-56);
+  show_rb();
+
+  t.erase(t.begin());
+  t.erase(t.begin());
   show_rb();
 }
