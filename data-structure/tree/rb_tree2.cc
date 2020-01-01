@@ -229,7 +229,7 @@ namespace details {
   }
 
   inline void erase_fixup(BasePtr x, BasePtr& root) noexcept {
-    while (x != root && x->is_black()) {
+    while (x != root && (x == nullptr || x->is_black())) {
       if (x == x->parent->left) {
         BasePtr w = x->parent->right;
         if (w->is_red()) {
@@ -299,36 +299,45 @@ namespace details {
     BasePtr& rmost = header.right;
 
     BasePtr y = z;
-    ColorType y_original_color = y->color;
     BasePtr x = nullptr;
-    if (z->left == nullptr) {
-      x = z->right;
+    if (y->left == nullptr) {
+      x = y->right;
     }
-    else if (z->right == nullptr) {
-      x = z->left;
+    else if (y->right == nullptr) {
+      x = y->left;
     }
     else {
-      y = RBNodeBase::minimum(z->right);
-      y_original_color = y->color;
+      y = RBNodeBase::minimum(y->right);
       x = y->right;
-      if (y->parent == z) {
-        x->parent = y;
-      }
-      else {
-        y->right = z->right;
-        y->right->parent = y;
-      }
-      erase_transplant(z, y, root);
+    }
+
+    if (y != z) {
       y->left = z->left;
       y->left->parent = y;
-      y->color = z->color;
-    }
-    if (lmost == z)
-      lmost = z->right == nullptr ? z->parent : RBNodeBase::minimum(x);
-    if (rmost == z)
-      rmost = z->left == nullptr ? z->parent : RBNodeBase::maximum(x);
+      if (y != z->right) {
+        if (x != nullptr)
+          x->parent = y->parent;
+        y->parent->left = x;
+        y->right = z->right;
+        z->right->parent = y;
+      }
 
-    if (y_original_color == kColorBlack)
+      erase_transplant(z, y, root);
+      std::swap(y->color, z->color);
+      y = z;
+    }
+    else {
+      if (x != nullptr)
+        x->parent = y->parent;
+      transplant(z, x, root);
+
+      if (lmost == z)
+        lmost = z->right == nullptr ? z->parent : RBNodeBase::minimum(x);
+      if (rmost == z)
+        rmost = z->left == nullptr ? z->parent : RBNodeBase::maximum(x);
+    }
+
+    if (y->is_black())
       erase_fixup(x, root);
   }
 }
@@ -407,6 +416,15 @@ private:
   inline ConstLink& lmost() const noexcept { return (ConstLink&)head_.left; }
   inline Link& rmost() noexcept { return (Link&)head_.right; }
   inline ConstLink& rmost() const noexcept { return (ConstLink&)head_.right; }
+
+  void _tear_node(Link x) {
+    while (x != nullptr) {
+      _tear_node(_right(x));
+      Link y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
 
   inline void init() noexcept {
     size_ = 0;
@@ -525,6 +543,8 @@ public:
   inline ConstRef get_tail() const noexcept { return *(--end()); }
 
   void clear() {
+    _tear_node(root());
+    init();
   }
 
   void insert(const ValueType& x) { insert_aux(x); }
@@ -572,6 +592,10 @@ void test_rb2() {
   show_rb();
 
   t.erase(t.begin());
+  t.erase(--t.end());
   t.erase(t.begin());
+  show_rb();
+
+  t.clear();
   show_rb();
 }
