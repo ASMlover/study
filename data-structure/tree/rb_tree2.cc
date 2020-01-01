@@ -527,6 +527,20 @@ private:
       --size_;
     }
   }
+
+  inline ConstLink find_aux(const ValueType& key) const noexcept {
+    ConstLink x = root();
+    ConstLink y = &head_;
+    while (x != nullptr) {
+      if (eq_fn_(key, x->value)) {
+        y = x;
+        break;
+      }
+
+      x = lt_fn_(key, x->value) ? _left(x) : _right(x);
+    }
+    return y;
+  }
 public:
   RBTree() noexcept { init(); }
   ~RBTree() noexcept { clear(); }
@@ -555,6 +569,9 @@ public:
   }
 
   void erase(ConstIter pos) { erase_aux(pos.node()); }
+
+  Iter find(const ValueType& key) noexcept { return find_aux(key); }
+  ConstIter find(const ValueType& key) const noexcept { return find_aux(key); }
 
   template <typename Function> inline void for_each(Function&& fn) {
     for (auto i = begin(); i != end(); ++i)
@@ -595,6 +612,8 @@ void test_rb2() {
   t.erase(--t.end());
   t.erase(t.begin());
   show_rb();
+
+  std::cout << "find 89: " << (t.find(89) != t.end()) << std::endl;
 
   t.clear();
   show_rb();
