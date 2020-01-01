@@ -26,8 +26,30 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 
+void test_avl();
+void test_avl2();
+void test_avl3();
+void test_avl4();
+void test_avl5();
+void test_avl6();
+void test_avl7();
+
+void test_rb();
+void test_rb2();
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
+
+  // test_avl();
+  // test_avl2();
+  // test_avl3();
+  // test_avl4();
+  // test_avl5();
+  // test_avl6();
+  // test_avl7();
+
+  // test_rb();
+  test_rb2();
 
   return 0;
 }
