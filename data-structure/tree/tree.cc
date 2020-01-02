@@ -29,6 +29,124 @@
 #include "common.hh"
 
 namespace tree {
+
+using ColorType = bool;
+static constexpr ColorType kColorRed = false;
+static constexpr ColorType kColorBlack = true;
+static constexpr int kHeightMask = 0xff;
+
+struct NodeBase;
+using BasePtr       = NodeBase*;
+using ConstBasePtr  = const NodeBase*;
+
+struct NodeBase {
+  BasePtr parent;
+  BasePtr left;
+  BasePtr right;
+
+  static inline BasePtr minimum(BasePtr x) noexcept {
+    while (x->left != nullptr)
+      x = x->left;
+    return x;
+  }
+
+  static inline ConstBasePtr minimum(ConstBasePtr x) noexcept {
+    return minimum(const_cast<BasePtr>(x));
+  }
+
+  static inline BasePtr maximum(BasePtr x) noexcept {
+    while (x->right != nullptr)
+      x = x->right;
+    return x;
+  }
+
+  static inline ConstBasePtr maximum(ConstBasePtr x) noexcept {
+    return maximum(const_cast<BasePtr>(x));
+  }
+
+  static BasePtr successor(BasePtr x) noexcept {
+    if (x->right != nullptr) {
+      x = x->right;
+      while (x->left != nullptr)
+        x = x->left;
+    }
+    else {
+      BasePtr y = x->parent;
+      while (x == y->right) {
+        x = y;
+        y = y->parent;
+      }
+      if (x->right != y)
+        x = y;
+    }
+    return x;
+  }
+
+  static ConstBasePtr successor(ConstBasePtr x) noexcept {
+    return successor(const_cast<BasePtr>(x));
+  }
+
+  static BasePtr predecessor(BasePtr x) noexcept {
+    if (x->left != nullptr) {
+      x = x->left;
+      while (x->right != nullptr)
+        x = x->right;
+    }
+    else {
+      BasePtr y = x->parent;
+      while (x == y->left) {
+        x = y;
+        y = y->parent;
+      }
+      x = y;
+    }
+    return x;
+  }
+
+  static ConstBasePtr predecessor(ConstBasePtr x) noexcept {
+    return predecessor(const_cast<BasePtr>(x));
+  }
+};
+
+struct AVLNodeBase : public NodeBase {
+  using Ptr = AVLNodeBase*;
+
+  int height;
+
+  inline int lheight() const noexcept { return left ? Ptr(left)->height : 0; }
+  inline int rheight() const noexcept { return right ? Ptr(right)->height : 0; }
+  inline void update_height() noexcept { height = Xt::max(lheight(), rheight()) + 1; }
+
+  static BasePtr predecessor(BasePtr x) noexcept {
+    return (Ptr(x)->height == kHeightMask && x->parent->parent == x)
+      ?  x->right : NodeBase::predecessor(x);
+  }
+
+  static ConstBasePtr predecessor(ConstBasePtr x) noexcept {
+    return predecessor(const_cast<BasePtr>(x));
+  }
+};
+
+struct RBNodeBase : public NodeBase {
+  using Ptr = RBNodeBase*;
+
+  ColorType color;
+
+  inline bool is_red() const noexcept { return color == kColorRed; }
+  inline bool is_black() const noexcept { return color == kColorBlack; }
+  inline void set_red() noexcept { color = kColorRed; }
+  inline void set_black() noexcept { color = kColorBlack; }
+
+  static BasePtr predecessor(BasePtr x) noexcept {
+    return (Ptr(x)->is_red() && x->parent->parent == x)
+      ? x->right : NodeBase::predecessor(x);
+  }
+
+  static ConstBasePtr predecessor(ConstBasePtr x) noexcept {
+    return predecessor(const_cast<BasePtr>(x));
+  }
+};
+
 }
 
 void test_tree() {
