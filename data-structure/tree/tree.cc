@@ -86,8 +86,12 @@ struct NodeBase {
     return successor(const_cast<BasePtr>(x));
   }
 
-  static BasePtr predecessor(BasePtr x) noexcept {
-    if (x->left != nullptr) {
+  template <typename Function>
+  static BasePtr predecessor(BasePtr x, Function&& fn) noexcept {
+    if (fn(x) && x->parent->parent == x) {
+      x = x->right;
+    }
+    else if (x->left != nullptr) {
       x = x->left;
       while (x->right != nullptr)
         x = x->right;
@@ -109,42 +113,30 @@ struct NodeBase {
 };
 
 struct AVLNodeBase : public NodeBase {
-  using Ptr = AVLNodeBase*;
-
   int height;
 
-  inline int lheight() const noexcept { return left ? Ptr(left)->height : 0; }
-  inline int rheight() const noexcept { return right ? Ptr(right)->height : 0; }
-  inline void update_height() noexcept { height = Xt::max(lheight(), rheight()) + 1; }
+  inline bool is_mask() const noexcept { return height == kHeightMask; }
 
-  static BasePtr predecessor(BasePtr x) noexcept {
-    return (Ptr(x)->height == kHeightMask && x->parent->parent == x)
-      ?  x->right : NodeBase::predecessor(x);
+  inline int lheight() const noexcept {
+    return left ? static_cast<AVLNodeBase*>(left)->height : 0;
   }
 
-  static ConstBasePtr predecessor(ConstBasePtr x) noexcept {
-    return predecessor(const_cast<BasePtr>(x));
+  inline int rheight() const noexcept {
+    return right ? static_cast<AVLNodeBase*>(right)->height : 0;
+  }
+
+  inline void update_height() noexcept {
+    height = Xt::max(lheight(), rheight()) + 1;
   }
 };
 
 struct RBNodeBase : public NodeBase {
-  using Ptr = RBNodeBase*;
-
   ColorType color;
 
   inline bool is_red() const noexcept { return color == kColorRed; }
   inline bool is_black() const noexcept { return color == kColorBlack; }
   inline void set_red() noexcept { color = kColorRed; }
   inline void set_black() noexcept { color = kColorBlack; }
-
-  static BasePtr predecessor(BasePtr x) noexcept {
-    return (Ptr(x)->is_red() && x->parent->parent == x)
-      ? x->right : NodeBase::predecessor(x);
-  }
-
-  static ConstBasePtr predecessor(ConstBasePtr x) noexcept {
-    return predecessor(const_cast<BasePtr>(x));
-  }
 };
 
 template <typename Value> struct AVLNode : public AVLNodeBase {
@@ -155,14 +147,80 @@ template <typename Value> struct RBNode : public RBNodeBase {
   Value value;
 };
 
-class IterBase {
+struct IterBase {
   NodeBase* _node{};
 
   IterBase() noexcept {}
   IterBase(BasePtr x) noexcept : _node(x) {}
   IterBase(ConstBasePtr x) noexcept : _node(const_cast<BasePtr>(x)) {}
 
+  inline bool operator==(const IterBase& x) const noexcept {
+    return _node == x._node;
+  }
+
+  inline bool operator!=(const IterBase& x) const noexcept {
+    return _node != x._node;
+  }
+
   inline void increment() noexcept { _node = NodeBase::successor(_node); }
+
+  template <typename Function> inline void decrement(Function&& fn) noexcept {
+    _node = NodeBase::predecessor(_node, std::move(fn));
+  }
+};
+
+template <typename _Tp, typename _Ref, typename _Ptr, typename _Node>
+struct Iterator : public IterBase {
+  using Iter = Iterator<_Tp, _Tp&, _Tp*, _Node>;
+  using Self = Iterator<_Tp, _Ref, _Ptr, _Node>;
+  using Ref  = _Ref;
+  using Ptr  = _Ptr;
+  using Link = _Node*;
+
+  Iterator() noexcept {}
+  Iterator(BasePtr x) noexcept : IterBase(x) {}
+  Iterator(ConstBasePtr x) noexcept : IterBase(x) {}
+  Iterator(const Iter& x) noexcept : IterBase(x._node) {}
+
+  inline Ref operator*() const noexcept { return Link(_node)->value; }
+  inline Ptr operator->() const noexcept { return &Link(_node)->value; }
+
+  Self& operator++() noexcept { increment(); return *this; }
+  Self operator++(int) noexcept { Self tmp(*this); increment(); return tmp; }
+};
+
+template <typename _Tp, typename _Ref, typename _Ptr>
+struct AVLIter : public Iterator<_Tp, _Ref, _Ptr, AVLNode<_Tp>> {
+  using Self = AVLIter<_Tp, _Ref, _Ptr>;
+  using Link = AVLNode<_Tp>*;
+
+  Self& operator--() noexcept {
+    decrement([](BasePtr x) -> bool { return Link(x)->is_mask(); });
+    return *this;
+  }
+
+  Self operator--(int) noexcept {
+    Self tmp(*this);
+    decrement([](BasePtr x) -> bool { return Link(x)->is_mask(); });
+    return tmp;
+  }
+};
+
+template <typename _Tp, typename _Ref, typename _Ptr>
+struct RBIter : public Iterator<_Tp, _Ref, _Ptr, RBNode<_Tp>> {
+  using Self = RBIter<_Tp, _Ref, _Ptr>;
+  using Link = RBNode<_Tp>*;
+
+  Self& operator--() noexcept {
+    decrement([](BasePtr x) -> bool { return Link(x)->is_red(); });
+    return *this;
+  }
+
+  Self operator--(int) noexcept {
+    Self tmp(*this);
+    decrement([](BasePtr x) -> bool { return Link(x)->is_red(); });
+    return tmp;
+  }
 };
 
 }
