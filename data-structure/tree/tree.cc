@@ -86,9 +86,9 @@ struct NodeBase {
     return successor(const_cast<BasePtr>(x));
   }
 
-  template <typename Function>
-  static BasePtr predecessor(BasePtr x, Function&& fn) noexcept {
-    if (fn(x) && x->parent->parent == x) {
+  template <typename Checker>
+  static BasePtr predecessor(BasePtr x, Checker&& checker) noexcept {
+    if (checker(x)) {
       x = x->right;
     }
     else if (x->left != nullptr) {
@@ -115,7 +115,9 @@ struct NodeBase {
 struct AVLNodeBase : public NodeBase {
   int height;
 
-  inline bool is_mask() const noexcept { return height == kHeightMask; }
+  inline bool is_root() const noexcept {
+    return height == kHeightMask && parent->parent == this;
+  }
 
   inline int lheight() const noexcept {
     return left ? static_cast<AVLNodeBase*>(left)->height : 0;
@@ -133,11 +135,66 @@ struct AVLNodeBase : public NodeBase {
 struct RBNodeBase : public NodeBase {
   ColorType color;
 
+  inline bool is_root() const noexcept {
+    return color == kColorRed && parent->parent == this;
+  }
+
   inline bool is_red() const noexcept { return color == kColorRed; }
   inline bool is_black() const noexcept { return color == kColorBlack; }
   inline void set_red() noexcept { color = kColorRed; }
   inline void set_black() noexcept { color = kColorBlack; }
 };
+
+namespace details {
+  inline void transplant(BasePtr u, BasePtr v, BasePtr& root) noexcept {
+    if (u->parent == nullptr)
+      root = v;
+    else if (u->parent->left = u)
+      u->parent->left = v;
+    else
+      u->parent->right = v;
+  }
+
+  inline BasePtr left_rotate(BasePtr x, BasePtr& root) noexcept {
+    //        |                   |
+    //        x                   y
+    //         \                 / \
+    //          y               x   b
+    //         / \               \
+    //        a   b               a
+
+    BasePtr y = x->right;
+    x->right = y->left;
+    if (x->right != nullptr)
+      x->right->parent = x;
+    y->parent = x->parent;
+    transplant(x, y, root);
+    y->left = x;
+    x->parent = y;
+
+    return y;
+  }
+
+  inline BasePtr right_rotate(BasePtr x, BasePtr& root) noexcept {
+    //        |                   |
+    //        x                   y
+    //       /                   / \
+    //      y                   a   x
+    //     / \                     /
+    //    a   b                   b
+
+    BasePtr y = x->left;
+    x->left = y->right;
+    if (x->left != nullptr)
+      x->left->parent = x;
+    y->parent = x->parent;
+    transplant(x, y, root);
+    y->right = x;
+    x->parent = y;
+
+    return y;
+  }
+}
 
 template <typename Value> struct AVLNode : public AVLNodeBase {
   Value value;
@@ -187,43 +244,94 @@ struct Iterator : public IterBase {
 
   Self& operator++() noexcept { increment(); return *this; }
   Self operator++(int) noexcept { Self tmp(*this); increment(); return tmp; }
-};
-
-template <typename _Tp, typename _Ref, typename _Ptr>
-struct AVLIter : public Iterator<_Tp, _Ref, _Ptr, AVLNode<_Tp>> {
-  using Self = AVLIter<_Tp, _Ref, _Ptr>;
-  using Link = AVLNode<_Tp>*;
 
   Self& operator--() noexcept {
-    decrement([](BasePtr x) -> bool { return Link(x)->is_mask(); });
+    decrement([](BasePtr x) -> bool { return Link(x)->is_root(); });
     return *this;
   }
 
   Self operator--(int) noexcept {
     Self tmp(*this);
-    decrement([](BasePtr x) -> bool { return Link(x)->is_mask(); });
+    decrement([](BasePtr x) -> bool { return Link(x)->is_root(); });
     return tmp;
   }
 };
 
-template <typename _Tp, typename _Ref, typename _Ptr>
-struct RBIter : public Iterator<_Tp, _Ref, _Ptr, RBNode<_Tp>> {
-  using Self = RBIter<_Tp, _Ref, _Ptr>;
-  using Link = RBNode<_Tp>*;
+template <typename Tp, typename Node> class TreeBase {
+public:
+  using ValueType = Tp;
+  using SizeType  = std::size_t;
+  using Iter      = Iterator<Tp, Tp&, Tp*, Node>;
+  using ConstIter = Iterator<Tp, const Tp&, const Tp*, Node>;
+  using Ref       = Tp&;
+  using ConstRef  = const Tp&;
+protected:
+  using Link      = Node*;
+  using ConstLink = const Node*;
+  using Alloc     = Xt::SimpleAlloc<Node>;
 
-  Self& operator--() noexcept {
-    decrement([](BasePtr x) -> bool { return Link(x)->is_red(); });
-    return *this;
+  SizeType size_{};
+  Node head_{};
+
+  static inline Link _parent(BasePtr x) noexcept { return Link(x->parent); }
+  static inline ConstLink _parent(ConstBasePtr x) noexcept { return ConstLink(x->parent); }
+  static inline Link _left(BasePtr x) noexcept { return Link(x->left); }
+  static inline ConstLink _left(ConstBasePtr x) noexcept { return ConstLink(x->left); }
+  static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
+  static inline ConstLink _right(ConstBasePtr x) noexcept { return ConstLink(x->right); }
+
+  inline Link& root() noexcept { return (Link&)head_.parent; }
+  inline ConstLink& root() const noexcept { return (ConstLink&)head_.parent; }
+  inline Link& lmost() noexcept { return (Link&)head_.left; }
+  inline ConstLink& lmost() const noexcept { return (ConstLink&)head_.left; }
+  inline Link& rmost() noexcept { return (Link&)head_.right; }
+  inline ConstLink& rmost() const noexcept { return (ConstLink&)head_.right; }
+public:
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline SizeType size() const noexcept { return size_; }
+  inline Iter begin() noexcept { return Iter(head_.left); }
+  inline ConstIter begin() const noexcept { return ConstIter(head_.left); }
+  inline Iter end() noexcept { return Iter(&head_); }
+  inline ConstIter end() const noexcept { return ConstIter(&head_); }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline ConstRef get_head() const noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(--end()); }
+  inline ConstRef get_tail() const noexcept { return *(--end()); }
+
+  template <typename Function> inline void for_each(Function&& fn) {
+    for (auto i = begin(); i != end(); ++i)
+      fn(*i);
   }
+};
 
-  Self operator--(int) noexcept {
-    Self tmp(*this);
-    decrement([](BasePtr x) -> bool { return Link(x)->is_red(); });
-    return tmp;
+template <typename Tp>
+class AVLTree final : public TreeBase<Tp, AVLNode<Tp>>, private UnCopyable {
+  inline void init() noexcept {
+    size_ = 0;
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.height = kHeightMask;
+  }
+public:
+  AVLTree() noexcept { init(); }
+  ~AVLTree() noexcept { clear(); }
+
+  void clear() {
   }
 };
 
 }
 
+template <typename Tree> void show_tree(Tree& t, const std::string& s) {
+  std::cout << "\n" << s << " size: " << t.size() << std::endl;
+  if (!t.empty()) {
+    std::cout << s << "{" << t.get_head() << ", " << t.get_tail() << "}" << std::endl;
+  }
+  for (auto i = t.begin(); i != t.end(); ++i)
+    std::cout << s << " item value: " << *i << std::endl;
+}
+
 void test_tree() {
+  tree::AVLTree<int> t;
+  show_tree(t, "avltree");
 }
