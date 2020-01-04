@@ -147,6 +147,24 @@ struct RBNodeBase : public NodeBase {
   }
 };
 
+template <typename Value> struct AVLNode : public AVLNodeBase {
+  Value value;
+};
+
+template <typename Value> struct RBNode : public RBNodeBase {
+  Value value;
+};
+
+class IterBase {
+  NodeBase* _node{};
+
+  IterBase() noexcept {}
+  IterBase(BasePtr x) noexcept : _node(x) {}
+  IterBase(ConstBasePtr x) noexcept : _node(const_cast<BasePtr>(x)) {}
+
+  inline void increment() noexcept { _node = NodeBase::successor(_node); }
+};
+
 }
 
 void test_tree() {
