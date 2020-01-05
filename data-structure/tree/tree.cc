@@ -194,6 +194,102 @@ namespace details {
 
     return y;
   }
+
+  namespace avl {
+    inline AVLNodeBase* left_fixup(AVLNodeBase* a, BasePtr& root) noexcept {
+      //      |                   |                   |
+      //      a                   a                   c
+      //     / \                 / \                 / \
+      //   [d]  b              [d]  c               /   \
+      //       / \                 / \             a     b
+      //      c  [g]              e   b           / \   / \
+      //     / \                     / \        [d]  e b  [g]
+      //    e   f                   f  [g]
+
+      AVLNodeBase* b = (AVLNodeBase*)a->right;
+      if (b->lheight() > b->rheight()) {
+        b = (AVLNodeBase*)right_rotate(b, root);
+        ((AVLNodeBase*)b->right)->update_height();
+        b->update_height();
+      }
+      a = (AVLNodeBase*)left_rotate(a, root);
+      ((AVLNodeBase*)a->left)->update_height();
+      a->update_height();
+
+      return a;
+    }
+
+    inline AVLNodeBase* right_fixup(AVLNodeBase* a, BasePtr& root) noexcept {
+      //      |                   |                   |
+      //      a                   a                   c
+      //     / \                 / \                 / \
+      //    b  [g]              c  [g]              /   \
+      //   / \                 / \                 b     a
+      // [d]  c               b   f               / \   / \
+      //     / \             / \                [d]  e f  [g]
+      //    e   f          [d]  e
+
+      AVLNodeBase* b = (AVLNodeBase*)a->left;
+      if (b->lheight() < b->rheight()) {
+        b = (AVLNodeBase*)left_rotate(b, root);
+        ((AVLNodeBase*)b->left)->update_height();
+        b->update_height();
+      }
+      a = (AVLNodeBase*)right_rotate(a, root);
+      ((AVLNodeBase*)a->right)->update_height();
+      a->update_height();
+
+      return a;
+    }
+
+    inline void fixup(BasePtr x, BasePtr& root) noexcept {
+      AVLNodeBase* node = (AVLNodeBase*)x;
+      while (node != root) {
+        int lh = node->lheight();
+        int rh = node->rheight();
+        int height = Xt::max(lh, rh) + 1;
+        int diff = lh - rh;
+
+        if (node->height != height)
+          node->height = height;
+        else if (diff >= -1 && diff <= 1)
+          break;
+
+        if (diff <= -2)
+          node = left_fixup(node, root);
+        else if (diff >= 2)
+          node = right_fixup(node, root);
+
+        node = (AVLNodeBase*)node->parent;
+      }
+    }
+
+    inline void insert(
+        bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+      BasePtr& root = header.parent;
+
+      x->parent = p;
+      x->left = x->right = nullptr;
+      ((AVLNodeBase*)x)->height = 0;
+
+      if (insert_left) {
+        p->left = x;
+        if (p == &header)
+          header.parent = header.right = x;
+        else if (p == header.left)
+          header.left = x;
+      }
+      else {
+        p->right = x;
+        if (p == header.right)
+          header.right = x;
+      }
+      fixup(x, root);
+    }
+  }
+
+  namespace rb {
+  }
 }
 
 template <typename Value> struct AVLNode : public AVLNodeBase {
@@ -257,7 +353,9 @@ struct Iterator : public IterBase {
   }
 };
 
-template <typename Tp, typename Node> class TreeBase {
+template <typename Tp, typename Node,
+         typename Less = std::less<Tp>, typename Equal = std::equal_to<Tp>>
+class TreeBase {
 public:
   using ValueType = Tp;
   using SizeType  = std::size_t;
@@ -272,6 +370,8 @@ protected:
 
   SizeType size_{};
   Node head_{};
+  Less lt_comp_{};
+  Equal eq_comp_{};
 
   static inline Link _parent(BasePtr x) noexcept { return Link(x->parent); }
   static inline ConstLink _parent(ConstBasePtr x) noexcept { return ConstLink(x->parent); }
@@ -286,6 +386,65 @@ protected:
   inline ConstLink& lmost() const noexcept { return (ConstLink&)head_.left; }
   inline Link& rmost() noexcept { return (Link&)head_.right; }
   inline ConstLink& rmost() const noexcept { return (ConstLink&)head_.right; }
+
+  inline Link get_node() noexcept { return Alloc::allocate(); }
+  inline void put_node(Link p) noexcept { Alloc::deallocate(p); }
+
+  Link create_node(const ValueType& value) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, value);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  Link create_node(ValueType&& value) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::move(value));
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename... Args> Link create_node(Args&&... args) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::forward<Args>(args)...);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  void destroy_node(Link p) {
+    Xt::destroy(&p->value);
+    put_node(p);
+  }
+
+  inline std::tuple<bool, Link, bool> find_insert_pos(const ValueType& value) {
+    Link x = root();
+    Link p = &head_;
+    while (x != nullptr) {
+      if (eq_comp_(value, x->value))
+        return std::make_tuple(false, nullptr, false);
+
+      p = x;
+      x = lt_comp_(value, x->value) ? _left(x) : _right(x);
+    }
+    bool insert_left = x != nullptr || p == &head_ || lt_comp_(value, p->value);
+
+    return std::make_tuple(true, p, insert_left);
+  }
 public:
   inline bool empty() const noexcept { return size_ == 0; }
   inline SizeType size() const noexcept { return size_; }
@@ -306,17 +465,54 @@ public:
 
 template <typename Tp>
 class AVLTree final : public TreeBase<Tp, AVLNode<Tp>>, private UnCopyable {
+  using ValueType = Tp;
+
   inline void init() noexcept {
     size_ = 0;
     head_.parent = nullptr;
     head_.left = head_.right = &head_;
     head_.height = kHeightMask;
   }
+
+  void insert_aux(const ValueType& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      details::avl::insert(insert_left, create_node(value), p, head_);
+      ++size_;
+    }
+  }
+
+  void insert_aux(ValueType&& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      details::avl::insert(insert_left, create_node(std::move(value)), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename... Args> void insert_aux(Args&&... args) {
+    auto x = create_node(std::forward<Args>(args)...);
+    auto [r, p, insert_left] = find_insert_pos(x->value);
+    if (r) {
+      details::avl::insert(insert_left, x, p, head_);
+      ++size_;
+    }
+    else {
+      put_node(x);
+    }
+  }
 public:
   AVLTree() noexcept { init(); }
   ~AVLTree() noexcept { clear(); }
 
   void clear() {
+  }
+
+  void insert(const ValueType& x) { insert_aux(x); }
+  void insert(ValueType&& x) { insert_aux(std::move(x)); }
+
+  template <typename... Args> void insert(Args&&... args) {
+    insert_aux(std::forward<Args>(args)...);
   }
 };
 
@@ -333,5 +529,13 @@ template <typename Tree> void show_tree(Tree& t, const std::string& s) {
 
 void test_tree() {
   tree::AVLTree<int> t;
+  show_tree(t, "avltree");
+
+  t.insert(34);
+  t.insert(56);
+  t.insert(23);
+  t.insert(77);
+  t.insert(19);
+  t.insert(7);
   show_tree(t, "avltree");
 }
