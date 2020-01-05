@@ -499,6 +499,28 @@ protected:
       --size_;
     }
   }
+
+  void tear_subtree(Link x) {
+    while (x != nullptr) {
+      tear_subtree(_right(x));
+      Link y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
+
+  inline ConstLink find_aux(const ValueType& key) const noexcept {
+    ConstLink x = root();
+    ConstLink y = &head_;
+    while (x != nullptr) {
+      if (eq_comp_(key, x->value)) {
+        y = x;
+        break;
+      }
+      x = lt_comp_(key, x->value) ? _left(x) : _right(x);
+    }
+    return y;
+  }
 public:
   inline bool empty() const noexcept { return size_ == 0; }
   inline SizeType size() const noexcept { return size_; }
@@ -562,6 +584,8 @@ public:
   ~AVLTree() noexcept { clear(); }
 
   void clear() {
+    tear_subtree(root());
+    init();
   }
 
   void insert(const ValueType& x) { insert_aux(x); }
@@ -572,6 +596,14 @@ public:
   }
 
   void erase(ConstIter pos) { erase_aux(pos._node, details::avl::erase); }
+
+  Iter find(const ValueType& key) noexcept {
+    return Iter(find_aux(key));
+  }
+
+  ConstIter find(const ValueType& key) const noexcept {
+    return ConstIter(find_aux(key));
+  }
 };
 
 }
@@ -600,5 +632,8 @@ void test_tree() {
   t.erase(t.begin());
   t.erase(t.begin());
   t.erase(--t.end());
+  show_tree(t, "avltree");
+
+  t.clear();
   show_tree(t, "avltree");
 }
