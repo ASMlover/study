@@ -149,7 +149,7 @@ namespace details {
   inline void transplant(BasePtr u, BasePtr v, BasePtr& root) noexcept {
     if (u->parent == nullptr)
       root = v;
-    else if (u->parent->left = u)
+    else if (u->parent->left == u)
       u->parent->left = v;
     else
       u->parent->right = v;
@@ -270,7 +270,7 @@ namespace details {
 
       x->parent = p;
       x->left = x->right = nullptr;
-      ((AVLNodeBase*)x)->height = 0;
+      ((AVLNodeBase*)x)->height = 1;
 
       if (insert_left) {
         p->left = x;
@@ -285,6 +285,50 @@ namespace details {
           header.right = x;
       }
       fixup(x, root);
+    }
+
+    inline void erase(BasePtr x, NodeBase& header) noexcept {
+      BasePtr& root = header.parent;
+      BasePtr& lmost = header.left;
+      BasePtr& rmost = header.right;
+      BasePtr z = x;
+
+      BasePtr y = nullptr;
+      BasePtr p = nullptr;
+      if (x->left != nullptr && x->right != nullptr) {
+        x = NodeBase::minimum(x->right);
+        y = x->right;
+        p = x->parent;
+        if (y != nullptr)
+          y->parent = p;
+        transplant(x, y, root);
+        if (x->parent == z)
+          p = x;
+        x->parent = z->parent;
+        x->left = z->left;
+        x->right = z->right;
+        ((AVLNodeBase*)x)->height = ((AVLNodeBase*)z)->height;
+        transplant(z, x, root);
+        x->left->parent = x;
+        if (x->right != nullptr)
+          x->right->parent = x;
+      }
+      else {
+        y = x->left != nullptr ? x->left : x->right;
+        p = x->parent;
+        transplant(x, y, root);
+        if (y != nullptr)
+          y->parent = p;
+      }
+      if (p != nullptr)
+        fixup(p, root);
+
+      if (root == z)
+        root = y;
+      if (lmost == z || lmost == nullptr)
+        lmost = root != nullptr ? NodeBase::minimum(root) : &header;
+      if (rmost == z || rmost == nullptr)
+        rmost = root != nullptr ? NodeBase::maximum(root) : &header;
     }
   }
 
@@ -445,6 +489,16 @@ protected:
 
     return std::make_tuple(true, p, insert_left);
   }
+
+  template <typename Function>
+  inline void erase_aux(BasePtr x, Function&& erase_fn) {
+    Link p = Link(x);
+    if (!empty()) {
+      erase_fn(x, head_);
+      destroy_node(p);
+      --size_;
+    }
+  }
 public:
   inline bool empty() const noexcept { return size_ == 0; }
   inline SizeType size() const noexcept { return size_; }
@@ -466,6 +520,8 @@ public:
 template <typename Tp>
 class AVLTree final : public TreeBase<Tp, AVLNode<Tp>>, private UnCopyable {
   using ValueType = Tp;
+  using Iter      = Iterator<Tp, Tp&, Tp*, AVLNode<Tp>>;
+  using ConstIter = Iterator<Tp, const Tp&, const Tp*, AVLNode<Tp>>;
 
   inline void init() noexcept {
     size_ = 0;
@@ -514,6 +570,8 @@ public:
   template <typename... Args> void insert(Args&&... args) {
     insert_aux(std::forward<Args>(args)...);
   }
+
+  void erase(ConstIter pos) { erase_aux(pos._node, details::avl::erase); }
 };
 
 }
@@ -537,5 +595,10 @@ void test_tree() {
   t.insert(77);
   t.insert(19);
   t.insert(7);
+  show_tree(t, "avltree");
+
+  t.erase(t.begin());
+  t.erase(t.begin());
+  t.erase(--t.end());
   show_tree(t, "avltree");
 }
