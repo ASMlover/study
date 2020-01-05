@@ -325,10 +325,11 @@ namespace details {
 
       if (root == z)
         root = y;
-      if (lmost == z || lmost == nullptr)
-        lmost = root != nullptr ? NodeBase::minimum(root) : &header;
-      if (rmost == z || rmost == nullptr)
-        rmost = root != nullptr ? NodeBase::maximum(root) : &header;
+
+      if (lmost == z)
+        lmost = z->right == nullptr ? z->parent : NodeBase::minimum(y);
+      if (rmost == z)
+        rmost = z->left == nullptr ? z->parent : NodeBase::maximum(y);
     }
   }
 
@@ -490,8 +491,39 @@ protected:
     return std::make_tuple(true, p, insert_left);
   }
 
-  template <typename Function>
-  inline void erase_aux(BasePtr x, Function&& erase_fn) {
+  template <typename Inserter>
+  inline void insert_aux(Inserter&& insert_fn, const ValueType& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      insert_fn(insert_left, create_node(value), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename Inserter>
+  inline void insert_aux(Inserter&& insert_fn, ValueType&& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      insert_fn(insert_left, create_node(std::move(value)), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename Inserter, typename... Args>
+  inline void insert_aux(Inserter&& insert_fn, Args&&... args) {
+    Link tmp = create_node(std::forward<Args>(args)...);
+    auto [r, p, insert_left] = find_insert_pos(tmp->value);
+    if (r) {
+      insert_fn(insert_left, tmp, p, head_);
+      ++size_;
+    }
+    else {
+      destroy_node(tmp);
+    }
+  }
+
+  template <typename Eraser>
+  inline void erase_aux(Eraser&& erase_fn, BasePtr x) {
     Link p = Link(x);
     if (!empty()) {
       erase_fn(x, head_);
@@ -533,6 +565,14 @@ public:
   inline Ref get_tail() noexcept { return *(--end()); }
   inline ConstRef get_tail() const noexcept { return *(--end()); }
 
+  Iter find(const ValueType& key) noexcept {
+    return Iter(find_aux(key));
+  }
+
+  ConstIter find(const ValueType& key) const noexcept {
+    return ConstIter(find_aux(key));
+  }
+
   template <typename Function> inline void for_each(Function&& fn) {
     for (auto i = begin(); i != end(); ++i)
       fn(*i);
@@ -541,43 +581,16 @@ public:
 
 template <typename Tp>
 class AVLTree final : public TreeBase<Tp, AVLNode<Tp>>, private UnCopyable {
-  using ValueType = Tp;
-  using Iter      = Iterator<Tp, Tp&, Tp*, AVLNode<Tp>>;
-  using ConstIter = Iterator<Tp, const Tp&, const Tp*, AVLNode<Tp>>;
+  using Base      = TreeBase<Tp, AVLNode<Tp>>;
+  using ValueType = typename Base::ValueType;
+  using Iter      = typename Base::Iter;
+  using ConstIter = typename Base::ConstIter;
 
   inline void init() noexcept {
     size_ = 0;
     head_.parent = nullptr;
     head_.left = head_.right = &head_;
     head_.height = kHeightMask;
-  }
-
-  void insert_aux(const ValueType& value) {
-    auto [r, p, insert_left] = find_insert_pos(value);
-    if (r) {
-      details::avl::insert(insert_left, create_node(value), p, head_);
-      ++size_;
-    }
-  }
-
-  void insert_aux(ValueType&& value) {
-    auto [r, p, insert_left] = find_insert_pos(value);
-    if (r) {
-      details::avl::insert(insert_left, create_node(std::move(value)), p, head_);
-      ++size_;
-    }
-  }
-
-  template <typename... Args> void insert_aux(Args&&... args) {
-    auto x = create_node(std::forward<Args>(args)...);
-    auto [r, p, insert_left] = find_insert_pos(x->value);
-    if (r) {
-      details::avl::insert(insert_left, x, p, head_);
-      ++size_;
-    }
-    else {
-      put_node(x);
-    }
   }
 public:
   AVLTree() noexcept { init(); }
@@ -588,21 +601,20 @@ public:
     init();
   }
 
-  void insert(const ValueType& x) { insert_aux(x); }
-  void insert(ValueType&& x) { insert_aux(std::move(x)); }
+  void insert(const ValueType& x) {
+    insert_aux(details::avl::insert, x);
+  }
+
+  void insert(ValueType&& x) {
+    insert_aux(details::avl::insert, std::move(x));
+  }
 
   template <typename... Args> void insert(Args&&... args) {
-    insert_aux(std::forward<Args>(args)...);
+    insert_aux(details::avl::insert, std::forward<Args>(args)...);
   }
 
-  void erase(ConstIter pos) { erase_aux(pos._node, details::avl::erase); }
-
-  Iter find(const ValueType& key) noexcept {
-    return Iter(find_aux(key));
-  }
-
-  ConstIter find(const ValueType& key) const noexcept {
-    return ConstIter(find_aux(key));
+  void erase(ConstIter pos) {
+    erase_aux(details::avl::erase, pos._node);
   }
 };
 
@@ -627,11 +639,18 @@ void test_tree() {
   t.insert(77);
   t.insert(19);
   t.insert(7);
+  t.insert(66);
+  t.insert(39);
+  t.insert(93);
   show_tree(t, "avltree");
 
   t.erase(t.begin());
   t.erase(t.begin());
   t.erase(--t.end());
+  show_tree(t, "avltree");
+
+  auto pos = t.find(56);
+  t.erase(pos);
   show_tree(t, "avltree");
 
   t.clear();
