@@ -334,6 +334,71 @@ namespace details {
   }
 
   namespace rb {
+    inline void insert_fixup(BasePtr x, BasePtr& root) noexcept {
+      while (x != root && ((RBNodeBase*)x->parent)->is_red()) {
+        if (x->parent == x->parent->parent->left) {
+          RBNodeBase* y = (RBNodeBase*)x->parent->parent->right;
+          if (y != nullptr && y->is_red()) {
+            ((RBNodeBase*)x->parent)->set_black();
+            y->set_black();
+            ((RBNodeBase*)x->parent->parent)->set_red();
+            x = x->parent->parent;
+          }
+          else {
+            if (x == x->parent->right) {
+              x = x->parent;
+              left_rotate(x, root);
+            }
+            ((RBNodeBase*)x->parent)->set_black();
+            ((RBNodeBase*)x->parent->parent)->set_red();
+            right_rotate(x->parent->parent, root);
+          }
+        }
+        else {
+          RBNodeBase* y = (RBNodeBase*)x->parent->parent->left;
+          if (y != nullptr && y->is_red()) {
+            ((RBNodeBase*)x->parent)->set_black();
+            y->set_black();
+            ((RBNodeBase*)x->parent->parent)->set_red();
+            x = x->parent->parent;
+          }
+          else {
+            if (x == x->parent->left) {
+              x = x->parent;
+              right_rotate(x, root);
+            }
+            ((RBNodeBase*)x->parent)->set_black();
+            ((RBNodeBase*)x->parent->parent)->set_red();
+            left_rotate(x->parent->parent, root);
+          }
+        }
+      }
+      ((RBNodeBase*)root)->set_black();
+    }
+
+    inline void insert(
+        bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+      BasePtr& root = header.parent;
+
+      x->parent = p;
+      x->left = x->right = nullptr;
+      ((RBNodeBase*)x)->set_red();
+
+      if (insert_left) {
+        p->left = x;
+        if (p == &header)
+          header.parent = header.right = x;
+        else if (p == header.left)
+          header.left = x;
+      }
+      else {
+        p->right = x;
+        if (p == header.right)
+          header.right = x;
+      }
+
+      insert_fixup(x, root);
+    }
   }
 }
 
@@ -618,6 +683,44 @@ public:
   }
 };
 
+template <typename Tp>
+class RBTree final : public TreeBase<Tp, RBNode<Tp>>, private UnCopyable {
+  using Base      = TreeBase<Tp, RBNode<Tp>>;
+  using ValueType = typename Base::ValueType;
+  using Iter      = typename Base::Iter;
+  using ConstIter = typename Base::ConstIter;
+
+  inline void init() noexcept {
+    size_ = 0;
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.set_red();
+  }
+public:
+  RBTree() noexcept { init(); }
+  ~RBTree() noexcept { clear(); }
+
+  void clear() {
+    tear_subtree(root());
+    init();
+  }
+
+  void insert(const ValueType& x) {
+    insert_aux(details::rb::insert, x);
+  }
+
+  void insert(ValueType&& x) {
+    insert_aux(details::rb::insert, std::move(x));
+  }
+
+  template <typename... Args> void insert(Args&&... args) {
+    insert_aux(details::rb::insert, std::forward<Args>(args)...);
+  }
+
+  void erase(ConstIter pos) {
+  }
+};
+
 }
 
 template <typename Tree> void show_tree(Tree& t, const std::string& s) {
@@ -630,29 +733,47 @@ template <typename Tree> void show_tree(Tree& t, const std::string& s) {
 }
 
 void test_tree() {
-  tree::AVLTree<int> t;
-  show_tree(t, "avltree");
+  {
+    tree::AVLTree<int> t;
+    show_tree(t, "avltree");
 
-  t.insert(34);
-  t.insert(56);
-  t.insert(23);
-  t.insert(77);
-  t.insert(19);
-  t.insert(7);
-  t.insert(66);
-  t.insert(39);
-  t.insert(93);
-  show_tree(t, "avltree");
+    t.insert(34);
+    t.insert(56);
+    t.insert(23);
+    t.insert(77);
+    t.insert(19);
+    t.insert(7);
+    t.insert(66);
+    t.insert(39);
+    t.insert(93);
+    show_tree(t, "avltree");
 
-  t.erase(t.begin());
-  t.erase(t.begin());
-  t.erase(--t.end());
-  show_tree(t, "avltree");
+    t.erase(t.begin());
+    t.erase(t.begin());
+    t.erase(--t.end());
+    show_tree(t, "avltree");
 
-  auto pos = t.find(56);
-  t.erase(pos);
-  show_tree(t, "avltree");
+    auto pos = t.find(56);
+    t.erase(pos);
+    show_tree(t, "avltree");
 
-  t.clear();
-  show_tree(t, "avltree");
+    t.clear();
+    show_tree(t, "avltree");
+  }
+
+  {
+    tree::RBTree<int> t;
+    show_tree(t, "rbtree");
+
+    t.insert(34);
+    t.insert(56);
+    t.insert(23);
+    t.insert(77);
+    t.insert(19);
+    t.insert(7);
+    t.insert(66);
+    t.insert(39);
+    t.insert(93);
+    show_tree(t, "rbtree");
+  }
 }
