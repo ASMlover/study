@@ -399,6 +399,117 @@ namespace details {
 
       insert_fixup(x, root);
     }
+
+    inline void erase_fixup(BasePtr z, BasePtr& root) noexcept {
+      RBNodeBase* x = (RBNodeBase*)z;
+      while (x != root && (x == nullptr || x->is_black())) {
+        if (x->parent->left == x) {
+          RBNodeBase* w = (RBNodeBase*)x->parent->right;
+          if (w->is_red()) {
+            w->set_black();
+            ((RBNodeBase*)x->parent)->set_red();
+            left_rotate(x->parent, root);
+            w = (RBNodeBase*)x->parent->right;
+          }
+
+          if (((RBNodeBase*)w->left)->is_black()
+              && ((RBNodeBase*)w->right)->is_black()) {
+            w->set_red();
+            x = (RBNodeBase*)x->parent;
+          }
+          else {
+            if (((RBNodeBase*)w->right)->is_black()) {
+              ((RBNodeBase*)w->left)->set_black();
+              w->set_red();
+              right_rotate(w, root);
+              w = (RBNodeBase*)x->parent->right;
+            }
+            w->color = ((RBNodeBase*)x->parent)->color;
+            ((RBNodeBase*)x->parent)->set_black();
+            ((RBNodeBase*)w->right)->set_black();
+            left_rotate(x->parent, root);
+            x = (RBNodeBase*)root;
+          }
+        }
+        else {
+          RBNodeBase* w = (RBNodeBase*)x->parent->left;
+          if (w->is_red()) {
+            w->set_black();
+            ((RBNodeBase*)x->parent)->set_red();
+            right_rotate(x->parent, root);
+            w = (RBNodeBase*)x->parent->left;
+          }
+
+          if (((RBNodeBase*)w->left)->is_black()
+              && ((RBNodeBase*)w->right)->is_black()) {
+            w->set_red();
+            x = (RBNodeBase*)x->parent;
+          }
+          else {
+            if (((RBNodeBase*)w->left)->is_black()) {
+              ((RBNodeBase*)w->right)->set_black();
+              w->set_red();
+              left_rotate(w, root);
+              w = (RBNodeBase*)x->parent->left;
+            }
+            w->color = ((RBNodeBase*)x->parent)->color;
+            ((RBNodeBase*)x->parent)->set_black();
+            ((RBNodeBase*)w->left)->set_black();
+            right_rotate(x->parent, root);
+            x = (RBNodeBase*)root;
+          }
+        }
+      }
+      x->set_black();
+    }
+
+    inline void erase(BasePtr z, NodeBase& header) noexcept {
+      BasePtr& root = header.parent;
+      BasePtr& lmost = header.left;
+      BasePtr& rmost = header.right;
+
+      BasePtr y = z;
+      BasePtr x = nullptr;
+      if (y->left == nullptr) {
+        x = y->right;
+      }
+      else if (y->right == nullptr) {
+        x = y->left;
+      }
+      else {
+        y = NodeBase::minimum(y->right);
+        x = y->right;
+      }
+
+      if (y != z) {
+        y->left = z->left;
+        y->left->parent = y;
+        if (y != z->right) {
+          if (x != nullptr)
+            x->parent = y->parent;
+          y->parent->left = x;
+          y->right = z->right;
+          y->right->parent = y;
+        }
+        transplant(z, y, root);
+        y->parent = z->parent;
+        std::swap(((RBNodeBase*)y)->color, ((RBNodeBase*)z)->color);
+        y = z;
+      }
+      else {
+        if (x != nullptr)
+          x->parent = y->parent;
+        transplant(z, x, root);
+
+        if (lmost == z)
+          lmost = z->right == nullptr ? z->parent : NodeBase::minimum(x);
+        if (rmost == z)
+          rmost = z->left == nullptr ? z->parent : NodeBase::maximum(x);
+      }
+
+      if (((RBNodeBase*)y)->is_black())
+        erase_fixup(x, root);
+    }
   }
 }
 
@@ -445,6 +556,7 @@ struct Iterator : public IterBase {
   Iterator(ConstBasePtr x) noexcept : IterBase(x) {}
   Iterator(const Iter& x) noexcept : IterBase(x._node) {}
 
+  inline Link node() const noexcept { return Link(_node); }
   inline Ref operator*() const noexcept { return Link(_node)->value; }
   inline Ptr operator->() const noexcept { return &Link(_node)->value; }
 
@@ -679,7 +791,7 @@ public:
   }
 
   void erase(ConstIter pos) {
-    erase_aux(details::avl::erase, pos._node);
+    erase_aux(details::avl::erase, pos.node());
   }
 };
 
@@ -718,6 +830,7 @@ public:
   }
 
   void erase(ConstIter pos) {
+    erase_aux(details::rb::erase, pos.node());
   }
 };
 
@@ -774,6 +887,18 @@ void test_tree() {
     t.insert(66);
     t.insert(39);
     t.insert(93);
+    show_tree(t, "rbtree");
+
+    t.erase(t.begin());
+    t.erase(t.begin());
+    t.erase(--t.end());
+    show_tree(t, "rbtree");
+
+    auto pos = t.find(56);
+    t.erase(pos);
+    show_tree(t, "rbtree");
+
+    t.clear();
     show_tree(t, "rbtree");
   }
 }
