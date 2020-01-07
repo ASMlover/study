@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ASMlover. All rights reserved.
+// Copyright (c) 2020 ASMlover. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -24,38 +24,20 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#pragma once
 
-void test_avl();
-void test_avl2();
-void test_avl3();
-void test_avl4();
-void test_avl5();
-void test_avl6();
-void test_avl7();
+#include <tuple>
+#include "common.hh"
 
-void test_rb();
-void test_rb2();
+namespace xt::tree {
 
-void test_tree();
-void test_tree2();
+using ColorType = bool;
+static constexpr ColorType kColorRed = false;
+static constexpr ColorType kColorBlk = true;
+static constexpr int kHeightMark = 0xff;
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+struct NodeBase;
+using BasePtr      = NodeBase*;
+using ConstBasePtr = const NodeBase*;
 
-  // test_avl();
-  // test_avl2();
-  // test_avl3();
-  // test_avl4();
-  // test_avl5();
-  // test_avl6();
-  // test_avl7();
-
-  // test_rb();
-  // test_rb2();
-
-  // test_tree();
-  test_tree2();
-
-  return 0;
 }
