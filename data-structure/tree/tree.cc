@@ -845,6 +845,19 @@ template <typename Tree> void show_tree(Tree& t, const std::string& s) {
     std::cout << s << " item value: " << *i << std::endl;
 }
 
+struct Value {
+  int val_field{};
+
+  Value(int x = 0) noexcept : val_field(x) {}
+
+  bool operator==(Value x) const noexcept { return val_field == x.val_field; }
+  bool operator<(Value x) const noexcept { return val_field < x.val_field; }
+};
+
+std::ostream& operator<<(std::ostream& out, Value v) noexcept {
+  return out << "Value<" << v.val_field << ">";
+}
+
 void test_tree() {
   {
     tree::AVLTree<int> t;
@@ -900,5 +913,18 @@ void test_tree() {
 
     t.clear();
     show_tree(t, "rbtree");
+  }
+
+  {
+    tree::AVLTree<Value> t;
+    t.insert(56);
+    t.insert(78);
+    t.insert(90);
+    t.insert(34);
+    t.insert(13);
+    show_tree(t, "rbtree-value");
+
+    t.clear();
+    show_tree(t, "rbtree-value");
   }
 }
