@@ -27,6 +27,29 @@
 #include "xt_tree.hh"
 
 namespace xt::tree {
+
+namespace impl {
+  inline BasePtr minimum(BasePtr x) noexcept {
+    while (x->left != nullptr)
+      x = x->left;
+    return x;
+  }
+
+  inline ConstBasePtr minimum(ConstBasePtr x) noexcept {
+    return minimum(const_cast<BasePtr>(x));
+  }
+
+  inline BasePtr maximum(BasePtr x) noexcept {
+    while (x->right != nullptr)
+      x = x->right;
+    return x;
+  }
+
+  inline ConstBasePtr maximum(ConstBasePtr x) noexcept {
+    return maximum(const_cast<BasePtr>(x));
+  }
+}
+
 }
 
 void test_tree2() {

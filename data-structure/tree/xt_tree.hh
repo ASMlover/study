@@ -40,4 +40,62 @@ struct NodeBase;
 using BasePtr      = NodeBase*;
 using ConstBasePtr = const NodeBase*;
 
+struct NodeBase {
+  BasePtr parent;
+  BasePtr left;
+  BasePtr right;
+
+  template <typename Target> inline Target* as() noexcept {
+    return static_cast<Target*>(this);
+  }
+
+  static BasePtr successor(BasePtr x) noexcept {
+    if (x->right != nullptr) {
+      x = x->right;
+      while (x->left != nullptr)
+        x = x->left;
+    }
+    else {
+      BasePtr y = x->parent;
+      while (x == y->right) {
+        x = y;
+        y = y->parent;
+      }
+      if (x->right != y)
+        x = y;
+    }
+    return x;
+  }
+
+  static ConstBasePtr successor(ConstBasePtr x) noexcept {
+    return successor(const_cast<BasePtr>(x));
+  }
+
+  template <typename HeadChecker>
+  static BasePtr predecessor(BasePtr x, HeadChecker&& checker) noexcept {
+    if (checker(x)) {
+      x = x->right;
+    }
+    else if (x->left != nullptr) {
+      x = x->left;
+      while (x->right != nullptr)
+        x = x->right;
+    }
+    else {
+      BasePtr y = x->parent;
+      while (x == y->left) {
+        x = y;
+        y = y->parent;
+      }
+      x = y;
+    }
+    return x;
+  }
+
+  template <typename HeadChecker>
+  static ConstBasePtr predecessor(ConstBasePtr x, HeadChecker&& checker) noexcept {
+    return predecessor(const_cast<BasePtr>(x), std::move(checker));
+  }
+};
+
 }
