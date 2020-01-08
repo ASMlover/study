@@ -111,6 +111,8 @@ struct NodeBase {
 struct AVLNodeBase : public NodeBase {
   int height;
 
+  inline void set_marker() noexcept { height = kHeightMark; }
+
   inline bool is_header() const noexcept {
     return height == kHeightMark && parent->parent == this;
   }
@@ -130,6 +132,8 @@ struct AVLNodeBase : public NodeBase {
 
 struct RBNodeBase : public NodeBase {
   ColorType color;
+
+  inline void set_marker() noexcept { as_red(); }
 
   inline bool is_header() const noexcept {
     return is_red() && parent->parent == this;
@@ -202,6 +206,202 @@ struct TreeIter : public TIterBase {
     Self tmp(*this);
     decrement([](BasePtr x) -> { return Link(x)->is_header(); });
     return tmp;
+  }
+};
+
+template <typename Tp, typename Node,
+         typename Less = std::less<Tp>, typename Equal = std::equal_to<Tp>>
+class TreeBase : private UnCopyable {
+public:
+  using ValueType = Tp;
+  using SizeType  = std::size_t;
+  using Iter      = TreeIter<Tp, Tp&, Tp*, Node>;
+  using ConstIter = TreeIter<Tp, const Tp&, const Tp*, Node>;
+  using Ref       = Tp&;
+  using ConstRef  = const Tp&;
+protected:
+  using Link      = Node*;
+  using ConstLink = const Node*;
+  using Alloc     = Xt::SimpleAlloc<Node>;
+
+  SizeType size_{};
+  Node head_{};
+  Less lt_comp_{};
+  Equal eq_comp_{};
+
+  static inline Link _parent(BasePtr x) noexcept { return Link(x->parent); }
+  static inline ConstLink _parent(ConstBasePtr x) noexcept { return ConstLink(x->parent); }
+  static inline Link _left(BasePtr x) noexcept { return Link(x->left); }
+  static inline ConstLink _left(ConstBasePtr x) noexcept { return ConstLink(x->left); }
+  static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
+  static inline ConstLink _right(ConstBasePtr x) noexcept { return ConstLink(x->right); }
+
+  inline void init() noexcept {
+    size_ = 0;
+    head_.parent = nullptr;
+    head_.left = head_.right = &head_;
+    head_.set_marker();
+  }
+
+  inline Link root() noexcept { return Link(head_.parent); }
+  inline ConstLink root() const noexcept { return ConstLink(head_.parent); }
+  inline Link tail() noexcept { return Link(&head_); }
+  inline ConstLink tail() const noexcept { return ConstLink(&head_); }
+  inline Link lmost() noexcept { return Link(head_.left); }
+  inline ConstLink lmost() const noexcept { return ConstLink(head_.left); }
+  inline Link rmost() noexcept { return Link(head_.right); }
+  inline ConstLink rmost() const noexcept { return ConstLink(head_.right); }
+
+  inline Link get_node() noexcept { return Alloc::allocate(); }
+  inline void put_node(Link p) noexcept { Alloc::deallocate(p); }
+
+  Link create_node(const ValueType& val) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, val);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  Link create_node(ValueType&& val) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::move(val));
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename... Args> Link create_node(Args&&... args) {
+    Link tmp = get_node();
+    try {
+      Xt::construct(&tmp->value, std::forward<Args>(args)...);
+    }
+    catch (...) {
+      put_node(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  void destroy_node(Link p) {
+    Xt::destroy(&p->value);
+    put_node(p);
+  }
+
+  inline std::tuple<bool, Link, bool> find_insert_pos(const ValueType& val) {
+    Link x = root();
+    Link p = tail();
+    while (x != nullptr) {
+      if (eq_comp_(val, x->value))
+        return std::make_tuple(false, nullptr, false);
+
+      p = x;
+      x = lt_comp_(val, x->value) ? _left(x) : _right(x);
+    }
+
+    return std::make_tuple(true, p,
+        x != nullptr || p == tail() || lt_comp_(val, p->value));
+  }
+
+  template <typename Insertion>
+  inline void insert_aux(Insertion&& insert_fn, const ValueType& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      insert_fn(insert_left, create_node(value), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename Insertion>
+  inline void insert_aux(Insertion&& insert_fn, ValueType&& value) {
+    auto [r, p, insert_left] = find_insert_pos(value);
+    if (r) {
+      insert_fn(insert_left, create_node(std::move(value)), p, head_);
+      ++size_;
+    }
+  }
+
+  template <typename Insertion, typename... Args>
+  inline void insert_aux(Insertion&& insert_fn, Args&&... args) {
+    Link tmp = create_node(std::forward<Args>(args)...);
+    auto [r, p, insert_left] = find_insert_pos(tmp->value);
+    if (r) {
+      insert_fn(insert_left, tmp, p, head_);
+      ++size_;
+    }
+    else {
+      destroy_node(tmp);
+    }
+  }
+
+  template <typename Eraser> inline void erase_aux(Eraser&& erase_fn, Link p) {
+    if (!empty()) {
+      erase_fn(p, head_);
+      destroy_node(p);
+      --size_;
+    }
+  }
+
+  void erase_subtree(Link x) {
+    while (x != nullptr) {
+      erase_subtree(_right(x));
+      Link y = _left(x);
+      destroy_node(x);
+      x = y;
+    }
+  }
+
+  inline ConstLink find_aux(const ValueType& key) const noexcept {
+    ConstLink x = root();
+    ConstLink y = tail();
+    while (x != nullptr) {
+      if (eq_comp_(key, x->value)) {
+        y = x;
+        break;
+      }
+      x = lt_comp_(key, x->value) ? _left(x) : _right(x);
+    }
+    return y;
+  }
+public:
+  TreeBase() noexcept { init(); }
+  ~TreeBase() noexcept { clear(); }
+
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline SizeType size() const noexcept { return size_; }
+  inline Iter begin() noexcept { return head_.left; }
+  inline ConstIter begin() const noexcept { return head_.left; }
+  inline Iter end() noexcept { return &head_; }
+  inline ConstIter end() const noexcept { return &head_; }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline ConstRef get_head() const noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(--end()); }
+  inline ConstRef get_tail() const noexcept { return *(--end()); }
+
+  inline void clear() {
+    erase_subtree(root());
+    init();
+  }
+
+  inline Iter find(const ValueType& key) noexcept {
+    return find_aux(key);
+  }
+
+  inline ConstIter find(const ValueType& key) const noexcept {
+    return find_aux(key);
+  }
+
+  template <typename Visitor> inline void for_each(Visitor&& visitor) {
+    for (auto i = begin(); i != end(); ++i)
+      visitor(*i);
   }
 };
 
