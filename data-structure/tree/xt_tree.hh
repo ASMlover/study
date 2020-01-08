@@ -40,6 +40,16 @@ struct NodeBase;
 using BasePtr      = NodeBase*;
 using ConstBasePtr = const NodeBase*;
 
+namespace impl::avl {
+  void insert(bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept;
+  void erase(BasePtr x, NodeBase& header) noexcept;
+}
+
+namespace impl::rb {
+  void insert(bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept;
+  void erase(BasePtr x, NodeBase& header) noexcept;
+}
+
 struct NodeBase {
   BasePtr parent;
   BasePtr left;
@@ -95,6 +105,71 @@ struct NodeBase {
   template <typename HeadChecker>
   static ConstBasePtr predecessor(ConstBasePtr x, HeadChecker&& checker) noexcept {
     return predecessor(const_cast<BasePtr>(x), std::move(checker));
+  }
+};
+
+struct AVLNodeBase : public NodeBase {
+  int height;
+
+  inline bool is_header() const noexcept {
+    return height == kHeightMark && parent->parent == this;
+  }
+
+  inline int lheight() const noexcept {
+    return left != nullptr ? left->as<AVLNodeBase>()->height : 0;
+  }
+
+  inline int rheight() const noexcept {
+    return right != nullptr ? right->as<AVLNodeBase>()->height : 0;
+  }
+
+  inline void update_height() noexcept {
+    height = Xt::max(lheight(), rheight()) + 1;
+  }
+};
+
+struct RBNodeBase : public NodeBase {
+  ColorType color;
+
+  inline bool is_header() const noexcept {
+    return is_red() && parent->parent == this;
+  }
+
+  inline bool is_red() const noexcept { return color == kColorRed; }
+  inline bool is_blk() const noexcept { return color == kColorBlk; }
+  inline void as_red() noexcept { color = kColorRed; }
+  inline void as_blk() noexcept { color = kColorBlk; }
+  inline void set_color(ColorType c = kColorRed) noexcept { color = c; }
+};
+
+template <typename Value> struct AVLNode : public AVLNodeBase {
+  Value value;
+};
+
+template <typename Value> struct RBNode : public RBNodeBase {
+  Value value;
+};
+
+struct TIterBase {
+  NodeBase* _node{};
+
+  TIterBase() noexcept {}
+  TIterBase(BasePtr x) noexcept : _node(x) {}
+  TIterBase(ConstBasePtr x) noexcept : _node(const_cast<BasePtr>(x)) {}
+
+  inline bool operator==(const TIterBase& r) const noexcept {
+    return _node == r._node;
+  }
+
+  inline bool operator!=(const TIterBase& r) const noexcept {
+    return _node != r._node;
+  }
+
+  inline void increment() noexcept { _node = NodeBase::successor(_node); }
+
+  template <typename HeadChecker>
+  inline void decrement(HeadChecker&& checker) noexcept {
+    _node = NodeBase::predecessor(_node, std::move(checker));
   }
 };
 
