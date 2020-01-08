@@ -151,7 +151,7 @@ template <typename Value> struct RBNode : public RBNodeBase {
 };
 
 struct TIterBase {
-  NodeBase* _node{};
+  BasePtr _node{};
 
   TIterBase() noexcept {}
   TIterBase(BasePtr x) noexcept : _node(x) {}
@@ -170,6 +170,38 @@ struct TIterBase {
   template <typename HeadChecker>
   inline void decrement(HeadChecker&& checker) noexcept {
     _node = NodeBase::predecessor(_node, std::move(checker));
+  }
+};
+
+template <typename _Tp, typename _Ref, typename _Ptr, typename _Node>
+struct TreeIter : public TIterBase {
+  using Iter = TreeIter<_Tp, _Tp&, _Tp*, _Node>;
+  using Self = TreeIter<_Tp, _Ref, _Ptr, _Node>;
+  using Ref  = _Ref;
+  using Ptr  = _Ptr;
+  using Link = _Node*;
+
+  TreeIter() noexcept {}
+  TreeIter(BasePtr x) noexcept : TIterBase(x) {}
+  TreeIter(ConstBasePtr x) noexcept : TIterBase(x) {}
+  TreeIter(const Iter& x) noexcept : TIterBase(x._node) {}
+
+  inline Link node() const noexcept { return Link(_node); }
+  inline Ref operator*() const noexcept { return Link(_node)->value; }
+  inline Ptr operator->() const noexcept { return &Link(_node)->value; }
+
+  Self& operator++() noexcept { increment(); return *this; }
+  Self operator++(int) noexcept { Self tmp(*this); increment(); return tmp; }
+
+  Self& operator--() noexcept {
+    decrement([](BasePtr x) -> { return Link(x)->is_header(); });
+    return *this;
+  }
+
+  Self operator--(int) noexcept {
+    Self tmp(*this);
+    decrement([](BasePtr x) -> { return Link(x)->is_header(); });
+    return tmp;
   }
 };
 
