@@ -198,13 +198,13 @@ struct TreeIter : public TIterBase {
   Self operator++(int) noexcept { Self tmp(*this); increment(); return tmp; }
 
   Self& operator--() noexcept {
-    decrement([](BasePtr x) -> { return Link(x)->is_header(); });
+    decrement([](BasePtr x) { return Link(x)->is_header(); });
     return *this;
   }
 
   Self operator--(int) noexcept {
     Self tmp(*this);
-    decrement([](BasePtr x) -> { return Link(x)->is_header(); });
+    decrement([](BasePtr x) { return Link(x)->is_header(); });
     return tmp;
   }
 };
@@ -402,6 +402,42 @@ public:
   template <typename Visitor> inline void for_each(Visitor&& visitor) {
     for (auto i = begin(); i != end(); ++i)
       visitor(*i);
+  }
+};
+
+template <typename Tp> class AVLTree final : public TreeBase<Tp, AVLNode<Tp>> {
+  using Base      = TreeBase<Tp, AVLNode<Tp>>;
+  using ValueType = typename Base::ValueType;
+  using ConstIter = typename Base::ConstIter;
+public:
+  void insert(const ValueType& x) {
+  }
+
+  void insert(ValueType&& x) {
+  }
+
+  template <typename... Args> void insert(Args&&... args) {
+  }
+
+  void erase(ConstIter pos) {
+  }
+};
+
+template <typename Tp> class RBTree final : public TreeBase<Tp, RBNode<Tp>> {
+  using Base      = TreeBase<Tp, RBNode<Tp>>;
+  using ValueType = typename Base::ValueType;
+  using ConstIter = typename Base::ConstIter;
+public:
+  void insert(const ValueType& x) {
+  }
+
+  void insert(ValueType&& x) {
+  }
+
+  template <typename... Args> void insert(Args&&... args) {
+  }
+
+  void erase(ConstIter pos) {
   }
 };
 
