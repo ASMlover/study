@@ -52,5 +52,25 @@ namespace impl {
 
 }
 
+#include <iostream>
+
+template <typename Tree> void show_t(Tree& t, const char* s = "tree") {
+  std::cout << "\n" << s << " -> size: " << t.size() << std::endl;
+  if (!t.empty()) {
+    std::cout << s << " -> " << t.get_head() << "|" << t.get_tail() << std::endl;
+  }
+  for (auto i = t.begin(); i != t.end(); ++i)
+    std::cout << s << " -> item value: " << *i << std::endl;
+}
+
 void test_tree2() {
+  {
+    xt::tree::AVLTree<int> t;
+    show_t(t, "AVLTree");
+  }
+
+  {
+    xt::tree::RBTree<int> t;
+    show_t(t, "RBTree");
+  }
 }
