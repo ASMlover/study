@@ -409,15 +409,19 @@ template <typename Tp> class AVLTree final : public TreeBase<Tp, AVLNode<Tp>> {
   using ConstIter = typename Base::ConstIter;
 public:
   void insert(const ValueType& x) {
+    insert_aux(impl::avl::insert, x);
   }
 
   void insert(ValueType&& x) {
+    insert_aux(impl::avl::insert, std::move(x));
   }
 
   template <typename... Args> void insert(Args&&... args) {
+    insert_aux(impl::avl::insert, std::forward<Args>(args)...);
   }
 
   void erase(ConstIter pos) {
+    erase_aux(impl::avl::erase, pos.node());
   }
 };
 
@@ -427,15 +431,19 @@ template <typename Tp> class RBTree final : public TreeBase<Tp, RBNode<Tp>> {
   using ConstIter = typename Base::ConstIter;
 public:
   void insert(const ValueType& x) {
+    insert_aux(impl::rb::insert, x);
   }
 
   void insert(ValueType&& x) {
+    insert_aux(impl::rb::insert, std::move(x));
   }
 
   template <typename... Args> void insert(Args&&... args) {
+    insert_aux(impl::rb::insert, std::forward<Args>(args));
   }
 
   void erase(ConstIter pos) {
+    erase_aux(impl::rb::erase, pos.node());
   }
 };
 
