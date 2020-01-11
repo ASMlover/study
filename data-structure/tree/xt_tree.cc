@@ -212,6 +212,21 @@ void test_tree2() {
   {
     xt::tree::AVLTree<int> t;
     show_t(t, "AVLTree");
+
+    t.insert(45);
+    t.insert(89);
+    t.insert(67);
+    t.insert(34);
+    t.insert(59);
+    t.insert(2);
+    t.insert(29);
+    t.insert(17);
+    show_t(t, "AVLTree");
+
+    std::cout << "\nfind 59 in tree: " << (t.find(59) != t.end()) << std::endl;
+
+    t.clear();
+    show_t(t, "AVLTree");
   }
 
   {
