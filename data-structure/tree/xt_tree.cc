@@ -192,6 +192,56 @@ namespace impl::avl {
   }
 
   void erase(BasePtr x, NodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+    BasePtr& lmost = header.left;
+    BasePtr& rmost = header.right;
+    BasePtr z = x;
+
+    BasePtr y = nullptr;
+    BasePtr p = nullptr;
+    if (x->left != nullptr && x->right != nullptr) {
+      x = minimum(x->right)->as<AVLNodeBase>();
+      y = x->right;
+      p = x->parent;
+      if (y != nullptr)
+        y->parent = p;
+      transplant(x, y, root);
+      if (x->parent == z)
+        p = x;
+      x->parent = z->parent;
+      x->left = z->parent;
+      x->right = z->parent;
+      x->as<AVLNodeBase>()->set_height(z->as<AVLNodeBase>()->height);
+      transplant(z, x, root);
+      x->left->parent = x;
+      if (x->right != nullptr)
+        x->right->parent = x;
+    }
+    else {
+      y = x->left == nullptr ? x->right : x->left;
+      p = x->parent;
+      transplant(x, y, root);
+      if (y != nullptr)
+        y->parent = p;
+    }
+    if (p != nullptr)
+      fixup(p, root);
+
+    if (root == z)
+      root = y;
+    if (lmost == z)
+      lmost = z->right == nullptr ? z->parent : minimum(y);
+    if (rmost == z)
+      rmost = z->left == nullptr ? z->parent : maximum(y);
+  }
+}
+
+namespace impl::rb {
+  void insert(
+      bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+  }
+
+  void erase(BasePtr x, NodeBase& header) noexcept {
   }
 }
 
@@ -224,6 +274,12 @@ void test_tree2() {
     show_t(t, "AVLTree");
 
     std::cout << "\nfind 59 in tree: " << (t.find(59) != t.end()) << std::endl;
+
+    t.erase(t.begin());
+    t.erase(t.begin());
+    t.erase(--t.end());
+    t.erase(t.find(59));
+    show_t(t, "AVLTree");
 
     t.clear();
     show_t(t, "AVLTree");
