@@ -48,6 +48,110 @@ namespace impl {
   inline ConstBasePtr maximum(ConstBasePtr x) noexcept {
     return maximum(const_cast<BasePtr>(x));
   }
+
+  inline void transplant(BasePtr u, BasePtr v, BasePtr& root) noexcept {
+    if (u->parent == nullptr)
+      root = v;
+    else if (u->parent->left == u)
+      u->parent->left = v;
+    else
+      u->parent->right = v;
+  }
+
+  inline BasePtr left_rotate(BasePtr x, BasePtr& root) noexcept {
+    //            |                   |
+    //            x                   y
+    //             \                 / \
+    //              y               x   b
+    //             / \               \
+    //            a   b               a
+
+    BasePtr y = x->right;
+    x->right = y->left;
+    if (x->right != nullptr)
+      x->right->parent = x;
+    y->parent = x->parent;
+    transplant(x, y, root);
+    y->left = x;
+    x->parent = y;
+
+    return y;
+  }
+
+  inline BasePtr right_rotate(BasePtr x, BasePtr& root) noexcept {
+    //            |                   |
+    //            x                   y
+    //           /                   / \
+    //          y                   a   x
+    //         / \                     /
+    //        a   b                   b
+
+    BasePtr y = x->left;
+    x->left = y->right;
+    if (x->left != nullptr)
+      x->left->parent = x;
+    y->parent = x->parent;
+    transplant(x, y, root);
+    y->right = x;
+    x->parent = y;
+
+    return y;
+  }
+}
+
+namespace impl::avl {
+  inline AVLNodeBase* left_fixup(AVLNodeBase* a, BasePtr& root) noexcept {
+    //            |                   |                   |
+    //            a                   a                   c
+    //           / \                 / \                 / \
+    //         [d]  b              [d]  c               /   \
+    //             / \                 / \             a     b
+    //            c  [g]              e   b           / \   / \
+    //           / \                     / \        [d]  e f  [g]
+    //          e   f                   f  [g]
+
+    AVLNodeBase* b = a->right->as<AVLNodeBase>();
+    if (b->lheight() > b->rheight()) {
+      b = right_rotate(b, root)->as<AVLNodeBase>();
+      b->right->as<AVLNodeBase>()->update_height();
+      b->update_height();
+    }
+    a = left_rotate(a, root)->as<AVLNodeBase>();
+    a->left->as<AVLNodeBase>()->update_height();
+    a->update_height();
+
+    return a;
+  }
+
+  inline AVLNodeBase* right_fixup(AVLNodeBase* a, BasePtr& root) noexcept {
+    //            |                   |                   |
+    //            a                   a                   c
+    //           / \                 / \                 / \
+    //          b  [g]              c  [g]              /   \
+    //         / \                 / \                 b     a
+    //       [d]  c               b   f               / \   / \
+    //           / \             / \                [d]  e f  [g]
+    //          e   f          [d]  e
+
+    AVLNodeBase* b = a->left->as<AVLNodeBase>();
+    if (b->lheight() < b->rheight()) {
+      b = left_rotate(b, root)->as<AVLNodeBase>();
+      b->left->as<AVLNodeBase>()->update_height();
+      b->update_height();
+    }
+    a = right_rotate(a, root)->as<AVLNodeBase>();
+    a->right->as<AVLNodeBase>()->update_height();
+    a->update_height();
+
+    return a;
+  }
+
+  void insert(
+      bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+  }
+
+  void erase(BasePtr x, NodeBase& header) noexcept {
+  }
 }
 
 }
