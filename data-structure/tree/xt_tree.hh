@@ -83,7 +83,7 @@ struct NodeBase {
 
   template <typename HeadChecker>
   static BasePtr predecessor(BasePtr x, HeadChecker&& checker) noexcept {
-    if (checker(x)) {
+    if (checker(x) && x->parent->parent == x) {
       x = x->right;
     }
     else if (x->left != nullptr) {
@@ -112,10 +112,7 @@ struct AVLNodeBase : public NodeBase {
   int height;
 
   inline void set_marker() noexcept { height = kHeightMark; }
-
-  inline bool is_header() const noexcept {
-    return height == kHeightMark && parent->parent == this;
-  }
+  inline bool is_marker() const noexcept { return height == kHeightMark; }
 
   inline int lheight() const noexcept {
     return left != nullptr ? left->as<AVLNodeBase>()->height : 0;
@@ -134,10 +131,7 @@ struct RBNodeBase : public NodeBase {
   ColorType color;
 
   inline void set_marker() noexcept { as_red(); }
-
-  inline bool is_header() const noexcept {
-    return is_red() && parent->parent == this;
-  }
+  inline bool is_marker() const noexcept { return is_red(); }
 
   inline bool is_red() const noexcept { return color == kColorRed; }
   inline bool is_blk() const noexcept { return color == kColorBlk; }
@@ -198,13 +192,13 @@ struct TreeIter : public TIterBase {
   Self operator++(int) noexcept { Self tmp(*this); increment(); return tmp; }
 
   Self& operator--() noexcept {
-    decrement([](BasePtr x) { return Link(x)->is_header(); });
+    decrement([](BasePtr x) { return Link(x)->is_marker(); });
     return *this;
   }
 
   Self operator--(int) noexcept {
     Self tmp(*this);
-    decrement([](BasePtr x) { return Link(x)->is_header(); });
+    decrement([](BasePtr x) { return Link(x)->is_marker(); });
     return tmp;
   }
 };
