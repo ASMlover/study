@@ -146,8 +146,49 @@ namespace impl::avl {
     return a;
   }
 
+  void fixup(BasePtr x, BasePtr& root) noexcept {
+    AVLNodeBase* node = x->as<AVLNodeBase>();
+    while (node != root) {
+      int lh = node->lheight();
+      int rh = node->rheight();
+      int height = Xt::max(lh, rh) + 1;
+      int diff = lh - rh;
+
+      if (node->height != height)
+        node->set_height(height);
+      else if (diff >= -1 && diff <= 1)
+        break;
+
+      if (diff <= -2)
+        node = left_fixup(node, root);
+      else if (diff >= 2)
+        node = right_fixup(node, root);
+
+      node = node->parent->as<AVLNodeBase>();
+    }
+  }
+
   void insert(
       bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+
+    x->parent = p;
+    x->left = x->right = nullptr;
+    x->as<AVLNodeBase>()->set_height(1);
+
+    if (insert_left) {
+      p->left = x;
+      if (p == &header)
+        header.parent = header.right = x;
+      else if (p == header.left)
+        header.left = x;
+    }
+    else {
+      p->right = x;
+      if (p == header.right)
+        header.right = x;
+    }
+    fixup(x, root);
   }
 
   void erase(BasePtr x, NodeBase& header) noexcept {

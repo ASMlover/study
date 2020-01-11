@@ -122,6 +122,10 @@ struct AVLNodeBase : public NodeBase {
     return right != nullptr ? right->as<AVLNodeBase>()->height : 0;
   }
 
+  inline void set_height(int h) noexcept {
+    height = h;
+  }
+
   inline void update_height() noexcept {
     height = Xt::max(lheight(), rheight()) + 1;
   }
