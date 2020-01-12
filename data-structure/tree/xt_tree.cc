@@ -237,8 +237,70 @@ namespace impl::avl {
 }
 
 namespace impl::rb {
+  void insert_fixup(BasePtr x, BasePtr& root) noexcept {
+    while (x != root && x->parent->as<RBNodeBase>()->is_red()) {
+      if (x->parent == x->parent->parent->left) {
+        RBNodeBase* y = x->parent->parent->right->as<RBNodeBase>();
+        if (y != nullptr && y->is_red()) {
+          x->parent->as<RBNodeBase>()->as_blk();
+          y->as_blk();
+          x->parent->parent->as<RBNodeBase>()->as_red();
+          x = x->parent->parent;
+        }
+        else {
+          if (x == x->parent->right) {
+            x = x->parent;
+            left_rotate(x, root);
+          }
+          x->parent->as<RBNodeBase>()->as_blk();
+          x->parent->parent->as<RBNodeBase>()->as_red();
+          right_rotate(x->parent->parent, root);
+        }
+      }
+      else {
+        RBNodeBase* y = x->parent->parent->left->as<RBNodeBase>();
+        if (y != nullptr && y->is_red()) {
+          y->parent->as<RBNodeBase>()->as_blk();
+          y->as_blk();
+          x->parent->parent->as<RBNodeBase>()->as_red();
+          x = x->parent->parent;
+        }
+        else {
+          if (x == x->parent->left) {
+            x = x->parent;
+            right_rotate(x, root);
+          }
+          x->parent->as<RBNodeBase>()->as_blk();
+          x->parent->parent->as<RBNodeBase>()->as_red();
+          left_rotate(x->parent->parent, root);
+        }
+      }
+    }
+    root->as<RBNodeBase>()->as_blk();
+  }
+
   void insert(
       bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+
+    x->parent = p;
+    x->left = x->right = nullptr;
+    x->as<RBNodeBase>()->as_red();
+
+    if (insert_left) {
+      p->left = x;
+      if (p == &header)
+        header.parent = header.right = x;
+      else if (p == header.left)
+        header.left = x;
+    }
+    else {
+      p->right = x;
+      if (p == header.right)
+        header.right = x;
+    }
+
+    insert_fixup(x, root);
   }
 
   void erase(BasePtr x, NodeBase& header) noexcept {
