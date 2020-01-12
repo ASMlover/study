@@ -304,9 +304,9 @@ protected:
       p = x;
       x = lt_comp_(val, x->value) ? _left(x) : _right(x);
     }
+    bool insert_left = x != nullptr || p == tail() || lt_comp_(val, p->value);
 
-    return std::make_tuple(true, p,
-        x != nullptr || p == tail() || lt_comp_(val, p->value));
+    return std::make_tuple(true, p, insert_left);
   }
 
   template <typename Insertion>
