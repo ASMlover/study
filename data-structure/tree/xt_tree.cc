@@ -303,7 +303,52 @@ namespace impl::rb {
     insert_fixup(x, root);
   }
 
-  void erase(BasePtr x, NodeBase& header) noexcept {
+  void erase_fixup(BasePtr z, BasePtr& root) noexcept {
+  }
+
+  void erase(BasePtr z, NodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+    BasePtr& lmost = header.left;
+    BasePtr& rmost = header.right;
+
+    BasePtr x = nullptr;
+    BasePtr y = z;
+    if (y->left != nullptr && y->right != nullptr) {
+      y = minimum(y->right);
+      x = y->right;
+    }
+    else {
+      x = y->left == nullptr ? y->right : y->left;
+    }
+
+    if (y != z) {
+      y->left = z->left;
+      y->left->parent = y;
+      if (y != z->right) {
+        if (x != nullptr)
+          x->parent = y->parent;
+        y->parent->left = x;
+        y->right = z->right;
+        y->right->parent = y;
+      }
+      transplant(z, y, root);
+      y->parent = z->parent;
+      std::swap(y->as<RBNodeBase>()->color, z->as<RBNodeBase>()->color);
+      y = z;
+    }
+    else {
+      if (x != nullptr)
+        x->parent = y->parent;
+      transplant(z, x, root);
+
+      if (lmost == z)
+        lmost = z->right == nullptr ? z->parent : minimum(x);
+      if (rmost == z)
+        rmost = z->left == nullptr ? z->parent : maximum(x);
+    }
+
+    if (y->as<RBNodeBase>()->is_blk())
+      erase_fixup(x, root);
   }
 }
 
