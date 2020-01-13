@@ -50,7 +50,7 @@ namespace impl {
   }
 
   inline void transplant(BasePtr u, BasePtr v, BasePtr& root) noexcept {
-    if (u->parent == nullptr)
+    if (root == u)
       root = v;
     else if (u->parent->left == u)
       u->parent->left = v;
@@ -260,7 +260,7 @@ namespace impl::rb {
       else {
         RBNodeBase* y = x->parent->parent->left->as<RBNodeBase>();
         if (y != nullptr && y->is_red()) {
-          y->parent->as<RBNodeBase>()->as_blk();
+          x->parent->as<RBNodeBase>()->as_blk();
           y->as_blk();
           x->parent->parent->as<RBNodeBase>()->as_red();
           x = x->parent->parent;
@@ -311,7 +311,7 @@ namespace impl::rb {
 
 #include <iostream>
 
-template <typename Tree> void show_t(Tree& t, const char* s = "tree") {
+template <typename Tree> void show_t(const Tree& t, const char* s = "tree") {
   std::cout << "\n" << s << " -> size: " << t.size() << std::endl;
   if (!t.empty()) {
     std::cout << s << " -> " << t.get_head() << "|" << t.get_tail() << std::endl;
@@ -350,5 +350,17 @@ void test_tree2() {
   {
     xt::tree::RBTree<int> t;
     show_t(t, "RBTree");
+
+    t.insert(45);
+    t.insert(89);
+    t.insert(67);
+    t.insert(34);
+    t.insert(59);
+    t.insert(2);
+    t.insert(29);
+    t.insert(17);
+    show_t(t, "RBTree");
+
+    std::cout << "\nfind 59 in tree: " << (t.find(59) != t.end()) << std::endl;
   }
 }
