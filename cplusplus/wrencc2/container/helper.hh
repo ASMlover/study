@@ -504,4 +504,50 @@ public:
   }
 };
 
+namespace node {
+  template <typename Alloc, typename Link, typename ValueType>
+  inline Link create_node(const ValueType& value) {
+    Link tmp = Alloc::allocate();
+    try {
+      construct(&tmp->value, value);
+    }
+    catch (...) {
+      Alloc::deallocate(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename Alloc, typename Link, typename ValueType>
+  inline Link create_node(ValueType&& value) {
+    Link tmp = Alloc::allocate();
+    try {
+      construct(&tmp->value, std::move(value));
+    }
+    catch (...) {
+      Alloc::deallocate(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename Alloc, typename Link, typename... Args>
+  inline Link create_node(Args&&... args) {
+    Link tmp = Alloc::allocate();
+    try {
+      construct(&tmp->value, std::forward<Args>(args)...);
+    }
+    catch (...) {
+      Alloc::deallocate(tmp);
+      throw;
+    }
+    return tmp;
+  }
+
+  template <typename Alloc, typename Link> inline void destroy_node(Link p) {
+    destroy(&p->value);
+    Alloc::deallocate(p);
+  }
+}
+
 }
