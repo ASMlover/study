@@ -303,7 +303,73 @@ namespace impl::rb {
     insert_fixup(x, root);
   }
 
-  void erase_fixup(BasePtr z, BasePtr& root) noexcept {
+  void erase_fixup(BasePtr x, BasePtr x_parent, BasePtr& root) noexcept {
+    while (x != root && (x == nullptr || x->as<RBNodeBase>()->is_blk())) {
+      if (x == x_parent->left) {
+        RBNodeBase* w = x_parent->right->as<RBNodeBase>();
+        if (w->is_red()) {
+          w->as_blk();
+          x_parent->as<RBNodeBase>()->is_red();
+          left_rotate(x->parent, root);
+          w = x_parent->right->as<RBNodeBase>();
+        }
+
+        if ((w->left == nullptr || w->left->as<RBNodeBase>()->is_blk())
+            && (w->right == nullptr || w->right->as<RBNodeBase>()->is_blk())) {
+          w->as_red();
+          x = x_parent;
+          x_parent = x_parent->parent;
+        }
+        else {
+          if (w->right == nullptr || w->right->as<RBNodeBase>()->is_blk()) {
+            if (w->left != nullptr)
+              w->left->as<RBNodeBase>()->as_blk();
+            w->as_red();
+            right_rotate(w, root);
+            w = x_parent->right->as<RBNodeBase>();
+          }
+          w->set_color(x_parent->as<RBNodeBase>()->color);
+          x_parent->as<RBNodeBase>()->as_blk();
+          if (w->right != nullptr)
+            w->right->as<RBNodeBase>()->as_blk();
+          left_rotate(x_parent, root);
+          break;
+        }
+      }
+      else {
+        RBNodeBase* w = x_parent->left->as<RBNodeBase>();
+        if (w->is_red()) {
+          w->as_blk();
+          x_parent->as<RBNodeBase>()->as_red();
+          right_rotate(x_parent, root);
+          w = x_parent->left->as<RBNodeBase>();
+        }
+
+        if ((w->right == nullptr || w->left->as<RBNodeBase>()->is_blk())
+            && (w->left == nullptr || w->right->as<RBNodeBase>()->is_blk())) {
+          w->as_red();
+          x = x_parent;
+          x_parent = x_parent->parent;
+        }
+        else {
+          if (w->left == nullptr || w->left->as<RBNodeBase>()->is_blk()) {
+            if (w->right != nullptr)
+              w->right->as<RBNodeBase>()->as_blk();
+            w->as_red();
+            left_rotate(w, root);
+            w = x_parent->left->as<RBNodeBase>();
+          }
+          w->set_color(x_parent->as<RBNodeBase>()->color);
+          x_parent->as<RBNodeBase>()->as_blk();
+          if (w->left != nullptr)
+            w->left->as<RBNodeBase>()->as_blk();
+          right_rotate(x_parent, root);
+          break;
+        }
+      }
+    }
+    if (x != nullptr)
+      x->as<RBNodeBase>()->as_blk();
   }
 
   void erase(BasePtr z, NodeBase& header) noexcept {
@@ -312,6 +378,7 @@ namespace impl::rb {
     BasePtr& rmost = header.right;
 
     BasePtr x = nullptr;
+    BasePtr x_parent = nullptr;
     BasePtr y = z;
     if (y->left != nullptr && y->right != nullptr) {
       y = minimum(y->right);
@@ -325,18 +392,24 @@ namespace impl::rb {
       y->left = z->left;
       y->left->parent = y;
       if (y != z->right) {
+        x_parent = y->parent;
         if (x != nullptr)
           x->parent = y->parent;
         y->parent->left = x;
         y->right = z->right;
         y->right->parent = y;
       }
+      else {
+        x_parent = y;
+      }
+
       transplant(z, y, root);
       y->parent = z->parent;
       std::swap(y->as<RBNodeBase>()->color, z->as<RBNodeBase>()->color);
       y = z;
     }
     else {
+      x_parent = y->parent;
       if (x != nullptr)
         x->parent = y->parent;
       transplant(z, x, root);
@@ -348,7 +421,7 @@ namespace impl::rb {
     }
 
     if (y->as<RBNodeBase>()->is_blk())
-      erase_fixup(x, root);
+      erase_fixup(x, x_parent, root);
   }
 }
 
@@ -407,5 +480,14 @@ void test_tree2() {
     show_t(t, "RBTree");
 
     std::cout << "\nfind 59 in tree: " << (t.find(59) != t.end()) << std::endl;
+
+    t.erase(t.begin());
+    t.erase(t.begin());
+    t.erase(--t.end());
+    t.erase(t.find(59));
+    show_t(t, "RBTree");
+
+    t.clear();
+    show_t(t, "RBTree");
   }
 }
