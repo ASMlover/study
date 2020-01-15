@@ -28,107 +28,95 @@
 
 #include "helper.hh"
 
-namespace wrencc {
+namespace wrencc::linked_list {
 
-template <typename Tp> struct LinkedListNode {
-  LinkedListNode<Tp>* next;
+template <typename Tp> struct ListNode {
+  ListNode<Tp>* next;
   Tp value;
 };
 
-template <typename _Tp, typename _Ref, typename _Ptr> struct LinkedListIter {
-  using Iter      = LinkedListIter<_Tp, _Tp&, _Tp*>;
-  using Self      = LinkedListIter<_Tp, _Ref, _Ptr>;
-  using ValueType = _Tp;
+template <typename _Tp, typename _Ref, typename _Ptr> struct ListIter {
+  using Iter      = ListIter<_Tp, _Tp&, _Tp*>;
+  using Self      = ListIter<_Tp, _Ref, _Ptr>;
   using Ref       = _Ref;
   using Ptr       = _Ptr;
-  using NodeType  = LinkedListNode<_Tp>;
+  using Link      = ListNode<_Tp>*;
+  using ConstLink = const ListNode<_Tp>*;
 
-  NodeType* node{};
+  Link _node{};
 
-  LinkedListIter() noexcept {}
-  LinkedListIter(NodeType* x) noexcept : node(x) {}
-  LinkedListIter(const Iter& x) noexcept : node(x.node) {}
+  ListIter() noexcept {}
+  ListIter(Link x) noexcept : _node(x) {}
+  ListIter(ConstLink x) noexcept : _node(const_cast<Link>(x)) {}
+  ListIter(const Iter& x) noexcept : _node(x._node) {}
 
-  inline Ref operator*() const noexcept { return node->value; }
-  inline Ptr operator->() const noexcept { return &node->value; }
+  inline bool operator==(const Self& r) const noexcept {
+    return _node == r._node;
+  }
 
-  inline bool operator==(const Self& x) const noexcept { return node == x.node; }
-  inline bool operator!=(const Self& x) const noexcept { return node != x.node; }
+  inline bool operator!=(const Self& r) const noexcept {
+    return _node != r._node;
+  }
+
+  inline Link node() const noexcept { return _node; }
+  inline Ref operator*() const noexcept { return _node->value; }
+  inline Ptr operator->() const noexcept { return &_node->value; }
 
   inline Self& operator++() noexcept {
-    node = node->next;
+    _node = _node->next;
     return *this;
   }
 
-  inline Self operator++(int) const noexcept {
-    Self tmp = *this;
-    node = node->next;
+  inline Self operator++(int) noexcept {
+    Self tmp(*this);
+    _node = _node->next;
     return tmp;
   }
 };
 
+}
+
+namespace wrencc {
+
 template <typename Tp> class LinkedList final : private UnCopyable {
 public:
   using ValueType = Tp;
-  using Iter      = LinkedListIter<Tp, Tp&, Tp*>;
-  using ConstIter = LinkedListIter<Tp, const Tp&, const Tp*>;
+  using Iter      = linked_list::ListIter<Tp, Tp&, Tp*>;
+  using ConstIter = linked_list::ListIter<Tp, const Tp&, const Tp*>;
   using Ref       = Tp&;
   using ConstRef  = const Tp&;
   using Ptr       = Tp*;
   using ConstPtr  = const Tp*;
 private:
-  using NodeType  = LinkedListNode<Tp>;
-  using Alloc     = SimpleAlloc<NodeType>;
+  using Node      = linked_list::ListNode<Tp>;
+  using Link      = Node*;
+  using ConstLink = const Node*;
+  using Alloc     = SimpleAlloc<Node>;
 
   sz_t size_{};
-  NodeType* head_{};
-  NodeType* tail_{};
+  Link head_{};
+  Link tail_{};
 
-  NodeType* create_aux(const ValueType& value) {
-    NodeType* node = Alloc::allocate();
-    try {
-      construct(&node->value, value);
-      node->next = nullptr;
-    }
-    catch (...) {
-      Alloc::deallocate(node);
-      throw;
-    }
-    return node;
+  inline Link init_node(Link p) noexcept {
+    p->next = nullptr;
+    return p;
   }
 
-  NodeType* create_aux(ValueType&& value) {
-    NodeType* node = Alloc::allocate();
-    try {
-      construct(&node->value, std::move(value));
-      node->next = nullptr;
-    }
-    catch (...) {
-      Alloc::deallocate(node);
-      throw;
-    }
-    return node;
+  Link create_node(const ValueType& value) {
+    return init_node(node::create_node<Alloc, Link>(value));
   }
 
-  template <typename... Args> NodeType* create_aux(Args&&... args) {
-    NodeType* node = Alloc::allocate();
-    try {
-      construct(&node->value, std::forward<Args>(args)...);
-      node->next = nullptr;
-    }
-    catch (...) {
-      Alloc::deallocate(node);
-      throw;
-    }
-    return node;
+  Link create_node(ValueType&& value) {
+    return init_node(node::create_node<Alloc, Link>(std::move(value)));
   }
 
-  void destroy_aux(NodeType* node) noexcept {
-    destroy(&node->value);
-    Alloc::deallocate(node);
+  template <typename... Args> Link create_node(Args&&... args) {
+    return init_node(node::create_node<Alloc, Link>(std::forward<Args>(args)...));
   }
 
-  void insert_aux(ConstIter pos, NodeType* node) {
+  void destroy_node(Link p) { node::destroy_node<Alloc, Link>(p); }
+
+  void insert_aux(ConstIter pos, Link node) {
     ++size_;
     if (head_ == nullptr) {
       head_ = tail_ = node;
@@ -144,8 +132,8 @@ private:
       tail_ = node;
     }
     else {
-      node->next = pos.node->next;
-      pos.node->next = node;
+      node->next = pos.node()->next;
+      pos.node()->next = node;
     }
   }
 public:
@@ -154,58 +142,58 @@ public:
 
   inline bool empty() const noexcept { return size_ == 0; }
   inline sz_t size() const noexcept { return size_; }
+  inline Iter begin() noexcept { return head_; }
+  inline ConstIter begin() const noexcept { return head_; }
+  inline Iter end() noexcept { return Iter(); }
+  inline ConstIter end() const noexcept { return ConstIter(); }
   inline Ref get_head() noexcept { return head_->value; }
   inline ConstRef get_head() const noexcept { return head_->value; }
   inline Ref get_tail() noexcept { return tail_->value; }
   inline ConstRef get_tail() const noexcept { return tail_->value; }
-  inline Iter begin() noexcept { return Iter(head_); }
-  inline ConstIter begin() const noexcept { return ConstIter(head_); }
-  inline Iter end() noexcept { return Iter(); }
-  inline ConstIter end() const noexcept { return ConstIter(); }
 
   void clear() {
     while (head_ != nullptr) {
-      auto* node = head_;
+      Link node = head_;
       head_ = head_->next;
-      destroy_aux(node);
+      destroy_node(node);
     }
     tail_ = nullptr;
     size_ = 0;
   }
 
-  inline void append(const ValueType& x) { insert_aux(end(), create_aux(x)); }
-  inline void append(ValueType&& x) { insert_aux(end(), create_aux(std::move(x))); }
+  inline void append(const ValueType& x) { insert_aux(end(), create_node(x)); }
+  inline void append(ValueType&& x) { insert_aux(end(), create_node(std::move(x))); }
 
   template <typename... Args> inline void append(Args&&... args) {
-    insert_aux(end(), create_aux(std::forward<Args>(args)...));
+    insert_aux(end(), create_node(std::forward<Args>(args)...));
   }
 
   inline void append_head(const ValueType& x) {
-    insert_aux(begin(), create_aux(x));
+    insert_aux(begin(), create_node(x));
   }
 
   inline void append_head(ValueType&& x) {
-    insert_aux(begin(), create_aux(std::move(x)));
+    insert_aux(begin(), create_node(std::move(x)));
   }
 
   template <typename... Args> inline void append_head(Args&&... args) {
-    insert_aux(begin(), create_aux(std::forward<Args>(args)...));
+    insert_aux(begin(), create_node(std::forward<Args>(args)...));
   }
 
   ValueType pop_head() {
-    NodeType* node = head_;
+    Link node = head_;
     if (head_ = head_->next; head_ == nullptr)
       tail_ = nullptr;
     ValueType r = node->value;
-    destroy_aux(node);
+    destroy_node(node);
     --size_;
 
     return r;
   }
 
-  template <typename Function> inline void for_each(Function&& fn) noexcept {
+  template <typename Visitor> inline void for_each(Visitor&& visitor) {
      for (auto i = begin(); i != end(); ++i)
-       fn(*i);
+       visitor(*i);
   }
 };
 
