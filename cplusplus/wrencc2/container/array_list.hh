@@ -134,23 +134,18 @@ public:
   inline ConstRef at(sz_t i) const noexcept { return data_[i]; }
   inline Ref operator[](sz_t i) noexcept { return data_[i]; }
   inline ConstRef operator[](sz_t i) const noexcept { return data_[i]; }
-  inline Ref get_head() noexcept { return *begin(); }
-  inline ConstRef get_head() const noexcept { return *begin(); }
-  inline Ref get_tail() noexcept { return *(end() - 1); }
-  inline ConstRef get_tail() const noexcept { return *(end() - 1); }
   inline Iter begin() noexcept { return data_; }
   inline ConstIter begin() const noexcept { return data_; }
   inline Iter end() noexcept { return data_ + size_; }
   inline ConstIter end() const noexcept { return data_ + size_; }
+  inline Ref get_head() noexcept { return *begin(); }
+  inline ConstRef get_head() const noexcept { return *begin(); }
+  inline Ref get_tail() noexcept { return *(end() - 1); }
+  inline ConstRef get_tail() const noexcept { return *(end() - 1); }
 
   inline void clear() noexcept {
     destroy(begin(), end());
     size_ = 0;
-  }
-
-  template <typename Function> void for_each(Function&& fn) noexcept {
-    for (sz_t i = 0; i < size_; ++i)
-      fn(data_[i]);
   }
 
   void swap(ArrayList<Tp>& r) noexcept {
@@ -191,6 +186,11 @@ public:
     ValueType r = data_[size_ - 1];
     destroy(&data_[--size_]);
     return r;
+  }
+
+  template <typename Visitor> void for_each(Visitor&& visitor) noexcept {
+    for (sz_t i = 0; i < size_; ++i)
+      visitor(data_[i]);
   }
 };
 
