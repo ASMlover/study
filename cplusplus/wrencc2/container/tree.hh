@@ -399,10 +399,48 @@ namespace wrencc {
 
 template <typename Tp>
 class AVLTree final : public tree::TreeBase<Tp, tree::AVLNode<Tp>> {
+  using Base      = tree::TreeBase<Tp, tree::AVLNode<Tp>>;
+  using ValueType = typename Base::ValueType;
+  using ConstIter = typename Base::ConstIter;
+public:
+  void insert(const ValueType&& x) {
+    insert_aux(tree::impl::avl::insert, x);
+  }
+
+  void insert(ValueType&& x) {
+    insert_aux(tree::impl::avl::insert, std::move(x));
+  }
+
+  template <typename... Args> void insert(Args&&... args) {
+    insert_aux(tree::impl::avl::insert, std::forward<Args>(args)...);
+  }
+
+  void erase(ConstIter pos) {
+    erase_aux(tree::impl::avl::erase, pos.node());
+  }
 };
 
 template <typename Tp>
 class RBTree final : public tree::TreeBase<Tp, tree::RBNode<Tp>> {
+  using Base      = tree::TreeBase<Tp, tree::RBNode<Tp>>;
+  using ValueType = typename Base::ValueType;
+  using ConstIter = typename Base::ConstIter;
+public:
+  void insert(const ValueType& x) {
+    insert_aux(tree::impl::rb::insert, x);
+  }
+
+  void insert(ValueType&& x) {
+    insert_aux(tree::impl::rb::insert, std::move(x));
+  }
+
+  template <typename... Args> void insert(Args&&... args) {
+    insert_aux(tree::impl::rb::insert, std::forward<Args>(args)...);
+  }
+
+  void erase(ConstIter pos) {
+    erase_aux(tree::impl::rb::erase, pos.node());
+  }
 };
 
 }
