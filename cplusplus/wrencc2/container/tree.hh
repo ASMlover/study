@@ -45,7 +45,7 @@ using ConstBasePtr  = const NodeBase*;
 
 namespace impl::avl {
   void insert(bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept;
-  void erase(BasePtr x, NodeBase& root) noexcept;
+  void erase(BasePtr x, NodeBase& header) noexcept;
 }
 
 namespace impl::rb {
@@ -217,12 +217,12 @@ protected:
   Less lt_comp_{};
   Equal eq_comp_{};
 
-  static inline Link _parent(BasePtr x) noexcept { return Link(x)->parent; }
-  static inline ConstLink _parent(ConstBasePtr x) noexcept { return ConstLink(x)->parent; }
-  static inline Link _left(BasePtr x) noexcept { return Link(x)->left; }
-  static inline ConstLink _left(ConstBasePtr x) noexcept { return ConstLink(x)->left; }
-  static inline Link _right(BasePtr x) noexcept { return Link(x)->right; }
-  static inline ConstLink _right(ConstBasePtr x) noexcept { return ConstLink(x)->right; }
+  static inline Link _parent(BasePtr x) noexcept { return Link(x->parent); }
+  static inline ConstLink _parent(ConstBasePtr x) noexcept { return ConstLink(x->parent); }
+  static inline Link _left(BasePtr x) noexcept { return Link(x->left); }
+  static inline ConstLink _left(ConstBasePtr x) noexcept { return ConstLink(x->left); }
+  static inline Link _right(BasePtr x) noexcept { return Link(x->right); }
+  static inline ConstLink _right(ConstBasePtr x) noexcept { return ConstLink(x->right); }
 
   inline void init() noexcept {
     size_ = 0;
@@ -236,7 +236,7 @@ protected:
   inline Link tail() noexcept { return Link(&head_); }
   inline ConstLink tail() const noexcept { return ConstLink(&head_); }
   inline Link lmost() noexcept { return Link(head_.left); }
-  inline ConstLink lmost() noexcept { return ConstLink(head_.left); }
+  inline ConstLink lmost() const noexcept { return ConstLink(head_.left); }
   inline Link rmost() noexcept { return Link(head_.right); }
   inline ConstLink rmost() const noexcept { return ConstLink(head_.right); }
 
