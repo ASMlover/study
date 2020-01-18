@@ -90,11 +90,139 @@ inline BasePtr right_rotate(BasePtr x, BasePtr& root) noexcept {
 }
 
 namespace impl::avl {
-  void insert(
-      bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+  inline AVLNodeBase* left_fixup(AVLNodeBase* a, BasePtr& root) noexcept {
+    //            |                   |                   |
+    //            a                   a                   c
+    //           / \                 / \                 / \
+    //         [d]  b              [d]  c               /   \
+    //             / \                 / \             a     b
+    //            c  [g]              e   b           / \   / \
+    //           / \                     / \        [d]  e f  [g]
+    //          e   f                   f  [g]
+
+    AVLNodeBase* b = a->right->as_avl();
+    if (b->lheight() > b->rheight()) {
+      b = right_rotate(b, root)->as_avl();
+      b->right->as_avl()->update_height();
+      b->update_height();
+    }
+    a = left_rotate(a, root)->as_avl();
+    a->left->as_avl()->update_height();
+    a->update_height();
+
+    return a;
   }
 
-  void erase(BasePtr x, NodeBase& root) noexcept {
+  inline AVLNodeBase* right_fixup(AVLNodeBase* a, BasePtr& root) noexcept {
+    //            |                   |                   |
+    //            a                   a                   c
+    //           / \                 / \                 / \
+    //          b  [g]              c  [g]              /   \
+    //         / \                 / \                 b     a
+    //       [d]  c               b   f               / \   / \
+    //           / \             / \                [d]  e f  [g]
+    //          e   f          [d]  e
+
+    AVLNodeBase* b = a->left->as_avl();
+    if (b->lheight() < b->rheight()) {
+      b = left_rotate(b, root)->as_avl();
+      b->left->as_avl()->update_height();
+      b->update_height();
+    }
+    a = right_rotate(a, root)->as_avl();
+    a->right->as_avl()->update_height();
+    a->update_height();
+
+    return a;
+  }
+
+  void avl_fixup(BasePtr x, BasePtr& root) noexcept {
+    AVLNodeBase* node = x->as_avl();
+    while (node != root) {
+      int lh = node->lheight();
+      int rh = node->rheight();
+      int height = std::max(lh, rh) + 1;
+      int diff = lh - rh;
+
+      if (node->height != height)
+        node->set_height(height);
+      else if (diff >= -1 && diff <= 1)
+        break;
+
+      if (diff <= -2)
+        node = left_fixup(node, root);
+      else if (diff >= 2)
+        node = right_fixup(node, root);
+
+      node = node->parent->as_avl();
+    }
+  }
+
+  void insert(
+      bool insert_left, BasePtr x, BasePtr p, NodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+
+    x->parent = p;
+    x->left = x->right = nullptr;
+    x->as_avl()->set_height(1);
+
+    if (insert_left) {
+      p->left = x;
+      if (p == &header)
+        header.parent = header.right = x;
+      else if (p == header.left)
+        header.left = x;
+    }
+    else {
+      p->right = x;
+      if (p == header.right)
+        header.right = x;
+    }
+    avl_fixup(x, root);
+  }
+
+  void erase(BasePtr x, NodeBase& header) noexcept {
+    BasePtr& root = header.parent;
+    BasePtr& lmost = header.left;
+    BasePtr& rmost = header.right;
+    BasePtr z = x;
+
+    BasePtr y = nullptr;
+    BasePtr p = nullptr;
+    if (x->left != nullptr && x->right != nullptr) {
+      x = minimum(x->right);
+      y = x->right;
+      p = x->parent;
+      if (y != nullptr)
+        y->parent = p;
+      transplant(x, y, root);
+      if (x->parent == z)
+        p = x;
+      x->parent = z->parent;
+      x->left = z->left;
+      x->right = z->right;
+      x->as_avl()->set_height(z->as_avl()->height);
+      transplant(z, x, root);
+      x->left->parent = x;
+      if (x->right != nullptr)
+        x->right->parent = x;
+    }
+    else {
+      y = x->left == nullptr ? x->right : x->left;
+      p = x->parent;
+      transplant(x, y, root);
+      if (y != nullptr)
+        y->parent = p;
+    }
+    if (p != nullptr)
+      avl_fixup(p, root);
+
+    if (root == z)
+      root = y;
+    if (lmost == z)
+      lmost = z->right == nullptr ? z->parent : minimum(y);
+    if (rmost == z)
+      rmost = z->left == nullptr ? z->parent : maximum(y);
   }
 }
 
