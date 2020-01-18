@@ -62,7 +62,7 @@ struct NodeBase {
     return static_cast<AVL*>(this);
   }
 
-  template <typename RB = AVLNodeBase> inline RB* as_rb() noexcept {
+  template <typename RB = RBNodeBase> inline RB* as_rb() noexcept {
     return static_cast<RB*>(this);
   }
 
