@@ -319,6 +319,57 @@ inline void uninitialized_copy(
   std::memmove(result, first, last - first);
 }
 
+template <typename BidirectionalIter1, typename BidirectionalIter2,
+          typename Distance>
+inline void copy_backward(
+    BidirectionalIter1 first, BidirectionalIter2 last,
+    BidirectionalIter2 result, BidirectionalIteratorTag, Distance*) noexcept {
+  while (first != last)
+    *--result = *--last;
+}
+
+template <typename RandomAccessIter, typename BidirectionalIter,
+          typename Distance>
+inline void copy_backward(RandomAccessIter first, RandomAccessIter last,
+    BidirectionalIter result, RandomAccessIteratorTag, Distance*) noexcept {
+  for (Distance n = last - first; n > 0; --n)
+    *--result = *--last;
+}
+
+template <typename BidirectionalIter1, typename BidirectionalIter2,
+          typename BoolType>
+struct CopyBackwardDispatch {
+  using _Cat = typename IteratorTraits<BidirectionalIter1>::IteratorCategory;
+  using _Dis = typename IteratorTraits<BidirectionalIter1>::DifferenceType;
+
+  static void copy(BidirectionalIter1 first,
+      BidirectionalIter1 last, BidirectionalIter2 result) noexcept {
+    copy_backward(first, last, result, _Cat(), (_Dis*)nullptr);
+  }
+};
+
+template <typename Tp>
+struct CopyBackwardDispatch<Tp*, Tp*, TrueType> {
+  static void copy(const Tp* first, const Tp* last, Tp* result) noexcept {
+    std::ptrdiff_t n = last - first;
+    std::memmove(result - n, first, sizeof(Tp) * n);
+  }
+};
+
+template <typename Tp>
+struct CopyBackwardDispatch<const Tp*, Tp*, TrueType> {
+  static void copy(const Tp* first, const Tp* last, Tp* result) noexcept {
+    CopyBackwardDispatch<Tp*, Tp*, TrueType>::copy(first, last, result);
+  }
+};
+
+template <typename BI1, typename BI2>
+inline void copy_backward(BI1 first, BI1 last, BI2 result) noexcept {
+  using _Trivial = typename TypeTraits<typename TypeTraits<BI2>::ValueType>
+                    ::HasTrivialCopyAssignment;
+  CopyBackwardDispatch<BI1, BI2, _Trivial>::copy(first, last, result);
+}
+
 template <typename ForwardIter, typename Size, typename T>
 inline void fill(ForwardIter first, Size n, const T& v) noexcept {
   for (; n > 0; --n, ++first)
