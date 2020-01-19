@@ -365,8 +365,8 @@ struct CopyBackwardDispatch<const Tp*, Tp*, TrueType> {
 
 template <typename BI1, typename BI2>
 inline void copy_backward(BI1 first, BI1 last, BI2 result) noexcept {
-  using _Trivial = typename TypeTraits<typename TypeTraits<BI2>::ValueType>
-                    ::HasTrivialCopyAssignment;
+  using _Trivial = typename TypeTraits<typename IteratorTraits<BI2>::ValueType>
+                              ::HasTrivialCopyAssignment;
   CopyBackwardDispatch<BI1, BI2, _Trivial>::copy(first, last, result);
 }
 
