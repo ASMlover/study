@@ -229,6 +229,14 @@ public:
     insert_aux(pos, x);
   }
 
+  void insert(ConstIter pos, ValueType&& x) {
+    // TODO:
+  }
+
+  template <typename... Args> void insert(ConstIter pos, Args&&... args) {
+    // TODO:
+  }
+
   void erase(ConstIter pos) {
     if (pos + 1 != end())
       copy(pos + 1, data_ + size_, pos);
@@ -236,7 +244,7 @@ public:
     destroy(data_ + size_);
   }
 
-  template <typename Visitor> void for_each(Visitor&& visitor) noexcept {
+  template <typename Visitor> inline void for_each(Visitor&& visitor) {
     for (sz_t i = 0; i < size_; ++i)
       visitor(data_[i]);
   }
