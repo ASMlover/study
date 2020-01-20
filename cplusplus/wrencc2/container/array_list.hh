@@ -72,9 +72,46 @@ private:
     data_ = new_data;
   }
 
-  void destroy_aux() noexcept {
+  void destructor_aux() noexcept {
     clear();
     Alloc::deallocate(data_);
+  }
+
+  void insert_aux(ConstIter pos, const ValueType& val) {
+    Ptr p = data_ + (pos - begin());
+    if (size_ < capacity_) {
+      if (p == data_ + size_) {
+        construct(data_ + size_, val);
+      }
+      else {
+        construct(data_ + size_, *(data_ + size_ - 1));
+        ++size_;
+        copy_backward(p, data_ + size_ - 2, data_ + size_ - 1);
+        *p = val;
+      }
+    }
+    else {
+      sz_t old_size = size_;
+      sz_t new_capacity = capacity_ * 3 / 2;
+      Ptr new_data = Alloc::allocate(new_capacity);
+      try {
+        uninitialized_copy(data_, p, new_data);
+        construct(p, val);
+        ++size_;
+        uninitialized_copy(p, data_ + old_size, p + 1);
+      }
+      catch (...) {
+        destroy(new_data, new_data + old_size + 1);
+        Alloc::deallocate(new_data);
+        throw;
+      }
+
+      destroy(begin(), end());
+      Alloc::deallocate(data_);
+
+      capacity_ = new_capacity;
+      data_ = new_data;
+    }
   }
 public:
   ArrayList(sz_t capacity = kDefCapacity) noexcept
@@ -83,7 +120,7 @@ public:
   }
 
   ~ArrayList() noexcept {
-    destroy_aux();
+    destructor_aux();
   }
 
   ArrayList(sz_t count, const ValueType& value) noexcept
@@ -186,6 +223,17 @@ public:
     ValueType r = data_[size_ - 1];
     destroy(&data_[--size_]);
     return r;
+  }
+
+  void insert(ConstIter pos, const ValueType& x) {
+    insert_aux(pos, x);
+  }
+
+  void erase(ConstIter pos) {
+    if (pos + 1 != end())
+      copy(pos + 1, data_ + size_, pos);
+    --size_;
+    destroy(data_ + size_);
   }
 
   template <typename Visitor> void for_each(Visitor&& visitor) noexcept {
