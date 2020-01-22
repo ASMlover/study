@@ -262,6 +262,11 @@ class ListObject final : public BaseObject {
 public:
   inline sz_t size() const noexcept { return elements_.size(); }
   inline bool empty() const noexcept { return elements_.empty(); }
+  inline Value* data() noexcept { return elements_.data(); }
+  inline const Value* data() const noexcept { return elements_.data(); }
+  inline Value& operator[](sz_t i) noexcept { return elements_[i]; }
+  inline const Value& operator[](sz_t i) const noexcept { return elements_[i]; }
+  inline void clear() { elements_.clear(); }
 };
 
 }

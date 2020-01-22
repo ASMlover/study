@@ -44,6 +44,74 @@ struct Dummy {
   }
 };
 
+static void tree_test() {
+  auto repr = [](auto& t, const char* s) {
+    std::cout << "\n" << s << " size: " << t.size() << std::endl;
+    if (!t.empty()) {
+      std::cout
+        << s << " {"
+        << t.get_head() << ", " << t.get_tail()
+        << "}" << std::endl;
+    }
+    for (auto i = t.begin(); i != t.end(); ++i)
+      std::cout << s << " item value is: " << *i << std::endl;
+  };
+
+  {
+    wrencc::AVLTree<int> t;
+    repr(t, "AVLTree");
+
+    t.insert(45);
+    t.insert(23);
+    t.insert(67);
+    t.insert(78);
+    t.insert(52);
+    t.insert(49);
+    t.insert(19);
+    t.insert(2);
+    t.insert(7);
+    repr(t, "AVLTree");
+
+    std::cout << "\nAVLTree find <49> " << (t.find(49) != t.end()) << std::endl;
+
+    t.erase(t.begin());
+    t.erase(--t.end());
+    t.erase(t.find(49));
+    repr(t, "AVLTree");
+    std::cout << "\nAVLTree find <49> " << (t.find(49) != t.end()) << std::endl;
+
+    t.clear();
+    repr(t, "AVLTree");
+  }
+
+  {
+    wrencc::RBTree<int> t;
+    repr(t, "RBTree");
+
+    t.insert(45);
+    t.insert(23);
+    t.insert(67);
+    t.insert(78);
+    t.insert(52);
+    t.insert(49);
+    t.insert(19);
+    t.insert(2);
+    t.insert(7);
+    repr(t, "RBTree");
+
+    std::cout << "\nRBTree find <49> " << (t.find(49) != t.end()) << std::endl;
+
+    t.erase(t.begin());
+    t.erase(--t.end());
+    t.erase(t.find(49));
+    repr(t, "RBTree");
+    std::cout << "\nRBTree find <49> " << (t.find(49) != t.end()) << std::endl;
+
+    t.clear();
+    repr(t, "RBTree");
+  }
+}
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
@@ -65,6 +133,9 @@ int main(int argc, char* argv[]) {
 
   wrencc::ArrayList<int> v(5, 5);
   v.append(45);
+  v.insert(v.begin(), 66);
+  v.insert(v.end(), 77);
+  v.insert(v.begin() + 3, 88);
   v.for_each([](int v) {
         std::cout << "[item value] -> " << v << std::endl;
       });
@@ -113,6 +184,8 @@ int main(int argc, char* argv[]) {
       std::cout << "[double linked list item value] -> " << x << std::endl;
       });
   std::cout << "double linked list: " << dl.size() << std::endl;
+
+  tree_test();
 
   return 0;
 }
