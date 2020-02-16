@@ -135,6 +135,8 @@ int main(int argc, char* argv[]) {
   v.append(45);
   v.insert(v.begin(), 66);
   v.insert(v.end(), 77);
+  v.insert(v.end(), 88);
+  v.insert(v.end(), 99);
   v.insert(v.begin() + 3, 88);
   v.for_each([](int v) {
         std::cout << "[item value] -> " << v << std::endl;
