@@ -150,6 +150,43 @@ private:
       data_ = new_data;
     }
   }
+
+  template <typename... Args> void insert_aux(ConstIter pos, Args&&... args) {
+    Ptr p = data_ + (pos - begin());
+    if (size_ < capacity_) {
+      if (p == data_ + size_) {
+        construct(data_ + size_++, std::forward<Args>(args)...);
+      }
+      else {
+        construct(data_ + size_, *(data_ + size_ - 1));
+        ++size_;
+        copy_backward(p, data_ + size_ - 2, data_ + size_ - 1);
+        construct(p, std::forward<Args>(args)...);
+      }
+    }
+    else {
+      sz_t old_size = size_;
+      sz_t new_capacity = capacity_ * 3 / 2;
+      Ptr new_data = Alloc::allocate(new_capacity);
+      try {
+        uninitialized_copy(data_, p, new_data);
+        construct(p, std::forward<Args>(args)...);
+        ++size_;
+        uninitialized_copy(p, data_ + old_size, p + 1);
+      }
+      catch (...) {
+        destroy(new_data, new_data + old_size + 1);
+        Alloc::deallocate(new_data);
+        throw;
+      }
+
+      destroy(begin(), end());
+      Alloc::deallocate(data_);
+
+      capacity_ = new_capacity;
+      data_ = new_data;
+    }
+  }
 public:
   ArrayList(sz_t capacity = kDefCapacity) noexcept
     : capacity_(capacity < kDefCapacity ? kDefCapacity : capacity) {
@@ -271,7 +308,7 @@ public:
   }
 
   template <typename... Args> void insert(ConstIter pos, Args&&... args) {
-    // TODO:
+    insert_aux(pos, std::forward<Args>(args)...);
   }
 
   void erase(ConstIter pos) {
