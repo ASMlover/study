@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include "common.hh"
 #include "./container/string.hh"
 #include "./container/array_list.hh"
@@ -258,7 +259,9 @@ public:
 };
 
 class ListObject final : public BaseObject {
-  ArrayList<Value> elements_;
+  std::vector<Value> elements_;
+
+  ListObject(ClassObject* cls, sz_t n = 0, const Value& v = nullptr) noexcept;
 public:
   inline sz_t size() const noexcept { return elements_.size(); }
   inline bool empty() const noexcept { return elements_.empty(); }
@@ -267,6 +270,20 @@ public:
   inline Value& operator[](sz_t i) noexcept { return elements_[i]; }
   inline const Value& operator[](sz_t i) const noexcept { return elements_[i]; }
   inline void clear() { elements_.clear(); }
+  inline void append(const Value& v) { elements_.push_back(v); }
+  inline void insert(int i, const Value& v) { elements_.insert(elements_.begin() + i, v); }
+
+  Value remove(int i) {
+    Value removed = elements_[i];
+    elements_.erase(elements_.begin() + i);
+    return removed;
+  }
+
+  virtual bool is_equal(BaseObject* r) const override;
+  virtual String stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static ListObject* create(WrenVM& vm, sz_t n = 0, const Value& v = nullptr);
 };
 
 }

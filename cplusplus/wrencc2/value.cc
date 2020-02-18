@@ -255,4 +255,29 @@ StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
   return nullptr;
 }
 
+ListObject::ListObject(ClassObject* cls, sz_t n, const Value& v) noexcept
+  : BaseObject(ObjType::LIST, cls) {
+  if (n > 0)
+    elements_.resize(n, v);
+}
+
+bool ListObject::is_equal(BaseObject* r) const {
+  // TODO:
+  return false;
+}
+
+String ListObject::stringify() const {
+  // TODO:
+  return "";
+}
+
+void ListObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+ListObject* ListObject::create(WrenVM& vm, sz_t n, const Value& v) {
+  // TODO:
+  return nullptr;
+}
+
 }
