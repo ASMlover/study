@@ -37,7 +37,7 @@
 # define PUNCTUATOR(k, s) TOKEN(k, s)
 #endif
 
-#ifdef KEYWORD
+#ifndef KEYWORD
 # define KEYWORD(k, s) TOKDEF(KW_##k, s)
 #endif
 
