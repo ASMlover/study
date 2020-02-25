@@ -29,6 +29,28 @@
 namespace wrencc {
 
 Token Lexer::next_token() noexcept {
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_end())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (std::isdigit(c))
+    return make_numeric();
+  if (is_alpha(c))
+    return make_identifier(c);
+
+  switch (c) {
+  case '(': return make_token(TokenKind::TK_LPAREN);
+  case ')': return make_token(TokenKind::TK_RPAREN);
+  case '[': return make_token(TokenKind::TK_LBRACKET);
+  case ']': return make_token(TokenKind::TK_RBRACKET);
+  case '{': return make_token(TokenKind::TK_LBRACE);
+  case '}': return make_token(TokenKind::TK_RBRACE);
+  case ':': return make_token(TokenKind::TK_COLON);
+  }
+
   return make_token(TokenKind::TK_ERR, "unexpected charactor");
 }
 
