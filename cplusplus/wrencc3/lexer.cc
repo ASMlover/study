@@ -49,6 +49,46 @@ Token Lexer::next_token() noexcept {
   case '{': return make_token(TokenKind::TK_LBRACE);
   case '}': return make_token(TokenKind::TK_RBRACE);
   case ':': return make_token(TokenKind::TK_COLON);
+  case ',': return make_token(TokenKind::TK_COMMA);
+  case '*': return make_token(TokenKind::TK_STAR);
+  case '%': return make_token(TokenKind::TK_PERCENT);
+  case '^': return make_token(TokenKind::TK_CARET);
+  case '+': return make_token(TokenKind::TK_PLUS);
+  case '-': return make_token(TokenKind::TK_MINUS);
+  case '~': return make_token(TokenKind::TK_TILDE);
+  case '?': return make_token(TokenKind::TK_QUESTION);
+
+  case '|':
+    return make_token(match('|') ? TokenKind::TK_PIPEPIPE : TokenKind::TK_PIPE);
+  case '&':
+    return make_token(match('&') ? TokenKind::TK_AMPAMP : TokenKind::TK_AMP);
+  case '=':
+    return make_token(match('=') ? TokenKind::TK_EQEQ : TokenKind::TK_EQ);
+  case '|':
+    return make_token(match('=') ? TokenKind::TK_BANGEQ : TokenKind::TK_BANG);
+
+  case '.':
+    if (match('.')) {
+      return make_token(match('.') ?
+          TokenKind::TK_DOTDOTDOT : TokenKind::TK_DOTDOT);
+    }
+    else {
+      return make_token(TokenKind::TK_DOT);
+    }
+
+  case '<':
+    if (match('<'))
+      return make_token(TokenKind::TK_LTLT);
+    else
+      return make_token(match('=') ? TokenKind::TK_LTEQ : TokenKind::TK_LT);
+  case '>':
+    if (match('>'))
+      return make_token(TokenKind::TK_GTGT);
+    else
+      return make_token(match('=') ? TokenKind::TK_GTEQ : TokenKind::TK_GT);
+
+  case '\n': return make_token(TokenKind::TK_NL, lineno_++);
+  case '"': return make_string();
   }
 
   return make_token(TokenKind::TK_ERR, "unexpected charactor");
