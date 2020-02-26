@@ -33,7 +33,7 @@
 namespace wrencc {
 
 class Lexer final : private UnCopyable {
-  const str_t& source_bytes_;
+  str_t source_bytes_;
   sz_t begpos_{};
   sz_t curpos_{};
   int lineno_{1};

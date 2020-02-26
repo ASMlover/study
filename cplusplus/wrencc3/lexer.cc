@@ -64,7 +64,7 @@ Token Lexer::next_token() noexcept {
     return make_token(match('&') ? TokenKind::TK_AMPAMP : TokenKind::TK_AMP);
   case '=':
     return make_token(match('=') ? TokenKind::TK_EQEQ : TokenKind::TK_EQ);
-  case '|':
+  case '!':
     return make_token(match('=') ? TokenKind::TK_BANGEQ : TokenKind::TK_BANG);
 
   case '.':
