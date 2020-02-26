@@ -25,12 +25,19 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "../../harness.hh"
-#include "../../utility.hh"
+#include "../../lexer.hh"
 
-WRENCC_TEST(Utility, wrencc::FakeTester)  {
-  wrencc::SymbolTable st;
+WRENCC_TEST(Lexer, wrencc::FakeTester) {
+  wrencc::Lexer lex("class A {}");
 
-  WRENCC_CHECK_EQ(st.ensure("test1"), 0);
-  WRENCC_CHECK_EQ(st.ensure("test2"), 1);
-  WRENCC_CHECK_EQ(st.ensure("test1"), 0);
+  auto t = lex.next_token();
+  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::KW_CLASS);
+  t = lex.next_token();
+  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_INDENTIFIER);
+  t = lex.next_token();
+  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_LBRACE);
+  t = lex.next_token();
+  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_RBRACE);
+  t = lex.next_token();
+  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_EOF);
 }
