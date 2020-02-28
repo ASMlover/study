@@ -203,4 +203,52 @@ inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
   return out << val.stringify();
 }
 
+// a heap-allocated string object
+class StringObject final : public BaseObject {
+  // number of bytes in the string, not including the null terminator
+  sz_t size_{};
+
+  // the hash value of the string's contents
+  u32_t hash_{};
+
+  // string's bytes followed by a null terminator
+  char* data_{};
+public:
+  inline sz_t size() const noexcept { return size_; }
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline const char* cstr() const noexcept { return data_; }
+  inline char* data() noexcept { return data_; }
+  inline const char* data() const noexcept { return data_; }
+  inline char& operator[](sz_t i) { return data_[i]; }
+  inline const char& operator[](sz_t i) const { return data_[i]; }
+  inline char& at(sz_t i) { return data_[i]; }
+  inline const char& at(sz_t i) const { return data_[i]; }
+
+  inline bool compare(StringObject* s) const {
+    return this == s || (hash_ == s->hash_ && size_ == s->size_
+        && std::memcmp(data_, s->data_, size_) == 0);
+  }
+
+  inline bool compare(const str_t& s) const {
+    return size_ == s.size() && std::memcmp(data_, s.data(), size_) == 0;
+  }
+
+  inline bool compare(const char* s, sz_t n) const {
+    return size_ == n && std::memcmp(data_, s, size_) == 0;
+  }
+
+  int find(StringObject* sub, sz_t off = 0) const;
+
+  virtual bool is_equal(BaseObject* r) const override;
+  virtual str_t stringify() const override;
+  virtual u32_t hasher() const override;
+
+  static StringObject* create(WrenVM& vm, char c);
+  static StringObject* create(WrenVM& vm, const char* s, sz_t n);
+  static StringObject* create(WrenVM& vm, const str_t& s);
+  static StringObject* concat(WrenVM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* concat(WrenVM& vm, const char* s1, const char* s2);
+  static StringObject* concat(WrenVM& vm, const str_t& s1, const str_t& s2);
+};
+
 }
