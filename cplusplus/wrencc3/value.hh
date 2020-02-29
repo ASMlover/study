@@ -213,8 +213,16 @@ class StringObject final : public BaseObject {
 
   // string's bytes followed by a null terminator
   char* data_{};
+
+  StringObject(ClassObject* cls, char c) noexcept;
+  StringObject(ClassObject* cls,
+      const char* s, sz_t n, bool replace_owner = false) noexcept;
+  virtual ~StringObject() noexcept;
+
+  void hash_string() noexcept;
 public:
   inline sz_t size() const noexcept { return size_; }
+  inline sz_t length() const noexcept { return size_; }
   inline bool empty() const noexcept { return size_ == 0; }
   inline const char* cstr() const noexcept { return data_; }
   inline char* data() noexcept { return data_; }
@@ -249,6 +257,11 @@ public:
   static StringObject* concat(WrenVM& vm, StringObject* s1, StringObject* s2);
   static StringObject* concat(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat(WrenVM& vm, const str_t& s1, const str_t& s2);
+  static StringObject* from_byte(WrenVM& vm, u8_t value);
+  static StringObject* from_numeric(WrenVM& vm, double value);
+  static StringObject* from_range(
+      WrenVM& vm, StringObject* s, sz_t off, sz_t n, sz_t step);
+  static StringObject* format(WrenVM& vm, const char* format, ...);
 };
 
 }

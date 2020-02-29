@@ -135,4 +135,122 @@ str_t ObjValue::stringify() const noexcept {
   return "";
 }
 
+StringObject::StringObject(ClassObject* cls, char c) noexcept
+  : BaseObject(ObjType::STRING, cls)
+  , size_(1) {
+  data_ = new char[size_ + 1];
+  data_[0] = c, data_[1] = 0;
+
+  hash_string();
+}
+
+StringObject::StringObject(
+    ClassObject* cls, const char* s, sz_t n, bool replace_owner) noexcept
+  : BaseObject(ObjType::STRING, cls)
+  , size_(n) {
+  if (replace_owner) {
+    data_ = const_cast<char*>(s);
+  }
+  else {
+    if (s != nullptr) {
+      data_ = new char[size_ + 1];
+      std::memcpy(data_, s, n);
+      data_[size_] = 0;
+    }
+  }
+
+  hash_string();
+}
+
+StringObject::~StringObject() noexcept {
+  if (data_)
+    delete [] data_;
+}
+
+void StringObject::hash_string() noexcept {
+  // FNV-1a hash. See: http://www.isthe.com/chongo/tech/comp/fnv/
+
+  u32_t hash = 2166136261u;
+  for (u32_t i = 0; i < size_; ++i) {
+    hash ^= data_[i];
+    hash *= 16777619;
+  }
+  hash_ = hash;
+}
+
+int StringObject::find(StringObject* sub, sz_t off) const {
+  if (sub->size_ == 0)
+    return Xt::as_type<int>(off);
+  if (sub->size_ + off > size_ || off >= size_)
+    return -1;
+
+  char* found = std::strstr(data_ + off, sub->data_);
+  return found != nullptr ? Xt::as_type<int>(found - data_) : -1;
+}
+
+bool StringObject::is_equal(BaseObject* r) const {
+  return compare(r->as_string());
+}
+
+str_t StringObject::stringify() const {
+  return data_ != nullptr ? data_ : "";
+}
+
+u32_t StringObject::hasher() const {
+  return hash_;
+}
+
+StringObject* StringObject::create(WrenVM& vm, char c) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::create(WrenVM& vm, const char* s, sz_t n) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::create(WrenVM& vm, const str_t& s) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::concat(
+    WrenVM& vm, StringObject* s1, StringObject* s2) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::concat(WrenVM& vm, const char* s1, const char* s2) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::concat(
+    WrenVM& vm, const str_t& s1, const str_t& s2) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::from_byte(WrenVM& vm, u8_t value) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::from_range(
+    WrenVM& vm, StringObject* s, sz_t off, sz_t n, sz_t step) {
+  // TODO:
+  return nullptr;
+}
+
+StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
+  // TODO:
+  return nullptr;
+}
+
 }
