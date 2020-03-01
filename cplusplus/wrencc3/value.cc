@@ -29,18 +29,15 @@
 namespace wrencc {
 
 StringObject* BaseObject::as_string() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<StringObject>(this);
 }
 
 const char* BaseObject::as_cstring() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<StringObject>(this)->cstr();
 }
 
 ListObject* BaseObject::as_list() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<ListObject>(this);
 }
 
 RangeObject* BaseObject::as_range() noexcept {
@@ -249,6 +246,40 @@ StringObject* StringObject::from_range(
 }
 
 StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
+  // TODO:
+  return nullptr;
+}
+
+ListObject::ListObject(ClassObject* cls, sz_t n, const Value& v) noexcept
+  : BaseObject(ObjType::LIST, cls) {
+  if (n > 0)
+    elements_.resize(n, v);
+}
+
+str_t ListObject::stringify() const {
+  ss_t ss;
+
+  ss << "[";
+  for (auto i = 0u; i < elements_.size(); ++i) {
+    if (i > 0)
+      ss << ", ";
+
+    auto& v = elements_[i];
+    if (v.is_string())
+      ss << "\"" << v << "\"";
+    else
+      ss << v;
+  }
+  ss << "]";
+
+  return ss.str();
+}
+
+void ListObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+ListObject* ListObject::create(WrenVM& vm, sz_t n, const Value& v) {
   // TODO:
   return nullptr;
 }

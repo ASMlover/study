@@ -264,4 +264,38 @@ public:
   static StringObject* format(WrenVM& vm, const char* format, ...);
 };
 
+class ListObject final : public BaseObject {
+  // the elements in the list
+  std::vector<Value> elements_;
+
+  ListObject(ClassObject* cls, sz_t n = 0, const Value& v = nullptr) noexcept;
+public:
+  inline sz_t size() const noexcept { return elements_.size(); }
+  inline sz_t length() const noexcept { return elements_.size(); }
+  inline bool empty() const noexcept { return elements_.empty(); }
+  inline Value* data() noexcept { return elements_.data(); }
+  inline const Value* data() const noexcept { return elements_.data(); }
+  inline Value& operator[](sz_t i) noexcept { return elements_[i]; }
+  inline const Value& operator[](sz_t i) const noexcept { return elements_[i]; }
+  inline Value& at(sz_t i) noexcept { return elements_.at(i); }
+  inline const Value& at(sz_t i) const noexcept { return elements_.at(i); }
+  inline void clear() noexcept { elements_.clear(); }
+  inline void append(const Value& v) { elements_.push_back(v); }
+
+  inline void insert(int i, const Value& v) {
+    elements_.insert(elements_.begin() + i, v);
+  }
+
+  inline Value erase(int i) {
+    Value r = elements_[i];
+    elements_.erase(elements_.begin() + i);
+    return r;
+  }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static ListObject* create(WrenVM& vm, sz_t n = 0, const Value& v = nullptr);
+};
+
 }
