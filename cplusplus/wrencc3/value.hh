@@ -203,7 +203,6 @@ inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
   return out << val.stringify();
 }
 
-// a heap-allocated string object
 class StringObject final : public BaseObject {
   // number of bytes in the string, not including the null terminator
   sz_t size_{};
@@ -265,8 +264,7 @@ public:
 };
 
 class ListObject final : public BaseObject {
-  // the elements in the list
-  std::vector<Value> elements_;
+  std::vector<Value> elements_; // the elements in the list
 
   ListObject(ClassObject* cls, sz_t n = 0, const Value& v = nullptr) noexcept;
 public:
@@ -296,6 +294,31 @@ public:
   virtual void gc_blacken(WrenVM& vm) override;
 
   static ListObject* create(WrenVM& vm, sz_t n = 0, const Value& v = nullptr);
+};
+
+class RangeObject final : public BaseObject {
+  double from_{}; // the beginning of the range
+  double to_{}; // the end of the range
+  bool is_inclusive_{}; // true if [to_] is included in the range
+
+  RangeObject(ClassObject* cls,
+      double from, double to, bool is_inclusive) noexcept
+    : BaseObject(ObjType::RANGE, cls)
+    , from_(from)
+    , to_(to)
+    , is_inclusive_(is_inclusive) {
+  }
+public:
+  inline double from() const noexcept { return from_; }
+  inline double to() const noexcept { return to_; }
+  inline bool is_inclusive() const noexcept { return is_inclusive_; }
+
+  virtual bool is_equal(BaseObject* r) const override;
+  virtual str_t stringify() const override;
+  virtual u32_t hasher() const override;
+
+  static RangeObject* create(
+      WrenVM& vm, double from, double to, bool is_inclusive);
 };
 
 }

@@ -41,8 +41,7 @@ ListObject* BaseObject::as_list() noexcept {
 }
 
 RangeObject* BaseObject::as_range() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<RangeObject>(this);
 }
 
 MapObject* BaseObject::as_map() noexcept {
@@ -280,6 +279,27 @@ void ListObject::gc_blacken(WrenVM& vm) {
 }
 
 ListObject* ListObject::create(WrenVM& vm, sz_t n, const Value& v) {
+  // TODO:
+  return nullptr;
+}
+
+bool RangeObject::is_equal(BaseObject* r) const {
+  RangeObject* o = r->as_range();
+  return from_ == o->from_ && to_ == o->to_ && is_inclusive_ == o->is_inclusive_;
+}
+
+str_t RangeObject::stringify() const {
+  ss_t ss;
+  ss << "[range `" << this << "`]";
+  return ss.str();
+}
+
+u32_t RangeObject::hasher() const {
+  return Xt::hash_numeric(from_) ^ Xt::hash_numeric(to_);
+}
+
+RangeObject* RangeObject::create(
+    WrenVM& vm, double from, double to, bool is_inclusive) {
   // TODO:
   return nullptr;
 }
