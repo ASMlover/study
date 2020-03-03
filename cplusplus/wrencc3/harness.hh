@@ -52,7 +52,7 @@ public:
     }
   }
 
-  Tester& is_true(bool b, str_t msg) noexcept {
+  Tester& is_true(bool b, strv_t msg) noexcept {
     if (!b) {
       ss_ << " Assection failure: " << msg;
       ok_ = false;
@@ -64,7 +64,7 @@ public:
   template <typename X, typename Y>\
   Tester& name(const X& x, const Y& y) noexcept {\
     if (!(x op y)) {\
-      ss_ << " failed: " << x << (" " #op " ") << y << y;\
+      ss_ << " failed: " << x << (" " #op " ") << y;\
       ok_ = false;\
     }\
     return *this;\
