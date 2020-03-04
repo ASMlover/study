@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <optional>
 #include <vector>
 #include "common.hh"
 
@@ -203,6 +204,7 @@ inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
   return out << val.stringify();
 }
 
+// a heap-allocated string object
 class StringObject final : public BaseObject {
   // number of bytes in the string, not including the null terminator
   sz_t size_{};
@@ -284,7 +286,7 @@ public:
     elements_.insert(elements_.begin() + i, v);
   }
 
-  inline Value erase(int i) {
+  inline Value remove(int i) {
     Value r = elements_[i];
     elements_.erase(elements_.begin() + i);
     return r;
@@ -319,6 +321,41 @@ public:
 
   static RangeObject* create(
       WrenVM& vm, double from, double to, bool is_inclusive);
+};
+
+// a hash table mapping keys to values
+class MapObject final : public BaseObject {
+  using MapEntry = std::pair<Value, Value>;
+
+  sz_t capacity_{}; // the number of entries allocated
+  sz_t size_{}; // the number of entries in the map
+  std::vector<MapEntry> entries_; // contiguous array of [capacity_] entries
+
+  int find_entry(const Value key) const;
+  bool insert_entry(std::vector<MapEntry>& entries,
+      int capacity, const Value& k, const Value& v);
+  void grow();
+  void resize(sz_t new_capacity);
+
+  MapObject(ClassObject* cls) noexcept
+    : BaseObject(ObjType::MAP, cls) {
+  }
+public:
+  inline sz_t size() const noexcept { return size_; }
+  inline sz_t length() const noexcept { return size_; }
+  inline bool empty() const noexcept { return size_ == 0; }
+  inline sz_t capacity() const noexcept { return capacity_; }
+
+  void clear();
+  bool contains(const Value& key) const;
+  std::optional<Value> get(const Value& key) const;
+  void set(const Value& key, const Value& val);
+  Value remove(const Value& key);
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static MapObject* create(WrenVM& vm);
 };
 
 }
