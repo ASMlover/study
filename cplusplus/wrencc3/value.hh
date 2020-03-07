@@ -27,6 +27,7 @@
 #pragma once
 
 #include <optional>
+#include <tuple>
 #include <vector>
 #include "common.hh"
 
@@ -331,9 +332,8 @@ class MapObject final : public BaseObject {
   sz_t size_{}; // the number of entries in the map
   std::vector<MapEntry> entries_; // contiguous array of [capacity_] entries
 
-  int find_entry(const Value key) const;
-  bool insert_entry(std::vector<MapEntry>& entries,
-      int capacity, const Value& k, const Value& v);
+  std::tuple<bool, int> find_entry(const Value& key) const;
+  bool insert_entry(int capacity, const Value& k, const Value& v);
   void grow();
   void resize(sz_t new_capacity);
 

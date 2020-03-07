@@ -304,4 +304,68 @@ RangeObject* RangeObject::create(
   return nullptr;
 }
 
+std::tuple<bool, int> MapObject::find_entry(const Value& key) const {
+  if (capacity_ == 0)
+    return std::make_tuple(false, -1);
+
+  sz_t start_index = key.hasher() % capacity_;
+  sz_t index = start_index;
+  do {
+    const MapEntry& entry = entries_[index];
+    if (entry.first.is_undefined()) {
+      if (!entry.second.as_boolean())
+        return std::make_tuple(false, Xt::as_type<int>(index));
+    }
+    else if (entry.first == key) {
+      return std::make_tuple(true, Xt::as_type<int>(index));
+    }
+
+    index = (index + 1) % capacity_;
+  } while (index != start_index);
+
+  ASSERT(false, "map should have tombstones or empty entries");
+  return std::make_tuple(false, -1);
+}
+
+bool MapObject::insert_entry(int capacity, const Value& k, const Value& v) {
+  return false;
+}
+
+void MapObject::grow() {
+}
+
+void MapObject::resize(sz_t new_capacity) {
+}
+
+void MapObject::clear() {
+}
+
+bool MapObject::contains(const Value& key) const {
+  return false;
+}
+
+std::optional<Value> MapObject::get(const Value& key) const {
+  return {};
+}
+
+void MapObject::set(const Value& key, const Value& val) {
+}
+
+Value MapObject::remove(const Value& key) {
+  return nullptr;
+}
+
+str_t MapObject::stringify() const {
+  return "";
+}
+
+void MapObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+MapObject* MapObject::create(WrenVM& vm) {
+  // TODO:
+  return nullptr;
+}
+
 }
