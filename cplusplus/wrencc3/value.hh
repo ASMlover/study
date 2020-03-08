@@ -328,13 +328,26 @@ public:
 class MapObject final : public BaseObject {
   using MapEntry = std::pair<Value, Value>;
 
+  // the initial (and minimum) capacity of a non-empty map object
+  static constexpr sz_t kMinCapacity = 16;
+
+  // the rate at which a collection's capacity grows when the size exceeds
+  // the current capacity, the new capacity will be determined by *multiplying*
+  // the old capacity by this, growing geomertrically is necessary to ensure
+  // that adding to a collection has O(1) amortized complexity
+  static constexpr sz_t kGrowFactor = 2;
+
+  // the maximum percentage of map entries that can be filled before the map
+  // is grown, a lower load takes more memory but reduces collisions which
+  // makes lookup faster
+  static constexpr sz_t kLoadPercent = 75;
+
   sz_t capacity_{}; // the number of entries allocated
   sz_t size_{}; // the number of entries in the map
   std::vector<MapEntry> entries_; // contiguous array of [capacity_] entries
 
   std::tuple<bool, int> find_entry(const Value& key) const;
-  bool insert_entry(int capacity, const Value& k, const Value& v);
-  void grow();
+  bool insert_entry(const Value& k, const Value& v);
   void resize(sz_t new_capacity);
 
   MapObject(ClassObject* cls) noexcept

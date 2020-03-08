@@ -24,9 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <algorithm>
 #include "value.hh"
 
 namespace wrencc {
+
+static const Value kUndefined;
 
 StringObject* BaseObject::as_string() noexcept {
   return Xt::down<StringObject>(this);
@@ -327,36 +330,85 @@ std::tuple<bool, int> MapObject::find_entry(const Value& key) const {
   return std::make_tuple(false, -1);
 }
 
-bool MapObject::insert_entry(int capacity, const Value& k, const Value& v) {
-  return false;
-}
-
-void MapObject::grow() {
+bool MapObject::insert_entry(const Value& k, const Value& v) {
+  auto [r, index] = find_entry(k);
+  if (r)
+    entries_[index].second = v;
+  else
+    entries_[index].swap(std::make_pair(k, v));
+  return !r;
 }
 
 void MapObject::resize(sz_t new_capacity) {
+  std::vector<MapEntry> new_entries(
+      new_capacity, std::make_pair(kUndefined, false));
+
+  if (capacity_ > 0) {
+    for (auto& entry : entries_) {
+      if (!entry.first.is_undefined())
+        insert_entry(entry.first, entry.second);
+    }
+  }
+
+  entries_.clear();
+  capacity_ = new_capacity;
+  entries_.swap(new_entries);
 }
 
 void MapObject::clear() {
+  entries_.clear();
+  capacity_ = 0;
+  size_ = 0;
 }
 
 bool MapObject::contains(const Value& key) const {
-  return false;
+  auto [r, _] = find_entry(key);
+  return r;
 }
 
 std::optional<Value> MapObject::get(const Value& key) const {
+  auto [r, index] = find_entry(key);
+  if (r)
+    return {entries_[index].second};
   return {};
 }
 
 void MapObject::set(const Value& key, const Value& val) {
+  if (size_ + 1 > capacity_ * kLoadPercent / 100) {
+    sz_t new_capacity = std::max(capacity_ * kGrowFactor, kMinCapacity);
+    resize(new_capacity);
+  }
+
+  if (insert_entry(key, val))
+    ++size_;
 }
 
 Value MapObject::remove(const Value& key) {
-  return nullptr;
+  auto [r, index] = find_entry(key);
+  if (!r)
+    return nullptr;
+
+  Value value = entries_[index].second;
+  entries_[index].first = kUndefined;
+  entries_[index].second = true;
+
+  --size_;
+  if (size_ == 0) {
+    clear();
+  }
+  else if (capacity_ > kMinCapacity &&
+      size_ < capacity_ / kGrowFactor * kLoadPercent / 100) {
+    sz_t new_capacity = std::max(capacity_ / kGrowFactor, kMinCapacity);
+    resize(new_capacity);
+  }
+
+  return value;
 }
 
 str_t MapObject::stringify() const {
-  return "";
+  ss_t ss;
+  ss << "[map `" << this << "`]";
+  return ss.str();
 }
 
 void MapObject::gc_blacken(WrenVM& vm) {
