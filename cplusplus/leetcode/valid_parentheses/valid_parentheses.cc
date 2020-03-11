@@ -26,8 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <stack>
 #include <string_view>
-#include "common.hh"
-#include "harness.hh"
+#include "../common.hh"
+#include "../harness.hh"
 
 // [ADDR] https://leetcode.com/problems/valid-parentheses/description
 //

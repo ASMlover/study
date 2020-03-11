@@ -25,8 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "common.hh"
-#include "harness.hh"
+#include "../common.hh"
+#include "../harness.hh"
 
 // Question: https://leetcode.com/problems/reverse-linked-list/description/
 //
