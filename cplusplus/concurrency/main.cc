@@ -35,5 +35,14 @@ int main(int argc, char* argv[]) {
   void split_async_workers();
   split_async_workers();
 
+  void async_worker_timeout();
+  async_worker_timeout();
+
+  void async_worker_catch();
+  async_worker_catch();
+
+  //void async_worker_deferred();
+  //async_worker_deferred();
+
   return 0;
 }
