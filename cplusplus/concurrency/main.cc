@@ -35,5 +35,8 @@ int main(int argc, char* argv[]) {
   void split_async_workers();
   split_async_workers();
 
+  void async_worker_timeout();
+  async_worker_timeout();
+
   return 0;
 }
