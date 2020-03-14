@@ -45,3 +45,22 @@ void async_worker_timeout() {
     std::cout << "... <accumulate-blocked> still not ready" << std::endl;
   std::cout << "[" << __func__ << "] with accumulate: " << fut.get() << std::endl;
 }
+
+static int accumulate_array_except(
+  const std::vector<int>& arr, std::size_t off, std::size_t n) {
+  throw std::runtime_error("something is broken");
+  return std::accumulate(arr.begin() + off, arr.begin() + off + n, 0);
+}
+
+void async_worker_catch() {
+  std::cout << std::endl << "[" << __func__ << "] test beginning ..." << std::endl;
+
+  std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+  try {
+    std::future<int> fut = std::async(std::launch::async, accumulate_array_except, arr, 0, arr.size());
+    std::cout << "[" << __func__ << "] with accumulate: " << fut.get() << std::endl;
+  }
+  catch (const std::runtime_error & err) {
+    std::cerr << "caught an error: " << err.what() << std::endl;
+  }
+}
