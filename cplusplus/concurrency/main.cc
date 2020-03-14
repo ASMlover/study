@@ -41,5 +41,8 @@ int main(int argc, char* argv[]) {
   void async_worker_catch();
   async_worker_catch();
 
+  //void async_worker_deferred();
+  //async_worker_deferred();
+
   return 0;
 }
