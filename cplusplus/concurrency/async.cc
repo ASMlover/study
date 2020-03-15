@@ -3,6 +3,7 @@
 #include <future>
 #include <thread>
 #include <vector>
+#include "tasks.hh"
 
 template <typename Fn, typename... Args>
 inline auto really_async(Fn&& fn, Args&&... args) noexcept {
@@ -12,6 +13,13 @@ inline auto really_async(Fn&& fn, Args&&... args) noexcept {
 static int accumulate_array(
   const std::vector<int>& arr, std::size_t off, std::size_t n) {
   return std::accumulate(arr.begin() + off, arr.begin() + off + n, 0);
+}
+
+TASK_DECL(AsyncWorker) {
+  std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+  std::future<int> fut = really_async(accumulate_array, arr, 0, arr.size());
+
+  std::cout << "computing result is: " << fut.get() << std::endl;
 }
 
 void async_worker() {

@@ -24,25 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#include "tasks.hh"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  void async_worker();
-  async_worker();
-
-  void split_async_workers();
-  split_async_workers();
-
-  void async_worker_timeout();
-  async_worker_timeout();
-
-  void async_worker_catch();
-  async_worker_catch();
-
-  //void async_worker_deferred();
-  //async_worker_deferred();
-
-  return 0;
+  return run_all_tasks();
 }
