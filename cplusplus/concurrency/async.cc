@@ -22,24 +22,13 @@ TASK_DECL(AsyncWorker) {
   std::cout << "computing result is: " << fut.get() << std::endl;
 }
 
-void async_worker() {
-  std::cout << std::endl << "[" << __func__ << "] test beginning ..." << std::endl;
-
-  std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-  std::future<int> fut = really_async(accumulate_array, arr, 0, arr.size());
-
-  std::cout << "[" << __func__ << "] with accumulate: " << fut.get() << std::endl;
-}
-
-void split_async_workers() {
-  std::cout << std::endl << "[" << __func__ << "] test beginning ..." << std::endl;
-
+TASK_DECL(AsyncWorkerSplit) {
   std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   std::vector<std::future<int>> futs;
   futs.push_back(really_async(accumulate_array, arr, 0, arr.size() / 2));
   futs.push_back(really_async(accumulate_array, arr, arr.size() / 2, arr.size() / 2));
 
-  std::cout << "[" << __func__ << "] with accumulate: " << futs[0].get() << " | " << futs[1].get() << std::endl;
+  std::cout << "computing result is: " << futs[0].get() << " | " << futs[1].get() << std::endl;
 }
 
 static int accumulate_array_blocked(
@@ -48,26 +37,27 @@ static int accumulate_array_blocked(
   return std::accumulate(arr.begin() + off, arr.begin() + off + n, 0);
 }
 
-void async_worker_timeout() {
-  std::cout << std::endl << "[" << __func__ << "] test beginning ..." << std::endl;
-
+TASK_DECL(AsyncWorkerTimeout) {
   std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   std::future<int> fut = really_async(accumulate_array_blocked, arr, 0, arr.size());
 
   while (fut.wait_for(std::chrono::seconds(1)) != std::future_status::ready)
     std::cout << "... <accumulate-blocked> still not ready" << std::endl;
-  std::cout << "[" << __func__ << "] with accumulate: " << fut.get() << std::endl;
+  std::cout << "computing result is: " << fut.get() << std::endl;
 }
 
-void async_worker_deferred() {
-  std::cout << std::endl << "[" << __func__ << "] test beginning ..." << std::endl;
-
+TASK_DECL(AsyncWorkerDeferred) {
   std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   std::future<int> fut = std::async(std::launch::deferred, accumulate_array_blocked, arr, 0, arr.size());
 
-  while (fut.wait_for(std::chrono::seconds(1)) != std::future_status::ready)
+  int counter = 0;
+  while (fut.wait_for(std::chrono::seconds(1)) != std::future_status::ready) {
     std::cout << "... <accumulate-blocked> still not ready" << std::endl;
-  std::cout << "[" << __func__ << "] with accumulate: " << fut.get() << std::endl;
+
+    if (++counter > 100)
+      break;
+  }
+  std::cout << "computing result is: " << fut.get() << std::endl;
 }
 
 static int accumulate_array_except(
@@ -76,13 +66,11 @@ static int accumulate_array_except(
   return std::accumulate(arr.begin() + off, arr.begin() + off + n, 0);
 }
 
-void async_worker_catch() {
-  std::cout << std::endl << "[" << __func__ << "] test beginning ..." << std::endl;
-
+TASK_DECL(AsyncWorkerCaught) {
   std::vector<int> arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
   try {
     std::future<int> fut = really_async(accumulate_array_except, arr, 0, arr.size());
-    std::cout << "[" << __func__ << "] with accumulate: " << fut.get() << std::endl;
+    std::cout << "computing result is: " << fut.get() << std::endl;
   }
   catch (const std::runtime_error & err) {
     std::cerr << "caught an error: " << err.what() << std::endl;
