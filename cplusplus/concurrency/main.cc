@@ -29,5 +29,5 @@
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  return run_all_tasks();
+  return task::run_all_tasks();
 }
