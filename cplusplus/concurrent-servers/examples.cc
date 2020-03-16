@@ -6,9 +6,7 @@
 
 namespace efw {
 
-using _Context = std::tuple<std::string_view, ClosureFn>;
-using _ContextVector = std::vector<_Context>;
-
+using _ContextVector = std::vector<std::tuple<std::string_view, ClosureFn>>;
 std::unique_ptr<_ContextVector> g_examples{};
 
 bool register_example(std::string_view name, ClosureFn&& closure) {
