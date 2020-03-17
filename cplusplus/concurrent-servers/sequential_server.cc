@@ -1,30 +1,16 @@
-#include <WinSock2.h>
+#include "common_utils.hh"
 #include "examples.hh"
-
-#pragma comment(lib, "ws2_32.lib")
-
-class _WNGuarder {
-public:
-  _WNGuarder() noexcept {
-    WSADATA wd;
-    (void)WSAStartup(MAKEWORD(2, 2), &wd);
-  }
-
-  ~_WNGuarder() noexcept {
-    WSACleanup();
-  }
-};
 
 enum class _NetStatus {
   WAIT_MSG,
   IN_MSG,
 };
 
-static void serve_connection(SOCKET sockfd) {
-  if (send(sockfd, "*", 1, 0) < 1) {
-    shutdown(sockfd, SD_BOTH);
-    closesocket(sockfd);
-  }
+static void serve_connection(SOCKET fd) {
+  common::UniqueSocket sockfd(fd);
+
+  if (send(sockfd, "*", 1, 0) < 1)
+    return;
 
   _NetStatus status = _NetStatus::WAIT_MSG;
   for (;;) {
@@ -46,25 +32,20 @@ static void serve_connection(SOCKET sockfd) {
         }
         else {
           c += 1;
-          if (send(sockfd, &c, 1, 0) < 0) {
-            shutdown(sockfd, SD_BOTH);
-            closesocket(sockfd);
+          if (send(sockfd, &c, 1, 0) < 0)
             return;
-          }
         }
         break;
       }
     }
   }
-
-  shutdown(sockfd, SD_BOTH);
-  closesocket(sockfd);
 }
 
 EFW_EXAMPLE(SequentialServer, ss1) {
-  _WNGuarder guard;
+  common::WSGuarder guard;
 
-  SOCKET listen_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  common::UniqueSocket listen_sockfd(socket(AF_INET, SOCK_STREAM, 0));
+
   sockaddr_in local_addr;
   local_addr.sin_family = AF_INET;
   local_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -83,7 +64,4 @@ EFW_EXAMPLE(SequentialServer, ss1) {
 
     serve_connection(new_sockfd);
   }
-
-  shutdown(listen_sockfd, SD_BOTH);
-  closesocket(listen_sockfd);
 }
