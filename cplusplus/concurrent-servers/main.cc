@@ -29,5 +29,9 @@
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  return efw::launch_all_examples();
+  std::string_view name;
+  if (argc > 1)
+    name = argv[1];
+
+  return efw::launch_examples(name);
 }
