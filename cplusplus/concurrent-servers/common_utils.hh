@@ -24,7 +24,7 @@ protected:
   ~UnCopyable() noexcept = default;
 };
 
-template <typename T> class Singleton {
+template <typename T> class Singleton : private UnCopyable {
 public:
   static T& get_instance() noexcept {
     static T _ins;
@@ -44,8 +44,8 @@ public:
   UniqueSocket(SOCKET fd) noexcept : sockfd_(fd) {}
   ~UniqueSocket() noexcept;
 
-  inline SOCKET get() const { return sockfd_; }
-  inline operator SOCKET () const { return sockfd_; }
+  inline operator SOCKET() const { return sockfd_; }
+  inline operator bool() const { return sockfd_ != INVALID_SOCKET; }
 };
 
 }

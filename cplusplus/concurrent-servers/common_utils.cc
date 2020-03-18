@@ -14,7 +14,7 @@ WSGuarder::~WSGuarder() noexcept {
 }
 
 UniqueSocket::~UniqueSocket() noexcept {
-  if (sockfd_ != 0) {
+  if (sockfd_ != INVALID_SOCKET) {
     shutdown(sockfd_, SD_BOTH);
     closesocket(sockfd_);
   }
