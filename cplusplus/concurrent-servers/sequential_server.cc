@@ -6,9 +6,7 @@ enum class _NetStatus {
   IN_MSG,
 };
 
-static void serve_connection(SOCKET fd) {
-  common::UniqueSocket sockfd(fd);
-
+static void serve_connection(common::UniqueSocket& sockfd) {
   if (send(sockfd, "*", 1, 0) < 1)
     return;
 
@@ -20,19 +18,18 @@ static void serve_connection(SOCKET fd) {
       break;
 
     for (int i = 0; i < rlen; ++i) {
-      char c = buf[i];
       switch (status) {
       case _NetStatus::WAIT_MSG:
-        if (c == '^')
+        if (buf[i] == '^')
           status = _NetStatus::IN_MSG;
         break;
       case _NetStatus::IN_MSG:
-        if (c == '$') {
+        if (buf[i] == '$') {
           status = _NetStatus::WAIT_MSG;
         }
         else {
-          c += 1;
-          if (send(sockfd, &c, 1, 0) < 0)
+          buf[i] += 1;
+          if (send(sockfd, buf+i, 1, 0) < 0)
             return;
         }
         break;
@@ -45,6 +42,8 @@ EFW_EXAMPLE(SequentialServer, ss1) {
   common::WSGuarder guard;
 
   common::UniqueSocket listen_sockfd(socket(AF_INET, SOCK_STREAM, 0));
+  if (!listen_sockfd)
+    return;
 
   sockaddr_in local_addr;
   local_addr.sin_family = AF_INET;
@@ -58,8 +57,8 @@ EFW_EXAMPLE(SequentialServer, ss1) {
     sockaddr_in peer_addr;
     int peer_addr_len = static_cast<int>(sizeof(peer_addr));
 
-    SOCKET new_sockfd = accept(listen_sockfd, (sockaddr*)&peer_addr, &peer_addr_len);
-    if (new_sockfd == INVALID_SOCKET)
+    common::UniqueSocket new_sockfd(accept(listen_sockfd, (sockaddr*)&peer_addr, &peer_addr_len));
+    if (!new_sockfd)
       break;
 
     serve_connection(new_sockfd);
