@@ -8,11 +8,11 @@
 namespace efw {
 
 using _ContextDict = std::unordered_map<std::string_view, std::tuple<std::string_view, ClosureFn>>;
-std::unique_ptr<_ContextDict> g_examples{};
+_ContextDict* g_examples{};
 
 bool register_example(std::string_view name, std::string_view alias, ClosureFn&& closure) {
   if (!g_examples)
-    g_examples.reset(new _ContextDict);
+    g_examples = new _ContextDict;
 
   g_examples->insert(std::make_pair(alias, std::make_tuple(name, std::move(closure))));
   return true;
