@@ -1,3 +1,4 @@
+#include <iostream>
 #include "common_utils.hh"
 #include "examples.hh"
 
@@ -61,6 +62,8 @@ EFW_EXAMPLE(SequentialServer, ss1) {
     if (!new_sockfd)
       break;
 
+    std::cout << "SERVER: accepct new connection: " << (SOCKET)new_sockfd << "|" << inet_ntoa(peer_addr.sin_addr) << std::endl;
     serve_connection(new_sockfd);
+    std::cout << "SERVER: connecttion: " << (SOCKET)new_sockfd << " disconnected" << std::endl;
   }
 }

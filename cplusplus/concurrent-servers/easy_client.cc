@@ -12,6 +12,7 @@ EFW_EXAMPLE(EasyClient, cc1) {
   remove_addr.sin_port = htons(5555);
 
   connect(sockfd, (const sockaddr*)&remove_addr, sizeof(remove_addr));
+  std::cout << "CLIENT: connected ..." << std::endl;
 
   char buf[1024];
   int rlen = recv(sockfd, buf, 1, 0);
@@ -35,4 +36,6 @@ EFW_EXAMPLE(EasyClient, cc1) {
       break;
   }
   std::cout << "CLIENT: recv: " << rbuf << std::endl;
+
+  std::cout << "CLIENT: disconnecting ..." << std::endl;
 }
