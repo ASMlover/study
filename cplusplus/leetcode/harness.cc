@@ -24,32 +24,20 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <memory>
 #include <vector>
 #include "harness.hh"
 
 namespace harness {
 
-struct HarnessContext {
-  std::string_view base{};
-  std::string_view name{};
-  ClosureFn closure{};
-
-  HarnessContext(
-      std::string_view b, std::string_view n, ClosureFn&& fn) noexcept
-    : base(b), name(n), closure(std::move(fn)) {
-  }
-};
-
-using HarnessContextVector = std::vector<HarnessContext>;
-std::unique_ptr<HarnessContextVector> g_harness{};
+using HarnessContext = std::tuple<std::string_view, std::string_view, ClosureFn>;
+std::vector<HarnessContext>* g_harness{};
 
 bool register_harness(
     std::string_view base, std::string_view name, ClosureFn&& closure) {
   if (!g_harness)
-    g_harness.reset(new HarnessContextVector);
+    g_harness = new std::vector<HarnessContext>;
 
-  g_harness->push_back(HarnessContext(base, name, std::move(closure)));
+  g_harness->push_back(std::make_tuple(base, name, std::move(closure)));
   return true;
 }
 
@@ -61,11 +49,11 @@ int run_all_harness() {
     total_tests = g_harness->size();
 
     for (auto& hc : *g_harness) {
-      hc.closure();
+      std::get<2>(hc)();
       ++passed_tests;
 
       std::cout
-        << "********* [" << hc.name << "] test harness PASSED "
+        << "********* [" << std::get<1>(hc) << "] test harness PASSED "
         << "(" << passed_tests << "/" << total_tests << ") "
         << "*********"
         << std::endl;
