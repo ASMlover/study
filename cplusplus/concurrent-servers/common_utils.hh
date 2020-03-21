@@ -1,6 +1,9 @@
 #pragma once
 
 #include <WinSock2.h>
+#include <thread>
+#include <future>
+#include <iostream>
 
 namespace common {
 
@@ -47,5 +50,10 @@ public:
   inline operator SOCKET() const { return sockfd_; }
   inline operator bool() const { return sockfd_ != INVALID_SOCKET; }
 };
+
+template <typename Fn, typename... Args>
+inline auto async(Fn&& fn, Args&&... args) {
+  return std::async(std::launch::async, std::forward<Fn>(fn), std::forward<Args>(args)...);
+}
 
 }
