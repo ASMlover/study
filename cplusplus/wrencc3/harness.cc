@@ -24,30 +24,20 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <memory>
+#include <tuple>
 #include <vector>
 #include "harness.hh"
 
 namespace wrencc {
 
-struct HarnessContext {
-  strv_t base{};
-  strv_t name{};
-  ClosureFn closure{};
-
-  HarnessContext(strv_t b, strv_t n, ClosureFn&& fn) noexcept
-    : base(b), name(n), closure(std::move(fn)) {
-  }
-};
-
-using HarnessContextVector = std::vector<HarnessContext>;
-std::unique_ptr<HarnessContextVector> g_harness(nullptr);
+using HarnessContext = std::tuple<strv_t, strv_t, ClosureFn>;
+std::vector<HarnessContext>* g_harness(nullptr);
 
 bool register_harness(strv_t base, strv_t name, ClosureFn&& closure) {
   if (!g_harness)
-    g_harness.reset(new HarnessContextVector());
+    g_harness = new std::vector<HarnessContext>;
 
-  g_harness->push_back(HarnessContext(base, name, std::move(closure)));
+  g_harness->push_back(std::make_tuple(base, name, std::move(closure)));
   return true;
 }
 
@@ -59,11 +49,12 @@ int run_all_harness() {
     total_tests = Xt::as_type<int>(g_harness->size());
 
     for (auto& hc : *g_harness) {
-      hc.closure();
+      auto [_, hc_name, hc_fn] = hc;
+      hc_fn();
       ++passes_tests;
 
       std::cout
-        << "********* ["  << hc.name << "] test harness PASSED "
+        << "********* ["  << hc_name << "] test harness PASSED "
         << "(" << passes_tests << "/" << total_tests << ") "
         << "*********"
         << std::endl;
