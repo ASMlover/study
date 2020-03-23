@@ -4,12 +4,6 @@
 
 namespace mts { // multi-threaded server
 
-static void server_thread(SOCKET fd) {
-  common::UniqueSocket sockfd(fd);
-
-  svrutils::serve_connection(sockfd);
-}
-
 void launch_server() {
   common::UniqueSocket listen_sockfd(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
   if (!listen_sockfd)
@@ -31,7 +25,11 @@ void launch_server() {
     if (new_sockfd == INVALID_SOCKET)
       break;
 
-    common::async(server_thread, new_sockfd);
+    auto _ = common::async([](SOCKET fd) {
+        common::UniqueSocket sockfd(fd);
+        svrutils::serve_connection(sockfd);
+      }, new_sockfd);
+    (void)_;
   }
 }
 
