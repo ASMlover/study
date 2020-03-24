@@ -48,11 +48,12 @@ public:
 class UniqueSocket final : private UnCopyable {
   SOCKET sockfd_{};
 public:
-  UniqueSocket(SOCKET fd) noexcept : sockfd_(fd) {}
+  UniqueSocket(SOCKET fd = INVALID_SOCKET) noexcept : sockfd_(fd) {}
   ~UniqueSocket() noexcept;
 
-  inline operator SOCKET() const { return sockfd_; }
-  inline operator bool() const { return sockfd_ != INVALID_SOCKET; }
+  inline void reset(SOCKET fd) noexcept { sockfd_ = fd; }
+  inline operator SOCKET() const noexcept { return sockfd_; }
+  inline operator bool() const noexcept { return sockfd_ != INVALID_SOCKET; }
 };
 
 template <typename Fn, typename... Args>
