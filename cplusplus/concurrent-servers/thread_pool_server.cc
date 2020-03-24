@@ -2,9 +2,11 @@
 #include "server_utils.hh"
 #include "examples.hh"
 
-namespace mts { // multi-threaded server
+namespace tps {
 
 void launch_server() {
+  common::ThreadPool pool(4);
+
   common::UniqueSocket listen_sockfd;
   if (auto fd = svrutils::create_server(5555); !fd)
     return;
@@ -19,18 +21,17 @@ void launch_server() {
     if (new_sockfd == INVALID_SOCKET)
       break;
 
-    auto _ = common::async([](SOCKET fd) {
-        common::UniqueSocket sockfd(fd);
-        svrutils::serve_connection(sockfd);
+    pool.run_task([](SOCKET fd) {
+      common::UniqueSocket sockfd(fd);
+      svrutils::serve_connection(sockfd);
       }, new_sockfd);
-    (void)_;
   }
 }
 
 }
 
-EFW_EXAMPLE(MultiThreadServer, ms1) {
+EFW_EXAMPLE(ThreadPoolServer, ms2) {
   common::WSGuarder guard;
 
-  mts::launch_server();
+  tps::launch_server();
 }

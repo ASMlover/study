@@ -7,6 +7,30 @@ enum class NetStatus {
   MSG_RECV,
 };
 
+std::optional<SOCKET> create_server(std::uint16_t port) {
+  SOCKET sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (sockfd == INVALID_SOCKET)
+    return {};
+
+  sockaddr_in local_addr;
+  local_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  local_addr.sin_family = AF_INET;
+  local_addr.sin_port = htons(port);
+
+  if (bind(sockfd, (const sockaddr*)&local_addr,
+    static_cast<int>(sizeof(local_addr))) == SOCKET_ERROR)
+    return {};
+  if (listen(sockfd, 5) == SOCKET_ERROR)
+    return {};
+
+  return { sockfd };
+}
+
+void set_nonblocking(common::UniqueSocket& sockfd) {
+  u_long flags = 1;
+  ::ioctlsocket(sockfd, FIONBIO, &flags);
+}
+
 void serve_connection(common::UniqueSocket& sockfd) {
   if (send(sockfd, "*", 1, 0) < 1)
     return;
