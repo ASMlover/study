@@ -115,7 +115,7 @@ public:
       fn(std::forward<Args>(args)...);
     }
     else {
-      using ReturnType = typename std::result_of<Fn (Args&&...)>::type;
+      using ReturnType = typename std::invoke_result<Fn, Args...>::type;
       auto task = std::make_shared<std::packaged_task<ReturnType ()>>(
         std::bind(std::forward<Fn>(fn), std::forward<Args>(args)...));
 
