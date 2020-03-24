@@ -5,17 +5,11 @@
 namespace mts { // multi-threaded server
 
 void launch_server() {
-  common::UniqueSocket listen_sockfd(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
-  if (!listen_sockfd)
+  common::UniqueSocket listen_sockfd;
+  if (auto fd = svrutils::create_server(5555); !fd)
     return;
-
-  sockaddr_in local_addr;
-  local_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-  local_addr.sin_family = AF_INET;
-  local_addr.sin_port = htons(5555);
-
-  bind(listen_sockfd, (const sockaddr*)&local_addr, static_cast<int>(sizeof(local_addr)));
-  listen(listen_sockfd, 5);
+  else
+    listen_sockfd.reset(*fd);
 
   for (;;) {
     sockaddr_in peer_addr;
