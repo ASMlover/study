@@ -26,6 +26,11 @@ std::optional<SOCKET> create_server(std::uint16_t port) {
   return { sockfd };
 }
 
+void set_nonblocking(common::UniqueSocket& sockfd) {
+  u_long flags = 1;
+  ::ioctlsocket(sockfd, FIONBIO, &flags);
+}
+
 void serve_connection(common::UniqueSocket& sockfd) {
   if (send(sockfd, "*", 1, 0) < 1)
     return;
