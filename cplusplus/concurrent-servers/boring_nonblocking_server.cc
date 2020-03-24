@@ -16,8 +16,6 @@ void launch_server() {
   common::UniqueSocket new_sockfd(accept(listen_sockfd, (sockaddr*)&peer_addr, &peer_addr_len));
   if (!new_sockfd)
     return;
-  if (send(new_sockfd, "*", 1, 0) < 1)
-    return;
 
   svrutils::set_nonblocking(new_sockfd);
   for (;;) {
@@ -27,7 +25,7 @@ void launch_server() {
     if (len < 0) {
       auto err = WSAGetLastError();
       if (err == WSAEWOULDBLOCK) {
-        Sleep(10);
+        Sleep(1);
         continue;
       }
       break;
