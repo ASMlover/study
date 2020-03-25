@@ -52,6 +52,7 @@ public:
   ~UniqueSocket() noexcept;
 
   inline void reset(SOCKET fd) noexcept { sockfd_ = fd; }
+  inline SOCKET get() const noexcept { return sockfd_; }
   inline operator SOCKET() const noexcept { return sockfd_; }
   inline operator bool() const noexcept { return sockfd_ != INVALID_SOCKET; }
 };
