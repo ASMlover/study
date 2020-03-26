@@ -130,32 +130,25 @@ public:
       c->get_socket().close();
   }
 
-  void set_conn_event(ConnPtr& conn, int ev) {
+  void update_bind_conn_event(ConnPtr& conn, int ev) {
     auto fd = conn->get_socket().get();
-    if (ev | EVENT_RD) {
+    if (ev | EVENT_RD)
       FD_SET(fd, &rfds_master_);
-      conn->set_event(EVENT_RD);
-    }
-    else {
+    else
       FD_CLR(fd, &rfds_master_);
-      conn->cls_event(EVENT_RD);
-    }
 
-    if (ev | EVENT_WR) {
+    if (ev | EVENT_WR)
       FD_SET(fd, &wfds_master_);
-      conn->set_event(EVENT_WR);
-    }
-    else {
+    else
       FD_CLR(fd, &wfds_master_);
-      conn->cls_event(EVENT_WR);
-    }
   }
 
   void append_conn(SOCKET fd, int ev, bool is_new = true) {
     auto conn = std::make_shared<Conn>(fd);
     if (is_new)
       conn->on_handle_connected();
-    set_conn_event(conn, ev);
+    conn->set_event(ev);
+    update_bind_conn_event(conn, ev);
     conns_.push_back(conn);
   }
 
@@ -185,7 +178,7 @@ public:
         }
         else {
           conn->on_handle_read();
-          set_conn_event(conn, conn->get_event());
+          update_bind_conn_event(conn, conn->get_event());
           if (conn->is_nevent())
             need_erase = true;
         }
@@ -194,7 +187,7 @@ public:
 
       if (FD_ISSET(fd, &wfds)) {
         conn->on_handle_write();
-        set_conn_event(conn, conn->get_event());
+        update_bind_conn_event(conn, conn->get_event());
         if (conn->is_nevent())
           need_erase = true;
 
