@@ -153,7 +153,8 @@ public:
 
   void append_conn(SOCKET fd, int ev, bool is_new = true) {
     auto conn = std::make_shared<Conn>(fd);
-    conn->on_handle_connected();
+    if (is_new)
+      conn->on_handle_connected();
     set_conn_event(conn, ev);
     conns_.push_back(conn);
   }
