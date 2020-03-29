@@ -7,6 +7,14 @@ namespace ucs {
 
 enum class ConnState { INIT_ACK, WAIT_MSG, READ_MSG };
 
+template <typename T>
+class UVHandleGuarder final : private common::UnCopyable {
+  T* handle_{};
+public:
+  UVHandleGuarder(T* handle) noexcept : handle_(handle) {}
+  ~UVHandleGuarder() noexcept { free(handle_); }
+};
+
 struct Conn {
   uv_tcp_t* client{};
   ConnState state{ConnState::INIT_ACK};
@@ -48,13 +56,15 @@ void on_client_closed(uv_handle_t* handle) {
 }
 
 void on_client_write(uv_write_t* req, int status) {
+  UVHandleGuarder<uv_write_t> wguard(req);
+
   Conn* conn = (Conn*)req->data;
   conn->on_write();
-
-  free(req);
 }
 
 void on_client_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
+  UVHandleGuarder<char> bufguard(buf->base);
+
   if (nread < 0) {
     uv_close((uv_handle_t*)client, on_client_closed);
   }
@@ -63,7 +73,6 @@ void on_client_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
   else {
     Conn* conn = (Conn*)client->data;
     if (conn->state == ConnState::INIT_ACK) {
-      free(buf->base);
       return;
     }
 
@@ -91,18 +100,16 @@ void on_client_read(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
         return;
     }
   }
-
-  free(buf->base);
 }
 
 void on_write_init_ack(uv_write_t* req, int status) {
+  UVHandleGuarder<uv_write_t> wguard(req);
+
   Conn* conn = (Conn*)req->data;
   conn->init_for_wait();
 
   if (auto rc = uv_read_start((uv_stream_t*)conn->client, on_alloc_buffer, on_client_read); rc < 0)
     return;
-
-  free(req);
 }
 
 void on_new_connection(uv_stream_t* server_stream, int status) {
