@@ -8,6 +8,9 @@
 #include <future>
 #include <condition_variable>
 #include <iostream>
+#include <list>
+#include <optional>
+#include <unordered_map>
 
 namespace common {
 
@@ -61,6 +64,44 @@ template <typename Fn, typename... Args>
 inline auto async(Fn&& fn, Args&&... args) {
   return std::async(std::launch::async, std::forward<Fn>(fn), std::forward<Args>(args)...);
 }
+
+template <typename T>
+class LRUCache final : private UnCopyable {
+  using CacheValue = std::pair<int, T>;
+  using CacheValueIter = typename std::pair<int, T>::iterator;
+
+  static constexpr int kMaxCapacity = 64;
+
+  int capacity_{kMaxCapacity};
+  std::list<CacheValue> cache_;
+  std::unordered_map<int, CacheValueIter> cache_map_;
+public:
+  std::optional<T> get(int key) {
+    auto it = cache_map_.find(key);
+    if (it == cache_map_.end())
+      return {};
+
+    cache_.splice(cache_.end(), cache_, it->second);
+    return it->second->second;
+  }
+
+  void put(int key, const T& val) {
+    auto it = cache_map_.find(key);
+    if (it != cache_map_.end()) {
+      it->second->second = value;
+      cache_.splice(cache_.end(), cache_, it->second);
+    }
+    else {
+      if (cache_.size() >= capacity_) {
+        cache_map_.erase(cache_.front().first);
+        cache_.pop_front();
+      }
+
+      cache_.emplace_back(std::make_pair(key, value));
+      cache_map_[key] = cache_.end() - 1;
+    }
+  }
+};
 
 class ThreadPool final : private UnCopyable {
   using TaskEntity = std::function<void ()>;
