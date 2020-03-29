@@ -33,12 +33,15 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(USE_STATIC_LIBUV "use static libuv library, otherwise use dynamic library" ON)
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 	add_definitions(
 		/DUNICODE
 		/D_UNICODE
 		/D_CRT_SECURE_NO_WARNINGS
-		/D_CRT_NONSTDC_NO_WARNINGS)
+		/D_CRT_NONSTDC_NO_WARNINGS
+		/D_WINSOCK_DEPRECATED_NO_WARNINGS)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest")
 	set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
 	set(CMAKE_CXX_FLAGS_RELEASE "/NDEBUG /MD /Ox")
@@ -60,5 +63,9 @@ source_group("Source Files" FILES COSERVERS_SOURCES)
 
 add_executable(${PROJECT_NAME} ${COSERVERS_HEADERS} ${COSERVERS_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-	target_link_libraries(${PROJECT_NAME} uv.lib)
+	if (USE_STATIC_LIBUV)
+		target_link_libraries(${PROJECT_NAME} iphlpapi.lib psapi.lib userenv.lib uv_a.lib)
+	else()
+		target_link_libraries(${PROJECT_NAME} ua.lib)
+	endif()
 endif()
