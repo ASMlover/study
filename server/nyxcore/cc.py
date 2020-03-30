@@ -57,13 +57,16 @@ _crypter_args = dict(
     root_dir = './',
     exclude_dirs = [],
     password = '111111',
+    target = None,
     encrypt = False,
     quiet = False,
 )
 
 def _parse_arguments():
     opts, args = getopt.getopt(
-            sys.argv[1:], '', ['root=', 'exclude=', 'password=', 'encrypt', 'quiet'])
+            sys.argv[1:],
+            '',
+            ['root=', 'exclude=', 'password=', 'target=', 'encrypt', 'quiet'])
     for opt, val in opts:
         if opt == '--root':
             _crypter_args['root_dir'] = val
@@ -71,6 +74,8 @@ def _parse_arguments():
             _crypter_args['exclude_dirs'] = val.split(',')
         elif opt == '--password':
             _crypter_args['password'] = val
+        elif opt == '--target':
+            _crypter_args['target'] = val
         elif opt == '--encrypt':
             _crypter_args['encrypt'] = True
         elif opt == '--quiet':
@@ -80,10 +85,22 @@ def _is_inclusive(child, parent):
     relpath = os.path.relpath(child, parent)
     return not relpath.startswith('..')
 
-def _crypter_codes(password, root_dir, exclude_dirs, is_encrypt=True):
+def _crypter_codes(password, root_dir, exclude_dirs, target=None, is_encrypt=True):
+    if is_encrypt:
+        crypter_fun, valid_ext = encrypt, ('.h', '.c', '.cc', '.cpp')
+    else:
+        crypter_fun, valid_ext = decrypt, ('.enc',)
+
+    if target:
+        fname = os.path.join(os.getcwd(), target)
+        fnext = os.path.splitext(target)[1].lower()
+        if fnext in valid_ext:
+            outfile = '%s.enc' % fname if is_encrypt else os.path.splitext(fname)[0]
+            _replace_file(fname, outfile, password, crypter_fun)
+        return
+
     exclude_dirs = set(exclude_dirs + ['.svn', '.git', '.idea'])
     exclude_dirs = set(os.path.join(root_dir, dir) for dir in exclude_dirs)
-
     for path, dirs, files in os.walk(root_dir):
         if '.svn' in dirs:
             dirs.remove('.svn')
@@ -97,24 +114,20 @@ def _crypter_codes(password, root_dir, exclude_dirs, is_encrypt=True):
         if exclude:
             continue
 
-        if is_encrypt:
-            crypter_fun = encrypt
-            valid_ext = ('.h', '.c', '.cc', '.cpp')
-        else:
-            crypter_fun = decrypt
-            valid_ext = ('.enc',)
-
         for f in files:
             fname = os.path.join(path, f)
             fnext = os.path.splitext(f)[1].lower()
 
             if fnext in valid_ext:
                 outfile = '%s.enc' % fname if is_encrypt else os.path.splitext(fname)[0]
-                with open(fname, 'rb') as fp:
-                    outstr = crypter_fun(password, fp.read())
-                with codecs.open(outfile, 'wb', 'utf-8') as fp:
-                    fp.write(outstr)
-                os.remove(fname)
+                _replace_file(fname, outfile, password, crypter_fun)
+
+def _replace_file(from_fname, target_fname, passwd, crypter_fun):
+    with open(from_fname, 'rb') as fp:
+        outstr = crypter_fun(passwd, fp.read())
+    with codecs.open(target_fname, 'wb', 'utf-8') as fp:
+        fp.write(outstr)
+    os.remove(from_fname)
 
 def main():
     _parse_arguments()
@@ -123,6 +136,7 @@ def main():
             _crypter_args['password'],
             _crypter_args['root_dir'],
             _crypter_args['exclude_dirs'],
+            _crypter_args['target'],
             _crypter_args['encrypt'])
 
 if __name__ == '__main__':
