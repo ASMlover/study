@@ -14,7 +14,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace cosxt {
+namespace coext {
 
 using nil_t   = std::nullptr_t;
 using byte_t  = std::uint8_t;
