@@ -28,9 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 usage_help() {
-  echo "USAGE: sh cc.sh {password} {encrypt}: $1"
+  echo "USAGE: sh cc.sh {password} {encrypt} {target}: $1"
   echo "       passord - setting encoding password"
   echo "       encrypt - {encode|decode}"
+  echo "       target  - {target filename} - option argument"
 }
 
 if [ ! -n "$1" ]; then
@@ -44,7 +45,17 @@ fi
 
 CRYPTER_EXCLUDE=".svn,.git,.idea,3rdparty,cmake-build"
 if [ "$2" == "encode" ]; then
-  python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --encrypt
+  if [ ! -n "$3" ]; then
+    python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --encrypt
+  else
+    python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --target=$3 --encrypt
+  fi
+elif [ "$2" == "decode" ]; then
+  if [ ! -n "$3" ]; then
+    python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1
+  else
+    python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1 --target=$3
+  fi
 else
-  python cc.py --root=./ --exclude=$CRYPTER_EXCLUDE --password=$1
+  usage_help "invalid arguments"
 fi
