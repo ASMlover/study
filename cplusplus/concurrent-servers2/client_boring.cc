@@ -8,8 +8,7 @@ void launch_client() {
     new coext::Socket(), [](coext::Socket* s) { s->close(); }
   };
 
-  clt->open();
-  if (!clt->connect("127.0.0.1"))
+  if (!clt->open() || !clt->connect("127.0.0.1"))
     return;
 
   std::cout << "CLIENT: connect to server success" << std::endl;
@@ -18,8 +17,7 @@ void launch_client() {
     ss << "[" << i << "] boring message";
     coext::str_t s(ss.str());
 
-    auto [r, n] = clt->write(s.data(), s.size());
-    if (r)
+    if (auto [r, n] = clt->write(s.data(), s.size()); r)
       std::cout << "CLIENT: send message to server: " << s << std::endl;
     else
       break;

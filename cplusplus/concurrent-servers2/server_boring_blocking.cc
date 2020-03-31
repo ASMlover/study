@@ -8,8 +8,7 @@ void launch_server() {
     new coext::Socket(), [](coext::Socket* s) { s->close(); }
   };
 
-  svr->open();
-  if (!svr->bind("0.0.0.0") || !svr->listen())
+  if (!svr->open() || !svr->bind("0.0.0.0") || !svr->listen())
     return;
 
   auto [r, conn] = svr->accept();
@@ -18,8 +17,7 @@ void launch_server() {
 
   for (;;) {
     char buf[1024]{};
-    auto [r, n] = conn.read(buf, sizeof(buf));
-    if (r) {
+    if (auto [r, n] = conn.read(buf, sizeof(buf)); r) {
       std::cout << "SERVER: receive " << n << " bytes from client: " << buf << std::endl;
     }
     else {

@@ -18,8 +18,7 @@ void launch_server() {
   conn.set_nonblocking();
   for (;;) {
     char buf[1024]{};
-    auto [r, n, opt] = conn.read_async(buf, sizeof(buf));
-    if (!r) {
+    if (auto [r, n, opt] = conn.read_async(buf, sizeof(buf)); !r) {
       if (opt == coext::NetOption::OPTION_AGAIN) {
         ::Sleep(1);
         continue;
