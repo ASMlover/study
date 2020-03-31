@@ -7,12 +7,12 @@ namespace coext {
 class FakeExample {};
 using ExampleClosure = std::function<void ()>;
 
-bool register_example(strv_t name, strv_t alias, ExampleClosure&& closure);
+bool register_example(strv_t name, strv_t alias, strv_t doc, ExampleClosure&& closure);
 int launch_examples(strv_t name);
 
 }
 
-#define COEXT_EXAMPLE(Name, Alias)\
+#define COEXT_EXAMPLE(Name, Alias, Doc)\
 class _CoextExample_##Name final : public coext::FakeExample {\
   void _run();\
 public:\
@@ -22,5 +22,5 @@ public:\
   }\
 };\
 bool _Ignored_CoextExample_##Name =\
-  coext::register_example(#Name, #Alias, &_CoextExample_##Name::_run_example);\
+  coext::register_example(#Name, #Alias, Doc, &_CoextExample_##Name::_run_example);\
 void _CoextExample_##Name::_run()

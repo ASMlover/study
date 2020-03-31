@@ -24,11 +24,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include "common.hh"
+#include "examples.hh"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  return 0;
+  coext::strv_t name;
+  if (argc > 1)
+    name = argv[1];
+
+  return coext::launch_examples(name);
 }
