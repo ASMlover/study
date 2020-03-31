@@ -15,7 +15,7 @@ void launch_client() {
   std::cout << "CLIENT: connect to server success" << std::endl;
   for (int i = 0; i < 10; ++i) {
     coext::ss_t ss;
-    ss << "[" << i << "] boring message ...";
+    ss << "[" << i << "] boring message";
     coext::str_t s(ss.str());
 
     auto [r, n] = clt->write(s.data(), s.size());
@@ -23,6 +23,7 @@ void launch_client() {
       std::cout << "CLIENT: send message to server: " << s << std::endl;
     else
       break;
+    ::Sleep(1);
   }
 }
 
