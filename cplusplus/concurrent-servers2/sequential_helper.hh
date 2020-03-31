@@ -10,6 +10,6 @@ enum class Status {
   READ_MSG,
 };
 
-void serve_blocking_logic(coext::Socket& s);
+void serve_blocking_logic(coext::Socket& conn);
 
 }
