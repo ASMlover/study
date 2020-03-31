@@ -56,6 +56,3 @@ int launch_examples(strv_t name) {
 }
 
 }
-
-COEXT_EXAMPLE(DummyExample, de, "A dummy example ...") {
-}

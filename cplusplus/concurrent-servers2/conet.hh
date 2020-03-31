@@ -7,6 +7,18 @@ namespace coext {
 
 using socket_t = SOCKET;
 
+class WSGuarder final : private UnCopyable {
+public:
+  WSGuarder() noexcept {
+    WSADATA wd;
+    ::WSAStartup(MAKEWORD(2, 2), &wd);
+  }
+
+  ~WSGuarder() noexcept {
+    ::WSACleanup();
+  }
+};
+
 enum class NetOption {
   OPTION_NONE,  // do nothing
   OPTION_AGAIN, // do it again (in non-blocking)
