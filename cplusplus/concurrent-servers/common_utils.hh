@@ -67,38 +67,38 @@ inline auto async(Fn&& fn, Args&&... args) {
 
 template <typename T>
 class LRUCache final : private UnCopyable {
-  using CacheValue = std::pair<int, T>;
-  using CacheValueIter = typename std::pair<int, T>::iterator;
+  using CacheItem = std::pair<int, T>;
+  using CacheIter = typename std::list<CacheItem>::iterator;
 
-  static constexpr int kMaxCapacity = 64;
+  static constexpr int kMaxCapacity = 512;
 
   int capacity_{kMaxCapacity};
-  std::list<CacheValue> cache_;
-  std::unordered_map<int, CacheValueIter> cache_map_;
+  std::list<CacheItem> cache_;
+  std::unordered_map<int, CacheIter> cache_map_;
 public:
   std::optional<T> get(int key) {
     auto it = cache_map_.find(key);
     if (it == cache_map_.end())
       return {};
 
-    cache_.splice(cache_.end(), cache_, it->second);
-    return it->second->second;
+    cache_.splice(cache_.begin(), cache_, it->second);
+    return {it->second->second};
   }
 
   void put(int key, const T& val) {
     auto it = cache_map_.find(key);
     if (it != cache_map_.end()) {
       it->second->second = value;
-      cache_.splice(cache_.end(), cache_, it->second);
+      cache_.splice(cache_.begin(), cache_, it->second);
     }
     else {
       if (cache_.size() >= capacity_) {
-        cache_map_.erase(cache_.front().first);
-        cache_.pop_front();
+        cache_map_.erase(cache_.back().first);
+        cache_.pop_back();
       }
 
-      cache_.emplace_back(std::make_pair(key, value));
-      cache_map_[key] = cache_.end() - 1;
+      cache_.emplace_front(std::make_pair(key, value));
+      cache_map_[key] = cache_.begin();
     }
   }
 };
