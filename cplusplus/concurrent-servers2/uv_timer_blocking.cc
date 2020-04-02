@@ -8,8 +8,9 @@ void on_timer(uv_timer_t* timer) {
   std::cout << "on_timer [" << (timestamp / 1000000) % 1000000 << " ms]" << std::endl;
 
   if (rand() % 13 == 0) {
-    std::cout << "sleeping ..." << std::endl;
+    std::cout << "begin sleeping ..." << std::endl;
     ::Sleep(3000);
+    std::cout << "end sleep ..." << std::endl;
   }
 }
 
