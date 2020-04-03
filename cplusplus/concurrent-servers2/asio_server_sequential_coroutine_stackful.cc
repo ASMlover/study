@@ -3,7 +3,7 @@
 #include "sequential_helper.hh"
 #include "examples.hh"
 
-namespace acos1 {
+namespace acosf1 {
 // asio coroutine sequential server
 
 using boost::asio::ip::tcp;
@@ -79,6 +79,6 @@ void launch_server() {
 
 }
 
-COEXT_EXAMPLE(AsioSequentialServerCoroutine, acos1, "A sequential server with boost.asio coroutines") {
-  acos1::launch_server();
+COEXT_EXAMPLE(AsioSequentialServerCoroutineStackful, acosf1, "A sequential server with boost.asio coroutines") {
+  acosf1::launch_server();
 }
