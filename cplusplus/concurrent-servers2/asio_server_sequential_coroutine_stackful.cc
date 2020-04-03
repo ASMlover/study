@@ -4,7 +4,7 @@
 #include "examples.hh"
 
 namespace acosf1 {
-// asio coroutine sequential server
+// asio stackful coroutine sequential server
 
 using boost::asio::ip::tcp;
 using boost::asio::experimental::co_spawn;
@@ -79,6 +79,7 @@ void launch_server() {
 
 }
 
-COEXT_EXAMPLE(AsioSequentialServerCoroutineStackful, acosf1, "A sequential server with boost.asio coroutines") {
+COEXT_EXAMPLE(AsioSequentialServerCoroutineStackful, acosf1,
+  "A sequential server with boost.asio stackful coroutine") {
   acosf1::launch_server();
 }
