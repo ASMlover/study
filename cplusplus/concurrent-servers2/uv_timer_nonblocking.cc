@@ -5,8 +5,9 @@ namespace ut2 {
 
 void on_work(uv_work_t* work_req) {
   if (rand() % 13 == 0) {
-    std::cout << "on_work - sleeping ..." << std::endl;
+    std::cout << "on_work - begin sleeping ..." << std::endl;
     ::Sleep(3000);
+    std::cout << "on_work - end sleep ..." << std::endl;
   }
 }
 
