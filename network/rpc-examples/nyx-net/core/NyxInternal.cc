@@ -24,12 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/EventLoop.h>
-#include <core/NyxInternal.h>
-#include <core/net/TcpClient.h>
-#include <core/net/TcpServer.h>
-#include <core/net/SessionManager.h>
-#include <core/net/ServerManager.h>
+#include <core/EventLoop.hh>
+#include <core/NyxInternal.hh>
+#include <core/net/TcpClient.hh>
+#include <core/net/TcpServer.hh>
+#include <core/net/SessionManager.hh>
+#include <core/net/ServerManager.hh>
 
 namespace nyx {
 

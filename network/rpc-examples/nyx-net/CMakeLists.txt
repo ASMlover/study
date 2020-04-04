@@ -43,7 +43,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     /wd4267
     /wd4834
     /wd4996)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest /await")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 else()

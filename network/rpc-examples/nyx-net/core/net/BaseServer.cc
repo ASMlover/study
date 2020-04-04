@@ -24,8 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <core/net/BaseServer.h>
-#include <core/net/ServerManager.h>
+#include <core/net/BaseServer.hh>
+#include <core/net/ServerManager.hh>
 
 namespace nyx::net {
 

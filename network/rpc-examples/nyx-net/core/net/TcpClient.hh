@@ -26,51 +26,22 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <thread>
-#include <vector>
-#include <core/NyxInternal.h>
+#include <core/net/BaseClient.hh>
 
-namespace nyx {
+namespace nyx::net {
 
-class EventLoop : private UnCopyable {
-  using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
-  using ThreadPtr = std::unique_ptr<std::thread>;
+class TcpConnectSession;
 
-  bool is_running_{};
-  std::size_t thread_num_{};
-  boost::asio::io_context context_;
-  WorkerPtr worker_;
-  std::vector<ThreadPtr> threads_;
-
-  static constexpr std::size_t kDefThreadNum = 4;
-
-  EventLoop(void);
-  ~EventLoop(void);
-
-  void launch_threads(void);
-  void shutoff_threads(void);
+class TcpClient : public BaseClient {
+  std::shared_ptr<TcpConnectSession> conn_;
 public:
-  static EventLoop& get_instance(void) {
-    static EventLoop ins;
-    return ins;
-  }
+  TcpClient(void);
+  virtual ~TcpClient(void);
 
-  bool poll(void);
-  void launch(void);
-  void shutoff(void);
-  void enable_worker(bool enable = true);
-
-  void set_thread_num(std::size_t num) {
-    thread_num_ = num;
-  }
-
-  std::size_t get_thread_num(void) const {
-    return thread_num_;
-  }
-
-  boost::asio::io_context& get_context(void) {
-    return context_;
-  }
+  virtual void async_connect(
+      const std::string& host, std::uint16_t port) override;
+  virtual void async_write(const std::string& buf) override;
+  virtual void disconnect(void) override;
 };
 
 }

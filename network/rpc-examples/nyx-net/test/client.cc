@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <thread>
-#include "../core/Nyx.h"
+#include "../core/Nyx.hh"
 
 void run_client(void) {
   bool running{true};

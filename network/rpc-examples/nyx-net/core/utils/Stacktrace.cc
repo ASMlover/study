@@ -34,7 +34,7 @@
 #include <cstdlib>
 #include <string>
 #include <iostream>
-#include <core/utils/Stacktrace.h>
+#include <core/utils/Stacktrace.hh>
 
 namespace nyx::utils {
 

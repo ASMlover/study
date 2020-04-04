@@ -26,8 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <thread>
 #include <vector>
-#include <core/net/BaseServer.h>
-#include <core/net/ServerManager.h>
+#include <core/net/BaseServer.hh>
+#include <core/net/ServerManager.hh>
 
 namespace nyx::net {
 

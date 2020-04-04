@@ -26,36 +26,44 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <atomic>
-#include <core/NyxInternal.h>
-#include <core/net/TcpSession.h>
+#include <core/NyxInternal.hh>
+#include <core/net/BaseServer.hh>
 
 namespace nyx::net {
 
-class TcpConnectSession : public TcpSession {
-  using HandlerPtr = std::shared_ptr<CallbackHandler>;
+class TcpListenSession;
 
-  std::atomic<bool> is_connected_{};
+class TcpServer : public BaseServer {
+  using SessionPtr = std::shared_ptr<TcpListenSession>;
+
+  tcp::acceptor acceptor_;
   std::string host_{};
   std::uint16_t port_{};
-  boost::asio::ip::tcp::resolver resolver_;
-  HandlerPtr handler_;
+  bool reuse_addr_{};
+  int backlog_{};
+  SessionPtr new_conn_;
 public:
-  TcpConnectSession(boost::asio::io_context& context);
-  virtual ~TcpConnectSession(void);
-
-  void async_connect(const std::string& host, std::uint16_t port);
-  void async_write(const std::string& buf);
-  void set_option(void);
-  void set_callback_handler(const HandlerPtr& handler);
+  TcpServer(void);
+  virtual ~TcpServer(void);
 
   virtual void invoke_launch(void) override;
-  virtual bool invoke_shutoff(void) override;
-  virtual void cleanup(void) override;
+  virtual void invoke_shutoff(void) override;
+  virtual void launch_accept(
+      const std::string& host, std::uint16_t port, int backlog) override;
+
+  void bind(const std::string& host, std::uint16_t port);
+  void listen(int backlog);
+
+  void enable_reuse_addr(bool reuse) {
+    reuse_addr_ = reuse;
+  }
+
+  bool is_open(void) const {
+    return acceptor_.is_open();
+  }
 private:
-  void handle_async_connect(
-      const std::error_code& ec, tcp::resolver::iterator epiter);
-  void handle_async_read(const std::error_code& ec, std::size_t n);
+  void reset_connection(void);
+  void handle_async_accept(const std::error_code& ec);
 };
 
 }

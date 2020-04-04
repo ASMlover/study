@@ -26,38 +26,50 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/NyxInternal.h>
+#include <thread>
+#include <vector>
+#include <core/NyxInternal.hh>
 
-namespace nyx::net {
+namespace nyx {
 
-class BaseServer
-  : private UnCopyable
-  , public CallbackHandler
-  , public std::enable_shared_from_this<BaseServer> {
+class EventLoop : private UnCopyable {
+  using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
+  using ThreadPtr = std::unique_ptr<std::thread>;
+
+  bool is_running_{};
+  std::size_t thread_num_{};
+  boost::asio::io_context context_;
+  WorkerPtr worker_;
+  std::vector<ThreadPtr> threads_;
+
+  static constexpr std::size_t kDefThreadNum = 4;
+
+  EventLoop(void);
+  ~EventLoop(void);
+
+  void launch_threads(void);
+  void shutoff_threads(void);
 public:
-  enum class Status : int {
-    INIT,
-    STARTED,
-    STOPED,
-  };
-protected:
-  boost::asio::io_context& context_;
-  Status status_{Status::INIT};
-public:
-  BaseServer(boost::asio::io_context& context);
-  virtual ~BaseServer(void);
-
-  virtual void invoke_launch(void);
-  virtual void invoke_shutoff(void);
-  virtual void launch_accept(
-      const std::string& host, std::uint16_t port, int backlog) = 0;
-
-  Status get_status(void) const {
-    return status_;
+  static EventLoop& get_instance(void) {
+    static EventLoop ins;
+    return ins;
   }
 
-  bool is_stoped(void) const {
-    return status_ == Status::STOPED;
+  bool poll(void);
+  void launch(void);
+  void shutoff(void);
+  void enable_worker(bool enable = true);
+
+  void set_thread_num(std::size_t num) {
+    thread_num_ = num;
+  }
+
+  std::size_t get_thread_num(void) const {
+    return thread_num_;
+  }
+
+  boost::asio::io_context& get_context(void) {
+    return context_;
   }
 };
 

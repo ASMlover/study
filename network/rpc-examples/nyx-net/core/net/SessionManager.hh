@@ -26,7 +26,31 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/NyxInternal.h>
-#include <core/net/BaseSession.h>
-#include <core/net/BaseClient.h>
-#include <core/net/BaseServer.h>
+#include <unordered_set>
+#include <mutex>
+#include <core/NyxInternal.hh>
+
+namespace nyx::net {
+
+class BaseSession;
+using SessionPtr = std::shared_ptr<BaseSession>;
+
+class SessionManager : private UnCopyable {
+  std::unordered_set<SessionPtr> sessions_;
+  mutable std::mutex mtx_;
+
+  SessionManager(void) {}
+  ~SessionManager(void) {}
+public:
+  static SessionManager& get_instance(void) {
+    static SessionManager ins;
+    return ins;
+  }
+
+  bool has_session(const SessionPtr& s) const;
+  void register_session(const SessionPtr& s);
+  void unregister_session(const SessionPtr& s);
+  void disconnect_all(void);
+};
+
+}

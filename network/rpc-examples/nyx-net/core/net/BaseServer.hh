@@ -26,25 +26,39 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/NyxInternal.h>
-#include <core/net/TcpSession.h>
+#include <core/NyxInternal.hh>
 
 namespace nyx::net {
 
-class TcpListenSession : public TcpSession {
-  using HandlerPtr = std::shared_ptr<CallbackHandler>;
-
-  HandlerPtr handler_;
+class BaseServer
+  : private UnCopyable
+  , public CallbackHandler
+  , public std::enable_shared_from_this<BaseServer> {
 public:
-  TcpListenSession(boost::asio::io_context& context);
-  virtual ~TcpListenSession(void);
+  enum class Status : int {
+    INIT,
+    STARTED,
+    STOPED,
+  };
+protected:
+  boost::asio::io_context& context_;
+  Status status_{Status::INIT};
+public:
+  BaseServer(boost::asio::io_context& context);
+  virtual ~BaseServer(void);
 
-  void set_callback_handler(const HandlerPtr& handler);
-  void notify_new_connection(void);
-private:
-  virtual bool invoke_shutoff(void) override;
-  virtual void handle_async_read(
-      const std::error_code& ec, std::size_t n) override;
+  virtual void invoke_launch(void);
+  virtual void invoke_shutoff(void);
+  virtual void launch_accept(
+      const std::string& host, std::uint16_t port, int backlog) = 0;
+
+  Status get_status(void) const {
+    return status_;
+  }
+
+  bool is_stoped(void) const {
+    return status_ == Status::STOPED;
+  }
 };
 
 }

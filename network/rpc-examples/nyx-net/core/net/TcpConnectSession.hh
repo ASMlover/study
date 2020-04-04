@@ -26,33 +26,36 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <mutex>
-#include <unordered_set>
-#include <core/NyxInternal.h>
+#include <atomic>
+#include <core/NyxInternal.hh>
+#include <core/net/TcpSession.hh>
 
 namespace nyx::net {
 
-class BaseServer;
+class TcpConnectSession : public TcpSession {
+  using HandlerPtr = std::shared_ptr<CallbackHandler>;
 
-using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
-using ServerPtr = std::shared_ptr<BaseServer>;
-
-class ServerManager : private UnCopyable {
-  mutable std::mutex mutex_;
-  std::unordered_set<ServerPtr> servers_;
-
-  static constexpr std::size_t kDefaultThreads = 4;
-
-  ServerManager(void) {}
-  ~ServerManager(void) {}
+  std::atomic<bool> is_connected_{};
+  std::string host_{};
+  std::uint16_t port_{};
+  boost::asio::ip::tcp::resolver resolver_;
+  HandlerPtr handler_;
 public:
-  static ServerManager& get_instance(void) {
-    static ServerManager ins;
-    return ins;
-  }
+  TcpConnectSession(boost::asio::io_context& context);
+  virtual ~TcpConnectSession(void);
 
-  void add_server(const ServerPtr& s);
-  void shutoff_all(void);
+  void async_connect(const std::string& host, std::uint16_t port);
+  void async_write(const std::string& buf);
+  void set_option(void);
+  void set_callback_handler(const HandlerPtr& handler);
+
+  virtual void invoke_launch(void) override;
+  virtual bool invoke_shutoff(void) override;
+  virtual void cleanup(void) override;
+private:
+  void handle_async_connect(
+      const std::error_code& ec, tcp::resolver::iterator epiter);
+  void handle_async_read(const std::error_code& ec, std::size_t n);
 };
 
 }

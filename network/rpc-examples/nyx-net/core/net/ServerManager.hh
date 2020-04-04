@@ -26,49 +26,33 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <functional>
-#include <thread>
-#include <vector>
-#include <core/NyxInternal.h>
+#include <mutex>
+#include <unordered_set>
+#include <core/NyxInternal.hh>
 
-namespace nyx::utils {
+namespace nyx::net {
 
-class ThreadPool : private UnCopyable {
-  using ThreadPtr = std::unique_ptr<std::thread>;
+class BaseServer;
 
-  bool stopped_{};
-  int thread_num_{};
-  std::vector<ThreadPtr> threads_;
-  boost::asio::io_context context_;
-  boost::asio::io_context::work work_;
+using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
+using ServerPtr = std::shared_ptr<BaseServer>;
 
-  static constexpr int kDefThreadNum = 4;
+class ServerManager : private UnCopyable {
+  mutable std::mutex mutex_;
+  std::unordered_set<ServerPtr> servers_;
+
+  static constexpr std::size_t kDefaultThreads = 4;
+
+  ServerManager(void) {}
+  ~ServerManager(void) {}
 public:
-  ThreadPool(int thread_num = kDefThreadNum)
-    : thread_num_(thread_num)
-    , work_(context_) {
-    for (auto i = 0; i < thread_num_; ++i)
-      threads_.emplace_back(new std::thread([this] { context_.run(); }));
+  static ServerManager& get_instance(void) {
+    static ServerManager ins;
+    return ins;
   }
 
-  ~ThreadPool(void) {
-    shutoff();
-  }
-
-  void shutoff(void) {
-    if (!stopped_) {
-      context_.stop();
-      for (auto& t : threads_)
-        t->join();
-      stopped_ = true;
-    }
-  }
-
-  template <typename Function, typename... Args>
-  void post(Function&& fn, Args&&... args) {
-    context_.post(
-        std::bind(std::forward<Function>(fn), std::forward<Args>(args)...));
-  }
+  void add_server(const ServerPtr& s);
+  void shutoff_all(void);
 };
 
 }

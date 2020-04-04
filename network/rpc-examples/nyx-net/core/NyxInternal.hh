@@ -26,22 +26,34 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/net/BaseClient.h>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <boost/asio.hpp>
+#include <core/utils/Copyable.hh>
+#include <core/utils/UnCopyable.hh>
+#include <core/utils/Stacktrace.hh>
+#include <core/net/CallbackHandler.hh>
+
+using ::boost::asio::ip::tcp;
 
 namespace nyx::net {
+  class BaseSession;
+  class BaseClient;
+  class BaseServer;
+}
 
-class TcpConnectSession;
+namespace nyx {
 
-class TcpClient : public BaseClient {
-  std::shared_ptr<TcpConnectSession> conn_;
-public:
-  TcpClient(void);
-  virtual ~TcpClient(void);
+using SessionPtr = std::shared_ptr<net::BaseSession>;
+using ClientPtr = std::shared_ptr<net::BaseClient>;
+using ServerPtr = std::shared_ptr<net::BaseServer>;
 
-  virtual void async_connect(
-      const std::string& host, std::uint16_t port) override;
-  virtual void async_write(const std::string& buf) override;
-  virtual void disconnect(void) override;
-};
+ClientPtr make_new_client(void);
+ServerPtr make_new_server(void);
+
+void launch(void);
+void shutoff(void);
+void poll(void);
 
 }

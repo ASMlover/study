@@ -26,44 +26,49 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/NyxInternal.h>
-#include <core/net/BaseServer.h>
+#include <functional>
+#include <thread>
+#include <vector>
+#include <core/NyxInternal.hh>
 
-namespace nyx::net {
+namespace nyx::utils {
 
-class TcpListenSession;
+class ThreadPool : private UnCopyable {
+  using ThreadPtr = std::unique_ptr<std::thread>;
 
-class TcpServer : public BaseServer {
-  using SessionPtr = std::shared_ptr<TcpListenSession>;
+  bool stopped_{};
+  int thread_num_{};
+  std::vector<ThreadPtr> threads_;
+  boost::asio::io_context context_;
+  boost::asio::io_context::work work_;
 
-  tcp::acceptor acceptor_;
-  std::string host_{};
-  std::uint16_t port_{};
-  bool reuse_addr_{};
-  int backlog_{};
-  SessionPtr new_conn_;
+  static constexpr int kDefThreadNum = 4;
 public:
-  TcpServer(void);
-  virtual ~TcpServer(void);
-
-  virtual void invoke_launch(void) override;
-  virtual void invoke_shutoff(void) override;
-  virtual void launch_accept(
-      const std::string& host, std::uint16_t port, int backlog) override;
-
-  void bind(const std::string& host, std::uint16_t port);
-  void listen(int backlog);
-
-  void enable_reuse_addr(bool reuse) {
-    reuse_addr_ = reuse;
+  ThreadPool(int thread_num = kDefThreadNum)
+    : thread_num_(thread_num)
+    , work_(context_) {
+    for (auto i = 0; i < thread_num_; ++i)
+      threads_.emplace_back(new std::thread([this] { context_.run(); }));
   }
 
-  bool is_open(void) const {
-    return acceptor_.is_open();
+  ~ThreadPool(void) {
+    shutoff();
   }
-private:
-  void reset_connection(void);
-  void handle_async_accept(const std::error_code& ec);
+
+  void shutoff(void) {
+    if (!stopped_) {
+      context_.stop();
+      for (auto& t : threads_)
+        t->join();
+      stopped_ = true;
+    }
+  }
+
+  template <typename Function, typename... Args>
+  void post(Function&& fn, Args&&... args) {
+    context_.post(
+        std::bind(std::forward<Function>(fn), std::forward<Args>(args)...));
+  }
 };
 
 }

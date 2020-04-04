@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <core/NyxInternal.h>
+#include <core/NyxInternal.hh>
 
 namespace nyx::net {
 
