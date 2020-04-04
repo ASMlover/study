@@ -30,8 +30,12 @@ namespace nyx {
 
 class Copyable {
 protected:
-  Copyable(void) = default;
-  ~Copyable(void) = default;
+  Copyable(void) noexcept = default;
+  ~Copyable(void) noexcept = default;
+  Copyable(const Copyable&) noexcept = default;
+  Copyable(Copyable&&) noexcept = default;
+  Copyable& operator=(const Copyable&) noexcept = default;
+  Copyable& operator=(Copyable&&) noexcept = default;
 };
 
 }

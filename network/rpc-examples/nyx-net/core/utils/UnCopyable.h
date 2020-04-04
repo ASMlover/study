@@ -29,11 +29,13 @@
 namespace nyx {
 
 class UnCopyable {
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
+  UnCopyable(const UnCopyable&) noexcept = delete;
+  UnCopyable(UnCopyable&&) noexcept = delete;
+  UnCopyable& operator=(const UnCopyable&) noexcept = delete;
+  UnCopyable& operator=(UnCopyable&&) noexcept = delete;
 protected:
-  UnCopyable(void) = default;
-  ~UnCopyable(void) = default;
+  UnCopyable(void) noexcept = default;
+  ~UnCopyable(void) noexcept = default;
 };
 
 }
