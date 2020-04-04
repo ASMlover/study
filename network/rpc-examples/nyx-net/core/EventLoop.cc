@@ -36,11 +36,11 @@ inline std::uint64_t now_as_microseconds(void) {
       std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-EventLoop::EventLoop(void)
+EventLoop::EventLoop(void) noexcept
   : thread_num_(kDefThreadNum) {
 }
 
-EventLoop::~EventLoop(void) {
+EventLoop::~EventLoop(void) noexcept {
   if (is_running_) {
     is_running_ = false;
     enable_worker(false);
@@ -49,8 +49,10 @@ EventLoop::~EventLoop(void) {
 }
 
 void EventLoop::launch_threads(void) {
-  for (auto i = 0u; i < thread_num_; ++i)
-    threads_.emplace_back(new std::thread([this] { context_.run(); }));
+  for (auto i = 0u; i < thread_num_; ++i) {
+    threads_.emplace_back(
+        std::make_unique<std::thread>([this] { context_.run(); }));
+  }
 }
 
 void EventLoop::shutoff_threads(void) {

@@ -32,7 +32,7 @@ namespace nyx::net {
 
 class TcpConnectSession;
 
-class TcpClient : public BaseClient {
+class TcpClient final : public BaseClient {
   std::shared_ptr<TcpConnectSession> conn_;
 public:
   TcpClient(void);

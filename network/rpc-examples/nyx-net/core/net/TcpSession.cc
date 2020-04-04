@@ -28,7 +28,7 @@
 
 namespace nyx::net {
 
-TcpSession::TcpSession(boost::asio::io_context& context)
+TcpSession::TcpSession(boost::asio::io_context& context) noexcept
   : BaseSession(context)
   , socket_(context)
   , buffer_(128) {

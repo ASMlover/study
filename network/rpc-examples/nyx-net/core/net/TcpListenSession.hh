@@ -31,7 +31,7 @@
 
 namespace nyx::net {
 
-class TcpListenSession : public TcpSession {
+class TcpListenSession final : public TcpSession {
   using HandlerPtr = std::shared_ptr<CallbackHandler>;
 
   HandlerPtr handler_;

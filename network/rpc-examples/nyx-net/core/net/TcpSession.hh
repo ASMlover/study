@@ -45,34 +45,34 @@ protected:
   std::vector<char> buffer_;
   std::deque<std::string> write_queue_;
 public:
-  TcpSession(boost::asio::io_context& context);
+  TcpSession(boost::asio::io_context& context) noexcept;
   virtual ~TcpSession(void);
 
-  tcp::socket& get_socket(void) {
+  tcp::socket& get_socket(void) noexcept {
     return socket_;
   }
 
-  bool is_closed(void) const {
+  bool is_closed(void) const noexcept {
     return is_closed_.load();
   }
 
-  void set_buffer_size(std::size_t len) {
+  void set_buffer_size(std::size_t len) noexcept {
     std::vector<char>(len).swap(buffer_);
   }
 
-  std::size_t get_buffer_size(void) const {
+  std::size_t get_buffer_size(void) const noexcept {
     return buffer_.size();
   }
 
-  void set_write_limit(std::uint32_t limit) {
+  void set_write_limit(std::uint32_t limit) noexcept {
     nwrite_limit_ = limit;
   }
 
-  std::uint32_t get_write_limit(void) const {
+  std::uint32_t get_write_limit(void) const noexcept {
     return nwrite_limit_;
   }
 
-  std::uint32_t get_data_queue_size(void) const {
+  std::uint32_t get_data_queue_size(void) const noexcept {
     return data_queue_size_;
   }
 

@@ -37,7 +37,7 @@ protected:
   std::string local_host_{};
   std::uint16_t local_port_{};
 public:
-  explicit BaseSession(boost::asio::io_context& context);
+  explicit BaseSession(boost::asio::io_context& context) noexcept;
   virtual ~BaseSession(void);
 
   bool is_alive(void);
@@ -69,24 +69,25 @@ public:
     async_write(std::string(buf, len));
   }
 
-  void set_local_endpoint(const std::string& host, std::uint16_t port) {
+  void set_local_endpoint(
+      const std::string& host, std::uint16_t port) noexcept {
     local_host_ = host;
     local_port_ = port;
   }
 
-  void set_local_host(const std::string& host) {
+  void set_local_host(const std::string& host) noexcept {
     local_host_ = host;
   }
 
-  void set_local_port(std::uint16_t port) {
+  void set_local_port(std::uint16_t port) noexcept {
     local_port_ = port;
   }
 
-  const std::string& get_local_host(void) const {
+  const std::string& get_local_host(void) const noexcept {
     return local_host_;
   }
 
-  std::uint16_t get_local_port(void) const {
+  std::uint16_t get_local_port(void) const noexcept {
     return local_port_;
   }
 private:

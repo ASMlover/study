@@ -29,7 +29,7 @@
 
 namespace nyx::net {
 
-BaseServer::BaseServer(boost::asio::io_context& context)
+BaseServer::BaseServer(boost::asio::io_context& context) noexcept
   : context_(context) {
 }
 

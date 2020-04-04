@@ -35,7 +35,7 @@ namespace nyx::net {
 class BaseSession;
 using SessionPtr = std::shared_ptr<BaseSession>;
 
-class SessionManager : private UnCopyable {
+class SessionManager final : private UnCopyable {
   std::unordered_set<SessionPtr> sessions_;
   mutable std::mutex mtx_;
 

@@ -33,7 +33,7 @@ namespace nyx::net {
 
 class TcpListenSession;
 
-class TcpServer : public BaseServer {
+class TcpServer final : public BaseServer {
   using SessionPtr = std::shared_ptr<TcpListenSession>;
 
   tcp::acceptor acceptor_;
@@ -54,11 +54,11 @@ public:
   void bind(const std::string& host, std::uint16_t port);
   void listen(int backlog);
 
-  void enable_reuse_addr(bool reuse) {
+  void enable_reuse_addr(bool reuse) noexcept {
     reuse_addr_ = reuse;
   }
 
-  bool is_open(void) const {
+  bool is_open(void) const noexcept {
     return acceptor_.is_open();
   }
 private:

@@ -44,7 +44,7 @@ protected:
   boost::asio::io_context& context_;
   Status status_{Status::INIT};
 public:
-  BaseServer(boost::asio::io_context& context);
+  BaseServer(boost::asio::io_context& context) noexcept;
   virtual ~BaseServer(void);
 
   virtual void invoke_launch(void);
@@ -52,11 +52,11 @@ public:
   virtual void launch_accept(
       const std::string& host, std::uint16_t port, int backlog) = 0;
 
-  Status get_status(void) const {
+  Status get_status(void) const noexcept {
     return status_;
   }
 
-  bool is_stoped(void) const {
+  bool is_stoped(void) const noexcept {
     return status_ == Status::STOPED;
   }
 };

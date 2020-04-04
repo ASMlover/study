@@ -33,7 +33,7 @@
 
 namespace nyx::utils {
 
-class ThreadPool : private UnCopyable {
+class ThreadPool final : private UnCopyable {
   using ThreadPtr = std::unique_ptr<std::thread>;
 
   bool stopped_{};
@@ -47,8 +47,10 @@ public:
   ThreadPool(int thread_num = kDefThreadNum)
     : thread_num_(thread_num)
     , work_(context_) {
-    for (auto i = 0; i < thread_num_; ++i)
-      threads_.emplace_back(new std::thread([this] { context_.run(); }));
+    for (auto i = 0; i < thread_num_; ++i) {
+      threads_.emplace_back(
+          std::make_unique<std::thread>([this] { context_.run(); }));
+    }
   }
 
   ~ThreadPool(void) {

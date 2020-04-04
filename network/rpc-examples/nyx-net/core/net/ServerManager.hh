@@ -37,7 +37,7 @@ class BaseServer;
 using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
 using ServerPtr = std::shared_ptr<BaseServer>;
 
-class ServerManager : private UnCopyable {
+class ServerManager final : private UnCopyable {
   mutable std::mutex mutex_;
   std::unordered_set<ServerPtr> servers_;
 

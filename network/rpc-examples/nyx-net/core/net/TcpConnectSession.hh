@@ -32,7 +32,7 @@
 
 namespace nyx::net {
 
-class TcpConnectSession : public TcpSession {
+class TcpConnectSession final : public TcpSession {
   using HandlerPtr = std::shared_ptr<CallbackHandler>;
 
   std::atomic<bool> is_connected_{};

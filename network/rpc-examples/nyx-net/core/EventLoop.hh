@@ -32,7 +32,7 @@
 
 namespace nyx {
 
-class EventLoop : private UnCopyable {
+class EventLoop final : private UnCopyable {
   using WorkerPtr = std::shared_ptr<boost::asio::io_context::work>;
   using ThreadPtr = std::unique_ptr<std::thread>;
 
@@ -44,8 +44,8 @@ class EventLoop : private UnCopyable {
 
   static constexpr std::size_t kDefThreadNum = 4;
 
-  EventLoop(void);
-  ~EventLoop(void);
+  EventLoop(void) noexcept;
+  ~EventLoop(void) noexcept;
 
   void launch_threads(void);
   void shutoff_threads(void);
@@ -60,15 +60,15 @@ public:
   void shutoff(void);
   void enable_worker(bool enable = true);
 
-  void set_thread_num(std::size_t num) {
+  void set_thread_num(std::size_t num) noexcept {
     thread_num_ = num;
   }
 
-  std::size_t get_thread_num(void) const {
+  std::size_t get_thread_num(void) const noexcept {
     return thread_num_;
   }
 
-  boost::asio::io_context& get_context(void) {
+  boost::asio::io_context& get_context(void) noexcept {
     return context_;
   }
 };
