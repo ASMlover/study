@@ -532,4 +532,21 @@ public:
       const str_t& name, int* source_lines, int lines_count);
 };
 
+class ForeignObject final : public BaseObject {
+  std::vector<u8_t> data_;
+
+  ForeignObject(ClassObject* cls, sz_t count) noexcept
+    : BaseObject(ObjType::FOREIGN, cls)
+    , data_(count) {
+  }
+public:
+  inline u8_t* data() noexcept { return data_.data(); }
+  inline const u8_t* data() const noexcept { return data_.data(); }
+
+  virtual str_t stringify() const override;
+  virtual void finalize(WrenVM& vm) override;
+
+  static ForeignObject* create(WrenVM& vm, ClassObject* cls, sz_t count);
+};
+
 }

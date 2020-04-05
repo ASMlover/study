@@ -60,8 +60,7 @@ FunctionObject* BaseObject::as_function() noexcept {
 }
 
 ForeignObject* BaseObject::as_foreign() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<ForeignObject>(this);
 }
 
 UpvalueObject* BaseObject::as_upvalue() noexcept {
@@ -518,6 +517,21 @@ FunctionObject* FunctionObject::create(WrenVM& vm,
     Value* constants, int constants_count,
     ModuleObject* module, int max_slots, int num_upvalues, int arity,
     const str_t& name, int* source_lines, int lines_count) {
+  // TODO:
+  return nullptr;
+}
+
+str_t ForeignObject::stringify() const {
+  ss_t ss;
+  ss << "[foreign `" << this << "`]";
+  return ss.str();
+}
+
+void ForeignObject::finalize(WrenVM& vm) {
+  // TODO:
+}
+
+ForeignObject* ForeignObject::create(WrenVM& vm, ClassObject* cls, sz_t count) {
   // TODO:
   return nullptr;
 }
