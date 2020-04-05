@@ -90,7 +90,7 @@ InstanceObject* BaseObject::as_instance() noexcept {
   return nullptr;
 }
 
-bool ObjValue::is_same(const ObjValue& r) const noexcept {
+bool ObjValue::is_same(ObjValue r) const noexcept {
   if (type_ != r.type_)
     return false;
 
@@ -99,7 +99,7 @@ bool ObjValue::is_same(const ObjValue& r) const noexcept {
   return as_.obj == r.as_.obj;
 }
 
-bool ObjValue::is_equal(const ObjValue& r) const noexcept {
+bool ObjValue::is_equal(ObjValue r) const noexcept {
   if (is_same(r))
     return true;
 
@@ -250,7 +250,7 @@ StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
   return nullptr;
 }
 
-ListObject::ListObject(ClassObject* cls, sz_t n, const Value& v) noexcept
+ListObject::ListObject(ClassObject* cls, sz_t n, Value v) noexcept
   : BaseObject(ObjType::LIST, cls) {
   if (n > 0)
     elements_.resize(n, v);
@@ -279,7 +279,7 @@ void ListObject::gc_blacken(WrenVM& vm) {
   // TODO:
 }
 
-ListObject* ListObject::create(WrenVM& vm, sz_t n, const Value& v) {
+ListObject* ListObject::create(WrenVM& vm, sz_t n, Value v) {
   // TODO:
   return nullptr;
 }
@@ -305,7 +305,7 @@ RangeObject* RangeObject::create(
   return nullptr;
 }
 
-std::tuple<bool, int> MapObject::find_entry(const Value& key) const {
+std::tuple<bool, int> MapObject::find_entry(Value key) const {
   if (capacity_ == 0)
     return std::make_tuple(false, -1);
 
@@ -328,7 +328,7 @@ std::tuple<bool, int> MapObject::find_entry(const Value& key) const {
   return std::make_tuple(false, -1);
 }
 
-bool MapObject::insert_entry(const Value& k, const Value& v) {
+bool MapObject::insert_entry(Value k, Value v) {
   auto [r, index] = find_entry(k);
   if (r)
     entries_[index].second = v;
@@ -359,19 +359,19 @@ void MapObject::clear() {
   size_ = 0;
 }
 
-bool MapObject::contains(const Value& key) const {
+bool MapObject::contains(Value key) const {
   auto [r, _] = find_entry(key);
   return r;
 }
 
-std::optional<Value> MapObject::get(const Value& key) const {
+std::optional<Value> MapObject::get(Value key) const {
   auto [r, index] = find_entry(key);
   if (r)
     return {entries_[index].second};
   return {};
 }
 
-void MapObject::set(const Value& key, const Value& val) {
+void MapObject::set(Value key, Value val) {
   if (size_ + 1 > capacity_ * kLoadPercent / 100) {
     sz_t new_capacity = std::max(capacity_ * kGrowFactor, kMinCapacity);
     resize(new_capacity);
@@ -381,7 +381,7 @@ void MapObject::set(const Value& key, const Value& val) {
     ++size_;
 }
 
-Value MapObject::remove(const Value& key) {
+Value MapObject::remove(Value key) {
   auto [r, index] = find_entry(key);
   if (!r)
     return nullptr;
@@ -432,13 +432,13 @@ sz_t ModuleObject::declare_variable(WrenVM& vm, const str_t& name, int line) {
 }
 
 std::tuple<int, int> ModuleObject::define_variable(
-    WrenVM& vm, const str_t& name, const Value& value) {
+    WrenVM& vm, const str_t& name, Value value) {
   // TODO:
   return std::make_tuple(0, 0);
 }
 
 void ModuleObject::iter_variables(
-    std::function<void (sz_t, StringObject*, const Value&)>&& fn, int off) {
+    std::function<void (sz_t, StringObject*, Value)>&& fn, int off) {
   for (sz_t i = off; i < variables_.size(); ++i)
     fn(i, variable_names_[i], variables_[i]);
 }

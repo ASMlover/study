@@ -171,8 +171,8 @@ public:
   inline bool is_instance() const noexcept { return is(ObjType::INSTANCE); }
 
   inline bool is_falsely() const noexcept { return is_nil() || is_false(); }
-  inline bool operator==(const ObjValue& r) const noexcept { return is_equal(r); }
-  inline bool operator!=(const ObjValue& r) const noexcept { return !is_equal(r); }
+  inline bool operator==(ObjValue r) const noexcept { return is_equal(r); }
+  inline bool operator!=(ObjValue r) const noexcept { return !is_equal(r); }
 
   inline bool as_boolean() const noexcept { return is_true(); }
   template <typename Int = int>
@@ -194,15 +194,15 @@ public:
   ClassObject* as_class() const noexcept { return as_.obj->as_class(); }
   InstanceObject* as_instance() const noexcept { return as_.obj->as_instance(); }
 
-  bool is_same(const ObjValue& r) const noexcept;
-  bool is_equal(const ObjValue& r) const noexcept;
+  bool is_same(ObjValue r) const noexcept;
+  bool is_equal(ObjValue r) const noexcept;
   u32_t hasher() const noexcept;
   str_t stringify() const noexcept;
 };
 
 using Value = ObjValue;
 
-inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
+inline std::ostream& operator<<(std::ostream& out, Value val) noexcept {
   return out << val.stringify();
 }
 
@@ -270,7 +270,7 @@ public:
 class ListObject final : public BaseObject {
   std::vector<Value> elements_; // the elements in the list
 
-  ListObject(ClassObject* cls, sz_t n = 0, const Value& v = nullptr) noexcept;
+  ListObject(ClassObject* cls, sz_t n = 0, Value v = nullptr) noexcept;
 public:
   inline sz_t size() const noexcept { return elements_.size(); }
   inline sz_t length() const noexcept { return elements_.size(); }
@@ -278,13 +278,13 @@ public:
   inline Value* data() noexcept { return elements_.data(); }
   inline const Value* data() const noexcept { return elements_.data(); }
   inline Value& operator[](sz_t i) noexcept { return elements_[i]; }
-  inline const Value& operator[](sz_t i) const noexcept { return elements_[i]; }
+  inline Value operator[](sz_t i) const noexcept { return elements_[i]; }
   inline Value& at(sz_t i) noexcept { return elements_.at(i); }
-  inline const Value& at(sz_t i) const noexcept { return elements_.at(i); }
+  inline Value at(sz_t i) const noexcept { return elements_.at(i); }
   inline void clear() noexcept { elements_.clear(); }
-  inline void append(const Value& v) { elements_.push_back(v); }
+  inline void append(Value v) { elements_.push_back(v); }
 
-  inline void insert(int i, const Value& v) {
+  inline void insert(int i, Value v) {
     elements_.insert(elements_.begin() + i, v);
   }
 
@@ -297,7 +297,7 @@ public:
   virtual str_t stringify() const override;
   virtual void gc_blacken(WrenVM& vm) override;
 
-  static ListObject* create(WrenVM& vm, sz_t n = 0, const Value& v = nullptr);
+  static ListObject* create(WrenVM& vm, sz_t n = 0, Value v = nullptr);
 };
 
 class RangeObject final : public BaseObject {
@@ -347,8 +347,8 @@ class MapObject final : public BaseObject {
   sz_t size_{}; // the number of entries in the map
   std::vector<MapEntry> entries_; // contiguous array of [capacity_] entries
 
-  std::tuple<bool, int> find_entry(const Value& key) const;
-  bool insert_entry(const Value& k, const Value& v);
+  std::tuple<bool, int> find_entry(Value key) const;
+  bool insert_entry(Value k, Value v);
   void resize(sz_t new_capacity);
 
   MapObject(ClassObject* cls) noexcept
@@ -361,10 +361,10 @@ public:
   inline sz_t capacity() const noexcept { return capacity_; }
 
   void clear();
-  bool contains(const Value& key) const;
-  std::optional<Value> get(const Value& key) const;
-  void set(const Value& key, const Value& val);
-  Value remove(const Value& key);
+  bool contains(Value key) const;
+  std::optional<Value> get(Value key) const;
+  void set(Value key, Value val);
+  Value remove(Value key);
 
   virtual str_t stringify() const override;
   virtual void gc_blacken(WrenVM& vm) override;
@@ -395,8 +395,8 @@ public:
   inline sz_t size() const noexcept { return variables_.size(); }
   inline sz_t length() const noexcept { return variables_.size(); }
   inline bool empty() const noexcept { return variables_.empty(); }
-  inline const Value& get_variable(sz_t i) const { return variables_[i]; }
-  inline void set_variable(sz_t i, const Value& v) { variables_[i] = v; }
+  inline Value get_variable(sz_t i) const { return variables_[i]; }
+  inline void set_variable(sz_t i, Value v) { variables_[i] = v; }
   inline StringObject* name() const { return name_; }
 
   inline StringObject* get_variable_name(sz_t i) const {
@@ -410,14 +410,98 @@ public:
   std::optional<sz_t> find_variable(const str_t& name) const;
   sz_t declare_variable(WrenVM& vm, const str_t& name, int line);
   std::tuple<int, int> define_variable(
-      WrenVM& vm, const str_t& name, const Value& value);
+      WrenVM& vm, const str_t& name, Value value);
   void iter_variables(
-      std::function<void (sz_t, StringObject*, const Value&)>&& fn, int off = 0);
+      std::function<void (sz_t, StringObject*, Value)>&& fn, int off = 0);
 
   virtual str_t stringify() const override;
   virtual void gc_blacken(WrenVM& vm) override;
 
   static ModuleObject* create(WrenVM& vm, StringObject* name);
+};
+
+// stores debugging information for a function used for things like stack
+// traces
+class FunctionDebug final : private UnCopyable {
+  // the name of the function, heap allocated and owned by the FunctionDebug
+  str_t name_{};
+
+  // an array of line numbers, thers is one element in this array for each
+  // bytecode in the function's bytecode array. the value of that element is
+  // the line in the source code that generated that instruction
+  std::vector<int> source_lines_;
+public:
+  FunctionDebug() noexcept {}
+
+  FunctionDebug(const str_t& name, int* source_lines, int lines_count) noexcept
+    : name_(name)
+    , source_lines_(source_lines, source_lines + lines_count) {
+  }
+
+  inline const str_t& name() const noexcept { return name_; }
+  inline void set_name(const str_t& name) noexcept { name_ = name; }
+  inline int get_line(int i) const noexcept { return source_lines_[i]; }
+  inline void append_line(int line) noexcept { source_lines_.push_back(line); }
+
+  inline void set_lines(std::initializer_list<int> source_lines) noexcept {
+    source_lines_ = source_lines;
+  }
+};
+
+class FunctionObject final : public BaseObject {
+  std::vector<u8_t> codes_;
+  std::vector<Value> constants_;
+
+  // the module where this function was defined
+  ModuleObject* module_{};
+
+  // the maximum number of stack slots this function may use
+  int max_slots_{};
+
+  // the number of upvalues this function closes over
+  int num_upvalues_{};
+
+  // the number of parameters this function expects, used to ensure that .call
+  // handles a mismatch between number of parameters and arguments, this will
+  // only be set for functions, and not FunctionObject that represent or scripts
+  int arity_{};
+  FunctionDebug debug_;
+public:
+  inline ModuleObject* module() const noexcept { return module_; }
+  inline int max_slots() const noexcept { return max_slots_; }
+  inline void set_max_slots(int max_slots) noexcept { max_slots_ = max_slots; }
+  inline int num_upvalues() const noexcept { return num_upvalues_; }
+  inline void set_num_upvalues(int num_upvalues) noexcept { num_upvalues_ = num_upvalues; }
+  inline int inc_num_upvalues() noexcept { return num_upvalues_++; }
+  inline int arity() const noexcept { return arity_; }
+  inline void set_arity(int arity) noexcept { arity_ = arity; }
+  inline FunctionDebug& debug() noexcept { return debug_; }
+  inline const FunctionDebug& debug() const noexcept { return debug_; }
+  inline void bind_name(const str_t& name) noexcept { debug_.set_name(name); }
+
+  inline const u8_t* codes() const { return codes_.data(); }
+  inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }
+  inline sz_t codes_count() const noexcept { return codes_.size(); }
+  inline u8_t get_code(int i) const noexcept { return codes_[i]; }
+  inline const Value* constants() const { return constants_.data(); }
+  inline void set_constants(const std::vector<Value>& constants) { constants_ = constants; }
+  inline sz_t constants_count() const noexcept { return constants_.size(); }
+  inline Value get_constant(int i) const noexcept { return constants_[i]; }
+  inline void set_constant(int i, Value v) noexcept { constants_[i] = v; }
+
+  int indexof_constant(Value v) const;
+
+  template <typename T> inline void append_code(T c) noexcept {
+    codes_.push_back(Xt::as_type<u8_t>(c));
+  }
+
+  template <typename T> inline void set_code(sz_t i, T c) noexcept {
+    codes_[i] = Xt::as_type<u8_t>(c);
+  }
+
+  inline void append_constant(Value v) noexcept {
+    constants_.push_back(v);
+  }
 };
 
 }
