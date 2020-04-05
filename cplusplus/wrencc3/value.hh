@@ -448,6 +448,14 @@ public:
   }
 };
 
+// a function object, it wraps and owns the bytecode and other debug information
+// for a callable chunk of code
+//
+// function objects aare not passed around and invoked directly, instead, they
+// are always referenced by an [ClosureObject] which is the real first-class
+// representation of a function, this isn't strictly necessary if the function
+// has no upvalues, but lets the rest of the VM assume all called objects will
+// be closures
 class FunctionObject final : public BaseObject {
   std::vector<u8_t> codes_;
   std::vector<Value> constants_;
@@ -466,6 +474,13 @@ class FunctionObject final : public BaseObject {
   // only be set for functions, and not FunctionObject that represent or scripts
   int arity_{};
   FunctionDebug debug_;
+
+  FunctionObject(ClassObject* cls, ModuleObject* module, int max_slots) noexcept;
+  FunctionObject(ClassObject* cls,
+      u8_t* codes, int codes_count,
+      Value* constants, int constants_count,
+      ModuleObject* module, int max_slots, int num_upvalues, int arity,
+      const str_t& debug_name, int* source_lines, int lines_count) noexcept;
 public:
   inline ModuleObject* module() const noexcept { return module_; }
   inline int max_slots() const noexcept { return max_slots_; }
@@ -482,14 +497,12 @@ public:
   inline const u8_t* codes() const { return codes_.data(); }
   inline void set_codes(const std::vector<u8_t>& codes) { codes_ = codes; }
   inline sz_t codes_count() const noexcept { return codes_.size(); }
-  inline u8_t get_code(int i) const noexcept { return codes_[i]; }
+  inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
   inline const Value* constants() const { return constants_.data(); }
   inline void set_constants(const std::vector<Value>& constants) { constants_ = constants; }
   inline sz_t constants_count() const noexcept { return constants_.size(); }
-  inline Value get_constant(int i) const noexcept { return constants_[i]; }
-  inline void set_constant(int i, Value v) noexcept { constants_[i] = v; }
-
-  int indexof_constant(Value v) const;
+  inline Value get_constant(sz_t i) const noexcept { return constants_[i]; }
+  inline void set_constant(sz_t i, Value v) noexcept { constants_[i] = v; }
 
   template <typename T> inline void append_code(T c) noexcept {
     codes_.push_back(Xt::as_type<u8_t>(c));
@@ -502,6 +515,21 @@ public:
   inline void append_constant(Value v) noexcept {
     constants_.push_back(v);
   }
+
+  int indexof_constant(Value v) const;
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+  virtual u32_t hasher() const override;
+
+  static int get_argc(const u8_t* bytecode, const Value* constants, int ip);
+  static FunctionObject* create(
+      WrenVM& vm, ModuleObject* module, int max_slots);
+  static FunctionObject* create(WrenVM& vm,
+      u8_t* codes, int codes_count,
+      Value* constants, int constants_count,
+      ModuleObject* module, int max_slots, int num_upvalues, int arity,
+      const str_t& name, int* source_lines, int lines_count);
 };
 
 }

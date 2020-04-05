@@ -56,8 +56,7 @@ ModuleObject* BaseObject::as_module() noexcept {
 }
 
 FunctionObject* BaseObject::as_function() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<FunctionObject>(this);
 }
 
 ForeignObject* BaseObject::as_foreign() noexcept {
@@ -454,6 +453,71 @@ void ModuleObject::gc_blacken(WrenVM& vm) {
 }
 
 ModuleObject* ModuleObject::create(WrenVM& vm, StringObject* name) {
+  // TODO:
+  return nullptr;
+}
+
+FunctionObject::FunctionObject(
+    ClassObject* cls, ModuleObject* module, int max_slots) noexcept
+  : BaseObject(ObjType::FUNCTION, cls)
+  , module_(module)
+  , max_slots_(max_slots) {
+}
+
+FunctionObject::FunctionObject(ClassObject* cls,
+    u8_t* codes, int codes_count,
+    Value* constants, int constants_count,
+    ModuleObject* module, int max_slots, int num_upvalues, int arity,
+    const str_t& debug_name, int* source_lines, int lines_count) noexcept
+  : BaseObject(ObjType::FUNCTION, cls)
+  , codes_(codes, codes + codes_count)
+  , constants_(constants, constants + constants_count)
+  , module_(module)
+  , max_slots_(max_slots)
+  , num_upvalues_(num_upvalues)
+  , arity_(arity)
+  , debug_(debug_name, source_lines, lines_count) {
+}
+
+int FunctionObject::indexof_constant(Value v) const {
+  for (sz_t i = 0; i < constants_.size(); ++i) {
+    if (constants_[i] == v)
+      return Xt::as_type<int>(i);
+  }
+  return -1;
+}
+
+str_t FunctionObject::stringify() const {
+  ss_t ss;
+  ss << "[fn `" << this << "`]";
+  return ss.str();
+}
+
+void FunctionObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+u32_t FunctionObject::hasher() const {
+  return Xt::hash_numeric(arity_) ^ Xt::hash_u64(codes_count());
+}
+
+int FunctionObject::get_argc(
+    const u8_t* bytecode, const Value* constants, int ip) {
+  // TODO:
+  return 0;
+}
+
+FunctionObject* FunctionObject::create(
+    WrenVM& vm, ModuleObject* module, int max_slots) {
+  // TODO:
+  return nullptr;
+}
+
+FunctionObject* FunctionObject::create(WrenVM& vm,
+    u8_t* codes, int codes_count,
+    Value* constants, int constants_count,
+    ModuleObject* module, int max_slots, int num_upvalues, int arity,
+    const str_t& name, int* source_lines, int lines_count) {
   // TODO:
   return nullptr;
 }
