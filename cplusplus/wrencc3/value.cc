@@ -48,13 +48,11 @@ RangeObject* BaseObject::as_range() noexcept {
 }
 
 MapObject* BaseObject::as_map() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<MapObject>(this);
 }
 
 ModuleObject* BaseObject::as_module() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<ModuleObject>(this);
 }
 
 FunctionObject* BaseObject::as_function() noexcept {
@@ -416,6 +414,46 @@ void MapObject::gc_blacken(WrenVM& vm) {
 }
 
 MapObject* MapObject::create(WrenVM& vm) {
+  // TODO:
+  return nullptr;
+}
+
+std::optional<sz_t> ModuleObject::find_variable(const str_t& name) const {
+  for (sz_t i = 0; i < variable_names_.size(); ++i) {
+    if (variable_names_[i]->compare(name))
+      return {i};
+  }
+  return {};
+}
+
+sz_t ModuleObject::declare_variable(WrenVM& vm, const str_t& name, int line) {
+  // TODO:
+  return variable_names_.size() - 1;
+}
+
+std::tuple<int, int> ModuleObject::define_variable(
+    WrenVM& vm, const str_t& name, const Value& value) {
+  // TODO:
+  return std::make_tuple(0, 0);
+}
+
+void ModuleObject::iter_variables(
+    std::function<void (sz_t, StringObject*, const Value&)>&& fn, int off) {
+  for (sz_t i = off; i < variables_.size(); ++i)
+    fn(i, variable_names_[i], variables_[i]);
+}
+
+str_t ModuleObject::stringify() const {
+  ss_t ss;
+  ss << "[module `" << this << "`]";
+  return ss.str();
+}
+
+void ModuleObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+ModuleObject* ModuleObject::create(WrenVM& vm, StringObject* name) {
   // TODO:
   return nullptr;
 }

@@ -30,6 +30,7 @@
 #include <tuple>
 #include <vector>
 #include "common.hh"
+#include "utility.hh"
 
 namespace wrencc {
 
@@ -369,6 +370,54 @@ public:
   virtual void gc_blacken(WrenVM& vm) override;
 
   static MapObject* create(WrenVM& vm);
+};
+
+// a loaded module and top-level variables it defines
+//
+// while this is an object and is managed by thc GC, it never appears
+// as a first-class object
+class ModuleObject final : public BaseObject {
+  // the name of the module
+  StringObject* name_{};
+
+  // the currently defiend top-level variables
+  std::vector<Value> variables_;
+
+  // symbol table for the names of all module variables, indexes here
+  // directly correspond to entries in [variables_]
+  // SymbolTable variable_names_;
+  std::vector<StringObject*> variable_names_;
+
+  ModuleObject(StringObject* name) noexcept
+    : BaseObject(ObjType::MODULE), name_(name) {
+  }
+public:
+  inline sz_t size() const noexcept { return variables_.size(); }
+  inline sz_t length() const noexcept { return variables_.size(); }
+  inline bool empty() const noexcept { return variables_.empty(); }
+  inline const Value& get_variable(sz_t i) const { return variables_[i]; }
+  inline void set_variable(sz_t i, const Value& v) { variables_[i] = v; }
+  inline StringObject* name() const { return name_; }
+
+  inline StringObject* get_variable_name(sz_t i) const {
+    return variable_names_[i];
+  }
+
+  inline const char* name_cstr() const {
+    return name_ != nullptr ? name_->cstr() : "";
+  }
+
+  std::optional<sz_t> find_variable(const str_t& name) const;
+  sz_t declare_variable(WrenVM& vm, const str_t& name, int line);
+  std::tuple<int, int> define_variable(
+      WrenVM& vm, const str_t& name, const Value& value);
+  void iter_variables(
+      std::function<void (sz_t, StringObject*, const Value&)>&& fn, int off = 0);
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static ModuleObject* create(WrenVM& vm, StringObject* name);
 };
 
 }
