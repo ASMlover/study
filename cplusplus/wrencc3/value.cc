@@ -64,8 +64,7 @@ ForeignObject* BaseObject::as_foreign() noexcept {
 }
 
 UpvalueObject* BaseObject::as_upvalue() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<UpvalueObject>(this);
 }
 
 ClosureObject* BaseObject::as_closure() noexcept {
@@ -288,9 +287,7 @@ bool RangeObject::is_equal(BaseObject* r) const {
 }
 
 str_t RangeObject::stringify() const {
-  ss_t ss;
-  ss << "[range `" << this << "`]";
-  return ss.str();
+  return get_stringify("range");
 }
 
 u32_t RangeObject::hasher() const {
@@ -402,9 +399,7 @@ Value MapObject::remove(Value key) {
 }
 
 str_t MapObject::stringify() const {
-  ss_t ss;
-  ss << "[map `" << this << "`]";
-  return ss.str();
+  return get_stringify("map");
 }
 
 void MapObject::gc_blacken(WrenVM& vm) {
@@ -442,9 +437,7 @@ void ModuleObject::iter_variables(
 }
 
 str_t ModuleObject::stringify() const {
-  ss_t ss;
-  ss << "[module `" << this << "`]";
-  return ss.str();
+  return get_stringify("module");
 }
 
 void ModuleObject::gc_blacken(WrenVM& vm) {
@@ -487,9 +480,7 @@ int FunctionObject::indexof_constant(Value v) const {
 }
 
 str_t FunctionObject::stringify() const {
-  ss_t ss;
-  ss << "[fn `" << this << "`]";
-  return ss.str();
+  return get_stringify("fn");
 }
 
 void FunctionObject::gc_blacken(WrenVM& vm) {
@@ -522,9 +513,7 @@ FunctionObject* FunctionObject::create(WrenVM& vm,
 }
 
 str_t ForeignObject::stringify() const {
-  ss_t ss;
-  ss << "[foreign `" << this << "`]";
-  return ss.str();
+  return get_stringify("foreign");
 }
 
 void ForeignObject::finalize(WrenVM& vm) {
@@ -532,6 +521,26 @@ void ForeignObject::finalize(WrenVM& vm) {
 }
 
 ForeignObject* ForeignObject::create(WrenVM& vm, ClassObject* cls, sz_t count) {
+  // TODO:
+  return nullptr;
+}
+
+UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
+  : BaseObject(ObjType::UPVALUE, nullptr)
+  , value_(value)
+  , next_(next) {
+}
+
+str_t UpvalueObject::stringify() const {
+  return get_stringify("upvalue");
+}
+
+void UpvalueObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+UpvalueObject* UpvalueObject::create(
+    WrenVM& vm, Value* value, UpvalueObject* next) {
   // TODO:
   return nullptr;
 }

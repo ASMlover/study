@@ -90,6 +90,12 @@ public:
   inline ClassObject* cls() const noexcept { return cls_; }
   inline void set_cls(ClassObject* cls) noexcept { cls_ = cls; }
 
+  inline str_t get_stringify(strv_t name) const {
+    ss_t ss;
+    ss << "[" << name << "`" << this << "`]";
+    return ss.str();
+  }
+
   StringObject* as_string() noexcept;
   const char* as_cstring() noexcept;
   ListObject* as_list() noexcept;
@@ -547,6 +553,52 @@ public:
   virtual void finalize(WrenVM& vm) override;
 
   static ForeignObject* create(WrenVM& vm, ClassObject* cls, sz_t count);
+};
+
+// the dynamically allocated data structure for a variable that has been used
+// by a closure, whenever a function accesses a variable declared in an
+// enclosing function, it will get to it through this
+//
+// an upvalue can be either "closed" or "open", an open upvalue points directly
+// to a [Value] that is still stored on the fiber's stack because the local
+// variable is still in scope in the function where it's declared
+//
+// when that local variable goes out of scope, the upvalue pointing to it will
+// be closed, when that happens, the value gets copied off the stack into the
+// upvalue itself, that way, it can have a longer lifetime than the stack
+// variable
+class UpvalueObject final : public BaseObject {
+  // pointer to the variable this upvalue is referencing
+  Value* value_{};
+
+  // if the upvalue is closed then the closed-over value will be hoisted out
+  // of the stack into here, [value_] will then be changed to point to this
+  Value closed_{};
+
+  // open upvalues are stored in a linked list by the fiber, this points to
+  // the next upvalue in that list
+  UpvalueObject* next_{};
+
+  UpvalueObject(Value* value, UpvalueObject* next = nullptr) noexcept;
+public:
+  inline Value* value() const noexcept { return value_; }
+  inline Value* value_asptr() const noexcept { return value_; }
+  inline Value& value_asref() noexcept { return *value_; }
+  inline void set_value(Value* value) noexcept { value_ = value; }
+  inline void set_value(Value value) noexcept { *value_ = value; }
+  inline Value closed() const noexcept { return closed_; }
+  inline Value* closed_asptr() const noexcept { return (Value*)&closed_; }
+  inline Value& closed_asref() noexcept { return closed_; }
+  inline void set_closed(Value closed) noexcept { closed_ = closed; }
+  inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
+  inline UpvalueObject* next() const noexcept { return next_; }
+  inline void set_next(UpvalueObject* next) noexcept { next_ = next; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static UpvalueObject* create(
+      WrenVM& vm, Value* value, UpvalueObject* next = nullptr);
 };
 
 }
