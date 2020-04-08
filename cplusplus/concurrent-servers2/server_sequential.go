@@ -42,20 +42,19 @@ func handleClient(conn net.Conn) {
 	defer conn.Close()
 
 	ack := []byte("*")
-	_, err := conn.Write(ack[0:1])
-	if err != nil {
+	if _, err := conn.Write(ack[0:1]); err != nil {
 		return
 	}
 
 	status := WAIT_MSG
 	for {
-		var recv_buf[1024]byte
+		var recv_buf [1024]byte
 		n, err := conn.Read(recv_buf[0:])
 		if err != nil {
 			return
 		}
 
-		var send_buf[]byte
+		var send_buf []byte
 		for i := 0; i < n; i++ {
 			switch status {
 			case WAIT_MSG:
@@ -66,12 +65,11 @@ func handleClient(conn net.Conn) {
 				if recv_buf[i] == '$' {
 					status = WAIT_MSG
 				} else {
-					send_buf = append(send_buf, recv_buf[i] + 1)
+					send_buf = append(send_buf, recv_buf[i]+1)
 				}
 			}
 		}
-		_, err2 := conn.Write(send_buf[0:])
-		if err2 != nil {
+		if _, err := conn.Write(send_buf[0:]); err != nil {
 			return
 		}
 	}
