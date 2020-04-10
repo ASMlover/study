@@ -29,48 +29,50 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import asyncio
+import uvloop
+
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 WAIT_MSG = 1
 READ_MSG = 2
 
 async def on_serve(reader, writer):
-	writer.write("*".encode())
-	await writer.drain()
+    writer.write("*".encode())
+    await writer.drain()
 
-	status = WAIT_MSG
-	while True:
-		data = await reader.read(1024)
-		if not data:
-			break
-		recv_data = data.decode()
+    status = WAIT_MSG
+    while True:
+        data = await reader.read(1024)
+        if not data:
+            break
+        recv_buf = data.decode()
 
-		send_data = []
-		for c in recv_data:
-			if status == WAIT_MSG:
-				if c == '^':
-					status = READ_MSG
-			elif status == READ_MSG:
-				if c == '$':
-					status = WAIT_MSG
-				else:
-					send_data.append(chr(ord(c) + 1))
-
-		if send_data:
-			writer.write(''.join(send_data).encode())
-			await writer.drain()
-	writer.close()
+        send_buf = []
+        for c in recv_buf:
+            if status == WAIT_MSG:
+                if c == '^':
+                    status = READ_MSG
+            elif status == READ_MSG:
+                if c == '$':
+                    status = WAIT_MSG
+                else:
+                    send_buf.append(chr(ord(c) + 1))
+        if send_buf:
+            writer.write(''.join(send_buf).encode())
+            await writer.drain()
+    writer.close()
 
 async def main():
-	server = await asyncio.start_server(on_serve, '0.0.0.0', 5555)
-	loop, addr = asyncio.get_event_loop(), server.sockets[0].getsockname()
-	print(f"Serving on {addr} with {loop} ...")
+    server = await asyncio.start_server(on_serve, '0.0.0.0', 5555)
+    loop, addr = asyncio.get_event_loop(), server.sockets[0].getsockname()
+    print(f"Serving on {addr} with {loop} ...")
 
-	await server.serve_forever()
+    await server.serve_forever()
 
 if __name__ == '__main__':
-	try:
-		asyncio.run(main())
-	except KeyboardInterrupt:
-		print("Serve finished")
-	except Exception as e:
-		print(e)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Serve finished")
+    except Exception as e:
+        print(e)
