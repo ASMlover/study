@@ -33,7 +33,7 @@ import asyncio
 STATE_WAIT_MSG = 1
 STATE_READ_MSG = 2
 
-async def handle_connection(reader, writer):
+async def on_serve(reader, writer):
 	writer.write("*".encode())
 	await writer.drain()
 
@@ -61,9 +61,9 @@ async def handle_connection(reader, writer):
 	writer.close()
 
 async def main():
-	server = await asyncio.start_server(handle_connection, '0.0.0.0', 5555)
-	addr = server.sockets[0].getsockname()
-	print(f"Serving on {addr} ...")
+	server = await asyncio.start_server(on_serve, '0.0.0.0', 5555)
+	loop, addr = asyncio.get_event_loop(), server.sockets[0].getsockname()
+	print(f"Serving on {addr} with {loop} ...")
 
 	await server.serve_forever()
 

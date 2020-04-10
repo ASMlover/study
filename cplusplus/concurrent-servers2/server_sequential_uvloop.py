@@ -64,8 +64,8 @@ async def on_serve(reader, writer):
 
 async def main():
     server = await asyncio.start_server(on_serve, '0.0.0.0', 5555)
-    event, addr = asyncio.get_event_loop(), server.sockets[0].getsockname()
-    print(f"Serving on {addr} with {event} ...")
+    loop, addr = asyncio.get_event_loop(), server.sockets[0].getsockname()
+    print(f"Serving on {addr} with {loop} ...")
 
     await server.serve_forever()
 
