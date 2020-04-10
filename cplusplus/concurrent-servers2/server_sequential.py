@@ -30,14 +30,14 @@
 
 import asyncio
 
-STATE_WAIT_MSG = 1
-STATE_READ_MSG = 2
+WAIT_MSG = 1
+READ_MSG = 2
 
 async def on_serve(reader, writer):
 	writer.write("*".encode())
 	await writer.drain()
 
-	status = STATE_WAIT_MSG
+	status = WAIT_MSG
 	while True:
 		data = await reader.read(1024)
 		if not data:
@@ -46,12 +46,12 @@ async def on_serve(reader, writer):
 
 		send_data = []
 		for c in recv_data:
-			if status == STATE_WAIT_MSG:
+			if status == WAIT_MSG:
 				if c == '^':
-					status = STATE_READ_MSG
-			elif status == STATE_READ_MSG:
+					status = READ_MSG
+			elif status == READ_MSG:
 				if c == '$':
-					status = STATE_WAIT_MSG
+					status = WAIT_MSG
 				else:
 					send_data.append(chr(ord(c) + 1))
 
