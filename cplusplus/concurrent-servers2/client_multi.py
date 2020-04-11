@@ -41,7 +41,7 @@ def main():
 		count = 1
 
 	threads = []
-	for i in xrange(count):
+	for i in range(count):
 		t = threading.Thread(target=lambda: os.system(r".\build\Debug\cos.exe cc1"))
 		threads.append(t)
 
