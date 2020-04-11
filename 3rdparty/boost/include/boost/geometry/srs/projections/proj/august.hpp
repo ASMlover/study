@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -48,12 +48,6 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct august {};
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
@@ -62,18 +56,12 @@ namespace projections
 
             //static const double M = 1.333333333333333;
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_august_spheroid
-                : public base_t_f<base_august_spheroid<T, Parameters>, T, Parameters>
             {
-                inline base_august_spheroid(const Parameters& par)
-                    : base_t_f<base_august_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T M = 1.333333333333333333333333333333333333;
 
@@ -121,9 +109,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct august_spheroid : public detail::august::base_august_spheroid<T, Parameters>
     {
-        inline august_spheroid(const Parameters& par) : detail::august::base_august_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline august_spheroid(Params const& , Parameters & par)
         {
-            detail::august::setup_august(this->m_par);
+            detail::august::setup_august(par);
         }
     };
 
@@ -132,23 +121,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::august, august_spheroid, august_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_F(srs::spar::proj_august, august_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class august_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_F(august_entry, august_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(august_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_f<august_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void august_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("august", new august_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(august, august_entry)
         }
 
     } // namespace detail

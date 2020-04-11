@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -46,21 +46,19 @@
 #include <sstream>
 
 #include <boost/core/ignore_unused.hpp>
-#include <boost/geometry/util/math.hpp>
+
+#include <boost/geometry/core/assert.hpp>
 
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
+
+#include <boost/geometry/util/math.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct isea {};
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -202,24 +200,24 @@ namespace projections
             //enum isea_poly { isea_none = 0, isea_icosahedron = 20 };
             //enum isea_topology { isea_hexagon=6, isea_triangle=3, isea_diamond=4 };
             enum isea_address_form {
-                isea_addr_geo, isea_addr_q2di, isea_addr_seqnum,
-                isea_addr_interleave, isea_addr_plane, isea_addr_q2dd,
+                /*isea_addr_geo,*/ isea_addr_q2di, isea_addr_seqnum,
+                /*isea_addr_interleave,*/ isea_addr_plane, isea_addr_q2dd,
                 isea_addr_projtri, isea_addr_vertex2dd, isea_addr_hex
             };
 
             template <typename T>
             struct isea_dgg {
-                //isea_poly         polyhedron; /* ignored, icosahedron */
                 T                 o_lat, o_lon, o_az; /* orientation, radians */
-                int               pole; /* true if standard snyder */
-                //isea_topology     topology; /* ignored, hexagon */
+                T                 radius; /* radius of the earth in meters, ignored 1.0 */
+                unsigned long     serial;
+                //int               pole; /* true if standard snyder */
                 int               aperture; /* valid values depend on partitioning method */
                 int               resolution;
-                T                 radius; /* radius of the earth in meters, ignored 1.0 */
-                isea_address_form output; /* an isea_address_form */
                 int               triangle; /* triangle of last transformed point */
                 int               quad; /* quad of last transformed point */
-                unsigned long     serial;
+                //isea_poly         polyhedron; /* ignored, icosahedron */
+                //isea_topology     topology; /* ignored, hexagon */
+                isea_address_form output; /* an isea_address_form */
             };
 
             template <typename T>
@@ -234,9 +232,9 @@ namespace projections
 
             template <typename T>
             struct isea_address {
+                T      x,y; /* or i,j or lon,lat depending on type */
                 int    type; /* enum isea_address_form */
                 int    number;
-                T      x,y; /* or i,j or lon,lat depending on type */
             };
 
             /* ENDINC */
@@ -1074,30 +1072,34 @@ namespace projections
                 out.y += 2.0 * .14433756729740644112;
 
                 switch (g->output) {
-                case isea_addr_projtri:
-                    /* nothing to do, already in projected triangle */
-                    break;
-                case isea_addr_vertex2dd:
-                    g->quad = isea_ptdd(tri, &out);
-                    break;
-                case isea_addr_q2dd:
-                    /* Same as above, we just don't print as much */
-                    g->quad = isea_ptdd(tri, &out);
-                    break;
-                case isea_addr_q2di:
-                    g->quad = isea_ptdi(g, tri, &out, &coord);
-                    return coord;
-                    break;
-                case isea_addr_seqnum:
-                    isea_ptdi(g, tri, &out, &coord);
-                    /* disn will set g->serial */
-                    isea_disn(g, g->quad, &coord);
-                    return coord;
-                    break;
-                case isea_addr_hex:
-                    isea_hex(g, tri, &out, &coord);
-                    return coord;
-                    break;
+                    case isea_addr_projtri:
+                        /* nothing to do, already in projected triangle */
+                        break;
+                    case isea_addr_vertex2dd:
+                        g->quad = isea_ptdd(tri, &out);
+                        break;
+                    case isea_addr_q2dd:
+                        /* Same as above, we just don't print as much */
+                        g->quad = isea_ptdd(tri, &out);
+                        break;
+                    case isea_addr_q2di:
+                        g->quad = isea_ptdi(g, tri, &out, &coord);
+                        return coord;
+                        break;
+                    case isea_addr_seqnum:
+                        isea_ptdi(g, tri, &out, &coord);
+                        /* disn will set g->serial */
+                        isea_disn(g, g->quad, &coord);
+                        return coord;
+                        break;
+                    case isea_addr_hex:
+                        isea_hex(g, tri, &out, &coord);
+                        return coord;
+                        break;
+                    default:
+                        // isea_addr_plane handled above
+                        BOOST_GEOMETRY_ASSERT(false);
+                        break;
                 }
 
                 return out;
@@ -1112,20 +1114,14 @@ namespace projections
                 isea_dgg<T> dgg;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_isea_spheroid
-                : public base_t_f<base_isea_spheroid<T, Parameters>, T, Parameters>
             {
                 par_isea<T> m_proj_parm;
 
-                inline base_isea_spheroid(const Parameters& par)
-                    : base_t_f<base_isea_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     isea_pt<T> out;
                     isea_geo<T> in;
@@ -1147,19 +1143,11 @@ namespace projections
 
             };
 
-            // Icosahedral Snyder Equal Area
-            template <typename Parameters, typename T>
-            inline void setup_isea(Parameters& par, par_isea<T>& proj_parm)
+            template <typename T>
+            inline void isea_orient_init(srs::detail::proj4_parameters const& params,
+                                         par_isea<T>& proj_parm)
             {
-                std::string opt;
-
-                isea_grid_init(&proj_parm.dgg);
-
-                proj_parm.dgg.output = isea_addr_plane;
-            /*        proj_parm.dgg.radius = par.a; / * otherwise defaults to 1 */
-                /* calling library will scale, I think */
-
-                opt = pj_get_param_s(par.params, "orient");
+                std::string opt = pj_get_param_s(params, "orient");
                 if (! opt.empty()) {
                     if (opt == std::string("isea")) {
                         isea_orient_isea(&proj_parm.dgg);
@@ -1169,46 +1157,104 @@ namespace projections
                         BOOST_THROW_EXCEPTION( projection_exception(error_ellipsoid_use_required) );
                     }
                 }
+            }
 
-                pj_param_r(par.params, "azi", proj_parm.dgg.o_az);
-                pj_param_r(par.params, "lon_0", proj_parm.dgg.o_lon);
-                pj_param_r(par.params, "lat_0", proj_parm.dgg.o_lat);
-                // TODO: this parameter is set below second time
-                pj_param_i(par.params, "aperture", proj_parm.dgg.aperture);
-                // TODO: this parameter is set below second time
-                pj_param_i(par.params, "resolution", proj_parm.dgg.resolution);
-                
-                opt = pj_get_param_s(par.params, "mode");
+            template <typename T>
+            inline void isea_orient_init(srs::dpar::parameters<T> const& params,
+                                         par_isea<T>& proj_parm)
+            {
+                typename srs::dpar::parameters<T>::const_iterator
+                    it = pj_param_find(params, srs::dpar::orient);
+                if (it != params.end()) {
+                    srs::dpar::value_orient o = static_cast<srs::dpar::value_orient>(it->template get_value<int>());
+                    if (o == srs::dpar::orient_isea) {
+                        isea_orient_isea(&proj_parm.dgg);
+                    } else if (o == srs::dpar::orient_pole) {
+                        isea_orient_pole(&proj_parm.dgg);
+                    } else {
+                        BOOST_THROW_EXCEPTION( projection_exception(error_ellipsoid_use_required) );
+                    }
+                }
+            }
+
+            template <typename T>
+            inline void isea_mode_init(srs::detail::proj4_parameters const& params,
+                                       par_isea<T>& proj_parm)
+            {
+                std::string opt = pj_get_param_s(params, "mode");
                 if (! opt.empty()) {
                     if (opt == std::string("plane")) {
                         proj_parm.dgg.output = isea_addr_plane;
                     } else if (opt == std::string("di")) {
                         proj_parm.dgg.output = isea_addr_q2di;
-                    }
-                    else if (opt == std::string("dd")) {
+                    } else if (opt == std::string("dd")) {
                         proj_parm.dgg.output = isea_addr_q2dd;
-                    }
-                    else if (opt == std::string("hex")) {
+                    } else if (opt == std::string("hex")) {
                         proj_parm.dgg.output = isea_addr_hex;
-                    }
-                    else {
-                        /* TODO verify error code.  Possibly eliminate magic */
+                    } else {
                         BOOST_THROW_EXCEPTION( projection_exception(error_ellipsoid_use_required) );
                     }
                 }
+            }
+
+            template <typename T>
+            inline void isea_mode_init(srs::dpar::parameters<T> const& params,
+                                       par_isea<T>& proj_parm)
+            {
+                typename srs::dpar::parameters<T>::const_iterator
+                    it = pj_param_find(params, srs::dpar::mode);
+                if (it != params.end()) {
+                    srs::dpar::value_mode m = static_cast<srs::dpar::value_mode>(it->template get_value<int>());
+                    if (m == srs::dpar::mode_plane) {
+                        proj_parm.dgg.output = isea_addr_plane;
+                    } else if (m == srs::dpar::mode_di) {
+                        proj_parm.dgg.output = isea_addr_q2di;
+                    } else if (m == srs::dpar::mode_dd) {
+                        proj_parm.dgg.output = isea_addr_q2dd;
+                    } else if (m == srs::dpar::mode_hex) {
+                        proj_parm.dgg.output = isea_addr_hex;
+                    } else {
+                        BOOST_THROW_EXCEPTION( projection_exception(error_ellipsoid_use_required) );
+                    }
+                }
+            }
+
+            // Icosahedral Snyder Equal Area
+            template <typename Params, typename T>
+            inline void setup_isea(Params const& params, par_isea<T>& proj_parm)
+            {
+                std::string opt;
+
+                isea_grid_init(&proj_parm.dgg);
+
+                proj_parm.dgg.output = isea_addr_plane;
+            /*        proj_parm.dgg.radius = par.a; / * otherwise defaults to 1 */
+                /* calling library will scale, I think */
+
+                isea_orient_init(params, proj_parm);
+
+                pj_param_r<srs::spar::azi>(params, "azi", srs::dpar::azi, proj_parm.dgg.o_az);
+                pj_param_r<srs::spar::lon_0>(params, "lon_0", srs::dpar::lon_0, proj_parm.dgg.o_lon);
+                pj_param_r<srs::spar::lat_0>(params, "lat_0", srs::dpar::lat_0, proj_parm.dgg.o_lat);
+                // TODO: this parameter is set below second time
+                pj_param_i<srs::spar::aperture>(params, "aperture", srs::dpar::aperture, proj_parm.dgg.aperture);
+                // TODO: this parameter is set below second time
+                pj_param_i<srs::spar::resolution>(params, "resolution", srs::dpar::resolution, proj_parm.dgg.resolution);
+                
+                isea_mode_init(params, proj_parm);
 
                 // TODO: pj_param_exists -> pj_get_param_b ?
-                if (pj_param_exists(par.params, "rescale")) {
+                if (pj_param_exists<srs::spar::rescale>(params, "rescale", srs::dpar::rescale)) {
                     proj_parm.dgg.radius = isea_scale;
                 }
 
-                if (pj_param_i(par.params, "resolution", proj_parm.dgg.resolution)) {
+                if (pj_param_i<srs::spar::resolution>(params, "resolution", srs::dpar::resolution, proj_parm.dgg.resolution)) {
                     /* empty */
                 } else {
                     proj_parm.dgg.resolution = 4;
                 }
 
-                if (pj_param_i(par.params, "aperture", proj_parm.dgg.aperture)) {
+                if (pj_param_i<srs::spar::aperture>(params, "aperture", srs::dpar::aperture, proj_parm.dgg.aperture)) {
                     /* empty */
                 } else {
                     proj_parm.dgg.aperture = 3;
@@ -1241,9 +1287,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct isea_spheroid : public detail::isea::base_isea_spheroid<T, Parameters>
     {
-        inline isea_spheroid(const Parameters& par) : detail::isea::base_isea_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline isea_spheroid(Params const& params, Parameters const& )
         {
-            detail::isea::setup_isea(this->m_par, this->m_proj_parm);
+            detail::isea::setup_isea(params, this->m_proj_parm);
         }
     };
 
@@ -1252,23 +1299,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::isea, isea_spheroid, isea_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_F(srs::spar::proj_isea, isea_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class isea_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_F(isea_entry, isea_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(isea_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_f<isea_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void isea_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("isea", new isea_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(isea, isea_entry)
         }
 
     } // namespace detail

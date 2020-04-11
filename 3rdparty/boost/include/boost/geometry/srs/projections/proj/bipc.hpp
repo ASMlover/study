@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -40,22 +40,18 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_BIPC_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_BIPC_HPP
 
-#include <boost/geometry/util/math.hpp>
-#include <boost/math/special_functions/hypot.hpp>
-
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
+
+#include <boost/geometry/util/math.hpp>
+
+#include <boost/math/special_functions/hypot.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct bipc {};
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -85,23 +81,17 @@ namespace projections
 
             struct par_bipc
             {
-                int    noskew;
+                bool   noskew;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_bipc_spheroid
-                : public base_t_fi<base_bipc_spheroid<T, Parameters>, T, Parameters>
             {
                 par_bipc m_proj_parm;
 
-                inline base_bipc_spheroid(const Parameters& par)
-                    : base_t_fi<base_bipc_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T half_pi = detail::half_pi<T>();
                     static const T pi = detail::pi<T>();
@@ -175,7 +165,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     T t, r, rp, rl, al, z, fAz, Az, s, c, Av;
                     int neg, i;
@@ -227,10 +217,10 @@ namespace projections
             };
 
             // Bipolar conic of western hemisphere
-            template <typename Parameters>
-            inline void setup_bipc(Parameters& par, par_bipc& proj_parm)
+            template <typename Params, typename Parameters>
+            inline void setup_bipc(Params const& params, Parameters& par, par_bipc& proj_parm)
             {
-                proj_parm.noskew = pj_get_param_b(par.params, "ns");
+                proj_parm.noskew = pj_get_param_b<srs::spar::ns>(params, "ns", srs::dpar::ns);
                 par.es = 0.;
             }
 
@@ -254,9 +244,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct bipc_spheroid : public detail::bipc::base_bipc_spheroid<T, Parameters>
     {
-        inline bipc_spheroid(const Parameters& par) : detail::bipc::base_bipc_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline bipc_spheroid(Params const& params, Parameters & par)
         {
-            detail::bipc::setup_bipc(this->m_par, this->m_proj_parm);
+            detail::bipc::setup_bipc(params, par, this->m_proj_parm);
         }
     };
 
@@ -265,23 +256,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::bipc, bipc_spheroid, bipc_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_bipc, bipc_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class bipc_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(bipc_entry, bipc_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(bipc_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<bipc_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void bipc_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("bipc", new bipc_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(bipc, bipc_entry)
         }
 
     } // namespace detail

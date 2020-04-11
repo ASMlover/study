@@ -1,54 +1,61 @@
-/*
-    Copyright 2007-2008 Andreas Pokorny, Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2008 Andreas Pokorny, Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_IO_PATH_SPEC_HPP
 #define BOOST_GIL_IO_PATH_SPEC_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Andreas Pokorny, Christian Henning \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#ifdef BOOST_GIL_IO_ADD_FS_PATH_SUPPORT
+// Disable warning: conversion to 'std::atomic<int>::__integral_type {aka int}' from 'long int' may alter its value
+#if defined(BOOST_CLANG)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#endif
+
+#if defined(BOOST_GCC) && (BOOST_GCC >= 40900)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+
+#define BOOST_FILESYSTEM_VERSION 3
+#include <boost/filesystem/path.hpp>
+
+#if defined(BOOST_CLANG)
+#pragma clang diagnostic pop
+#endif
+
+#if defined(BOOST_GCC) && (BOOST_GCC >= 40900)
+#pragma GCC diagnostic pop
+#endif
+#endif // BOOST_GIL_IO_ADD_FS_PATH_SUPPORT
 
 #include <cstdlib>
 #include <string>
-
-#include <boost/mpl/bool_fwd.hpp>
-
-#ifdef BOOST_GIL_IO_ADD_FS_PATH_SUPPORT
-#define BOOST_FILESYSTEM_VERSION 3
-#include <boost/filesystem/path.hpp>
-#endif // BOOST_GIL_IO_ADD_FS_PATH_SUPPORT
+#include <type_traits>
 
 namespace boost { namespace gil { namespace detail {
 
-template<typename P> struct is_supported_path_spec              : mpl::false_ {};
-template<> struct is_supported_path_spec< std::string >         : mpl::true_ {};
-template<> struct is_supported_path_spec< const std::string >   : mpl::true_ {};
-template<> struct is_supported_path_spec< std::wstring >        : mpl::true_ {};
-template<> struct is_supported_path_spec< const std::wstring >  : mpl::true_ {};
-template<> struct is_supported_path_spec< const char* >         : mpl::true_ {};
-template<> struct is_supported_path_spec< char* >               : mpl::true_ {};
-template<> struct is_supported_path_spec< const wchar_t* >      : mpl::true_ {};
-template<> struct is_supported_path_spec< wchar_t* >            : mpl::true_ {};
+template<typename P> struct is_supported_path_spec              : std::false_type {};
+template<> struct is_supported_path_spec< std::string >         : std::true_type {};
+template<> struct is_supported_path_spec< const std::string >   : std::true_type {};
+template<> struct is_supported_path_spec< std::wstring >        : std::true_type {};
+template<> struct is_supported_path_spec< const std::wstring >  : std::true_type {};
+template<> struct is_supported_path_spec< const char* >         : std::true_type {};
+template<> struct is_supported_path_spec< char* >               : std::true_type {};
+template<> struct is_supported_path_spec< const wchar_t* >      : std::true_type {};
+template<> struct is_supported_path_spec< wchar_t* >            : std::true_type {};
 
-template<int i> struct is_supported_path_spec<const char [i]>       : mpl::true_ {};
-template<int i> struct is_supported_path_spec<char [i]>             : mpl::true_ {};
-template<int i> struct is_supported_path_spec<const wchar_t [i]>    : mpl::true_ {};
-template<int i> struct is_supported_path_spec<wchar_t [i]>          : mpl::true_ {};
+template<int i> struct is_supported_path_spec<const char [i]>       : std::true_type {};
+template<int i> struct is_supported_path_spec<char [i]>             : std::true_type {};
+template<int i> struct is_supported_path_spec<const wchar_t [i]>    : std::true_type {};
+template<int i> struct is_supported_path_spec<wchar_t [i]>          : std::true_type {};
 
 #ifdef BOOST_GIL_IO_ADD_FS_PATH_SUPPORT
-template<> struct is_supported_path_spec< filesystem::path > : mpl::true_ {};
-template<> struct is_supported_path_spec< const filesystem::path > : mpl::true_ {};
+template<> struct is_supported_path_spec< filesystem::path > : std::true_type {};
+template<> struct is_supported_path_spec< const filesystem::path > : std::true_type {};
 #endif // BOOST_GIL_IO_ADD_FS_PATH_SUPPORT
 
 

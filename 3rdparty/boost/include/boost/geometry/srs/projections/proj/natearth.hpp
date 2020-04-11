@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -61,12 +61,6 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct natearth {}; // Natural Earth
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
@@ -96,18 +90,12 @@ namespace projections
             /* Not sure at all of the appropriate number for max_iter... */
             static const int max_iter = 100;
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_natearth_spheroid
-                : public base_t_fi<base_natearth_spheroid<T, Parameters>, T, Parameters>
             {
-                inline base_natearth_spheroid(const Parameters& par)
-                    : base_t_fi<base_natearth_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     T phi2, phi4;
 
@@ -119,7 +107,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T max_y = natearth::max_y<T>();
 
@@ -186,9 +174,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct natearth_spheroid : public detail::natearth::base_natearth_spheroid<T, Parameters>
     {
-        inline natearth_spheroid(const Parameters& par) : detail::natearth::base_natearth_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline natearth_spheroid(Params const& , Parameters & par)
         {
-            detail::natearth::setup_natearth(this->m_par);
+            detail::natearth::setup_natearth(par);
         }
     };
 
@@ -197,23 +186,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::natearth, natearth_spheroid, natearth_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_natearth, natearth_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class natearth_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<natearth_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(natearth_entry, natearth_spheroid)
 
-        template <typename T, typename Parameters>
-        inline void natearth_init(detail::base_factory<T, Parameters>& factory)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(natearth_init)
         {
-            factory.add_to_factory("natearth", new natearth_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(natearth, natearth_entry)
         }
 
     } // namespace detail

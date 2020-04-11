@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -42,17 +42,12 @@
 
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct hammer {}; // Hammer & Eckert-Greifendorff
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -68,20 +63,14 @@ namespace projections
                 T m, rm;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_hammer_spheroid
-                : public base_t_fi<base_hammer_spheroid<T, Parameters>, T, Parameters>
             {
                 par_hammer<T> m_proj_parm;
 
-                inline base_hammer_spheroid(const Parameters& par)
-                    : base_t_fi<base_hammer_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     T cosphi, d;
 
@@ -92,7 +81,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     T z;
 
@@ -115,17 +104,17 @@ namespace projections
             };
 
             // Hammer & Eckert-Greifendorff
-            template <typename Parameters, typename T>
-            inline void setup_hammer(Parameters& par, par_hammer<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_hammer(Params const& params, Parameters& par, par_hammer<T>& proj_parm)
             {
                 T tmp;
 
-                if (pj_param_f(par.params, "W", tmp)) {
+                if (pj_param_f<srs::spar::w>(params, "W", srs::dpar::w, tmp)) {
                     if ((proj_parm.w = fabs(tmp)) <= 0.)
                         BOOST_THROW_EXCEPTION( projection_exception(error_w_or_m_zero_or_less) );
                 } else
                     proj_parm.w = .5;
-                if (pj_param_f(par.params, "M", tmp)) {
+                if (pj_param_f<srs::spar::m>(params, "M", srs::dpar::m, tmp)) {
                     if ((proj_parm.m = fabs(tmp)) <= 0.)
                         BOOST_THROW_EXCEPTION( projection_exception(error_w_or_m_zero_or_less) );
                 } else
@@ -159,9 +148,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct hammer_spheroid : public detail::hammer::base_hammer_spheroid<T, Parameters>
     {
-        inline hammer_spheroid(const Parameters& par) : detail::hammer::base_hammer_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline hammer_spheroid(Params const& params, Parameters & par)
         {
-            detail::hammer::setup_hammer(this->m_par, this->m_proj_parm);
+            detail::hammer::setup_hammer(params, par, this->m_proj_parm);
         }
     };
 
@@ -170,23 +160,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::hammer, hammer_spheroid, hammer_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_hammer, hammer_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class hammer_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(hammer_entry, hammer_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(hammer_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<hammer_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void hammer_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("hammer", new hammer_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(hammer, hammer_entry)
         }
 
     } // namespace detail

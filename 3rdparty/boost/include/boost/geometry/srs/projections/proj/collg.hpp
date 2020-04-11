@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -50,12 +50,6 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct collg {};
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
@@ -66,18 +60,12 @@ namespace projections
             static const double FYC = 1.77245385090551602729;
             static const double one_plus_eps = 1.0000001;
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_collg_spheroid
-                : public base_t_fi<base_collg_spheroid<T, Parameters>, T, Parameters>
             {
-                inline base_collg_spheroid(const Parameters& par)
-                    : base_t_fi<base_collg_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     if ((xy_y = 1. - sin(lp_lat)) <= 0.)
                         xy_y = 0.;
@@ -89,7 +77,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static T const half_pi = detail::half_pi<T>();
 
@@ -140,9 +128,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct collg_spheroid : public detail::collg::base_collg_spheroid<T, Parameters>
     {
-        inline collg_spheroid(const Parameters& par) : detail::collg::base_collg_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline collg_spheroid(Params const& , Parameters & par)
         {
-            detail::collg::setup_collg(this->m_par);
+            detail::collg::setup_collg(par);
         }
     };
 
@@ -151,23 +140,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::collg, collg_spheroid, collg_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_collg, collg_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class collg_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(collg_entry, collg_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(collg_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<collg_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void collg_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("collg", new collg_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(collg, collg_entry);
         }
 
     } // namespace detail

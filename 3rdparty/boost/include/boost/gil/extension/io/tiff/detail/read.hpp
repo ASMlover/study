@@ -1,23 +1,31 @@
-/*
-    Copyright 2007-2012 Christian Henning, Lubomir Bourdev
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2012 Christian Henning, Lubomir Bourdev
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_READER_HPP
 #define BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_READER_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning, Lubomir Bourdev \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/extension/io/tiff/detail/device.hpp>
+#include <boost/gil/extension/io/tiff/detail/is_allowed.hpp>
+#include <boost/gil/extension/io/tiff/detail/reader_backend.hpp>
+
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/bit_operations.hpp>
+#include <boost/gil/io/conversion_policies.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
+#include <boost/gil/io/reader_base.hpp>
+#include <boost/gil/io/row_buffer_helper.hpp>
+
+#include <boost/assert.hpp>
+
+#include <algorithm>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 // taken from jpegxx - https://bitbucket.org/edd/jpegxx/src/ea2492a1a4a6/src/ijg_headers.hpp
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_C_LIB_COMPILED_AS_CPLUSPLUS
@@ -31,29 +39,11 @@
     }
 #endif
 
-#include <algorithm>
-#include <string>
-#include <vector>
+namespace boost { namespace gil {
 
-#include <boost/static_assert.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/conversion_policies.hpp>
-#include <boost/gil/io/bit_operations.hpp>
-#include <boost/gil/io/row_buffer_helper.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/io/reader_base.hpp>
-
-#include <boost/gil/extension/io/tiff/detail/reader_backend.hpp>
-#include <boost/gil/extension/io/tiff/detail/device.hpp>
-#include <boost/gil/extension/io/tiff/detail/is_allowed.hpp>
-
-
-namespace boost { namespace gil { 
-
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 template < int K >
@@ -70,12 +60,12 @@ struct plane_recursion
                           , ConversionPolicy >* p
                   )
    {
-      typedef typename kth_channel_view_type< K, View >::type plane_t;
-      plane_t plane = kth_channel_view<K>( dst_view );
+        using plane_t = typename kth_channel_view_type<K, View>::type;
+        plane_t plane = kth_channel_view<K>( dst_view );
 
-      p->template read_data< detail::row_buffer_helper_view< plane_t > >( plane, K );
+        p->template read_data< detail::row_buffer_helper_view< plane_t > >( plane, K );
 
-      plane_recursion< K - 1 >::read_plane( dst_view, p );
+        plane_recursion< K - 1 >::read_plane( dst_view, p );
    }
 };
 
@@ -115,18 +105,12 @@ class reader< Device
 {
 private:
 
-    typedef reader< Device
-                  , tiff_tag
-                  , ConversionPolicy
-                  > this_t;
-
-    typedef typename ConversionPolicy::color_converter_type cc_t;
+    using this_t = reader<Device, tiff_tag, ConversionPolicy>;
+    using cc_t = typename ConversionPolicy::color_converter_type;
 
 public:
 
-    typedef reader_backend< Device, tiff_tag > backend_t;
-
-public:
+    using backend_t = reader_backend<Device, tiff_tag>;
 
     reader( const Device&                          io_dev
           , const image_read_settings< tiff_tag >& settings
@@ -157,8 +141,8 @@ public:
     {
         if( this->_info._photometric_interpretation == PHOTOMETRIC_PALETTE )
         {
-            this->_scanline_length = this->_info._width 
-                                   * num_channels< rgb16_view_t >::value 
+            this->_scanline_length = this->_info._width
+                                   * num_channels< rgb16_view_t >::value
                                    * sizeof( channel_type<rgb16_view_t>::type );
 
             // Steps:
@@ -190,9 +174,11 @@ public:
             // the tiff type need to compatible. Which means:
             // color_spaces_are_compatible && channels_are_pairwise_compatible
 
-            typedef typename is_same< ConversionPolicy
-                                    , detail::read_and_no_convert
-                                    >::type is_read_only;
+            using is_read_only = typename std::is_same
+                <
+                    ConversionPolicy,
+                    detail::read_and_no_convert
+                >::type;
 
             io_error_if( !detail::is_allowed< View >( this->_info
                                                     , is_read_only()
@@ -218,12 +204,12 @@ public:
             }
         }
     }
-    
+
 private:
 
     template< typename View >
     void read( View v
-             , mpl::true_ // is_read_only
+             , std::true_type // is_read_only
              )
     {
         read_data< detail::row_buffer_helper_view< View > >( v, 0 );
@@ -231,7 +217,7 @@ private:
 
     template< typename View >
     void read( View v
-             , mpl::false_  // is_read_only
+             , std::false_type  // is_read_only
              )
     {
         // the read_data function needs to know what gil type the source image is
@@ -317,11 +303,13 @@ private:
                           , this->_info._height - this->_settings._top_left.y );
 
       // read the palette first
-      read_data< detail::row_buffer_helper_view< typename PaletteImage::view_t > >( view( indices ), 0 );
+      read_data< detail::row_buffer_helper_view
+          <
+            typename PaletteImage::view_t>
+        >(view(indices), 0);
 
-      read_palette_image( dst_view
-                        , view( indices )
-                        , typename is_same< View, rgb16_view_t >::type() );
+      read_palette_image(dst_view, view(indices),
+          typename std::is_same<View, rgb16_view_t>::type());
    }
 
    template< typename View
@@ -329,18 +317,16 @@ private:
            >
    void read_palette_image( const View&         dst_view
                           , const Indices_View& indices_view
-                          , mpl::true_   // is View rgb16_view_t
+                          , std::true_type   // is View rgb16_view_t
                           )
    {
-      tiff_color_map::red_t   red   = NULL;
-      tiff_color_map::green_t green = NULL;
-      tiff_color_map::blue_t  blue  = NULL;
+      tiff_color_map::red_t   red   = nullptr;
+      tiff_color_map::green_t green = nullptr;
+      tiff_color_map::blue_t  blue  = nullptr;
 
       this->_io_dev.get_field_defaulted( red, green, blue );
 
-      typedef typename channel_traits<
-                    typename element_type<
-                            typename Indices_View::value_type >::type >::value_type channel_t;
+      using channel_t = typename channel_traits<typename element_type<typename Indices_View::value_type>::type>::value_type;
 
       int num_colors = channel_traits< channel_t >::max_value();
 
@@ -373,7 +359,7 @@ private:
    inline
    void read_palette_image( const View&         /* dst_view     */
                           , const Indices_View& /* indices_view */
-                          , mpl::false_  // is View rgb16_view_t
+                          , std::false_type  // is View rgb16_view_t
                           )
    {
       io_error( "User supplied image type must be rgb16_image_t." );
@@ -442,13 +428,13 @@ private:
                                 , int         plane
                                 )
    {
-       ///@todo: why is 
-       /// typedef Buffer row_buffer_helper_t;
+       ///@todo: why is
+       /// using row_buffer_helper_t = Buffer;
        /// not working? I get compiler error with MSVC10.
        /// read_stripped_data IS working.
-       typedef detail::row_buffer_helper_view< View > row_buffer_helper_t;
+       using row_buffer_helper_t = detail::row_buffer_helper_view<View>;
 
-       typedef typename row_buffer_helper_t::iterator_t it_t;
+       using it_t = typename row_buffer_helper_t::iterator_t;
 
        tiff_image_width::type  image_width  = this->_info._width;
        tiff_image_height::type image_height = this->_info._height;
@@ -514,9 +500,9 @@ private:
                    std::ptrdiff_t tile_x1 = img_x1 - x;
                    std::ptrdiff_t tile_y1 = img_y1 - y;
 
-                   assert( tile_x0 >= 0 && tile_y0 >= 0 && tile_x1 >= 0 && tile_y1 >= 0 );
-                   assert( tile_x0 <= img_x1 && tile_y0 <= img_y1 );
-                   assert( tile_x0 < tile_width && tile_y0 < tile_height && tile_x1 < tile_width && tile_y1 < tile_height );
+                   BOOST_ASSERT(tile_x0 >= 0 && tile_y0 >= 0 && tile_x1 >= 0 && tile_y1 >= 0);
+                   BOOST_ASSERT(tile_x0 <= img_x1 && tile_y0 <= img_y1);
+                   BOOST_ASSERT(tile_x0 < tile_width && tile_y0 < tile_height && tile_x1 < tile_width && tile_y1 < tile_height);
 
                    std::ptrdiff_t tile_subimage_view_width  = tile_x1 - tile_x0 + 1;
                    std::ptrdiff_t tile_subimage_view_height = tile_y1 - tile_y0 + 1;
@@ -524,7 +510,7 @@ private:
                    // convert to dst_view coordinates
                    std::ptrdiff_t dst_x0 = img_x0 - subimage_x;
                    std::ptrdiff_t dst_y0 = img_y0 - subimage_y;
-                   assert( dst_x0 >= 0 && dst_y0 >= 0 );
+                   BOOST_ASSERT(dst_x0 >= 0 && dst_y0 >= 0);
 
                    View dst_subimage_view = subimage_view( dst_view
                                                          , (int) dst_x0
@@ -565,13 +551,13 @@ private:
                             , int         plane
                             )
    {
-       ///@todo: why is 
-       /// typedef Buffer row_buffer_helper_t;
+       ///@todo: why is
+       /// using row_buffer_helper_t = Buffer;
        /// not working? I get compiler error with MSVC10.
        /// read_stripped_data IS working.
-       typedef detail::row_buffer_helper_view< View > row_buffer_helper_t;
+       using row_buffer_helper_t = detail::row_buffer_helper_view<View>;
 
-       typedef typename row_buffer_helper_t::iterator_t it_t;
+       using it_t = typename row_buffer_helper_t::iterator_t;
 
        tiff_image_width::type  image_width  = this->_info._width;
        tiff_image_height::type image_height = this->_info._height;
@@ -627,12 +613,11 @@ private:
    void read_stripped_data( const View& dst_view
                           , int         plane     )
    {
-      typedef typename is_bit_aligned< typename View::value_type >::type is_view_bit_aligned_t;
+      using is_view_bit_aligned_t = typename is_bit_aligned<typename View::value_type>::type;
 
-      //typedef detail::row_buffer_helper_view< View > row_buffer_helper_t;
-      typedef Buffer row_buffer_helper_t;
-
-      typedef typename row_buffer_helper_t::iterator_t it_t;
+      //using row_buffer_helper_t =detail::row_buffer_helper_view<View>;
+      using row_buffer_helper_t = Buffer;
+      using it_t = typename row_buffer_helper_t::iterator_t;
 
       std::size_t size_to_allocate = buffer_size< typename View::value_type >( dst_view.width()
                                                                              , is_view_bit_aligned_t() );
@@ -643,7 +628,7 @@ private:
       it_t first = begin + this->_settings._top_left.x;
       it_t last  = first + this->_settings._dim.x; // one after last element
 
-      // I don't think tiff allows for random access of row, that's why we need 
+      // I don't think tiff allows for random access of row, that's why we need
       // to read and discard rows when reading subimages.
       skip_over_rows( row_buffer_helper.buffer()
                     , plane
@@ -653,7 +638,7 @@ private:
       std::ptrdiff_t row_end = row + this->_settings._dim.y;
       std::ptrdiff_t dst_row = 0;
 
-      for( 
+      for(
          ; row < row_end
          ; ++row, ++dst_row
          )
@@ -671,7 +656,7 @@ private:
 
     template< typename Pixel >
     std::size_t buffer_size( std::size_t width
-                           , mpl::false_ // is_bit_aligned
+                           , std::false_type // is_bit_aligned
                            )
     {
         std::size_t scanline_size_in_bytes = this->_io_dev.get_scanline_size();
@@ -687,7 +672,7 @@ private:
 
     template< typename Pixel >
     std::size_t buffer_size( std::size_t /* width */
-                            , mpl::true_  // is_bit_aligned
+                            , std::true_type  // is_bit_aligned
                             )
     {
         return this->_io_dev.get_scanline_size();
@@ -709,10 +694,10 @@ struct tiff_type_format_checker
     template< typename Image >
     bool apply()
     {
-        typedef typename Image::view_t view_t;
+        using view_t = typename Image::view_t;
 
         return is_allowed< view_t >( _info
-                                   , mpl::true_()
+                                   , std::true_type()
                                    );
     }
 
@@ -748,10 +733,7 @@ class dynamic_image_reader< Device
                    , detail::read_and_no_convert
                    >
 {
-    typedef reader< Device
-                  , tiff_tag
-                  , detail::read_and_no_convert
-                  > parent_t;
+    using parent_t = reader<Device, tiff_tag, detail::read_and_no_convert>;
 
 public:
 
@@ -791,9 +773,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

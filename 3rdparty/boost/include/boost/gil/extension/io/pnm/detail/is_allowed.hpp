@@ -1,29 +1,22 @@
-/*
-    Copyright 2009 Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2009 Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_PNM_DETAIL_IS_ALLOWED_HPP
 #define BOOST_GIL_EXTENSION_IO_PNM_DETAIL_IS_ALLOWED_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning \n
-///
-/// \date 2008 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/extension/io/pnm/tags.hpp>
+
+#include <type_traits>
 
 namespace boost { namespace gil { namespace detail {
 
 template< typename View >
 bool is_allowed( const image_read_info< pnm_tag >& info
-               , mpl::true_   // is read_and_no_convert
+               , std::true_type   // is read_and_no_convert
                )
 {
     pnm_image_type::type asc_type = is_read_supported< typename get_pixel_type< View >::type
@@ -47,7 +40,7 @@ bool is_allowed( const image_read_info< pnm_tag >& info
 
 template< typename View >
 bool is_allowed( const image_read_info< pnm_tag >& /* info */
-               , mpl::false_  // is read_and_convert
+               , std::false_type  // is read_and_convert
                )
 {
     return true;

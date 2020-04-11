@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -40,26 +40,21 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_LCC_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_LCC_HPP
 
-#include <boost/geometry/util/math.hpp>
-#include <boost/math/special_functions/hypot.hpp>
-
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
 #include <boost/geometry/srs/projections/impl/pj_msfn.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
 #include <boost/geometry/srs/projections/impl/pj_phi2.hpp>
 #include <boost/geometry/srs/projections/impl/pj_tsfn.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
 
+#include <boost/geometry/util/math.hpp>
+
+#include <boost/math/special_functions/hypot.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct lcc {}; // Lambert Conformal Conic
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -71,28 +66,22 @@ namespace projections
             template <typename T>
             struct par_lcc
             {
-                T   phi1;
-                T   phi2;
-                T   n;
-                T   rho0;
-                T   c;
-                int ellips;
+                T    phi1;
+                T    phi2;
+                T    n;
+                T    rho0;
+                T    c;
+                bool ellips;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_lcc_ellipsoid
-                : public base_t_fi<base_lcc_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_lcc<T> m_proj_parm;
 
-                inline base_lcc_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_lcc_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_forward)  ellipsoid & spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& par, T lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T fourth_pi = detail::fourth_pi<T>();
                     static const T half_pi = detail::half_pi<T>();
@@ -106,24 +95,24 @@ namespace projections
                         rho = 0.;
                     } else {
                         rho = this->m_proj_parm.c * (this->m_proj_parm.ellips
-                            ? math::pow(pj_tsfn(lp_lat, sin(lp_lat), this->m_par.e), this->m_proj_parm.n)
+                            ? math::pow(pj_tsfn(lp_lat, sin(lp_lat), par.e), this->m_proj_parm.n)
                             : math::pow(tan(fourth_pi + T(0.5) * lp_lat), -this->m_proj_parm.n));
                     }
                     lp_lon *= this->m_proj_parm.n;
-                    xy_x = this->m_par.k0 * (rho * sin( lp_lon) );
-                    xy_y = this->m_par.k0 * (this->m_proj_parm.rho0 - rho * cos(lp_lon) );
+                    xy_x = par.k0 * (rho * sin( lp_lon) );
+                    xy_y = par.k0 * (this->m_proj_parm.rho0 - rho * cos(lp_lon) );
                 }
 
                 // INVERSE(e_inverse)  ellipsoid & spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T half_pi = detail::half_pi<T>();
 
                     T rho;
 
-                    xy_x /= this->m_par.k0;
-                    xy_y /= this->m_par.k0;
+                    xy_x /= par.k0;
+                    xy_y /= par.k0;
 
                     xy_y = this->m_proj_parm.rho0 - xy_y;
                     rho = boost::math::hypot(xy_x, xy_y);
@@ -134,7 +123,7 @@ namespace projections
                             xy_y = -xy_y;
                         }
                         if (this->m_proj_parm.ellips) {
-                            lp_lat = pj_phi2(math::pow(rho / this->m_proj_parm.c, T(1)/this->m_proj_parm.n), this->m_par.e);
+                            lp_lat = pj_phi2(math::pow(rho / this->m_proj_parm.c, T(1)/this->m_proj_parm.n), par.e);
                             if (lp_lat == HUGE_VAL) {
                                 BOOST_THROW_EXCEPTION( projection_exception(error_tolerance_condition) );
                             }
@@ -155,8 +144,8 @@ namespace projections
             };
 
             // Lambert Conformal Conic
-            template <typename Parameters, typename T>
-            inline void setup_lcc(Parameters& par, par_lcc<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_lcc(Params const& params, Parameters& par, par_lcc<T>& proj_parm)
             {
                 static const T fourth_pi = detail::fourth_pi<T>();
                 static const T half_pi = detail::half_pi<T>();
@@ -164,12 +153,29 @@ namespace projections
                 T cosphi, sinphi;
                 int secant;
 
-                proj_parm.phi1 = pj_get_param_r(par.params, "lat_1");
-                if (pj_param_r(par.params, "lat_2", proj_parm.phi2)) {
-                    /* empty */
-                } else {
+                proj_parm.phi1 = 0.0;
+                proj_parm.phi2 = 0.0;
+                bool is_phi1_set = pj_param_r<srs::spar::lat_1>(params, "lat_1", srs::dpar::lat_1, proj_parm.phi1);
+                bool is_phi2_set = pj_param_r<srs::spar::lat_2>(params, "lat_2", srs::dpar::lat_2, proj_parm.phi2);
+
+                // Boost.Geometry specific, set default parameters manually
+                if (! is_phi1_set || ! is_phi2_set) {
+                    bool const use_defaults = ! pj_get_param_b<srs::spar::no_defs>(params, "no_defs", srs::dpar::no_defs);
+                    if (use_defaults) {
+                        if (!is_phi1_set) {
+                            proj_parm.phi1 = 33;
+                            is_phi1_set = true;
+                        }
+                        if (!is_phi2_set) {
+                            proj_parm.phi2 = 45;
+                            is_phi2_set = true;
+                        }
+                    }
+                }
+
+                if (! is_phi2_set) {
                     proj_parm.phi2 = proj_parm.phi1;
-                    if (!pj_param_exists(par.params, "lat_0"))
+                    if (! pj_param_exists<srs::spar::lat_0>(params, "lat_0", srs::dpar::lat_0))
                         par.phi0 = proj_parm.phi1;
                 }
                 if (fabs(proj_parm.phi1 + proj_parm.phi2) < epsilon10)
@@ -181,7 +187,7 @@ namespace projections
                 if( (proj_parm.ellips = (par.es != 0.)) ) {
                     double ml1, m1;
 
-                    par.e = sqrt(par.es);
+                    par.e = sqrt(par.es); // TODO: Isn't it already set?
                     m1 = pj_msfn(sinphi, cosphi, par.es);
                     ml1 = pj_tsfn(proj_parm.phi1, sinphi, par.e);
                     if (secant) { /* secant cone */
@@ -226,9 +232,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct lcc_ellipsoid : public detail::lcc::base_lcc_ellipsoid<T, Parameters>
     {
-        inline lcc_ellipsoid(const Parameters& par) : detail::lcc::base_lcc_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline lcc_ellipsoid(Params const& params, Parameters & par)
         {
-            detail::lcc::setup_lcc(this->m_par, this->m_proj_parm);
+            detail::lcc::setup_lcc(params, par, this->m_proj_parm);
         }
     };
 
@@ -237,23 +244,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::lcc, lcc_ellipsoid, lcc_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_lcc, lcc_ellipsoid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class lcc_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(lcc_entry, lcc_ellipsoid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(lcc_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<lcc_ellipsoid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void lcc_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("lcc", new lcc_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(lcc, lcc_entry);
         }
 
     } // namespace detail

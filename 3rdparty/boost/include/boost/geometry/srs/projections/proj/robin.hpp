@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -50,12 +50,6 @@
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct robin {}; // Robinson
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -141,15 +135,9 @@ namespace projections
                 return result;
             }
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_robin_spheroid
-                : public base_t_fi<base_robin_spheroid<T, Parameters>, T, Parameters>
             {
-                inline base_robin_spheroid(const Parameters& par)
-                    : base_t_fi<base_robin_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 inline T v(coefs<T> const& c, T const& z) const
                 { return (c.c0 + z * (c.c1 + z * (c.c2 + z * c.c3))); }
                 inline T dv(coefs<T> const& c, T const&  z) const
@@ -157,7 +145,7 @@ namespace projections
 
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     int i;
                     T dphi;
@@ -175,7 +163,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T half_pi = detail::half_pi<T>();
                     const coefs<T> * coefs_x = robin::coefs_x<T>();
@@ -256,9 +244,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct robin_spheroid : public detail::robin::base_robin_spheroid<T, Parameters>
     {
-        inline robin_spheroid(const Parameters& par) : detail::robin::base_robin_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline robin_spheroid(Params const& , Parameters & par)
         {
-            detail::robin::setup_robin(this->m_par);
+            detail::robin::setup_robin(par);
         }
     };
 
@@ -267,23 +256,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::robin, robin_spheroid, robin_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_robin, robin_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class robin_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<robin_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(robin_entry, robin_spheroid)
 
-        template <typename T, typename Parameters>
-        inline void robin_init(detail::base_factory<T, Parameters>& factory)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(robin_init)
         {
-            factory.add_to_factory("robin", new robin_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(robin, robin_entry)
         }
 
     } // namespace detail

@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -50,13 +50,6 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct vandg2 {}; // van der Grinten II
-    struct vandg3 {}; // van der Grinten III
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
@@ -70,20 +63,14 @@ namespace projections
                 bool    vdg3;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_vandg2_spheroid
-                : public base_t_f<base_vandg2_spheroid<T, Parameters>, T, Parameters>
             {
                 par_vandg2 m_proj_parm;
 
-                inline base_vandg2_spheroid(const Parameters& par)
-                    : base_t_f<base_vandg2_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T pi = detail::pi<T>();
                     static const T two_div_pi = detail::two_div_pi<T>();
@@ -123,8 +110,7 @@ namespace projections
             };
 
             // van der Grinten II
-            template <typename Parameters>
-            inline void setup_vandg2(Parameters& /*par*/, par_vandg2& proj_parm)
+            inline void setup_vandg2(par_vandg2& proj_parm)
             {
                 proj_parm.vdg3 = false;
             }
@@ -156,9 +142,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct vandg2_spheroid : public detail::vandg2::base_vandg2_spheroid<T, Parameters>
     {
-        inline vandg2_spheroid(const Parameters& par) : detail::vandg2::base_vandg2_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline vandg2_spheroid(Params const& , Parameters const& )
         {
-            detail::vandg2::setup_vandg2(this->m_par, this->m_proj_parm);
+            detail::vandg2::setup_vandg2(this->m_proj_parm);
         }
     };
 
@@ -178,9 +165,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct vandg3_spheroid : public detail::vandg2::base_vandg2_spheroid<T, Parameters>
     {
-        inline vandg3_spheroid(const Parameters& par) : detail::vandg2::base_vandg2_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline vandg3_spheroid(Params const& , Parameters & par)
         {
-            detail::vandg2::setup_vandg3(this->m_par, this->m_proj_parm);
+            detail::vandg2::setup_vandg3(par, this->m_proj_parm);
         }
     };
 
@@ -189,35 +177,17 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::vandg2, vandg2_spheroid, vandg2_spheroid)
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::vandg3, vandg3_spheroid, vandg3_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_F(srs::spar::proj_vandg2, vandg2_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_F(srs::spar::proj_vandg3, vandg3_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class vandg2_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_F(vandg2_entry, vandg2_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_F(vandg3_entry, vandg3_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(vandg2_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_f<vandg2_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        class vandg3_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_f<vandg3_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void vandg2_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("vandg2", new vandg2_entry<T, Parameters>);
-            factory.add_to_factory("vandg3", new vandg3_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(vandg2, vandg2_entry)
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(vandg3, vandg3_entry)
         }
 
     } // namespace detail

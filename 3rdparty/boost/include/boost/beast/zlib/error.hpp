@@ -1,22 +1,11 @@
 //
-// Copyright (c) 2016-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
+// Copyright (c) 2016-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 // Official repository: https://github.com/boostorg/beast
 //
-
-#ifndef BOOST_BEAST_ZLIB_ERROR_HPP
-#define BOOST_BEAST_ZLIB_ERROR_HPP
-
-#include <boost/beast/core/detail/config.hpp>
-#include <boost/beast/core/error.hpp>
-
-namespace boost {
-namespace beast {
-namespace zlib {
-
 // This is a derivative work based on Zlib, copyright below:
 /*
     Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -45,7 +34,17 @@ namespace zlib {
     (zlib format), rfc1951 (deflate format) and rfc1952 (gzip format).
 */
 
-/** Error codes returned by the codec.
+#ifndef BOOST_BEAST_ZLIB_ERROR_HPP
+#define BOOST_BEAST_ZLIB_ERROR_HPP
+
+#include <boost/beast/core/detail/config.hpp>
+#include <boost/beast/core/error.hpp>
+
+namespace boost {
+namespace beast {
+namespace zlib {
+
+/** Error codes returned by the deflate codecs.
 */
 enum class error
 {
@@ -66,6 +65,17 @@ enum class error
         @note This is the same as `Z_STREAM_END` returned by ZLib.
     */
     end_of_stream,
+
+    /** Preset dictionary required
+
+        This error indicates that a preset dictionary was not provided and is now
+        needed at this point.
+
+        This does not always indicate a failure condition.
+
+        @note This is the same as `Z_NEED_DICT` returned by ZLib.
+    */
+    need_dict,
 
     /** Invalid stream or parameters.
 
@@ -96,7 +106,10 @@ enum class error
     too_many_symbols,
 
     /// Invalid code lengths
-    invalid_code_lenths,
+    invalid_code_lengths,
+#ifndef BOOST_BEAST_NO_DEPRECATED
+    invalid_code_lenths = invalid_code_lengths,
+#endif
 
     /// Invalid bit length repeat
     invalid_bit_length_repeat,
@@ -133,7 +146,10 @@ enum class error
 } // beast
 } // boost
 
+#include <boost/beast/zlib/impl/error.hpp>
+#ifdef BOOST_BEAST_HEADER_ONLY
 #include <boost/beast/zlib/impl/error.ipp>
+#endif
 
 #endif
 

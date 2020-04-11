@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -54,30 +54,18 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct geocent {}; // Geocentric
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
     namespace detail { namespace geocent
     {
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_geocent_other
-                : public base_t_fi<base_geocent_other<T, Parameters>, T, Parameters>
             {
-                inline base_geocent_other(const Parameters& par)
-                    : base_t_fi<base_geocent_other<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(forward)
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                         xy_x = lp_lon;
                         xy_y = lp_lat;
@@ -85,7 +73,7 @@ namespace projections
 
                 // INVERSE(inverse)
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                         lp_lat = xy_y;
                         lp_lon = xy_x;
@@ -102,7 +90,7 @@ namespace projections
             template <typename Parameters>
             inline void setup_geocent(Parameters& par)
             {
-                par.is_geocent = 1;
+                par.is_geocent = true;
                 par.x0 = 0.0;
                 par.y0 = 0.0;
             }
@@ -122,9 +110,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct geocent_other : public detail::geocent::base_geocent_other<T, Parameters>
     {
-        inline geocent_other(const Parameters& par) : detail::geocent::base_geocent_other<T, Parameters>(par)
+        template <typename Params>
+        inline geocent_other(Params const& , Parameters & par)
         {
-            detail::geocent::setup_geocent(this->m_par);
+            detail::geocent::setup_geocent(par);
         }
     };
 
@@ -133,23 +122,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::geocent, geocent_other, geocent_other)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_geocent, geocent_other)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class geocent_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(geocent_entry, geocent_other)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(geocent_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<geocent_other<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void geocent_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("geocent", new geocent_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(geocent, geocent_entry);
         }
 
     } // namespace detail

@@ -1,43 +1,33 @@
-/*
-    Copyright 2007-2012 Christian Henning, Andreas Pokorny, Lubomir Bourdev
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2012 Christian Henning, Andreas Pokorny, Lubomir Bourdev
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_PNG_DETAIL_READ_HPP
 #define BOOST_GIL_EXTENSION_IO_PNG_DETAIL_READ_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Christian Henning, Andreas Pokorny, Lubomir Bourdev \n
-///
-/// \date   2007-2012 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
-
 #include <boost/gil/extension/io/png/tags.hpp>
-
-#include <boost/gil.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/reader_base.hpp>
-#include <boost/gil/io/conversion_policies.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/io/typedefs.hpp>
-#include <boost/gil/io/row_buffer_helper.hpp>
-
 #include <boost/gil/extension/io/png/detail/reader_backend.hpp>
 #include <boost/gil/extension/io/png/detail/is_allowed.hpp>
 
+#include <boost/gil.hpp> // FIXME: Include what you use!
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/conversion_policies.hpp>
+#include <boost/gil/io/device.hpp>
+#include <boost/gil/io/dynamic_io_new.hpp>
+#include <boost/gil/io/reader_base.hpp>
+#include <boost/gil/io/row_buffer_helper.hpp>
+#include <boost/gil/io/typedefs.hpp>
+
+#include <type_traits>
+
 namespace boost { namespace gil {
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(push) 
-#pragma warning(disable:4512) //assignment operator could not be generated 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(push)
+#pragma warning(disable:4512) //assignment operator could not be generated
 #endif
 
 ///
@@ -58,16 +48,12 @@ class reader< Device
 {
 private:
 
-    typedef reader< Device
-                  , png_tag
-                  , ConversionPolicy
-                  > this_t;
-
-    typedef typename ConversionPolicy::color_converter_type cc_t;
+    using this_t = reader<Device, png_tag, ConversionPolicy>;
+    using cc_t = typename ConversionPolicy::color_converter_type;
 
 public:
 
-    typedef reader_backend< Device, png_tag > backend_t;
+    using backend_t = reader_backend<Device, png_tag>;
 
 public:
 
@@ -200,7 +186,7 @@ public:
                     default: io_error( "png_reader::read_data(): unknown combination of color type and bit depth" );
                 }
                 #else
-                    io_error( "gray_alpha isn't enabled. Use ENABLE_GRAY_ALPHA when building application." );
+                    io_error( "gray_alpha isn't enabled. Define BOOST_GIL_IO_ENABLE_GRAY_ALPHA when building application." );
                 #endif // BOOST_GIL_IO_ENABLE_GRAY_ALPHA
 
 
@@ -233,7 +219,7 @@ public:
 
         // read rest of file, and get additional chunks in info_ptr
         png_read_end( this->get_struct()
-                    , NULL
+                    , nullptr
                     );
     }
 
@@ -243,14 +229,16 @@ private:
             , typename View
             >
     void read_rows( const View& view )
-    {        
-        typedef detail::row_buffer_helper_view< ImagePixel > row_buffer_helper_t;
+    {
+        using row_buffer_helper_t = detail::row_buffer_helper_view<ImagePixel>;
 
-        typedef typename row_buffer_helper_t::iterator_t it_t;
+        using it_t = typename row_buffer_helper_t::iterator_t;
 
-        typedef typename is_same< ConversionPolicy
-                                , detail::read_and_no_convert
-                                >::type is_read_and_convert_t;
+        using is_read_and_convert_t = typename std::is_same
+            <
+                ConversionPolicy,
+                detail::read_and_no_convert
+            >::type;
 
         io_error_if( !detail::is_allowed< View >( this->_info
                                                 , is_read_and_convert_t()
@@ -278,7 +266,7 @@ private:
                     // Read the image using the "sparkle" effect.
                     png_read_rows( this->get_struct()
                                  , &row_ptr
-                                 , NULL
+                                 , nullptr
                                  , 1
                                  );
                 }
@@ -291,7 +279,7 @@ private:
                     // Read the image using the "sparkle" effect.
                     png_read_rows( this->get_struct()
                                  , &row_ptr
-                                 , NULL
+                                 , nullptr
                                  , 1
                                  );
 
@@ -315,7 +303,7 @@ private:
                     // Read the image using the "sparkle" effect.
                     png_read_rows( this->get_struct()
                                  , &row_ptr
-                                 , NULL
+                                 , nullptr
                                  , 1
                                  );
                 }
@@ -327,7 +315,7 @@ private:
                     // Read the image using the "sparkle" effect.
                     png_read_rows( this->get_struct()
                                  , &row_ptr
-                                 , NULL
+                                 , nullptr
                                  , 1
                                  );
                 }
@@ -350,9 +338,11 @@ struct png_type_format_checker
     template< typename Image >
     bool apply()
     {
-        typedef is_read_supported< typename get_pixel_type< typename Image::view_t >::type
-                                 , png_tag
-                                 > is_supported_t;
+        using is_supported_t = is_read_supported
+            <
+                typename get_pixel_type<typename Image::view_t>::type,
+                png_tag
+            >;
 
         return is_supported_t::_bit_depth  == _bit_depth
             && is_supported_t::_color_type == _color_type;
@@ -389,10 +379,12 @@ class dynamic_image_reader< Device
                    , detail::read_and_no_convert
                    >
 {
-    typedef reader< Device
-                  , png_tag
-                  , detail::read_and_no_convert
-                  > parent_t;
+    using parent_t = reader
+        <
+            Device,
+            png_tag,
+            detail::read_and_no_convert
+        >;
 
 public:
 
@@ -434,9 +426,9 @@ public:
     }
 };
 
-#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) 
-#pragma warning(pop) 
-#endif 
+#if BOOST_WORKAROUND(BOOST_MSVC, >= 1400)
+#pragma warning(pop)
+#endif
 
 } // namespace gil
 } // namespace boost

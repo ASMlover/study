@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -48,30 +48,18 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct wag7 {}; // Wagner VII
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
     namespace detail { namespace wag7
     {
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_wag7_spheroid
-                : public base_t_f<base_wag7_spheroid<T, Parameters>, T, Parameters>
             {
-                inline base_wag7_spheroid(const Parameters& par)
-                    : base_t_f<base_wag7_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  sphere
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     T theta, ct, D;
 
@@ -114,9 +102,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct wag7_spheroid : public detail::wag7::base_wag7_spheroid<T, Parameters>
     {
-        inline wag7_spheroid(const Parameters& par) : detail::wag7::base_wag7_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline wag7_spheroid(Params const& , Parameters & par)
         {
-            detail::wag7::setup_wag7(this->m_par);
+            detail::wag7::setup_wag7(par);
         }
     };
 
@@ -125,23 +114,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::wag7, wag7_spheroid, wag7_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_F(srs::spar::proj_wag7, wag7_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class wag7_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_F(wag7_entry, wag7_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(wag7_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_f<wag7_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void wag7_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("wag7", new wag7_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(wag7, wag7_entry)
         }
 
     } // namespace detail

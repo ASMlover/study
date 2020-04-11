@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -40,21 +40,15 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_URMFPS_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_URMFPS_HPP
 
+#include <boost/geometry/srs/projections/impl/aasincos.hpp>
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
-#include <boost/geometry/srs/projections/impl/aasincos.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct urmfps {}; // Urmaev Flat-Polar Sinusoidal
-    struct wag1 {}; // Wagner I (Kavraisky VI)
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -71,20 +65,14 @@ namespace projections
                 T    n, C_y;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_urmfps_spheroid
-                : public base_t_fi<base_urmfps_spheroid<T, Parameters>, T, Parameters>
             {
                 par_urmfps<T> m_proj_parm;
 
-                inline base_urmfps_spheroid(const Parameters& par)
-                    : base_t_fi<base_urmfps_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  sphere
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T lp_lat, T& xy_x, T& xy_y) const
                 {
                     lp_lat = aasin(this->m_proj_parm.n * sin(lp_lat));
                     xy_x = C_x * lp_lon * cos(lp_lat);
@@ -93,7 +81,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  sphere
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     xy_y /= this->m_proj_parm.C_y;
                     lp_lat = aasin(sin(xy_y) / this->m_proj_parm.n);
@@ -116,10 +104,10 @@ namespace projections
 
 
             // Urmaev Flat-Polar Sinusoidal
-            template <typename Parameters, typename T>
-            inline void setup_urmfps(Parameters& par, par_urmfps<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_urmfps(Params const& params, Parameters& par, par_urmfps<T>& proj_parm)
             {
-                if (pj_param_f(par.params, "n", proj_parm.n)) {
+                if (pj_param_f<srs::spar::n>(params, "n", srs::dpar::n, proj_parm.n)) {
                     if (proj_parm.n <= 0. || proj_parm.n > 1.)
                         BOOST_THROW_EXCEPTION( projection_exception(error_n_out_of_range) );
                 } else
@@ -156,9 +144,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct urmfps_spheroid : public detail::urmfps::base_urmfps_spheroid<T, Parameters>
     {
-        inline urmfps_spheroid(const Parameters& par) : detail::urmfps::base_urmfps_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline urmfps_spheroid(Params const& params, Parameters & par)
         {
-            detail::urmfps::setup_urmfps(this->m_par, this->m_proj_parm);
+            detail::urmfps::setup_urmfps(params, par, this->m_proj_parm);
         }
     };
 
@@ -177,9 +166,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct wag1_spheroid : public detail::urmfps::base_urmfps_spheroid<T, Parameters>
     {
-        inline wag1_spheroid(const Parameters& par) : detail::urmfps::base_urmfps_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline wag1_spheroid(Params const& , Parameters & par)
         {
-            detail::urmfps::setup_wag1(this->m_par, this->m_proj_parm);
+            detail::urmfps::setup_wag1(par, this->m_proj_parm);
         }
     };
 
@@ -188,35 +178,17 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::urmfps, urmfps_spheroid, urmfps_spheroid)
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::wag1, wag1_spheroid, wag1_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_urmfps, urmfps_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_wag1, wag1_spheroid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class urmfps_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(urmfps_entry, urmfps_spheroid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(wag1_entry, wag1_spheroid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(urmfps_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<urmfps_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        class wag1_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<wag1_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void urmfps_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("urmfps", new urmfps_entry<T, Parameters>);
-            factory.add_to_factory("wag1", new wag1_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(urmfps, urmfps_entry)
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(wag1, wag1_entry)
         }
 
     } // namespace detail

@@ -1,45 +1,26 @@
-/*
-    Copyright 2005-2007 Adobe Systems Incorporated
+//
+// Copyright 2005-2007 Adobe Systems Incorporated
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
+#ifndef BOOST_GIL_IMAGE_HPP
+#define BOOST_GIL_IMAGE_HPP
 
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
+#include <boost/gil/algorithm.hpp>
+#include <boost/gil/image_view.hpp>
+#include <boost/gil/metafunctions.hpp>
+#include <boost/gil/detail/mp11.hpp>
 
-    See http://opensource.adobe.com/gil for most recent version including documentation.
-*/
-/*************************************************************************************************/
-
-#ifndef GIL_IMAGE_H
-#define GIL_IMAGE_H
-
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief Templated image
-/// \author Lubomir Bourdev and Hailin Jin \n
-///         Adobe Systems Incorporated
-/// \date 2005-2007 \n Last updated on February 12, 2007
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/assert.hpp>
 
 #include <cstddef>
 #include <memory>
-
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/arithmetic.hpp>
-
-
-#include "gil_config.hpp"
-#include "image_view.hpp"
-#include "metafunctions.hpp"
-#include "algorithm.hpp"
+#include <utility>
+#include <type_traits>
 
 namespace boost { namespace gil {
-
-//#ifdef _MSC_VER
-//#pragma warning(push)
-//#pragma warning(disable : 4244)     // conversion from 'gil::image<V,Alloc>::coord_t' to 'int', possible loss of data (visual studio compiler doesn't realize that the two types are the same)
-//#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// \ingroup ImageModel PixelBasedModel
@@ -59,17 +40,17 @@ template< typename Pixel, bool IsPlanar = false, typename Alloc=std::allocator<u
 class image {
 public:
 #if defined(BOOST_NO_CXX11_ALLOCATOR)
-    typedef typename Alloc::template rebind<unsigned char>::other allocator_type;
+    using allocator_type = typename Alloc::template rebind<unsigned char>::other;
 #else
-    typedef typename std::allocator_traits<Alloc>::template rebind_alloc<unsigned char> allocator_type;
+    using allocator_type = typename std::allocator_traits<Alloc>::template rebind_alloc<unsigned char>;
 #endif
-    typedef typename view_type_from_pixel<Pixel, IsPlanar>::type view_t;
-    typedef typename view_t::const_t                 const_view_t;
-    typedef typename view_t::point_t                 point_t;
-    typedef typename view_t::coord_t                 coord_t;
-    typedef typename view_t::value_type              value_type;
-    typedef coord_t                                  x_coord_t;
-    typedef coord_t                                  y_coord_t;
+    using view_t = typename view_type_from_pixel<Pixel, IsPlanar>::type;
+    using const_view_t = typename view_t::const_t;
+    using point_t = typename view_t::point_t;
+    using coord_t = typename view_t::coord_t;
+    using value_type = typename view_t::value_type;
+    using x_coord_t = coord_t;
+    using y_coord_t = coord_t;
 
     const point_t&          dimensions()            const { return _view.dimensions(); }
     x_coord_t               width()                 const { return _view.width(); }
@@ -77,19 +58,19 @@ public:
 
     explicit image(std::size_t alignment=0,
                    const Alloc alloc_in = Alloc()) :
-        _memory(0), _align_in_bytes(alignment), _alloc(alloc_in), _allocated_bytes( 0 ) {}
+        _memory(nullptr), _align_in_bytes(alignment), _alloc(alloc_in), _allocated_bytes( 0 ) {}
 
     // Create with dimensions and optional initial value and alignment
     image(const point_t& dimensions,
           std::size_t alignment=0,
-          const Alloc alloc_in = Alloc()) : _memory(0), _align_in_bytes(alignment), _alloc(alloc_in)
+          const Alloc alloc_in = Alloc()) : _memory(nullptr), _align_in_bytes(alignment), _alloc(alloc_in)
                                           , _allocated_bytes( 0 ) {
         allocate_and_default_construct(dimensions);
     }
 
     image(x_coord_t width, y_coord_t height,
           std::size_t alignment=0,
-          const Alloc alloc_in = Alloc()) : _memory(0), _align_in_bytes(alignment), _alloc(alloc_in)
+          const Alloc alloc_in = Alloc()) : _memory(nullptr), _align_in_bytes(alignment), _alloc(alloc_in)
                                           , _allocated_bytes( 0 ) {
         allocate_and_default_construct(point_t(width,height));
     }
@@ -97,25 +78,25 @@ public:
     image(const point_t& dimensions,
           const Pixel& p_in,
           std::size_t alignment,
-          const Alloc alloc_in = Alloc())  : _memory(0), _align_in_bytes(alignment), _alloc(alloc_in) 
+          const Alloc alloc_in = Alloc())  : _memory(nullptr), _align_in_bytes(alignment), _alloc(alloc_in)
                                            , _allocated_bytes( 0 ) {
         allocate_and_fill(dimensions, p_in);
     }
     image(x_coord_t width, y_coord_t height,
           const Pixel& p_in,
           std::size_t alignment = 0,
-          const Alloc alloc_in = Alloc())  : _memory(0), _align_in_bytes(alignment), _alloc(alloc_in)
+          const Alloc alloc_in = Alloc())  : _memory(nullptr), _align_in_bytes(alignment), _alloc(alloc_in)
                                            , _allocated_bytes ( 0 ) {
         allocate_and_fill(point_t(width,height),p_in);
     }
 
-    image(const image& img) : _memory(0), _align_in_bytes(img._align_in_bytes), _alloc(img._alloc)
+    image(const image& img) : _memory(nullptr), _align_in_bytes(img._align_in_bytes), _alloc(img._alloc)
                             , _allocated_bytes( img._allocated_bytes ) {
         allocate_and_copy(img.dimensions(),img._view);
     }
 
     template <typename P2, bool IP2, typename Alloc2>
-    image(const image<P2,IP2,Alloc2>& img) : _memory(0), _align_in_bytes(img._align_in_bytes), _alloc(img._alloc)
+    image(const image<P2,IP2,Alloc2>& img) : _memory(nullptr), _align_in_bytes(img._align_in_bytes), _alloc(img._alloc)
                                            , _allocated_bytes( img._allocated_bytes ) {
        allocate_and_copy(img.dimensions(),img._view);
     }
@@ -163,62 +144,48 @@ public:
     /////////////////////
 
     // without Allocator
-
-    void recreate( const point_t& dims, std::size_t alignment = 0 )
+    void recreate(const point_t& dims, std::size_t alignment = 0)
     {
-        if( dims == _view.dimensions() && _align_in_bytes == alignment )
-        {
+        if (dims == _view.dimensions() && _align_in_bytes == alignment)
             return;
-        }
 
         _align_in_bytes = alignment;
 
-        if( _allocated_bytes >= total_allocated_size_in_bytes( dims ) )
+        if (_allocated_bytes >= total_allocated_size_in_bytes(dims))
         {
-            destruct_pixels( _view );
-
-            create_view( dims
-                       , typename mpl::bool_<IsPlanar>()
-                       );
-
-            default_construct_pixels( _view );
+            destruct_pixels(_view);
+            create_view(dims, std::integral_constant<bool, IsPlanar>());
+            default_construct_pixels(_view);
         }
         else
         {
-            image tmp( dims, alignment );
-            swap( tmp );
+            image tmp(dims, alignment);
+            swap(tmp);
         }
     }
 
-    void recreate( x_coord_t width, y_coord_t height, std::size_t alignment = 0 )
+    void recreate(x_coord_t width, y_coord_t height, std::size_t alignment = 0)
     {
-        recreate( point_t( width, height ), alignment );
+        recreate(point_t(width, height), alignment);
     }
 
-
-    void recreate( const point_t& dims, const Pixel& p_in, std::size_t alignment = 0 )
+    void recreate(const point_t& dims, const Pixel& p_in, std::size_t alignment = 0)
     {
-        if( dims == _view.dimensions() && _align_in_bytes == alignment )
-        {
+        if (dims == _view.dimensions() && _align_in_bytes == alignment)
             return;
-        }
 
         _align_in_bytes = alignment;
 
-        if(  _allocated_bytes >= total_allocated_size_in_bytes( dims ) )
+        if (_allocated_bytes >= total_allocated_size_in_bytes(dims))
         {
-            destruct_pixels( _view );
-
-            create_view( dims
-                       , typename mpl::bool_<IsPlanar>()
-                       );
-
+            destruct_pixels(_view);
+            create_view(dims, typename std::integral_constant<bool, IsPlanar>());
             uninitialized_fill_pixels(_view, p_in);
         }
         else
         {
-            image tmp( dims, p_in, alignment );
-            swap( tmp );
+            image tmp(dims, p_in, alignment);
+            swap(tmp);
         }
     }
 
@@ -227,77 +194,56 @@ public:
         recreate( point_t( width, height ), p_in, alignment );
     }
 
-
     // with Allocator
-    void recreate(const point_t& dims, std::size_t alignment, const Alloc alloc_in )
+    void recreate(const point_t& dims, std::size_t alignment, const Alloc alloc_in)
     {
-        if(  dims            == _view.dimensions() 
-          && _align_in_bytes == alignment
-          && alloc_in        == _alloc
-          )
-        {
+        if (dims == _view.dimensions() && _align_in_bytes == alignment && alloc_in == _alloc)
             return;
-        }
 
         _align_in_bytes = alignment;
 
-        if(  _allocated_bytes >= total_allocated_size_in_bytes( dims ) )
+        if (_allocated_bytes >= total_allocated_size_in_bytes(dims))
         {
-            destruct_pixels( _view );
-
-            create_view( dims
-                       , typename mpl::bool_<IsPlanar>()
-                       );
-
-            default_construct_pixels( _view );
+            destruct_pixels(_view);
+            create_view(dims, std::integral_constant<bool, IsPlanar>());
+            default_construct_pixels(_view);
         }
         else
         {
-            image tmp( dims, alignment, alloc_in );
-            swap( tmp );
+            image tmp(dims, alignment, alloc_in);
+            swap(tmp);
         }
     }
 
-    void recreate( x_coord_t width, y_coord_t height, std::size_t alignment, const Alloc alloc_in )
+    void recreate(x_coord_t width, y_coord_t height, std::size_t alignment, const Alloc alloc_in)
     {
-        recreate( point_t( width, height ), alignment, alloc_in );
+        recreate(point_t(width, height), alignment, alloc_in);
     }
 
-    void recreate(const point_t& dims, const Pixel& p_in, std::size_t alignment, const Alloc alloc_in )
+    void recreate(const point_t& dims, const Pixel& p_in, std::size_t alignment, const Alloc alloc_in)
     {
-        if(  dims            == _view.dimensions() 
-          && _align_in_bytes == alignment
-          && alloc_in        == _alloc
-          )
-        {
+        if (dims == _view.dimensions() && _align_in_bytes == alignment && alloc_in == _alloc)
             return;
-        }
 
         _align_in_bytes = alignment;
 
-        if(  _allocated_bytes >= total_allocated_size_in_bytes( dims ) )
+        if (_allocated_bytes >= total_allocated_size_in_bytes(dims))
         {
-            destruct_pixels( _view );
-
-            create_view( dims
-                       , typename mpl::bool_<IsPlanar>()
-                       );
-
+            destruct_pixels(_view);
+            create_view(dims, std::integral_constant<bool, IsPlanar>());
             uninitialized_fill_pixels(_view, p_in);
         }
         else
         {
-            image tmp( dims, p_in, alignment, alloc_in );
-            swap( tmp );
+            image tmp(dims, p_in, alignment, alloc_in);
+            swap(tmp);
         }
     }
 
     void recreate(x_coord_t width, y_coord_t height, const Pixel& p_in, std::size_t alignment, const Alloc alloc_in )
     {
-        recreate( point_t( width, height ), p_in,alignment, alloc_in );
+        recreate(point_t(width, height), p_in, alignment, alloc_in);
     }
-
-
 
     view_t       _view;      // contains pointer to the pixels, the image size and ways to navigate pixels
 private:
@@ -307,66 +253,76 @@ private:
 
     std::size_t _allocated_bytes;
 
-
-    void allocate_and_default_construct(const point_t& dimensions) {
-        try {
-            allocate_(dimensions,mpl::bool_<IsPlanar>());
+    void allocate_and_default_construct(point_t const& dimensions)
+    {
+        try
+        {
+            allocate_(dimensions, std::integral_constant<bool, IsPlanar>());
             default_construct_pixels(_view);
-        } catch(...) { deallocate(); throw; }
+        }
+        catch (...) { deallocate(); throw; }
     }
 
-    void allocate_and_fill(const point_t& dimensions, const Pixel& p_in) {
-        try {
-            allocate_(dimensions,mpl::bool_<IsPlanar>());
+    void allocate_and_fill(const point_t& dimensions, Pixel const& p_in)
+    {
+        try
+        {
+            allocate_(dimensions, std::integral_constant<bool, IsPlanar>());
             uninitialized_fill_pixels(_view, p_in);
-        } catch(...) { deallocate(); throw; }
+        }
+        catch(...) { deallocate(); throw; }
     }
 
     template <typename View>
-    void allocate_and_copy(const point_t& dimensions, const View& v) {
-        try {
-            allocate_(dimensions,mpl::bool_<IsPlanar>());
-            uninitialized_copy_pixels(v,_view);
-        } catch(...) { deallocate(); throw; }
-    }
-
-    void deallocate() {
-        if (_memory && _allocated_bytes > 0 )
+    void allocate_and_copy(const point_t& dimensions, View const& v)
+    {
+        try
         {
-            _alloc.deallocate(_memory, _allocated_bytes );
+            allocate_(dimensions, std::integral_constant<bool, IsPlanar>());
+            uninitialized_copy_pixels(v, _view);
         }
+        catch(...) { deallocate(); throw; }
     }
 
-    std::size_t is_planar_impl( const std::size_t size_in_units
-                              , const std::size_t channels_in_image
-                              , mpl::true_
-                              ) const
+    void deallocate()
+    {
+        if (_memory && _allocated_bytes > 0)
+            _alloc.deallocate(_memory, _allocated_bytes);
+    }
+
+    std::size_t is_planar_impl(
+        std::size_t const size_in_units,
+        std::size_t const channels_in_image,
+        std::true_type) const
     {
         return size_in_units * channels_in_image;
     }
 
-    std::size_t is_planar_impl( const std::size_t size_in_units
-                              , const std::size_t
-                              , mpl::false_
-                              ) const
+    std::size_t is_planar_impl(
+        std::size_t const size_in_units,
+        std::size_t const,
+        std::false_type) const
     {
         return size_in_units;
     }
 
-    std::size_t total_allocated_size_in_bytes(const point_t& dimensions) const {
-
-        typedef typename view_t::x_iterator x_iterator;
+    std::size_t total_allocated_size_in_bytes(point_t const& dimensions) const
+    {
+        using x_iterator = typename view_t::x_iterator;
 
         // when value_type is a non-pixel, like int or float, num_channels< ... > doesn't work.
-        const std::size_t _channels_in_image = mpl::eval_if< is_pixel< value_type >
-                                                           , num_channels< view_t >
-                                                           , mpl::int_< 1 > 
-														   >::type::value;
+        constexpr std::size_t _channels_in_image =
+            std::conditional
+            <
+                is_pixel<value_type>::value,
+                num_channels<view_t>,
+                std::integral_constant<std::size_t, 1>
+            >::type::value;
 
-        std::size_t size_in_units = is_planar_impl( get_row_size_in_memunits( dimensions.x ) * dimensions.y
-                                                  , _channels_in_image
-                                                  , typename mpl::bool_<IsPlanar>()
-                                                  );
+        std::size_t size_in_units = is_planar_impl(
+            get_row_size_in_memunits(dimensions.x) * dimensions.y,
+            _channels_in_image,
+            std::integral_constant<bool, IsPlanar>());
 
         // return the size rounded up to the nearest byte
         return ( size_in_units + byte_to_memunit< x_iterator >::value - 1 )
@@ -383,16 +339,22 @@ private:
         return size_in_memunits;
     }
 
-    void allocate_(const point_t& dimensions, mpl::false_) {  // if it throws and _memory!=0 the client must deallocate _memory
-
+    void allocate_(point_t const& dimensions, std::false_type)
+    {
+        // if it throws and _memory!=0 the client must deallocate _memory
         _allocated_bytes = total_allocated_size_in_bytes(dimensions);
         _memory=_alloc.allocate( _allocated_bytes );
 
         unsigned char* tmp=(_align_in_bytes>0) ? (unsigned char*)align((std::size_t)_memory,_align_in_bytes) : _memory;
-        _view=view_t(dimensions,typename view_t::locator(typename view_t::x_iterator(tmp),get_row_size_in_memunits(dimensions.x)));
+        _view=view_t(dimensions,typename view_t::locator(typename view_t::x_iterator(tmp), get_row_size_in_memunits(dimensions.x)));
+
+        BOOST_ASSERT(_view.width() == dimensions.x);
+        BOOST_ASSERT(_view.height() == dimensions.y);
     }
 
-    void allocate_(const point_t& dimensions, mpl::true_) {   // if it throws and _memory!=0 the client must deallocate _memory
+    void allocate_(point_t const& dimensions, std::true_type)
+    {
+        // if it throws and _memory!=0 the client must deallocate _memory
         std::size_t row_size=get_row_size_in_memunits(dimensions.x);
         std::size_t plane_size=row_size*dimensions.y;
 
@@ -407,18 +369,19 @@ private:
             memunit_advance(dynamic_at_c(first,i), plane_size*i);
         }
         _view=view_t(dimensions, typename view_t::locator(first, row_size));
+
+        BOOST_ASSERT(_view.width() == dimensions.x);
+        BOOST_ASSERT(_view.height() == dimensions.y);
     }
 
-    void create_view( const point_t& dims
-                    , mpl::true_ // is planar
-                    )
+    void create_view(point_t const& dims, std::true_type) // is planar
     {
         std::size_t row_size=get_row_size_in_memunits(dims.x);
         std::size_t plane_size=row_size*dims.y;
 
         unsigned char* tmp = ( _align_in_bytes > 0 ) ? (unsigned char*) align( (std::size_t) _memory
                                                                              ,_align_in_bytes
-                                                                             ) 
+                                                                             )
                                                      : _memory;
         typename view_t::x_iterator first;
 
@@ -431,16 +394,13 @@ private:
                            );
         }
 
-        _view=view_t( dims
-                    , typename view_t::locator( first
-                                              , row_size
-                                              )
-                    );
+        _view = view_t(dims, typename view_t::locator(first, row_size));
+
+        BOOST_ASSERT(_view.width() == dims.x);
+        BOOST_ASSERT(_view.height() == dims.y);
     }
 
-    void create_view( const point_t& dims
-                    , mpl::false_ // is planar
-                    )
+    void create_view(point_t const& dims, std::false_type) // is planar
     {
         unsigned char* tmp = ( _align_in_bytes > 0 ) ? ( unsigned char* ) align( (std::size_t) _memory
                                                                                , _align_in_bytes
@@ -452,6 +412,9 @@ private:
                                                 , get_row_size_in_memunits( dims.x )
                                                 )
                       );
+
+        BOOST_ASSERT(_view.width() == dims.x);
+        BOOST_ASSERT(_view.height() == dims.y);
     }
 };
 
@@ -491,21 +454,17 @@ const typename image<Pixel,IsPlanar,Alloc>::const_view_t const_view(const image<
 /////////////////////////////
 
 template <typename Pixel, bool IsPlanar, typename Alloc>
-struct channel_type<image<Pixel,IsPlanar,Alloc> > : public channel_type<Pixel> {};
+struct channel_type<image<Pixel, IsPlanar, Alloc>> : channel_type<Pixel> {};
 
 template <typename Pixel, bool IsPlanar, typename Alloc>
-struct color_space_type<image<Pixel,IsPlanar,Alloc> >  : public color_space_type<Pixel> {};
+struct color_space_type<image<Pixel, IsPlanar, Alloc>> : color_space_type<Pixel> {};
 
 template <typename Pixel, bool IsPlanar, typename Alloc>
-struct channel_mapping_type<image<Pixel,IsPlanar,Alloc> > : public channel_mapping_type<Pixel> {};
+struct channel_mapping_type<image<Pixel, IsPlanar, Alloc>> : channel_mapping_type<Pixel> {};
 
 template <typename Pixel, bool IsPlanar, typename Alloc>
-struct is_planar<image<Pixel,IsPlanar,Alloc> > : public mpl::bool_<IsPlanar> {};
+struct is_planar<image<Pixel, IsPlanar, Alloc>> : std::integral_constant<bool, IsPlanar> {};
 
-//#ifdef _MSC_VER
-//#pragma warning(pop)
-//#endif
-
-} }  // namespace boost::gil
+}}  // namespace boost::gil
 
 #endif

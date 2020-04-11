@@ -1,8 +1,8 @@
 // Boost.Geometry
 // This file is manually converted from PROJ4
 
-// This file was modified by Oracle on 2018.
-// Modifications copyright (c) 2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2018, 2019.
+// Modifications copyright (c) 2018-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -41,8 +41,11 @@
 #define BOOST_GEOMETRY_SRS_PROJECTIONS_IMPL_PJ_GRIDLIST_HPP
 
 
+#include <boost/geometry/srs/projections/exception.hpp>
 #include <boost/geometry/srs/projections/grids.hpp>
 #include <boost/geometry/srs/projections/impl/pj_gridinfo.hpp>
+#include <boost/geometry/srs/projections/impl/pj_strerrno.hpp>
+#include <boost/geometry/srs/projections/par_data.hpp>
 
 
 namespace boost { namespace geometry { namespace projections
@@ -89,11 +92,12 @@ inline void pj_gridlist_add_seq_inc(std::vector<std::size_t> & gridindexes,
 }
 
 // Generic stream policy and standard grids
-template <typename StreamPolicy>
+template <typename StreamPolicy, typename Grids>
 inline bool pj_gridlist_merge_gridfile(std::string const& gridname,
                                        StreamPolicy const& stream_policy,
-                                       srs::grids & grids,
-                                       std::vector<std::size_t> & gridindexes)
+                                       Grids & grids,
+                                       std::vector<std::size_t> & gridindexes,
+                                       grids_tag)
 {
     // Try to find in the existing list of loaded grids.  Add all
     // matching grids as with NTv2 we can get many grids from one
@@ -118,6 +122,61 @@ inline bool pj_gridlist_merge_gridfile(std::string const& gridname,
     return true;
 }
 
+// Generic stream policy and shared grids
+template <typename StreamPolicy, typename SharedGrids>
+inline bool pj_gridlist_merge_gridfile(std::string const& gridname,
+                                       StreamPolicy const& stream_policy,
+                                       SharedGrids & grids,
+                                       std::vector<std::size_t> & gridindexes,
+                                       shared_grids_tag)
+{
+    // Try to find in the existing list of loaded grids.  Add all
+    // matching grids as with NTv2 we can get many grids from one
+    // file (one shared gridname).    
+    {
+        typename SharedGrids::read_locked lck_grids(grids);
+        
+        if (pj_gridlist_find_all(gridname, lck_grids.gridinfo, gridindexes))
+            return true;
+    }
+
+    // Try to load the named grid.
+    typename StreamPolicy::stream_type is;
+    stream_policy.open(is, gridname);
+
+    pj_gridinfo new_grids;
+    
+    if (! pj_gridinfo_init(gridname, is, new_grids))
+    {
+        return false;
+    }
+
+    // Add the grid now that it is loaded.
+
+    std::size_t orig_size = 0;
+    std::size_t new_size = 0;
+
+    {
+        typename SharedGrids::write_locked lck_grids(grids);
+
+        // Try to find in the existing list of loaded grids again
+        // in case other thread already added it.
+        if (pj_gridlist_find_all(gridname, lck_grids.gridinfo, gridindexes))
+            return true;
+
+        orig_size = lck_grids.gridinfo.size();
+        new_size = orig_size + new_grids.size();
+
+        lck_grids.gridinfo.resize(new_size);
+        for (std::size_t i = 0 ; i < new_grids.size() ; ++ i)
+            new_grids[i].swap(lck_grids.gridinfo[i + orig_size]);
+    }
+    
+    pj_gridlist_add_seq_inc(gridindexes, orig_size, new_size);
+    
+    return true;
+}
+
 
 /************************************************************************/
 /*                     pj_gridlist_from_nadgrids()                      */
@@ -130,31 +189,22 @@ inline bool pj_gridlist_merge_gridfile(std::string const& gridname,
 /************************************************************************/
 
 template <typename StreamPolicy, typename Grids>
-inline void pj_gridlist_from_nadgrids(std::string const& nadgrids,
+inline void pj_gridlist_from_nadgrids(srs::detail::nadgrids const& nadgrids,
                                       StreamPolicy const& stream_policy,
                                       Grids & grids,
                                       std::vector<std::size_t> & gridindexes)
 
 {
     // Loop processing names out of nadgrids one at a time.
-    for (std::string::size_type i = 0 ; i < nadgrids.size() ; )
+    for (srs::detail::nadgrids::const_iterator it = nadgrids.begin() ;
+            it != nadgrids.end() ; ++it)
     {
-        bool required = true;
+        bool required = (*it)[0] != '@';
         
-        if( nadgrids[i] == '@' )
-        {
-            required = false;
-            ++i;
-        }
+        std::string name(it->begin() + (required ? 0 : 1), it->end());
 
-        std::string::size_type end = nadgrids.find(',', i);
-        std::string name = nadgrids.substr(i, end - i);
-                
-        i = end;
-        if (end != std::string::npos)
-            ++i;
-
-        if ( ! pj_gridlist_merge_gridfile(name, stream_policy, grids, gridindexes) 
+        if ( ! pj_gridlist_merge_gridfile(name, stream_policy, grids, gridindexes,
+                                          typename Grids::tag())
           && required )
         {
             BOOST_THROW_EXCEPTION( projection_exception(error_failed_to_load_grid) );
@@ -162,15 +212,13 @@ inline void pj_gridlist_from_nadgrids(std::string const& nadgrids,
     }
 }
 
-template <typename Par, typename GridsStorage>
-inline void pj_gridlist_from_nadgrids(Par const& defn, srs::projection_grids<GridsStorage> & grids)
+template <typename Par, typename ProjectionGrids>
+inline void pj_gridlist_from_nadgrids(Par const& defn, ProjectionGrids & proj_grids)
 {
-    BOOST_GEOMETRY_ASSERT(grids.storage_ptr != NULL);
-
-    pj_gridlist_from_nadgrids(pj_get_param_s(defn.params, "nadgrids"),
-                              grids.storage_ptr->stream_policy,
-                              grids.storage_ptr->hgrids,
-                              grids.hindexes);
+    pj_gridlist_from_nadgrids(defn.nadgrids,
+                              proj_grids.grids_storage().stream_policy,
+                              proj_grids.grids_storage().hgrids,
+                              proj_grids.hindexes);
 }
 
 

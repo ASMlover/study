@@ -1,25 +1,23 @@
-/*
-    Copyright 2007-2008 Andreas Pokorny, Christian Henning
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2007-2008 Andreas Pokorny, Christian Henning
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_DEVICE_HPP
 #define BOOST_GIL_EXTENSION_IO_TIFF_DETAIL_DEVICE_HPP
 
-#include <algorithm>
+#include <boost/gil/extension/io/tiff/tags.hpp>
+#include <boost/gil/extension/io/tiff/detail/log.hpp>
+#include <boost/gil/detail/mp11.hpp>
+#include <boost/gil/io/base.hpp>
+#include <boost/gil/io/device.hpp>
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Andreas Pokorny, Christian Henning \n
-///
-/// \date   2007-2008 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <algorithm>
+#include <memory>
+#include <sstream>
+#include <type_traits>
 
 // taken from jpegxx - https://bitbucket.org/edd/jpegxx/src/ea2492a1a4a6/src/ijg_headers.hpp
 #ifndef BOOST_GIL_EXTENSION_IO_TIFF_C_LIB_COMPILED_AS_CPLUSPLUS
@@ -35,15 +33,6 @@
 
 #include <tiffio.hxx>
 
-#include <boost/mpl/size.hpp>
-#include <boost/utility/enable_if.hpp>
-
-#include <boost/gil/io/base.hpp>
-#include <boost/gil/io/device.hpp>
-#include <boost/gil/extension/io/tiff/detail/log.hpp>
-
-#include <memory>
-
 namespace boost { namespace gil { namespace detail {
 
 template <int n_args>
@@ -58,7 +47,7 @@ struct set_property_f {
 	bool call_me(const typename Property:: type& value, std::shared_ptr<TIFF>& file) const;
 };
 
-template <> struct get_property_f <1> 
+template <> struct get_property_f <1>
 {
 	// For single-valued properties
 	template <typename Property>
@@ -76,15 +65,13 @@ template <> struct get_property_f <2>
 	// Specialisation for multi-valued properties. @todo: add one of
 	// these for the three-parameter fields too.
 	template <typename Property>
-	bool call_me(typename Property:: type & vs, std::shared_ptr<TIFF>& file) const
+	bool call_me(typename Property::type& vs, std::shared_ptr<TIFF>& file) const
 	{
-		typename mpl:: at <typename Property:: arg_types, mpl::int_<0> >:: type length;
-		typename mpl:: at <typename Property:: arg_types, mpl::int_<1> >:: type pointer;
-		if (1 == TIFFGetFieldDefaulted( file.get()
-				, Property:: tag
-				, & length
-				, & pointer)) {
-			std:: copy_n (static_cast <typename Property:: type:: const_pointer> (pointer), length, std:: back_inserter (vs));
+        mp11::mp_at<typename Property::arg_types, std::integral_constant<int, 0>> length;
+        mp11::mp_at<typename Property::arg_types, std::integral_constant<int, 1>> pointer;
+		if (1 == TIFFGetFieldDefaulted(file.get(), Property:: tag, & length, & pointer))
+        {
+			std:: copy_n(static_cast<typename Property::type::const_pointer>(pointer), length, std:: back_inserter(vs));
 			return true;
 		} else
 			return false;
@@ -116,12 +103,12 @@ template <> struct set_property_f <2>
 	inline
 	bool call_me(typename Property:: type const & values, std::shared_ptr<TIFF>& file) const
 	{
-		typename mpl:: at <typename Property:: arg_types, mpl::int_<0> >:: type const length = values. size ();
-		typename mpl:: at <typename Property:: arg_types, mpl::int_<1> >:: type const pointer = & (values. front ()); 
-		return (1 == TIFFSetField( file.get()
-				, Property:: tag
-				, length
-				, pointer));
+        using length_t = mp11::mp_at_c<typename Property::arg_types, 0>;
+		auto const length = static_cast<length_t>(values.size());
+
+        using pointer_t = mp11::mp_at_c<typename Property::arg_types, 1>;
+		auto const pointer = static_cast<pointer_t>(&(values.front()));
+		return (1 == TIFFSetField( file.get(), Property:: tag, length, pointer));
 	}
 };
 
@@ -142,7 +129,7 @@ public:
 	template <typename Property>
     bool get_property( typename Property::type& value  )
     {
-		return get_property_f <mpl:: size <typename Property:: arg_types>::value > ().template call_me<Property>(value, _tiff_file);
+		return get_property_f<mp11::mp_size<typename Property::arg_types>::value>().template call_me<Property>(value, _tiff_file);
 	}
 
     template <typename Property>
@@ -150,12 +137,12 @@ public:
     bool set_property( const typename Property::type& value )
     {
       // http://www.remotesensing.org/libtiff/man/TIFFSetField.3tiff.html
-      return set_property_f <mpl:: size <typename Property:: arg_types>::value > ().template call_me<Property> (value, _tiff_file);
+      return set_property_f<mp11::mp_size<typename Property::arg_types>::value>().template call_me<Property>(value, _tiff_file);
     }
 
-    // TIFFIsByteSwapped returns a non-zero value if the image data was in a different 
-    // byte-order than the host machine. Zero is returned if the TIFF file and local 
-    // host byte-orders are the same. Note that TIFFReadTile(), TIFFReadStrip() and TIFFReadScanline() 
+    // TIFFIsByteSwapped returns a non-zero value if the image data was in a different
+    // byte-order than the host machine. Zero is returned if the TIFF file and local
+    // host byte-orders are the same. Note that TIFFReadTile(), TIFFReadStrip() and TIFFReadScanline()
     // functions already normally perform byte swapping to local host order if needed.
     bool are_bytes_swapped()
     {
@@ -255,7 +242,7 @@ public:
        io_error_if( TIFFWriteScanline( _tiff_file.get()
                                      , &buffer.front()
                                      , row
-                                     , plane 
+                                     , plane
                                      ) == -1
                    , "Write error"
                    );
@@ -269,7 +256,7 @@ public:
        io_error_if( TIFFWriteScanline( _tiff_file.get()
                                      , buffer
                                      , row
-                                     , plane 
+                                     , plane
                                      ) == -1
                    , "Write error"
                    );
@@ -357,7 +344,7 @@ public:
     {
         TIFF* tiff;
 
-        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "r" )) == NULL
+        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "r" )) == nullptr
                    , "file_stream_device: failed to open file" );
 
         _tiff_file = tiff_file_t( tiff, TIFFClose );
@@ -367,7 +354,7 @@ public:
     {
         TIFF* tiff;
 
-        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "w" )) == NULL
+        io_error_if( ( tiff = TIFFOpen( file_name.c_str(), "w" )) == nullptr
                    , "file_stream_device: failed to open file" );
 
         _tiff_file = tiff_file_t( tiff, TIFFClose );
@@ -394,7 +381,7 @@ public:
         io_error_if( ( tiff = TIFFStreamOpen( ""
                                             , &_out
                                             )
-                      ) == NULL
+                      ) == nullptr
                    , "ostream_device: failed to stream"
                    );
 
@@ -425,7 +412,7 @@ public:
         io_error_if( ( tiff = TIFFStreamOpen( ""
                                             , &_in
                                             )
-                     ) == NULL
+                     ) == nullptr
                    , "istream_device: failed to stream"
                    );
 
@@ -442,45 +429,55 @@ private:
 
 /*
 template< typename T, typename D >
-struct is_adaptable_input_device< tiff_tag, T, D > : mpl::false_{};
+struct is_adaptable_input_device< tiff_tag, T, D > : std::false_type {};
 */
 
-template< typename FormatTag >
-struct is_adaptable_input_device< FormatTag
-                                , TIFF*
-                                , void
-                                >
-    : mpl::true_
+template<typename FormatTag>
+struct is_adaptable_input_device<FormatTag, TIFF*, void> : std::true_type
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
-template< typename FormatTag >
-struct is_adaptable_output_device< FormatTag
-                                 , TIFF*
-                                 , void
-                                 >
-    : mpl::true_
+template<typename FormatTag>
+struct is_adaptable_output_device<FormatTag, TIFF*, void> : std::true_type
 {
-    typedef file_stream_device< FormatTag > device_type;
+    using device_type = file_stream_device<FormatTag>;
 };
 
 
-template < typename Channel > struct sample_format : public mpl::int_<SAMPLEFORMAT_UINT> {};
-template<> struct sample_format<uint8_t>   : public mpl::int_<SAMPLEFORMAT_UINT> {};
-template<> struct sample_format<uint16_t>  : public mpl::int_<SAMPLEFORMAT_UINT> {};
-template<> struct sample_format<uint32_t>  : public mpl::int_<SAMPLEFORMAT_UINT> {};
-template<> struct sample_format<float32_t> : public mpl::int_<SAMPLEFORMAT_IEEEFP> {};
-template<> struct sample_format<double>  : public mpl::int_<SAMPLEFORMAT_IEEEFP> {};
-template<> struct sample_format<int8_t>  : public mpl::int_<SAMPLEFORMAT_INT> {};
-template<> struct sample_format<int16_t> : public mpl::int_<SAMPLEFORMAT_INT> {};
-template<> struct sample_format<int32_t> : public mpl::int_<SAMPLEFORMAT_INT> {};
+template <typename Channel>
+struct sample_format : std::integral_constant<int, SAMPLEFORMAT_UINT> {};
+template<>
+struct sample_format<uint8_t> : std::integral_constant<int, SAMPLEFORMAT_UINT> {};
+template<>
+struct sample_format<uint16_t> : std::integral_constant<int, SAMPLEFORMAT_UINT> {};
+template<>
+struct sample_format<uint32_t> : std::integral_constant<int, SAMPLEFORMAT_UINT> {};
+template<>
+struct sample_format<float32_t> : std::integral_constant<int, SAMPLEFORMAT_IEEEFP> {};
+template<>
+struct sample_format<double> : std::integral_constant<int, SAMPLEFORMAT_IEEEFP> {};
+template<>
+struct sample_format<int8_t> : std::integral_constant<int, SAMPLEFORMAT_INT> {};
+template<>
+struct sample_format<int16_t> : std::integral_constant<int, SAMPLEFORMAT_INT> {};
+template<>
+struct sample_format<int32_t> : std::integral_constant<int, SAMPLEFORMAT_INT> {};
 
-template <typename Channel> struct photometric_interpretation {};
-template<> struct photometric_interpretation< gray_t > : public mpl::int_< PHOTOMETRIC_MINISBLACK > {};
-template<> struct photometric_interpretation< rgb_t  > : public mpl::int_< PHOTOMETRIC_RGB        > {};
-template<> struct photometric_interpretation< rgba_t > : public mpl::int_< PHOTOMETRIC_RGB        > {};
-template<> struct photometric_interpretation< cmyk_t > : public mpl::int_< PHOTOMETRIC_SEPARATED  > {};
+template <typename Channel>
+struct photometric_interpretation {};
+template<>
+struct photometric_interpretation<gray_t>
+    : std::integral_constant<int, PHOTOMETRIC_MINISBLACK> {};
+template<>
+struct photometric_interpretation<rgb_t>
+    : std::integral_constant<int, PHOTOMETRIC_RGB> {};
+template<>
+struct photometric_interpretation<rgba_t>
+    : std::integral_constant<int, PHOTOMETRIC_RGB> {};
+template<>
+struct photometric_interpretation<cmyk_t>
+    : std::integral_constant<int, PHOTOMETRIC_SEPARATED> {};
 
 } // namespace detail
 } // namespace gil

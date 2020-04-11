@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -51,12 +51,6 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct somerc {}; // Swiss. Obl. Mercator
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
@@ -71,27 +65,21 @@ namespace projections
                 T K, c, hlf_e, kR, cosp0, sinp0;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_somerc_ellipsoid
-                : public base_t_fi<base_somerc_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_somerc<T> m_proj_parm;
 
-                inline base_somerc_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_somerc_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_forward)
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& par, T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T fourth_pi = detail::fourth_pi<T>();
                     static const T half_pi = detail::half_pi<T>();
 
                     T phip, lamp, phipp, lampp, sp, cp;
 
-                    sp = this->m_par.e * sin(lp_lat);
+                    sp = par.e * sin(lp_lat);
                     phip = 2.* atan( exp( this->m_proj_parm.c * (
                         log(tan(fourth_pi + 0.5 * lp_lat)) - this->m_proj_parm.hlf_e * log((1. + sp)/(1. - sp)))
                         + this->m_proj_parm.K)) - half_pi;
@@ -105,7 +93,7 @@ namespace projections
 
                 // INVERSE(e_inverse)  ellipsoid & spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T fourth_pi = detail::fourth_pi<T>();
 
@@ -119,10 +107,10 @@ namespace projections
                     lamp = aasin(cp * sin(lampp) / cos(phip));
                     con = (this->m_proj_parm.K - log(tan(fourth_pi + 0.5 * phip)))/this->m_proj_parm.c;
                     for (i = n_iter; i ; --i) {
-                        esp = this->m_par.e * sin(phip);
+                        esp = par.e * sin(phip);
                         delp = (con + log(tan(fourth_pi + 0.5 * phip)) - this->m_proj_parm.hlf_e *
                             log((1. + esp)/(1. - esp)) ) *
-                            (1. - esp * esp) * cos(phip) * this->m_par.rone_es;
+                            (1. - esp * esp) * cos(phip) * par.rone_es;
                         phip -= delp;
                         if (fabs(delp) < epsilon)
                             break;
@@ -144,7 +132,7 @@ namespace projections
 
             // Swiss. Obl. Mercator
             template <typename Parameters, typename T>
-            inline void setup_somerc(Parameters& par, par_somerc<T>& proj_parm)
+            inline void setup_somerc(Parameters const& par, par_somerc<T>& proj_parm)
             {
                 static const T fourth_pi = detail::fourth_pi<T>();
 
@@ -182,9 +170,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct somerc_ellipsoid : public detail::somerc::base_somerc_ellipsoid<T, Parameters>
     {
-        inline somerc_ellipsoid(const Parameters& par) : detail::somerc::base_somerc_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline somerc_ellipsoid(Params const& , Parameters const& par)
         {
-            detail::somerc::setup_somerc(this->m_par, this->m_proj_parm);
+            detail::somerc::setup_somerc(par, this->m_proj_parm);
         }
     };
 
@@ -193,23 +182,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::somerc, somerc_ellipsoid, somerc_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_somerc, somerc_ellipsoid)
     
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class somerc_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(somerc_entry, somerc_ellipsoid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(somerc_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<somerc_ellipsoid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void somerc_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("somerc", new somerc_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(somerc, somerc_entry)
         }
 
     } // namespace detail

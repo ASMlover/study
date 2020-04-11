@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -46,19 +46,13 @@
 
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
 #include <boost/geometry/srs/projections/impl/pj_tsfn.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct stere {}; // Stereographic
-    struct ups {}; // Universal Polar Stereographic
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -97,20 +91,14 @@ namespace projections
                    math::pow((T(1) - sinphi) / (T(1) + sinphi), T(0.5) * eccen));
             }
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_stere_ellipsoid
-                : public base_t_fi<base_stere_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_stere<T> m_proj_parm;
 
-                inline base_stere_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_stere_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_forward)  ellipsoid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& par, T const& lp_lon, T lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T half_pi = detail::half_pi<T>();
 
@@ -120,7 +108,7 @@ namespace projections
                     sinlam = sin(lp_lon);
                     sinphi = sin(lp_lat);
                     if (this->m_proj_parm.mode == obliq || this->m_proj_parm.mode == equit) {
-                        sinX = sin(X = 2. * atan(ssfn_(lp_lat, sinphi, this->m_par.e)) - half_pi);
+                        sinX = sin(X = 2. * atan(ssfn_(lp_lat, sinphi, par.e)) - half_pi);
                         cosX = cos(X);
                     }
                     switch (this->m_proj_parm.mode) {
@@ -149,7 +137,7 @@ namespace projections
                         sinphi = -sinphi;
                         BOOST_FALLTHROUGH;
                     case n_pole:
-                        xy_x = this->m_proj_parm.akm1 * pj_tsfn(lp_lat, sinphi, this->m_par.e);
+                        xy_x = this->m_proj_parm.akm1 * pj_tsfn(lp_lat, sinphi, par.e);
                         xy_y = - xy_x * coslam;
                         break;
                     }
@@ -159,7 +147,7 @@ namespace projections
 
                 // INVERSE(e_inverse)  ellipsoid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T half_pi = detail::half_pi<T>();
 
@@ -181,7 +169,7 @@ namespace projections
                         xy_x *= sinphi;
                         xy_y = rho * this->m_proj_parm.cosX1 * cosphi - xy_y * this->m_proj_parm.sinX1* sinphi;
                         halfpi = half_pi;
-                        halfe = .5 * this->m_par.e;
+                        halfe = .5 * par.e;
                         break;
                     case n_pole:
                         xy_y = -xy_y;
@@ -189,11 +177,11 @@ namespace projections
                     case s_pole:
                         phi_l = half_pi - 2. * atan(tp = - rho / this->m_proj_parm.akm1);
                         halfpi = -half_pi;
-                        halfe = -.5 * this->m_par.e;
+                        halfe = -.5 * par.e;
                         break;
                     }
                     for (i = n_iter; i--; phi_l = lp_lat) {
-                        sinphi = this->m_par.e * sin(phi_l);
+                        sinphi = par.e * sin(phi_l);
                         lp_lat = T(2) * atan(tp * math::pow((T(1)+sinphi)/(T(1)-sinphi), halfe)) - halfpi;
                         if (fabs(phi_l - lp_lat) < conv_tolerance) {
                             if (this->m_proj_parm.mode == s_pole)
@@ -212,20 +200,14 @@ namespace projections
 
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_stere_spheroid
-                : public base_t_fi<base_stere_spheroid<T, Parameters>, T, Parameters>
             {
                 par_stere<T> m_proj_parm;
 
-                inline base_stere_spheroid(const Parameters& par)
-                    : base_t_fi<base_stere_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T fourth_pi = detail::fourth_pi<T>();
                     static const T half_pi = detail::half_pi<T>();
@@ -266,7 +248,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T const& xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     T  c, rh, sinc, cosc;
 
@@ -285,7 +267,7 @@ namespace projections
                         break;
                     case obliq:
                         if (fabs(rh) <= epsilon10)
-                            lp_lat = this->m_par.phi0;
+                            lp_lat = par.phi0;
                         else
                             lp_lat = asin(cosc * this->m_proj_parm.sinX1 + xy_y * sinc * this->m_proj_parm.cosX1 / rh);
                         if ((c = cosc - this->m_proj_parm.sinX1 * sin(lp_lat)) != 0. || xy_x != 0.)
@@ -296,7 +278,7 @@ namespace projections
                         BOOST_FALLTHROUGH;
                     case s_pole:
                         if (fabs(rh) <= epsilon10)
-                            lp_lat = this->m_par.phi0;
+                            lp_lat = par.phi0;
                         else
                             lp_lat = asin(this->m_proj_parm.mode == s_pole ? - cosc : cosc);
                         lp_lon = (xy_x == 0. && xy_y == 0.) ? 0. : atan2(xy_x, xy_y);
@@ -312,7 +294,7 @@ namespace projections
             };
 
             template <typename Parameters, typename T>
-            inline void setup(Parameters& par, par_stere<T>& proj_parm)  /* general initialization */
+            inline void setup(Parameters const& par, par_stere<T>& proj_parm)  /* general initialization */
             {
                 static const T fourth_pi = detail::fourth_pi<T>();
                 static const T half_pi = detail::half_pi<T>();
@@ -372,25 +354,25 @@ namespace projections
 
 
             // Stereographic
-            template <typename Parameters, typename T>
-            inline void setup_stere(Parameters& par, par_stere<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_stere(Params const& params, Parameters const& par, par_stere<T>& proj_parm)
             {
                 static const T half_pi = detail::half_pi<T>();
 
-                if (! pj_param_r(par.params, "lat_ts", proj_parm.phits))
+                if (! pj_param_r<srs::spar::lat_ts>(params, "lat_ts", srs::dpar::lat_ts, proj_parm.phits))
                     proj_parm.phits = half_pi;
 
                 setup(par, proj_parm);
             }
 
             // Universal Polar Stereographic
-            template <typename Parameters, typename T>
-            inline void setup_ups(Parameters& par, par_stere<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_ups(Params const& params, Parameters& par, par_stere<T>& proj_parm)
             {
                 static const T half_pi = detail::half_pi<T>();
 
                 /* International Ellipsoid */
-                par.phi0 = pj_get_param_b(par.params, "south") ? -half_pi: half_pi;
+                par.phi0 = pj_get_param_b<srs::spar::south>(params, "south", srs::dpar::south) ? -half_pi: half_pi;
                 if (par.es == 0.0) {
                     BOOST_THROW_EXCEPTION( projection_exception(error_ellipsoid_use_required) );
                 }
@@ -424,9 +406,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct stere_ellipsoid : public detail::stere::base_stere_ellipsoid<T, Parameters>
     {
-        inline stere_ellipsoid(const Parameters& par) : detail::stere::base_stere_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline stere_ellipsoid(Params const& params, Parameters const& par)
         {
-            detail::stere::setup_stere(this->m_par, this->m_proj_parm);
+            detail::stere::setup_stere(params, par, this->m_proj_parm);
         }
     };
 
@@ -448,9 +431,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct stere_spheroid : public detail::stere::base_stere_spheroid<T, Parameters>
     {
-        inline stere_spheroid(const Parameters& par) : detail::stere::base_stere_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline stere_spheroid(Params const& params, Parameters const& par)
         {
-            detail::stere::setup_stere(this->m_par, this->m_proj_parm);
+            detail::stere::setup_stere(params, par, this->m_proj_parm);
         }
     };
 
@@ -472,9 +456,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct ups_ellipsoid : public detail::stere::base_stere_ellipsoid<T, Parameters>
     {
-        inline ups_ellipsoid(const Parameters& par) : detail::stere::base_stere_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline ups_ellipsoid(Params const& params, Parameters & par)
         {
-            detail::stere::setup_ups(this->m_par, this->m_proj_parm);
+            detail::stere::setup_ups(params, par, this->m_proj_parm);
         }
     };
 
@@ -496,9 +481,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct ups_spheroid : public detail::stere::base_stere_spheroid<T, Parameters>
     {
-        inline ups_spheroid(const Parameters& par) : detail::stere::base_stere_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline ups_spheroid(Params const& params, Parameters & par)
         {
-            detail::stere::setup_ups(this->m_par, this->m_proj_parm);
+            detail::stere::setup_ups(params, par, this->m_proj_parm);
         }
     };
 
@@ -507,41 +493,17 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::stere, stere_spheroid, stere_ellipsoid)
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::ups, ups_spheroid, ups_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI2(srs::spar::proj_stere, stere_spheroid, stere_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI2(srs::spar::proj_ups, ups_spheroid, ups_ellipsoid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class stere_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI2(stere_entry, stere_spheroid, stere_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI2(ups_entry, ups_spheroid, ups_ellipsoid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(stere_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    if (par.es)
-                        return new base_v_fi<stere_ellipsoid<T, Parameters>, T, Parameters>(par);
-                    else
-                        return new base_v_fi<stere_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        class ups_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    if (par.es)
-                        return new base_v_fi<ups_ellipsoid<T, Parameters>, T, Parameters>(par);
-                    else
-                        return new base_v_fi<ups_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void stere_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("stere", new stere_entry<T, Parameters>);
-            factory.add_to_factory("ups", new ups_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(stere, stere_entry)
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(ups, ups_entry)
         }
 
     } // namespace detail

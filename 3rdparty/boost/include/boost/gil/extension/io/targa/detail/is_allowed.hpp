@@ -1,29 +1,22 @@
-/*
-    Copyright 2010 Kenneth Riddile
-    Use, modification and distribution are subject to the Boost Software License,
-    Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-    http://www.boost.org/LICENSE_1_0.txt).
-*/
-
-/*************************************************************************************************/
-
+//
+// Copyright 2010 Kenneth Riddile
+//
+// Distributed under the Boost Software License, Version 1.0
+// See accompanying file LICENSE_1_0.txt or copy at
+// http://www.boost.org/LICENSE_1_0.txt
+//
 #ifndef BOOST_GIL_EXTENSION_IO_TARGA_DETAIL_IS_ALLOWED_HPP
 #define BOOST_GIL_EXTENSION_IO_TARGA_DETAIL_IS_ALLOWED_HPP
 
-////////////////////////////////////////////////////////////////////////////////////////
-/// \file
-/// \brief
-/// \author Kenneth Riddile \n
-///
-/// \date 2010 \n
-///
-////////////////////////////////////////////////////////////////////////////////////////
+#include <boost/gil/extension/io/targa/tags.hpp>
+
+#include <type_traits>
 
 namespace boost { namespace gil { namespace detail {
 
 template< typename View >
 bool is_allowed( const image_read_info< targa_tag >& info
-               , mpl::true_   // is read_and_no_convert
+               , std::true_type   // is read_and_no_convert
                )
 {
     targa_depth::type src_bits_per_pixel = 0;
@@ -43,7 +36,7 @@ bool is_allowed( const image_read_info< targa_tag >& info
         }
     }
 
-    typedef typename channel_traits< typename element_type< typename View::value_type >::type >::value_type channel_t;
+    using channel_t = typename channel_traits<typename element_type<typename View::value_type>::type>::value_type;
     targa_depth::type dst_bits_per_pixel = detail::unsigned_integral_num_bits< channel_t >::value * num_channels< View >::value;
 
     return ( dst_bits_per_pixel == src_bits_per_pixel );
@@ -51,7 +44,7 @@ bool is_allowed( const image_read_info< targa_tag >& info
 
 template< typename View >
 bool is_allowed( const image_read_info< targa_tag >& /* info */
-               , mpl::false_  // is read_and_convert
+               , std::false_type  // is read_and_convert
                )
 {
     return true;

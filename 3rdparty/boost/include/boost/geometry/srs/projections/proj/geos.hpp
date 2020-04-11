@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -52,15 +52,10 @@
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
 #include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct geos {}; // Geostationary Satellite View
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -77,23 +72,17 @@ namespace projections
                 T           radius_g;
                 T           radius_g_1;
                 T           C;
-                int         flip_axis;
+                bool        flip_axis;
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_geos_ellipsoid
-                : public base_t_fi<base_geos_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_geos<T> m_proj_parm;
 
-                inline base_geos_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_geos_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_forward)  ellipsoid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T lp_lat, T& xy_x, T& xy_y) const
                 {
                     T r, Vx, Vy, Vz, tmp;
 
@@ -126,7 +115,7 @@ namespace projections
 
                 // INVERSE(e_inverse)  ellipsoid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     T Vx, Vy, Vz, a, b, det, k;
 
@@ -168,20 +157,14 @@ namespace projections
 
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_geos_spheroid
-                : public base_t_fi<base_geos_spheroid<T, Parameters>, T, Parameters>
             {
                 par_geos<T> m_proj_parm;
 
-                inline base_geos_spheroid(const Parameters& par)
-                    : base_t_fi<base_geos_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_forward)  spheroid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     T Vx, Vy, Vz, tmp;
 
@@ -211,7 +194,7 @@ namespace projections
 
                 // INVERSE(s_inverse)  spheroid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     T Vx, Vy, Vz, a, b, det, k;
 
@@ -250,30 +233,49 @@ namespace projections
 
             };
 
-            // Geostationary Satellite View
-            template <typename Parameters, typename T>
-            inline void setup_geos(Parameters& par, par_geos<T>& proj_parm)
+            inline bool geos_flip_axis(srs::detail::proj4_parameters const& params)
             {
-                std::string sweep_axis;
-
-                if ((proj_parm.h = pj_get_param_f(par.params, "h")) <= 0.)
-                    BOOST_THROW_EXCEPTION( projection_exception(error_h_less_than_zero) );
-
-                if (par.phi0 != 0.0)
-                    BOOST_THROW_EXCEPTION( projection_exception(error_unknown_prime_meridian) );
-
-                sweep_axis = pj_get_param_s(par.params, "sweep");
+                std::string sweep_axis = pj_get_param_s(params, "sweep");
                 if (sweep_axis.empty())
-                    proj_parm.flip_axis = 0;
+                    return false;
                 else {
                     if (sweep_axis[1] != '\0' || (sweep_axis[0] != 'x' && sweep_axis[0] != 'y'))
                         BOOST_THROW_EXCEPTION( projection_exception(error_invalid_sweep_axis) );
 
                     if (sweep_axis[0] == 'x')
-                        proj_parm.flip_axis = 1;
+                        return true;
                     else
-                        proj_parm.flip_axis = 0;
+                        return false;
                 }
+            }
+
+            template <typename T>
+            inline bool geos_flip_axis(srs::dpar::parameters<T> const& params)
+            {
+                typename srs::dpar::parameters<T>::const_iterator
+                    it = pj_param_find(params, srs::dpar::sweep);
+                if (it == params.end()) {
+                    return false;
+                } else {
+                    srs::dpar::value_sweep s = static_cast<srs::dpar::value_sweep>(it->template get_value<int>());
+                    return s == srs::dpar::sweep_x;
+                }
+            }
+
+            // Geostationary Satellite View
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_geos(Params const& params, Parameters& par, par_geos<T>& proj_parm)
+            {
+                std::string sweep_axis;
+
+                if ((proj_parm.h = pj_get_param_f<T, srs::spar::h>(params, "h", srs::dpar::h)) <= 0.)
+                    BOOST_THROW_EXCEPTION( projection_exception(error_h_less_than_zero) );
+
+                if (par.phi0 != 0.0)
+                    BOOST_THROW_EXCEPTION( projection_exception(error_unknown_prime_meridian) );
+
+                
+                proj_parm.flip_axis = geos_flip_axis(params);
 
                 proj_parm.radius_g_1 = proj_parm.h / par.a;
                 proj_parm.radius_g = 1. + proj_parm.radius_g_1;
@@ -309,9 +311,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct geos_ellipsoid : public detail::geos::base_geos_ellipsoid<T, Parameters>
     {
-        inline geos_ellipsoid(const Parameters& par) : detail::geos::base_geos_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline geos_ellipsoid(Params const& params, Parameters const& par)
         {
-            detail::geos::setup_geos(this->m_par, this->m_proj_parm);
+            detail::geos::setup_geos(params, par, this->m_proj_parm);
         }
     };
 
@@ -334,9 +337,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct geos_spheroid : public detail::geos::base_geos_spheroid<T, Parameters>
     {
-        inline geos_spheroid(const Parameters& par) : detail::geos::base_geos_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline geos_spheroid(Params const& params, Parameters const& par)
         {
-            detail::geos::setup_geos(this->m_par, this->m_proj_parm);
+            detail::geos::setup_geos(params, par, this->m_proj_parm);
         }
     };
 
@@ -345,26 +349,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::geos, geos_spheroid, geos_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI2(srs::spar::proj_geos, geos_spheroid, geos_ellipsoid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class geos_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI2(geos_entry, geos_spheroid, geos_ellipsoid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(geos_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    if (par.es)
-                        return new base_v_fi<geos_ellipsoid<T, Parameters>, T, Parameters>(par);
-                    else
-                        return new base_v_fi<geos_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void geos_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("geos", new geos_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(geos, geos_entry);
         }
 
     } // namespace detail

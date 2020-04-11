@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -49,24 +49,18 @@
 #ifndef BOOST_GEOMETRY_PROJECTIONS_HEALPIX_HPP
 #define BOOST_GEOMETRY_PROJECTIONS_HEALPIX_HPP
 
-#include <boost/geometry/util/math.hpp>
-
 #include <boost/geometry/srs/projections/impl/base_static.hpp>
 #include <boost/geometry/srs/projections/impl/base_dynamic.hpp>
-#include <boost/geometry/srs/projections/impl/projects.hpp>
 #include <boost/geometry/srs/projections/impl/factory_entry.hpp>
 #include <boost/geometry/srs/projections/impl/pj_auth.hpp>
+#include <boost/geometry/srs/projections/impl/pj_param.hpp>
 #include <boost/geometry/srs/projections/impl/pj_qsfn.hpp>
+#include <boost/geometry/srs/projections/impl/projects.hpp>
+
+#include <boost/geometry/util/math.hpp>
 
 namespace boost { namespace geometry
 {
-
-namespace srs { namespace par4
-{
-    struct healpix {}; // HEALPix
-    struct rhealpix {}; // rHEALPix
-
-}} //namespace srs::par4
 
 namespace projections
 {
@@ -80,17 +74,17 @@ namespace projections
             template <typename T>
             struct par_healpix
             {
-                int north_square;
-                int south_square;
                 T qp;
                 detail::apa<T> apa;
+                int north_square;
+                int south_square;
             };
 
             template <typename T>
             struct cap_map
             {
-                int cn; /* An integer 0--3 indicating the position of the polar cap. */
                 T x, y; /* Coordinates of the pole point (point of most extreme latitude on the polar caps). */
+                int cn; /* An integer 0--3 indicating the position of the polar cap. */
                 enum region_type {north, south, equatorial} region;
             };
             template <typename T>
@@ -347,7 +341,7 @@ namespace projections
              * @param ret holds a + b.
              **/
             template <typename T>
-            inline void vector_add(T a[2], T b[2], T *ret)
+            inline void vector_add(const T a[2], const T b[2], T ret[2])
             {
                 int i;
                 for(i = 0; i < 2; i++) {
@@ -359,7 +353,7 @@ namespace projections
              * @param ret holds a - b.
              **/
             template <typename T>
-            inline void vector_sub(T a[2], T b[2], T*ret)
+            inline void vector_sub(const T a[2], const T b[2], T ret[2])
             {
                 int i;
                 for(i = 0; i < 2; i++) {
@@ -372,7 +366,7 @@ namespace projections
              * @param ret holds a*b.
              **/
             template <typename T1, typename T2>
-            inline void dot_product(T1 a[2][2], T2 b[2], T2 *ret)
+            inline void dot_product(const T1 a[2][2], const T2 b[2], T2 ret[2])
             {
                 int i, j;
                 int length = 2;
@@ -552,28 +546,22 @@ namespace projections
                 xy_y = vector[1];
             }
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_healpix_ellipsoid
-                : public base_t_fi<base_healpix_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_healpix<T> m_proj_parm;
 
-                inline base_healpix_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_healpix_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_healpix_forward)  ellipsoid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& par, T const& lp_lon, T lp_lat, T& xy_x, T& xy_y) const
                 {
-                    lp_lat = auth_lat(this->params(), m_proj_parm, lp_lat, 0);
+                    lp_lat = auth_lat(par, m_proj_parm, lp_lat, 0);
                     return healpix_sphere(lp_lon, lp_lat, xy_x, xy_y);
                 }
 
                 // INVERSE(e_healpix_inverse)  ellipsoid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     /* Check whether (x, y) lies in the HEALPix image. */
                     if (in_image(xy_x, xy_y, 0, 0, 0) == 0) {
@@ -582,7 +570,7 @@ namespace projections
                         BOOST_THROW_EXCEPTION( projection_exception(error_invalid_x_or_y) );
                     }
                     healpix_sphere_inverse(xy_x, xy_y, lp_lon, lp_lat);
-                    lp_lat = auth_lat(this->params(), m_proj_parm, lp_lat, 1);
+                    lp_lat = auth_lat(par, m_proj_parm, lp_lat, 1);
                 }
 
                 static inline std::string get_name()
@@ -592,27 +580,21 @@ namespace projections
 
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_healpix_spheroid
-                : public base_t_fi<base_healpix_spheroid<T, Parameters>, T, Parameters>
             {
                 par_healpix<T> m_proj_parm;
 
-                inline base_healpix_spheroid(const Parameters& par)
-                    : base_t_fi<base_healpix_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_healpix_forward)  sphere
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     return healpix_sphere(lp_lon, lp_lat, xy_x, xy_y);
                 }
 
                 // INVERSE(s_healpix_inverse)  sphere
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     /* Check whether (x, y) lies in the HEALPix image */
                     if (in_image(xy_x, xy_y, 0, 0, 0) == 0) {
@@ -630,29 +612,23 @@ namespace projections
 
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_rhealpix_ellipsoid
-                : public base_t_fi<base_rhealpix_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_healpix<T> m_proj_parm;
 
-                inline base_rhealpix_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_rhealpix_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_rhealpix_forward)  ellipsoid
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& par, T const& lp_lon, T lp_lat, T& xy_x, T& xy_y) const
                 {
-                    lp_lat = auth_lat(this->params(), m_proj_parm, lp_lat, 0);
+                    lp_lat = auth_lat(par, m_proj_parm, lp_lat, 0);
                     healpix_sphere(lp_lon, lp_lat, xy_x, xy_y);
                     combine_caps(xy_x, xy_y, this->m_proj_parm.north_square, this->m_proj_parm.south_square, 0);
                 }
 
                 // INVERSE(e_rhealpix_inverse)  ellipsoid
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     /* Check whether (x, y) lies in the rHEALPix image. */
                     if (in_image(xy_x, xy_y, 1, this->m_proj_parm.north_square, this->m_proj_parm.south_square) == 0) {
@@ -662,7 +638,7 @@ namespace projections
                     }
                     combine_caps(xy_x, xy_y, this->m_proj_parm.north_square, this->m_proj_parm.south_square, 1);
                     healpix_sphere_inverse(xy_x, xy_y, lp_lon, lp_lat);
-                    lp_lat = auth_lat(this->params(), m_proj_parm, lp_lat, 1);
+                    lp_lat = auth_lat(par, m_proj_parm, lp_lat, 1);
                 }
 
                 static inline std::string get_name()
@@ -672,20 +648,14 @@ namespace projections
 
             };
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_rhealpix_spheroid
-                : public base_t_fi<base_rhealpix_spheroid<T, Parameters>, T, Parameters>
             {
                 par_healpix<T> m_proj_parm;
 
-                inline base_rhealpix_spheroid(const Parameters& par)
-                    : base_t_fi<base_rhealpix_spheroid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(s_rhealpix_forward)  sphere
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& , T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     healpix_sphere(lp_lon, lp_lat, xy_x, xy_y);
                     combine_caps(xy_x, xy_y, this->m_proj_parm.north_square, this->m_proj_parm.south_square, 0);
@@ -693,7 +663,7 @@ namespace projections
 
                 // INVERSE(s_rhealpix_inverse)  sphere
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& , T xy_x, T xy_y, T& lp_lon, T& lp_lat) const
                 {
                     /* Check whether (x, y) lies in the rHEALPix image. */
                     if (in_image(xy_x, xy_y, 1, this->m_proj_parm.north_square, this->m_proj_parm.south_square) == 0) {
@@ -726,16 +696,16 @@ namespace projections
             }
 
             // rHEALPix
-            template <typename Parameters, typename T>
-            inline void setup_rhealpix(Parameters& par, par_healpix<T>& proj_parm)
+            template <typename Params, typename Parameters, typename T>
+            inline void setup_rhealpix(Params const& params, Parameters& par, par_healpix<T>& proj_parm)
             {
-                proj_parm.north_square = pj_get_param_i(par.params, "north_square");
-                proj_parm.south_square = pj_get_param_i(par.params, "south_square");
+                proj_parm.north_square = pj_get_param_i<srs::spar::north_square>(params, "north_square", srs::dpar::north_square);
+                proj_parm.south_square = pj_get_param_i<srs::spar::south_square>(params, "south_square", srs::dpar::south_square);
                 /* Check for valid north_square and south_square inputs. */
-                if (proj_parm.north_square < 0 || proj_parm.north_square > 3) {
+                if ((proj_parm.north_square < 0) || (proj_parm.north_square > 3)) {
                     BOOST_THROW_EXCEPTION( projection_exception(error_axis) );
                 }
-                if (proj_parm.south_square < 0 || proj_parm.south_square > 3) {
+                if ((proj_parm.south_square < 0) || (proj_parm.south_square > 3)) {
                     BOOST_THROW_EXCEPTION( projection_exception(error_axis) );
                 }
                 if (par.es != 0.0) {
@@ -767,9 +737,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct healpix_ellipsoid : public detail::healpix::base_healpix_ellipsoid<T, Parameters>
     {
-        inline healpix_ellipsoid(const Parameters& par) : detail::healpix::base_healpix_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline healpix_ellipsoid(Params const& , Parameters & par)
         {
-            detail::healpix::setup_healpix(this->m_par, this->m_proj_parm);
+            detail::healpix::setup_healpix(par, this->m_proj_parm);
         }
     };
 
@@ -788,9 +759,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct healpix_spheroid : public detail::healpix::base_healpix_spheroid<T, Parameters>
     {
-        inline healpix_spheroid(const Parameters& par) : detail::healpix::base_healpix_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline healpix_spheroid(Params const& , Parameters & par)
         {
-            detail::healpix::setup_healpix(this->m_par, this->m_proj_parm);
+            detail::healpix::setup_healpix(par, this->m_proj_parm);
         }
     };
 
@@ -812,9 +784,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct rhealpix_ellipsoid : public detail::healpix::base_rhealpix_ellipsoid<T, Parameters>
     {
-        inline rhealpix_ellipsoid(const Parameters& par) : detail::healpix::base_rhealpix_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline rhealpix_ellipsoid(Params const& params, Parameters & par)
         {
-            detail::healpix::setup_rhealpix(this->m_par, this->m_proj_parm);
+            detail::healpix::setup_rhealpix(params, par, this->m_proj_parm);
         }
     };
 
@@ -836,9 +809,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct rhealpix_spheroid : public detail::healpix::base_rhealpix_spheroid<T, Parameters>
     {
-        inline rhealpix_spheroid(const Parameters& par) : detail::healpix::base_rhealpix_spheroid<T, Parameters>(par)
+        template <typename Params>
+        inline rhealpix_spheroid(Params const& params, Parameters & par)
         {
-            detail::healpix::setup_rhealpix(this->m_par, this->m_proj_parm);
+            detail::healpix::setup_rhealpix(params, par, this->m_proj_parm);
         }
     };
 
@@ -847,41 +821,17 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::healpix, healpix_spheroid, healpix_ellipsoid)
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::rhealpix, rhealpix_spheroid, rhealpix_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI2(srs::spar::proj_healpix, healpix_spheroid, healpix_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI2(srs::spar::proj_rhealpix, rhealpix_spheroid, rhealpix_ellipsoid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class healpix_entry : public detail::factory_entry<T, Parameters>
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI2(healpix_entry, healpix_spheroid, healpix_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI2(rhealpix_entry, rhealpix_spheroid, rhealpix_ellipsoid)
+        
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(healpix_init)
         {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    if (par.es)
-                        return new base_v_fi<healpix_ellipsoid<T, Parameters>, T, Parameters>(par);
-                    else
-                        return new base_v_fi<healpix_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        class rhealpix_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    if (par.es)
-                        return new base_v_fi<rhealpix_ellipsoid<T, Parameters>, T, Parameters>(par);
-                    else
-                        return new base_v_fi<rhealpix_spheroid<T, Parameters>, T, Parameters>(par);
-                }
-        };
-
-        template <typename T, typename Parameters>
-        inline void healpix_init(detail::base_factory<T, Parameters>& factory)
-        {
-            factory.add_to_factory("healpix", new healpix_entry<T, Parameters>);
-            factory.add_to_factory("rhealpix", new rhealpix_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(healpix, healpix_entry)
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(rhealpix, rhealpix_entry)
         }
 
     } // namespace detail

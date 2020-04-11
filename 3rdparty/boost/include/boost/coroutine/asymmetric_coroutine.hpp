@@ -7,14 +7,6 @@
 #ifndef BOOST_COROUTINES_ASYMMETRIC_COROUTINE_H
 #define BOOST_COROUTINES_ASYMMETRIC_COROUTINE_H
 
-#ifndef BOOST_COROUTINES_NO_DEPRECATION_WARNING
-# if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__DMC__)
-#  pragma message ("Warning: Boost.Coroutine is now deprecated. Please switch to Boost.Coroutine2. To disable this warning message, define BOOST_COROUTINES_NO_DEPRECATION_WARNING.")
-# elif defined(__GNUC__) || defined(__HP_aCC) || defined(__SUNPRO_CC) || defined(__IBMCPP__)
-#  warning "Boost.Coroutine is now deprecated. Please switch to Boost.Coroutine2. To disable this warning message, define BOOST_COROUTINES_NO_DEPRECATION_WARNING."
-# endif
-#endif
-
 #include <cstddef>
 #include <iterator>
 #include <memory>
@@ -22,7 +14,6 @@
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
 #include <boost/move/move.hpp>
-#include <boost/range.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/utility/explicit_operator_bool.hpp>
 
@@ -2399,12 +2390,19 @@ end( push_coroutine< R > & c)
 
 }
 
+// forward declaration of Boost.Range traits to break dependency on it
+template<typename C, typename Enabler>
+struct range_mutable_iterator;
+
+template<typename C, typename Enabler>
+struct range_const_iterator;
+
 template< typename Arg >
-struct range_mutable_iterator< coroutines::push_coroutine< Arg > >
+struct range_mutable_iterator< coroutines::push_coroutine< Arg >, void >
 { typedef typename coroutines::push_coroutine< Arg >::iterator type; };
 
 template< typename R >
-struct range_mutable_iterator< coroutines::pull_coroutine< R > >
+struct range_mutable_iterator< coroutines::pull_coroutine< R >, void >
 { typedef typename coroutines::pull_coroutine< R >::iterator type; };
 
 }

@@ -2,8 +2,8 @@
 
 // Copyright (c) 2008-2015 Barend Gehrels, Amsterdam, the Netherlands.
 
-// This file was modified by Oracle on 2017, 2018.
-// Modifications copyright (c) 2017-2018, Oracle and/or its affiliates.
+// This file was modified by Oracle on 2017, 2018, 2019.
+// Modifications copyright (c) 2017-2019, Oracle and/or its affiliates.
 // Contributed and/or modified by Adam Wulkiewicz, on behalf of Oracle.
 
 // Use, modification and distribution is subject to the Boost Software License,
@@ -88,12 +88,6 @@
 namespace boost { namespace geometry
 {
 
-namespace srs { namespace par4
-{
-    struct qsc {}; // Quadrilateralized Spherical Cube
-
-}} //namespace srs::par4
-
 namespace projections
 {
     #ifndef DOXYGEN_NO_DETAIL
@@ -113,11 +107,11 @@ namespace projections
             template <typename T>
             struct par_qsc
             {
-                face_type face;
                 T a_squared;
                 T b;
                 T one_minus_f;
                 T one_minus_f_squared;
+                face_type face;
             };
 
             static const double epsilon10 = 1.e-10;
@@ -180,20 +174,14 @@ namespace projections
 
             /* Forward projection, ellipsoid */
 
-            // template class, using CRTP to implement forward/inverse
             template <typename T, typename Parameters>
             struct base_qsc_ellipsoid
-                : public base_t_fi<base_qsc_ellipsoid<T, Parameters>, T, Parameters>
             {
                 par_qsc<T> m_proj_parm;
 
-                inline base_qsc_ellipsoid(const Parameters& par)
-                    : base_t_fi<base_qsc_ellipsoid<T, Parameters>, T, Parameters>(*this, par)
-                {}
-
                 // FORWARD(e_forward)
                 // Project coordinates from geographic (lon, lat) to cartesian (x, y)
-                inline void fwd(T& lp_lon, T& lp_lat, T& xy_x, T& xy_y) const
+                inline void fwd(Parameters const& par, T const& lp_lon, T const& lp_lat, T& xy_x, T& xy_y) const
                 {
                     static const T fourth_pi = detail::fourth_pi<T>();
                     static const T half_pi = detail::half_pi<T>();
@@ -207,7 +195,7 @@ namespace projections
                         /* Convert the geodetic latitude to a geocentric latitude.
                          * This corresponds to the shift from the ellipsoid to the sphere
                          * described in [LK12]. */
-                        if (this->m_par.es != 0.0) {
+                        if (par.es != 0.0) {
                             lat = atan(this->m_proj_parm.one_minus_f_squared * tan(lp_lat));
                         } else {
                             lat = lp_lat;
@@ -314,7 +302,7 @@ namespace projections
 
                 // INVERSE(e_inverse)
                 // Project coordinates from cartesian (x, y) to geographic (lon, lat)
-                inline void inv(T& xy_x, T& xy_y, T& lp_lon, T& lp_lat) const
+                inline void inv(Parameters const& par, T const& xy_x, T const& xy_y, T& lp_lon, T& lp_lat) const
                 {
                     static const T half_pi = detail::half_pi<T>();
                     static const T pi = detail::pi<T>();
@@ -442,13 +430,13 @@ namespace projections
 
                         /* Apply the shift from the sphere to the ellipsoid as described
                          * in [LK12]. */
-                        if (this->m_par.es != 0.0) {
+                        if (par.es != 0.0) {
                             int invert_sign;
                             T tanphi, xa;
                             invert_sign = (lp_lat < 0.0 ? 1 : 0);
                             tanphi = tan(lp_lat);
                             xa = this->m_proj_parm.b / sqrt(tanphi * tanphi + this->m_proj_parm.one_minus_f_squared);
-                            lp_lat = atan(sqrt(this->m_par.a * this->m_par.a - xa * xa) / (this->m_proj_parm.one_minus_f * xa));
+                            lp_lat = atan(sqrt(par.a * par.a - xa * xa) / (this->m_proj_parm.one_minus_f * xa));
                             if (invert_sign) {
                                 lp_lat = -lp_lat;
                             }
@@ -464,7 +452,7 @@ namespace projections
 
             // Quadrilateralized Spherical Cube
             template <typename Parameters, typename T>
-            inline void setup_qsc(Parameters& par, par_qsc<T>& proj_parm)
+            inline void setup_qsc(Parameters const& par, par_qsc<T>& proj_parm)
             {
                 static const T fourth_pi = detail::fourth_pi<T>();
                 static const T half_pi = detail::half_pi<T>();
@@ -509,9 +497,10 @@ namespace projections
     template <typename T, typename Parameters>
     struct qsc_ellipsoid : public detail::qsc::base_qsc_ellipsoid<T, Parameters>
     {
-        inline qsc_ellipsoid(const Parameters& par) : detail::qsc::base_qsc_ellipsoid<T, Parameters>(par)
+        template <typename Params>
+        inline qsc_ellipsoid(Params const& , Parameters const& par)
         {
-            detail::qsc::setup_qsc(this->m_par, this->m_proj_parm);
+            detail::qsc::setup_qsc(par, this->m_proj_parm);
         }
     };
 
@@ -520,23 +509,14 @@ namespace projections
     {
 
         // Static projection
-        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION(srs::par4::qsc, qsc_ellipsoid, qsc_ellipsoid)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_STATIC_PROJECTION_FI(srs::spar::proj_qsc, qsc_ellipsoid)
 
         // Factory entry(s)
-        template <typename T, typename Parameters>
-        class qsc_entry : public detail::factory_entry<T, Parameters>
-        {
-            public :
-                virtual base_v<T, Parameters>* create_new(const Parameters& par) const
-                {
-                    return new base_v_fi<qsc_ellipsoid<T, Parameters>, T, Parameters>(par);
-                }
-        };
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_ENTRY_FI(qsc_entry, qsc_ellipsoid)
 
-        template <typename T, typename Parameters>
-        inline void qsc_init(detail::base_factory<T, Parameters>& factory)
+        BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_BEGIN(qsc_init)
         {
-            factory.add_to_factory("qsc", new qsc_entry<T, Parameters>);
+            BOOST_GEOMETRY_PROJECTIONS_DETAIL_FACTORY_INIT_ENTRY(qsc, qsc_entry)
         }
 
     } // namespace detail
