@@ -333,11 +333,12 @@
 
 ## **24. Boost相关**
 > ### **24.1 Boost编译**
-    1) 打开VS2017开发人员命令提示
+    0) 针对1.72之后的版本，编译出的b2和bjam是一样的效果
+    1) 打开VS2019开发人员命令提示
     2) 进入boost目录
     3) \> bootstrap.bat
-    4) \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x86" --build-type=complete link=static runtime-link=shared threading=multi debug release
-    5) \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x64" --build-type=complete link=static runtime-link=shared threading=multi debug release address-model=64
+    4) \> bjam.exe stage --toolset=msvc-14.2 --stagedir=".\stage\x86" --build-type=complete -j12 link=static runtime-link=shared threading=multi debug release
+    5) \> bjam.exe stage --toolset=msvc-14.2 --stagedir=".\stage\x64" --build-type=complete -j12 link=static runtime-link=shared threading=multi debug release address-model=64
     6) bjam参数说明：
         * stage/install: stage只生成(dll/lib), install还会生成包含头文件的
                          include目录；
@@ -358,10 +359,11 @@
             threading=single|multi: 决定使用单线程还是多线程
             runtime-link=static|shared: 决定静态还是动态连接C/C++标准库
           }
+        * -j12: 表示采用12个线程编译
         * address-mode: address-mode=64如果没有该属性会默认生成32位平台库
     7) 运行bootstrap必须在32位编译，否则会出错；
     8) 要成功编译Boost.Python需要配置boost源码下的project-config.jam，编译boost.python的时候不能使用--build-type=complete，这样是无效的，应该使用--with-python，如：
-        \> bjam.exe stage --toolset=msvc-14.1 --stagedir=".\stage\x64" --with-python link=static runtime-link=shared threading=multi debug release address-model=64
+        \> bjam.exe stage --toolset=msvc-14.2 --stagedir=".\stage\x64" --with-python link=static runtime-link=shared threading=multi debug release address-model=64
 ``` bash
 using python
 : 2.7
