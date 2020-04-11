@@ -1,5 +1,4 @@
 #include <boost/asio.hpp>
-#include <boost/asio/experimental.hpp>
 #include "sequential_helper.hh"
 #include "examples.hh"
 
@@ -7,23 +6,20 @@ namespace acosf1 {
 // asio stackful coroutine sequential server
 
 using boost::asio::ip::tcp;
-using boost::asio::experimental::co_spawn;
-using boost::asio::experimental::detached;
-namespace this_coro = boost::asio::experimental::this_coro;
-
-template <typename T>
-using awaitable = boost::asio::experimental::awaitable<T, boost::asio::io_context::executor_type>;
+using boost::asio::awaitable;
+using boost::asio::co_spawn;
+using boost::asio::detached;
+using boost::asio::use_awaitable;
+namespace this_coro = boost::asio::this_coro;
 
 awaitable<void> on_serve(tcp::socket s) {
-  auto token = co_await this_coro::token();
-
   try {
-    co_await boost::asio::async_write(s, boost::asio::buffer("*", 1), token);
+    co_await boost::asio::async_write(s, boost::asio::buffer("*", 1), use_awaitable);
 
     char recv_buf[1024];
     auto status = sequential::Status::WAIT_MSG;
     for (;;) {
-      coext::sz_t n = co_await s.async_read_some(boost::asio::buffer(recv_buf), token);
+      coext::sz_t n = co_await s.async_read_some(boost::asio::buffer(recv_buf), use_awaitable);
 
       std::vector<char> send_buf;
       for (coext::sz_t i = 0; i < n; ++i) {
@@ -41,7 +37,7 @@ awaitable<void> on_serve(tcp::socket s) {
           break;
         }
       }
-      co_await boost::asio::async_write(s, boost::asio::buffer(send_buf), token);
+      co_await boost::asio::async_write(s, boost::asio::buffer(send_buf), use_awaitable);
     }
   }
   catch (const std::exception& /*e*/) {
@@ -50,12 +46,10 @@ awaitable<void> on_serve(tcp::socket s) {
 }
 
 awaitable<void> on_accept() {
-  auto executor = co_await this_coro::executor();
-  auto token = co_await this_coro::token();
-
-  tcp::acceptor acceptor(executor.context(), { tcp::v4(), 5555 });
+  auto executor = co_await this_coro::executor;
+  tcp::acceptor acceptor(executor, { tcp::v4(), 5555 });
   for (;;) {
-    tcp::socket s = co_await acceptor.async_accept(token);
+    tcp::socket s = co_await acceptor.async_accept(use_awaitable);
     co_spawn(executor, [s = std::move(s)]() mutable {
       return on_serve(std::move(s));
     }, detached);

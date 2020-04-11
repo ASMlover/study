@@ -36,48 +36,49 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 option(USE_LIBUV_STATIC "use static libuv library" ON)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	add_definitions(
-		/DUNICODE
-		/D_UNICODE
-		/D_CRT_SECURE_NO_WARNINGS
-		/D_CRT_NONSTDC_NO_WARNINGS
-		/D_WINSOCK_DEPRECATED_NO_WARNINGS
-		/D_WIN32_WINNT=0x0601)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest /await")
-	set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
-	set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
+  add_definitions(
+    /DUNICODE
+    /D_UNICODE
+    /D_CRT_SECURE_NO_WARNINGS
+    /D_CRT_NONSTDC_NO_WARNINGS
+    /D_WINSOCK_DEPRECATED_NO_WARNINGS
+    /D_WIN32_WINNT=0x0601
+    /DBOOST_ASIO_DISABLE_CONCEPTS)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest /await")
+  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
+  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1z -static-libgc -static-libstdc++ -march=native")
-	set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
-	set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1z -static-libgc -static-libstdc++ -march=native")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
 
 include_directories(
-	${PROJECT_SOURCE_DIR}
-	${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/include
-	${PROJECT_SOURCE_DIR}/../../3rdparty/boost/include)
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/include
+  ${PROJECT_SOURCE_DIR}/../../3rdparty/boost/include)
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-	if (CMAKE_BUILD_TYPE MATCHES "Debug")
-		link_directories(
-			${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/windows/debug
-			${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/windows/debug)
-	else()
-		link_directories(
-			${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/windows/release
-			${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/windows/release)
-	endif()
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    link_directories(
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/windows/debug
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/windows/debug)
+  else()
+    link_directories(
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/windows/release
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/windows/release)
+  endif()
 else()
-	if (CMAKE_BUILD_TYPE MATCHES "Debug")
-		link_directories(
-			${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/linux/debug
-			${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/linux/debug)
-	else()
-		link_directories(
-			${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/linux/release
-			${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/linux/release)
-	endif()
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    link_directories(
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/linux/debug
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/linux/debug)
+  else()
+    link_directories(
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/libuv/lib/linux/release
+      ${PROJECT_SOURCE_DIR}/../../3rdparty/boost/lib/linux/release)
+  endif()
 endif()
 
 file(GLOB_RECURSE COS_HEADERS *.hh)
@@ -89,21 +90,25 @@ message(STATUS "`${PROJECT_NAME}` COS_SOURCES: ${COS_SOURCES}")
 
 add_executable(${PROJECT_NAME} ${COS_HEADERS} ${COS_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
-	if (USE_LIBUV_STATIC)
-		target_link_libraries(${PROJECT_NAME} ws2_32.lib iphlpapi.lib psapi.lib userenv.lib uv_a.lib)
-	else()
-		target_link_libraries(${PROJECT_NAME} ws2_32.lib uv.lib)
-	endif()
-	if (CMAKE_BUILD_TYPE MATCHES "Debug")
-		target_link_libraries(${PROJECT_NAME} libboost_system-vc141-mt-gd-x64-1_68.lib)
-	else()
-		target_link_libraries(${PROJECT_NAME} libboost_system-vc141-mt-x64-1_68.lib)
-	endif()
+  if (USE_LIBUV_STATIC)
+    target_link_libraries(${PROJECT_NAME} ws2_32.lib iphlpapi.lib psapi.lib userenv.lib uv_a.lib)
+  else()
+    target_link_libraries(${PROJECT_NAME} ws2_32.lib uv.lib)
+  endif()
+  if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    target_link_libraries(${PROJECT_NAME}
+      libboost_context-vc142-mt-gd-x64-1_72.lib
+      libboost_system-vc142-mt-gd-x64-1_72.lib)
+  else()
+    target_link_libraries(${PROJECT_NAME}
+      libboost_context-vc142-mt-x64-1_72.lib
+      libboost_system-vc142-mt-x64-1_72.lib)
+  endif()
 else()
-	if (USE_LIBUV_STATIC)
-		target_link_libraries(${PROJECT_NAME} uv_a)
-	else()
-		target_link_libraries(${PROJECT_NAME} uv)
-	endif()
-	target_link_libraries(${PROJECT_NAME} pthread boost_system)
+  if (USE_LIBUV_STATIC)
+    target_link_libraries(${PROJECT_NAME} uv_a)
+  else()
+    target_link_libraries(${PROJECT_NAME} uv)
+  endif()
+  target_link_libraries(${PROJECT_NAME} pthread boost_system)
 endif()
