@@ -24,11 +24,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "examples.hh"
+#pragma once
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+#include "common.hh"
 
-  coro::strv_t alias = argc > 1 ? argv[1] : "";
-  return coro::launch_examples(alias);
+namespace coro {
+
+using ExampleClosure = std::function<void ()>;
+
+bool register_example(
+    strv_t name, strv_t alias, strv_t doc, ExampleClosure&& closure);
+int launch_examples(strv_t alias);
+
 }
+
+#define CORO_EXAMPLE(Name, Alias, Doc)\
+class _CoroExample_##Name final : private coro::UnCopyable {\
+  void _run();\
+public:\
+  static void _run_example() {\
+    _CoroExample_##Name _ins;\
+    _ins._run();\
+  }\
+};\
+bool _Ignored_CoroExample_##Name = coro::register_example(\
+  #Name, #Alias, Doc, &_CoroExample_##Name::_run_example);\
+void _CoroExample_##Name::_run()
