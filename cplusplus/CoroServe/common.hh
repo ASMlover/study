@@ -40,6 +40,13 @@
 #include <vector>
 #include <unordered_map>
 
+#if defined(__x86_64) || defined(__x86_64__) ||\
+  defined(__amd64__) || defined(__amd64) || defined(_M_X64)
+# define CORO_ARCH64
+#else
+# define CORO_ARCH32
+#endif
+
 namespace coro {
 
 using nil_t   = std::nullptr_t;
@@ -53,6 +60,11 @@ using u32_t   = std::uint32_t;
 using i64_t   = std::int64_t;
 using u64_t   = std::uint64_t;
 using sz_t    = std::size_t;
+#if defined(CORO_ARCH64)
+using ssz_t   = std::int64_t;
+#else
+using ssz_t   = std::int32_t;
+#endif
 using str_t   = std::string;
 using strv_t  = std::string_view;
 using oss_t   = std::ostringstream;
