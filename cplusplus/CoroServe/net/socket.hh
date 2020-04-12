@@ -48,13 +48,13 @@ public:
 
   bool listen(strv_t host = "0.0.0.0", u16_t port = 5555, int backlog = 5);
   bool connect(strv_t host = "127.0.0.1", u16_t port = 5555);
-  bool async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
-  Socket accept();
-  Socket async_accept();
+  std::optional<bool> async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
+  std::optional<Socket> accept();
+  std::optional<Socket> async_accept();
   sz_t read(char* buf, sz_t len);
-  sz_t async_read(char* buf, sz_t len);
+  std::optional<sz_t> async_read(char* buf, sz_t len);
   sz_t write(const char* buf, sz_t len);
-  sz_t async_write(const char* buf, sz_t len);
+  std::optional<sz_t> async_write(const char* buf, sz_t len);
 };
 
 }

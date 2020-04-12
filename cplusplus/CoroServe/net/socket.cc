@@ -28,15 +28,28 @@
 #if defined(CORO_WIN)
 # include <WS2tcpip.h>
 # include <WinSock2.h>
+# define NEAGAIN      WSAEWOULDBLOCK
+# define NEWOULDBLOCK WSAEWOULDBLOCK
 #else
 # include <arpa/inet.h>
 # include <netdb.h>
 # include <fcntl.h>
 # include <unistd.h>
+# define NEAGAIN      EAGAIN
+# define NEWOULDBLOCK EWOULDBLOCK
 #endif
+#include <cerrno>
 #include "socket.hh"
 
 namespace coro::net {
+
+int get_errno() {
+#if defined(CORO_WIN)
+  return ::WSAGetLastError();
+#else
+  return errno;
+#endif
+}
 
 void init_addr(sockaddr_in& addr, strv_t host, u16_t port) {
   addr.sin_family = AF_INET;
@@ -95,13 +108,100 @@ bool Socket::listen(strv_t host, u16_t port, int backlog) {
   return ::listen(fd_, backlog) != kSocketError;
 }
 
-// bool Socket::connect(strv_t host = "127.0.0.1", u16_t port = 5555);
-// bool Socket::async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
-// Socket Socket::accept();
-// Socket Socket::async_accept();
-// sz_t Socket::read(char* buf, sz_t len);
-// sz_t Socket::async_read(char* buf, sz_t len);
-// sz_t Socket::write(const char* buf, sz_t len);
-// sz_t Socket::async_write(const char* buf, sz_t len);
+bool Socket::connect(strv_t host, u16_t port) {
+  if (!is_valid())
+    return false;
+
+  sockaddr_in addr;
+  init_addr(addr, host, port);
+
+  return ::connect(fd_, (const sockaddr*)&addr,
+      static_cast<int>(sizeof(addr))) != kSocketError;
+}
+
+std::optional<bool> Socket::async_connect(strv_t host, u16_t port) {
+  if (!is_valid())
+    return {};
+
+  sockaddr_in addr;
+  init_addr(addr, host, port);
+
+  if (auto r = ::connect(fd_, (const sockaddr*)&addr,
+        static_cast<int>(sizeof(addr))); r == kSocketError) {
+    if (auto ec = get_errno(); ec == NEAGAIN || ec == NEWOULDBLOCK)
+      return {false};
+    return {};
+  }
+  return {true};
+}
+
+std::optional<Socket> Socket::accept() {
+  if (!is_valid())
+    return {};
+
+  sockaddr_in addr;
+  socklen_t addr_len = sizeof(addr);
+  if (auto fd = ::accept(
+        fd_, (sockaddr*)&addr, &addr_len); fd != kInvalidSocket)
+    return {fd};
+  return {};
+}
+
+std::optional<Socket> Socket::async_accept() {
+  if (!is_valid())
+    return {};
+
+  sockaddr_in addr;
+  socklen_t addr_len = sizeof(addr);
+  if (auto fd = ::accept(
+        fd_, (sockaddr*)&addr, &addr_len); fd != kInvalidSocket)
+    return {fd};
+
+  if (auto ec = get_errno(); ec == NEAGAIN || ec == NEWOULDBLOCK)
+    return {kInvalidSocket};
+  return {};
+}
+
+sz_t Socket::read(char* buf, sz_t len) {
+  if (!is_valid())
+    return 0;
+  return static_cast<sz_t>(::recv(fd_, buf, static_cast<int>(len), 0));
+}
+
+std::optional<sz_t> Socket::async_read(char* buf, sz_t len) {
+  if (!is_valid())
+    return 0;
+
+  auto n = ::recv(fd_, buf, static_cast<int>(len), 0);
+  if (n == kSocketError) {
+    if (auto ec = get_errno(); ec == NEAGAIN || ec == NEWOULDBLOCK)
+      return {0};
+  }
+  else if (n > 0) {
+    return {n};
+  }
+  return {};
+}
+
+sz_t Socket::write(const char* buf, sz_t len) {
+  if (!is_valid())
+    return 0;
+  return static_cast<sz_t>(::send(fd_, buf, static_cast<int>(len), 0));
+}
+
+std::optional<sz_t> Socket::async_write(const char* buf, sz_t len) {
+  if (!is_valid())
+    return 0;
+
+  auto n = ::send(fd_, buf, static_cast<int>(len), 0);
+  if (n == kSocketError) {
+    if (auto ec = get_errno(); ec == NEAGAIN || ec == NEWOULDBLOCK)
+      return {0};
+  }
+  else if (n > 0) {
+    return {n};
+  }
+  return {};
+}
 
 }
