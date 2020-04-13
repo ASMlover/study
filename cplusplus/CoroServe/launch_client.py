@@ -28,14 +28,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import asyncio
 import os
 import sys
 import threading
+import time
 
-def launch_client():
-    os.system(r".\build\Debug\CoroServe.exe ec")
 
-def main():
+async def async_launch():
+    def __do_launch():
+        os.system(r".\build\Debug\CoroServe.exe ec")
+    threading.Thread(target=__do_launch).start()
+
+async def main():
     try:
         count = int(sys.argv[1])
     except Exception as e:
@@ -43,13 +48,10 @@ def main():
 
     print(f"run {count} clients ...")
 
-    threads = []
-    for i in range(count):
-        t = threading.Thread(target=lambda: launch_client())
-        threads.append(t)
-        t.start()
-    for t in threads:
-        t.join()
+    beg_counter = time.perf_counter()
+    await asyncio.gather(*[async_launch() for _ in range(count)])
+    use_counter = time.perf_counter() - beg_counter
+    print(f"run all clients use: {use_counter}")
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
