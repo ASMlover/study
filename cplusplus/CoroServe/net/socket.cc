@@ -28,7 +28,7 @@
 #if defined(CORO_WIN)
 # include <WS2tcpip.h>
 # include <WinSock2.h>
-# define NEAGAIN      WSAEWOULDBLOCK
+# define NEAGAIN      ERROR_RETRY
 # define NEWOULDBLOCK WSAEWOULDBLOCK
 #else
 # include <arpa/inet.h>
