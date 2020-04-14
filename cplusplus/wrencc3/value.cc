@@ -68,8 +68,7 @@ UpvalueObject* BaseObject::as_upvalue() noexcept {
 }
 
 ClosureObject* BaseObject::as_closure() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<ClosureObject>(this);
 }
 
 FiberObject* BaseObject::as_fiber() noexcept {
@@ -541,6 +540,34 @@ void UpvalueObject::gc_blacken(WrenVM& vm) {
 
 UpvalueObject* UpvalueObject::create(
     WrenVM& vm, Value* value, UpvalueObject* next) {
+  // TODO:
+  return nullptr;
+}
+
+ClosureObject::ClosureObject(ClassObject* cls, FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE, cls)
+  , fn_(fn) {
+  if (int num_upvalues = fn_->num_upvalues(); num_upvalues > 0) {
+    upvalues_ = new UpvalueObject*[num_upvalues];
+    for (int i = 0; i < num_upvalues; ++i)
+      upvalues_[i] = nullptr;
+  }
+}
+
+ClosureObject::~ClosureObject() noexcept {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
+}
+
+str_t ClosureObject::stringify() const {
+  return get_stringify("closure");
+}
+
+void ClosureObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+ClosureObject* ClosureObject::create(WrenVM& vm, FunctionObject* fn) {
   // TODO:
   return nullptr;
 }

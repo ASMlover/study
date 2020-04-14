@@ -601,4 +601,32 @@ public:
       WrenVM& vm, Value* value, UpvalueObject* next = nullptr);
 };
 
+// an instance of a first-class function and the environment it has closed
+// over, unlike [FunctionObject], this has captured the upvalues that the
+// function accesses
+class ClosureObject final : public BaseObject {
+  // the function that this closure is an instance of
+  FunctionObject* fn_{};
+
+  // the upvalues this function has closed over
+  UpvalueObject** upvalues_{};
+
+  ClosureObject(ClassObject* cls, FunctionObject* fn) noexcept;
+  virtual ~ClosureObject() noexcept;
+public:
+  inline FunctionObject* fn() const noexcept { return fn_; }
+  inline bool has_upvalues() const noexcept { return upvalues_ != nullptr; }
+  inline UpvalueObject** upvalues() const noexcept { return upvalues_; }
+  inline UpvalueObject* get_upvalue(int i) const noexcept { return upvalues_[i]; }
+
+  inline void set_upvalue(int i, UpvalueObject* upvalue) noexcept {
+    upvalues_[i] = upvalue;
+  }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static ClosureObject* create(WrenVM& vm, FunctionObject* fn);
+};
+
 }
