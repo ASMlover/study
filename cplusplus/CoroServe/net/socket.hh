@@ -61,4 +61,11 @@ public:
   std::optional<sz_t> async_write(const char* buf, sz_t len);
 };
 
+inline bool operator==(Socket a, Socket b) noexcept { return a.get() == b.get(); }
+inline bool operator!=(Socket a, Socket b) noexcept { return a.get() != b.get(); }
+inline bool operator==(Socket a, socket_t b) noexcept { return a.get() == b; }
+inline bool operator!=(Socket a, socket_t b) noexcept { return a.get() != b; }
+inline bool operator==(socket_t a, Socket b) noexcept { return a == b.get(); }
+inline bool operator!=(socket_t a, Socket b) noexcept { return a != b.get(); }
+
 }
