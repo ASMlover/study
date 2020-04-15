@@ -1,13 +1,15 @@
 #include "net/net.hh"
 #include "msg_helper.hh"
+#include "thread_pool.hh"
 #include "examples.hh"
 
-namespace echo_server_mt {
+namespace echo_server_tp {
 
 using coro::net::Socket;
 
 void launch() {
   coro::net::Initializer<> init;
+  coro::ThreadPool pool{4};
 
   std::unique_ptr<Socket, std::function<void (Socket*)>> server{
     new Socket{}, [](Socket* s) { s->close(); }
@@ -18,7 +20,7 @@ void launch() {
 
   for (;;) {
     if (auto c = server->accept(); c) {
-      coro::async_wrap([](Socket conn) {
+      pool.post_task([](Socket conn) {
           coro::msg::on_blocking_serve(conn);
           conn.close();
         }, *c);
@@ -28,7 +30,7 @@ void launch() {
 
 }
 
-CORO_EXAMPLE(EchoServerThread,
-  esmt, "an easy blocking server with multi-thread") {
-  echo_server_mt::launch();
+CORO_EXAMPLE(EchoServerThreadPool,
+  estp, "an easy blocking server with thread-pool") {
+  echo_server_tp::launch();
 }
