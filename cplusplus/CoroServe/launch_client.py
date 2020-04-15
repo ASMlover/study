@@ -30,6 +30,7 @@
 
 import asyncio
 import os
+import platform
 import sys
 import threading
 import time
@@ -37,7 +38,11 @@ import time
 
 async def async_launch():
     def __do_launch():
-        os.system(r".\build\Debug\CoroServe.exe ec")
+        if platform.system() == 'Linux':
+            cmd = r"./build/CoroServe ec"
+        else:
+            cmd = r".\build\Debug\CoroServe.exe ec"
+        os.system(cmd)
     threading.Thread(target=__do_launch).start()
 
 async def main():
