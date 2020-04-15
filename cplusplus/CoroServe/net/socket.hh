@@ -46,6 +46,10 @@ public:
 
   void set_nonblocking(bool mode = true);
 
+  bool start_listen(strv_t host = "0.0.0.0", u16_t port = 5555, int backlog = 5);
+  bool start_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
+  std::optional<bool> start_async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
+
   bool listen(strv_t host = "0.0.0.0", u16_t port = 5555, int backlog = 5);
   bool connect(strv_t host = "127.0.0.1", u16_t port = 5555);
   std::optional<bool> async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);

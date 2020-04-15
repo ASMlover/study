@@ -96,6 +96,30 @@ void Socket::set_nonblocking(bool mode) {
 #endif
 }
 
+bool Socket::start_listen(strv_t host, u16_t port, int backlog) {
+  if (!is_valid()) {
+    if (!open())
+      return false;
+  }
+  return listen(host, port, backlog);
+}
+
+bool Socket::start_connect(strv_t host, u16_t port) {
+  if (!is_valid()) {
+    if (!open())
+      return false;
+  }
+  return connect(host, port);
+}
+
+std::optional<bool> Socket::start_async_connect(strv_t host, u16_t port) {
+  if (!is_valid()) {
+    if (!open())
+      return {};
+  }
+  return async_connect(host, port);
+}
+
 bool Socket::listen(strv_t host, u16_t port, int backlog) {
   if (!is_valid())
     return false;
