@@ -11,6 +11,10 @@ static constexpr coro::u8_t EVNO = 0x00;
 static constexpr coro::u8_t EVRD = 0x01;
 static constexpr coro::u8_t EVWR = 0x02;
 
+inline int constexpr fdmax(int a, int b) noexcept {
+  return a > b ? a : b;
+}
+
 class Conn;
 using ConnPtr = std::shared_ptr<Conn>;
 
@@ -101,7 +105,7 @@ class EventLoop final : private coro::UnCopyable {
     if (ev & EVWR)
       FD_SET(fd, &wfds_master_);
 
-    max_fd_ = max(max_fd_, static_cast<int>(fd));
+    max_fd_ = fdmax(max_fd_, static_cast<int>(fd));
   }
 
   void del_event(socket_t fd, coro::u8_t ev) {
@@ -137,7 +141,7 @@ public:
     fd_set rfds = rfds_master_;
     fd_set wfds = wfds_master_;
 
-    int nready = ::select(max_fd_, &rfds, &wfds, nullptr, nullptr);
+    int nready = ::select(max_fd_ + 1, &rfds, &wfds, nullptr, nullptr);
     if (nready < 0)
       return false;
 
