@@ -56,8 +56,7 @@ void launch() {
     if (n == 0)
       break;
 
-    for (auto i = 0u; i < n; ++i)
-      rbuf.push_back(buf[i]);
+    rbuf.append(buf, n);
     if (rbuf.find("111") != std::string::npos)
       break;
   }
