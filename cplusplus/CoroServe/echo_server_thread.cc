@@ -13,7 +13,7 @@ void launch() {
     new Socket{}, [](Socket* s) { s->close(); }
   };
 
-  if (!server->open() || !server->listen())
+  if (!server->start_listen())
     return;
 
   for (;;) {

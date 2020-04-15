@@ -38,7 +38,7 @@ void launch() {
       new Socket{}, [](Socket* s) { s->close(); }
   };
 
-  if (!c->open() || !c->connect())
+  if (!c->start_connect())
     return;
 
   char buf[1024];
