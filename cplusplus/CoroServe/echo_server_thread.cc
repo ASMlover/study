@@ -2,7 +2,7 @@
 #include "msg_helper.hh"
 #include "examples.hh"
 
-namespace echo_server {
+namespace echo_server_mt {
 
 using coro::net::Socket;
 
@@ -18,14 +18,17 @@ void launch() {
 
   for (;;) {
     if (auto c = server->accept(); c) {
-      coro::msg::on_blocking_serve(*c);
-      (*c).close();
+      coro::async_wrap([](Socket conn) {
+          coro::msg::on_blocking_serve(conn);
+          conn.close();
+        }, *c);
     }
   }
 }
 
 }
 
-CORO_EXAMPLE(EchoServer, es, "an easy blocking server") {
-  echo_server::launch();
+CORO_EXAMPLE(EchoServerThread,
+  esmt, "an easy blocking server with multi-thread") {
+  echo_server_mt::launch();
 }

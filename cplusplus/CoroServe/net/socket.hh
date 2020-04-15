@@ -46,6 +46,10 @@ public:
 
   void set_nonblocking(bool mode = true);
 
+  bool start_listen(strv_t host = "0.0.0.0", u16_t port = 5555, int backlog = 5);
+  bool start_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
+  std::optional<bool> start_async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
+
   bool listen(strv_t host = "0.0.0.0", u16_t port = 5555, int backlog = 5);
   bool connect(strv_t host = "127.0.0.1", u16_t port = 5555);
   std::optional<bool> async_connect(strv_t host = "127.0.0.1", u16_t port = 5555);
@@ -56,5 +60,12 @@ public:
   sz_t write(const char* buf, sz_t len);
   std::optional<sz_t> async_write(const char* buf, sz_t len);
 };
+
+inline bool operator==(Socket a, Socket b) noexcept { return a.get() == b.get(); }
+inline bool operator!=(Socket a, Socket b) noexcept { return a.get() != b.get(); }
+inline bool operator==(Socket a, socket_t b) noexcept { return a.get() == b; }
+inline bool operator!=(Socket a, socket_t b) noexcept { return a.get() != b; }
+inline bool operator==(socket_t a, Socket b) noexcept { return a == b.get(); }
+inline bool operator!=(socket_t a, Socket b) noexcept { return a != b.get(); }
 
 }

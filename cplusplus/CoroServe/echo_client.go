@@ -24,49 +24,52 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "./net/net.hh"
-#include "examples.hh"
 
-namespace echo_client {
+package main
 
-using coro::net::Socket;
+import (
+	"bytes"
+	"fmt"
+	"net"
+	"os"
+)
 
-void launch() {
-  coro::net::Initializer<> init;
+func handleClient(conn net.Conn) {
+	var ack [64]byte
+	if _, err := conn.Read(ack[0:]); err != nil {
+		fmt.Fprintf(os.Stderr, "CLIENT: connect with server failed\n")
+		return
+	}
 
-  std::unique_ptr<Socket, std::function<void (Socket*)>> c{
-      new Socket{}, [](Socket* s) { s->close(); }
-  };
+	wbuf := []byte("^abcdefg$hijklmn^opqrst$uvwxyz^000$")
+	if _, err := conn.Write(wbuf[0:]); err != nil {
+		return
+	}
+	fmt.Println("CLIENT: send:", string(wbuf))
 
-  if (!c->start_connect())
-    return;
+	var rbuf []byte
+	for {
+		var buf [1024]byte
+		n, err := conn.Read(buf[0:])
+		if err != nil {
+			return
+		}
 
-  char buf[1024];
-  if (auto n = c->read(buf, sizeof(buf)); n != 1 || buf[0] != '*')
-    return;
+		rbuf = bytes.Join([][]byte{rbuf, buf[0:n]}, []byte(""))
+		if bytes.Contains(rbuf, []byte("111")) {
+			break
+		}
+	}
+	fmt.Println("CLIENT: recv:", string(rbuf))
 
-  coro::strv_t send_buf = "abcdefg^hijklmn$opq^rst$^uvw$xyz^000$";
-  if (auto n = c->write(send_buf.data(), send_buf.size()); n == 0)
-    return;
-  std::cout << "CLIENT: send: " << send_buf << std::endl;
-
-  coro::str_t rbuf;
-  for (;;) {
-    auto n = c->read(buf, sizeof(buf));
-    if (n == 0)
-      break;
-
-    rbuf.append(buf, n);
-    if (rbuf.find("111") != std::string::npos)
-      break;
-  }
-  std::cout << "CLIENT: recv: " << rbuf << std::endl;
-
-  std::cout << "CLIENT: disconnecting ..." << std::endl;
+	conn.Close()
+	fmt.Println("CLIENT: disconnecting ...")
 }
 
-}
-
-CORO_EXAMPLE(EchoClient, ec, "an easy receiving client") {
-  echo_client::launch();
+func main() {
+	conn, err := net.Dial("tcp", "127.0.0.1:5555")
+	if err != nil {
+		return
+	}
+	handleClient(conn)
 }

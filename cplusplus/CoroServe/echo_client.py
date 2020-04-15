@@ -29,34 +29,31 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import asyncio
-import os
-import platform
-import sys
-import threading
-import time
 
+async def echo_client():
+    reader, writer = await asyncio.open_connection("127.0.0.1", 5555)
 
-async def async_launch():
-    def __do_launch():
-        if platform.system() == 'Linux':
-            cmd = r"./build/CoroServe ec"
-        else:
-            cmd = r".\build\Debug\CoroServe.exe ec"
-        os.system(cmd)
-    threading.Thread(target=__do_launch).start()
+    ack = await reader.read(64)
+    if ack.decode()[0] != '*':
+        return
 
-async def main():
-    try:
-        count = int(sys.argv[1])
-    except Exception as e:
-        count = 1
+    wbuf = "^abcdefg$hijklmn^opqrst$uvwxyz^000$"
+    writer.write(wbuf.encode())
+    print(f"CLIENT: send: {wbuf}")
 
-    print(f"run {count} clients ...")
+    rbuf = ""
+    while True:
+        data = await reader.read(1024)
+        if not data:
+            break
 
-    beg_counter = time.perf_counter()
-    await asyncio.gather(*[async_launch() for _ in range(count)])
-    use_counter = time.perf_counter() - beg_counter
-    print(f"run all clients use: {use_counter}")
+        rbuf += data.decode()
+        if rbuf.endswith("111"):
+            break
+    print(f"CLIENT: recv: {rbuf}")
+
+    writer.close()
+    print(f"CLIENT: disconnecting ....")
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(echo_client())
