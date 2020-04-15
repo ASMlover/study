@@ -7,7 +7,7 @@ namespace echo_server {
 using coro::net::Socket;
 
 void launch() {
-  coro::net::Initializer<2, 2> init;
+  coro::net::Initializer<> init;
 
   std::unique_ptr<Socket, std::function<void (Socket*)>> server{
     new Socket{}, [](Socket* s) { s->close(); }
