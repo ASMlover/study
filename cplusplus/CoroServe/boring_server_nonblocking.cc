@@ -1,19 +1,20 @@
 #include "net/net.hh"
 #include "examples.hh"
 
-namespace boring_server_block {
+namespace boring_server_nblock {
 
 using coro::net::Socket;
 
 void on_boring(Socket c, coro::strv_t msg) {
+  c.set_nonblocking();
   for (int i = 0; i < 5; ++i) {
-    if (auto n = c.write(msg.data(), msg.size()); n <= 0)
+    if (auto n = c.async_write(msg.data(), msg.size()); !n)
       return;
     std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 500 + 1));
   }
 
   coro::strv_t quit = "I'm boring, I'm quit!";
-  c.write(quit.data(), quit.size());
+  c.async_write(quit.data(), quit.size());
 }
 
 void launch() {
@@ -27,9 +28,11 @@ void launch() {
     return;
 
   for (;;) {
-    if (auto s = server->accept(); s) {
-      on_boring(*s, "boring!");
-      (*s).close();
+    if (auto s = server->async_accept(); s) {
+      if ((*s).is_valid()) {
+        on_boring(*s, "boring!");
+        (*s).close();
+      }
     }
     else {
       break;
@@ -39,6 +42,6 @@ void launch() {
 
 }
 
-CORO_EXAMPLE(BoringServerBlocking, bsb, "a blocking boring server") {
-  boring_server_block::launch();
+CORO_EXAMPLE(BoringServerNonBlocking, bsnb, "a nonblocking boring server") {
+  boring_server_nblock::launch();
 }
