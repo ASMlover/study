@@ -56,4 +56,9 @@ async def echo_client():
     print(f"CLIENT: disconnecting ....")
 
 if __name__ == '__main__':
-    asyncio.run(echo_client())
+    try:
+        asyncio.run(echo_client())
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(e)
