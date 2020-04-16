@@ -28,7 +28,7 @@ void launch() {
     return;
 
   for (;;) {
-    if (auto s = server->async_accept(); s) {
+    if (auto s = server->accept(); s) {
       if ((*s).is_valid()) {
         on_boring(*s, "boring!");
         (*s).close();
