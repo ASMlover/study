@@ -6,11 +6,14 @@ namespace boring_server_block {
 using coro::net::Socket;
 
 void on_boring(Socket c, coro::strv_t msg) {
-  for (;;) {
+  for (int i = 0; i < 5; ++i) {
     if (auto n = c.write(msg.data(), msg.size()); n <= 0)
       break;
-    std::this_thread::sleep_for(std::chrono::seconds(rand() % 5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 500 + 1));
   }
+
+  coro::strv_t quit = "I'm boring, I'm quit!";
+  c.write(quit.data(), quit.size());
 }
 
 void launch() {

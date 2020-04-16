@@ -15,14 +15,13 @@ void launch() {
   if (!c->start_connect())
     return;
 
-  for (int i = 0; i < 5; ++i) {
+  for (;;) {
     char rbuf[1024]{};
     if (auto n = c->read(rbuf, sizeof(rbuf)); n > 0)
       std::cout << "BORING CLIENT: recv: " << rbuf << std::endl;
     else
       break;
   }
-  std::cout << "BORING CLIENT: I'm boring, I'm quit ..." << std::endl;
 }
 
 }
