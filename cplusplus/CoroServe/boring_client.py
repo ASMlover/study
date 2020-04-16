@@ -30,34 +30,20 @@
 
 import asyncio
 
-async def echo_client():
+async def boring_client():
     reader, writer = await asyncio.open_connection("127.0.0.1", 5555)
 
-    ack = await reader.read(64)
-    if ack.decode()[0] != '*':
-        return
-
-    wbuf = "^abcdefg$hijklmn^opqrst$uvwxyz^000$"
-    writer.write(wbuf.encode())
-    print(f"CLIENT: send: {wbuf}")
-
-    rbuf = ""
     while True:
         data = await reader.read(1024)
         if not data:
             break
-
-        rbuf += data.decode()
-        if rbuf.endswith("111"):
-            break
-    print(f"CLIENT: recv: {rbuf}")
+        print(f"BORING CLIENT: recv: {data.decode()}")
 
     writer.close()
-    print(f"CLIENT: disconnecting ....")
 
 if __name__ == '__main__':
     try:
-        asyncio.run(echo_client())
+        asyncio.run(boring_client())
     except KeyboardInterrupt:
         pass
     except Exception as e:

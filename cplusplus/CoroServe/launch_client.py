@@ -59,4 +59,9 @@ async def main():
     print(f"run all clients use: {use_counter}")
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("launch client quit")
+    except Exception as e:
+        print(e)
