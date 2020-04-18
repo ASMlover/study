@@ -88,6 +88,6 @@ void launch() {
 }
 
 CORO_EXAMPLE(EchoServerAsioStackful,
-    esasiof, "an easy echo server use boost.asio with stackful corotine") {
+    esasiof, "an easy echo server use boost.asio with stackful coroutine") {
   echo_server_asio_stackful::launch();
 }
