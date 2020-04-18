@@ -30,7 +30,14 @@
 
 namespace coro::msg {
 
-using WriteBuf = std::vector<char>;
+using ReadBuf   = std::vector<char>;
+using WriteBuf  = std::vector<char>;
+
+namespace buf {
+  inline void append(WriteBuf& buf, const WriteBuf& other) noexcept {
+    buf.insert(buf.end(), other.begin(), other.end());
+  }
+}
 
 std::tuple<net::Status, WriteBuf>
 handle_message(net::Status status, const char* rbuf, sz_t rlen);

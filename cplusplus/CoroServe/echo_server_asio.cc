@@ -37,7 +37,7 @@ class TcpSession final
   , public std::enable_shared_from_this<TcpSession> {
   tcp::socket socket_;
   coro::net::Status status_{coro::net::Status::INIT_ACK};
-  std::vector<char> rbuf_;
+  coro::msg::ReadBuf rbuf_;
   coro::msg::WriteBuf wbuf_;
 
   void do_ack() {
@@ -67,7 +67,7 @@ class TcpSession final
         if (!ec) {
           auto [st, buf] = coro::msg::handle_message(status_, rbuf_.data(), n);
           status_ = st;
-          wbuf_.insert(wbuf_.end(), buf.begin(), buf.end());
+          coro::msg::buf::append(wbuf_, buf);
           do_wirte();
         }
         else {

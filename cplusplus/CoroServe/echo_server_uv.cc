@@ -132,7 +132,7 @@ public:
 
     auto [st, buf] = coro::msg::handle_message(status_, rbuf, rlen);
     status_ = st;
-    wbuf_.insert(wbuf_.end(), buf.begin(), buf.end());
+    coro::msg::buf::append(wbuf_, buf);
 
     return do_write(&Conn::on_client_write);
   }
