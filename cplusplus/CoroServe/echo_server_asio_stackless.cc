@@ -68,7 +68,7 @@ public:
           yield socket_.async_read_some(boost::asio::buffer(rbuf_), _ref(this));
 
           if (!ec) {
-            for (int i = 0; i < n; ++i) {
+            for (coro::sz_t i = 0; i < n; ++i) {
               switch (status_) {
               case coro::net::Status::INIT_ACK: break;
               case coro::net::Status::WAIT_MSG:
