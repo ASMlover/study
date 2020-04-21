@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import sys
 import time
 
 def follow(fobj):
@@ -40,7 +41,12 @@ def follow(fobj):
         yield line
 
 def main():
-    with open("temp.log") as fp:
+    if len(sys.argv) > 1:
+        fname = sys.argv[1]
+    else:
+        fname = "temp.log"
+
+    with open(fname) as fp:
         for line in follow(fp):
             print(line,)
 
