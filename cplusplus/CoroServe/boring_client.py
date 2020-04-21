@@ -30,7 +30,7 @@
 
 import asyncio
 
-async def boring_client():
+async def on_boring():
     reader, writer = await asyncio.open_connection("127.0.0.1", 5555)
 
     while True:
@@ -43,7 +43,7 @@ async def boring_client():
 
 if __name__ == '__main__':
     try:
-        asyncio.run(boring_client())
+        asyncio.run(on_boring())
     except KeyboardInterrupt:
         pass
     except Exception as e:
