@@ -30,7 +30,7 @@
 
 import asyncio
 
-async def echo_client():
+async def on_echo():
     reader, writer = await asyncio.open_connection("127.0.0.1", 5555)
 
     ack = await reader.read(64)
@@ -57,7 +57,7 @@ async def echo_client():
 
 if __name__ == '__main__':
     try:
-        asyncio.run(echo_client())
+        asyncio.run(on_echo())
     except KeyboardInterrupt:
         pass
     except Exception as e:

@@ -32,7 +32,7 @@ import (
 	"net"
 )
 
-func boringClient(conn net.Conn) {
+func onBoring(conn net.Conn) {
 	for {
 		var buf [1024]byte
 		n, err := conn.Read(buf[0:])
@@ -49,5 +49,5 @@ func main() {
 	if err != nil {
 		return
 	}
-	boringClient(conn)
+	onBoring(conn)
 }

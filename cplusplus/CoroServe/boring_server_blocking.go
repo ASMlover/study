@@ -28,48 +28,35 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
+	"math/rand"
 	"net"
 	"os"
+	"time"
 )
 
-func onEcho(conn net.Conn) {
-	var ack [64]byte
-	if _, err := conn.Read(ack[0:]); err != nil {
-		fmt.Fprintf(os.Stderr, "CLIENT: connect with server failed\n")
-		return
-	}
+func onBoring(conn net.Conn, msg string) {
+	defer conn.Close()
 
-	wbuf := []byte("^abcdefg$hijklmn^opqrst$uvwxyz^000$")
-	if _, err := conn.Write(wbuf[0:]); err != nil {
-		return
-	}
-	fmt.Println("CLIENT: send:", string(wbuf))
-
-	var rbuf []byte
-	for {
-		var buf [1024]byte
-		n, err := conn.Read(buf[0:])
-		if err != nil {
+	for i := 0; i < 5; i++ {
+		if _, err := conn.Write([]byte(msg)); err != nil {
 			return
 		}
-
-		rbuf = bytes.Join([][]byte{rbuf, buf[0:n]}, []byte(""))
-		if bytes.Contains(rbuf, []byte("111")) {
-			break
-		}
+		time.Sleep(time.Duration(rand.Intn(1e3)) * time.Millisecond)
 	}
-	fmt.Println("CLIENT: recv:", string(rbuf))
-
-	conn.Close()
-	fmt.Println("CLIENT: disconnecting ...")
+	conn.Write([]byte("I'm boring, I'm quit!"))
 }
 
 func main() {
-	conn, err := net.Dial("tcp", "127.0.0.1:5555")
+	acceptor, err := net.Listen("tcp", ":5555")
 	if err != nil {
-		return
+		os.Exit(1)
 	}
-	onEcho(conn)
+
+	for {
+		conn, err := acceptor.Accept()
+		if err != nil {
+			continue
+		}
+		onBoring(conn, "boring!")
+	}
 }

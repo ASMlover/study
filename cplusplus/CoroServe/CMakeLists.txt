@@ -93,7 +93,7 @@ source_group("Header Files" FILES ${COROSERVER_HEADERS})
 source_group("Source Files" FILES ${COROSERVER_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
   # GCC not support awaitable
-  list(REMOVE_ITEM COROSERVER_SOURCES "${PROJECT_SOURCE_DIR}/echo_server_asio_staclful.cc")
+  list(REMOVE_ITEM COROSERVER_SOURCES "${PROJECT_SOURCE_DIR}/echo_server_asio_stackful.cc")
 endif()
 message(STATUS "`${PROJECT_NAME}` COROSERVER PROJECT FILES: ${COROSERVER_HEADERS} ${COROSERVER_SOURCES}")
 
