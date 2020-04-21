@@ -34,7 +34,7 @@ import (
 	"os"
 )
 
-func handleClient(conn net.Conn) {
+func onEcho(conn net.Conn) {
 	var ack [64]byte
 	if _, err := conn.Read(ack[0:]); err != nil {
 		fmt.Fprintf(os.Stderr, "CLIENT: connect with server failed\n")
@@ -71,5 +71,5 @@ func main() {
 	if err != nil {
 		return
 	}
-	handleClient(conn)
+	onEcho(conn)
 }
