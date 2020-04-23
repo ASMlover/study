@@ -28,7 +28,10 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-def countdown(n):
+import typing
+
+
+def countdown(n:int) -> typing.Generator:
     print("counting down from", n)
     while n > 0:
         yield n
