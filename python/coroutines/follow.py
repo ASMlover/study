@@ -30,8 +30,10 @@
 
 import sys
 import time
+import typing
 
-def follow(fobj):
+
+def follow(fobj:typing.TextIO) -> typing.Generator:
     fobj.seek(0, 2)
     while True:
         line = fobj.readline()
@@ -40,13 +42,14 @@ def follow(fobj):
             continue
         yield line
 
-def main():
+def get_input_fname() -> str:
     if len(sys.argv) > 1:
-        fname = sys.argv[1]
+        return sys.argv[1]
     else:
-        fname = "temp.log"
+        return "temp.log"
 
-    with open(fname) as fp:
+def main():
+    with open(get_input_fname()) as fp:
         for line in follow(fp):
             print(line,)
 
