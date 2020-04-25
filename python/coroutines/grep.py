@@ -30,9 +30,11 @@
 
 import sys
 import typing
+import coroutine
 
 
-def grep(pattern:str) -> typing.Generator:
+@coroutine.corouine
+def grep(pattern:str) -> typing.Generator[str, str, str]:
     print(f"looking for {pattern}")
     while True:
         line = (yield)
@@ -40,14 +42,13 @@ def grep(pattern:str) -> typing.Generator:
             print(line,)
 
 if __name__ == '__main__':
-    g = grep("python")
-    next(g)
-
     if len(sys.argv) > 1:
         fname = sys.argv[1]
     else:
         fname = "grep.py"
 
     with open(fname) as fp:
+        g = grep("python")
         for line in fp.readlines():
             g.send(line)
+        g.close()
