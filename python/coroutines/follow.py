@@ -33,7 +33,7 @@ import time
 import typing
 
 
-def follow(fobj:typing.TextIO) -> typing.Generator:
+def follow(fobj:typing.TextIO) -> typing.Iterator[str]:
     fobj.seek(0, 2)
     while True:
         line = fobj.readline()

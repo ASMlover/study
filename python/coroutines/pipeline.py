@@ -32,7 +32,7 @@ import sys
 import typing
 import follow
 
-def grep(pattern:str, lines:typing.Generator) -> typing.Generator:
+def grep(pattern:str, lines:typing.Iterator[str]) -> typing.Iterator[str]:
     for line in lines:
         if pattern in line:
             yield line
