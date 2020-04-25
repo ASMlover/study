@@ -31,7 +31,7 @@
 import typing
 
 
-def countdown(n:int) -> typing.Generator:
+def countdown(n:int) -> typing.Iterator[int]:
     print("counting down from", n)
     while n > 0:
         yield n
