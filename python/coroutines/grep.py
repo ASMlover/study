@@ -34,7 +34,7 @@ import coroutine
 
 
 @coroutine.corouine
-def grep(pattern:str) -> typing.Generator[str, str, str]:
+def grep(pattern:str) -> typing.Generator[str, str, None]:
     print(f"looking for {pattern}")
     while True:
         line = (yield)
