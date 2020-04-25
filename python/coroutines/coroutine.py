@@ -29,9 +29,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import typing
+from typing import Any, Callable, Generator
 
-def corouine(fn):
-    def __start(*args, **kwds) -> typing.Generator:
+
+def corouine(fn:Callable[..., Generator[Any, Any, Any]]) \
+        -> Callable[..., Generator[Any, Any, Any]]:
+    def __start(*args, **kwds) -> Generator[Any, Any, Any]:
         cr = fn(*args, **kwds)
         next(cr)
         return cr
