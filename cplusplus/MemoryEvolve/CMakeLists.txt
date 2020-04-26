@@ -25,7 +25,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.14)
 project(MemoryEvolve CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -58,3 +58,4 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CX
 include_directories(${PROJECT_SOURCE_DIR})
 add_subdirectory(Core)
 add_subdirectory(Tests)
+add_subdirectory(InfantGC)

@@ -28,7 +28,9 @@
 
 #include <cstdint>
 #include <memory>
+#include <sstream>
 #include <string>
+#include <string_view>
 
 #if !defined(_MEVO_UNUSED)
 # define _MEVO_UNUSED(x) ((void)x)
@@ -69,6 +71,8 @@ using i64_t   = std::int64_t;
 using u64_t   = std::uint64_t;
 using sz_t    = std::size_t;
 using str_t   = std::string;
+using strv_t  = std::string_view;
+using ss_t    = std::stringstream;
 
 template <std::ptrdiff_t N> struct Sizer { char elements[N]; };
 template <typename T, std::ptrdiff_t N> Sizer<N> __countof_impl(T (&array)[N]);

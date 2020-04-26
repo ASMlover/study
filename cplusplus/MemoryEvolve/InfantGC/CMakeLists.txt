@@ -1,4 +1,4 @@
-# Copyright (c) 2018 ASMlover. All rights reserved.
+# Copyright (c) 2020 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,14 +25,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-set(OUTPUT_NAME "_mevo.test")
+set(OUTPUT_NAME "_mevo.infant.gc")
 
-file(GLOB_RECURSE _MEVO_TESTS_HEADERS *.hh)
-file(GLOB_RECURSE _MEVO_TESTS_SOURCES *.cc)
-source_group("Header Files" FILES _MEVO_TESTS_HEADERS)
-source_group("Source Files" FILES _MEVO_TESTS_SOURCES)
-message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_TESTS_HEADERS: ${_MEVO_TESTS_HEADERS}")
-message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_TESTS_SOURCES: ${_MEVO_TESTS_SOURCES}")
+file(GLOB_RECURSE _MEVO_INFRANTGC_HEADERS *.hh)
+file(GLOB_RECURSE _MEVO_INFRANTGC_SOURCES *.cc)
+source_group("Header Files" FILES _MEVO_INFRANTGC_HEADERS)
+source_group("Source Files" FILES _MEVO_INFRANTGC_SOURCES)
+message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_INFRANTGC_HEADERS: ${_MEVO_INFRANTGC_HEADERS}")
+message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_INFRANTGC_SOURCES: ${_MEVO_INFRANTGC_SOURCES}")
 
-add_executable(${OUTPUT_NAME} ${_MEVO_TESTS_HEADERS} ${_MEVO_TESTS_SOURCES})
+add_executable(${OUTPUT_NAME} ${_MEVO_INFRANTGC_HEADERS} ${_MEVO_INFRANTGC_SOURCES})
 target_link_libraries(${OUTPUT_NAME} _mevo)
