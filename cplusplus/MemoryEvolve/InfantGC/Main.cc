@@ -25,10 +25,36 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <ctime>
 #include <Core/MemoryEvolve.hh>
+#include <InfantGC/IntObject.hh>
+#include <InfantGC/PairObject.hh>
+#include <InfantGC/VM.hh>
 
 int main(int argc, char* argv[]) {
   _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
+
+  auto& vm = _mevo::infant::VM::get_instance();
+
+  std::srand((unsigned int)std::time(nullptr));
+  for (int i = 0; i < 1000; ++i) {
+    auto r = std::rand() % 100;
+    if (r > 60) {
+      vm.pop();
+    }
+    else if (r > 50) {
+      auto* second = vm.peek(0);
+      auto* first = vm.peek(1);
+      auto* pair = _mevo::infant::PairObject::create(vm, first, second);
+      vm.pop();
+      vm.pop();
+      vm.push(pair);
+    }
+    else {
+      vm.push(_mevo::infant::IntObject::create(vm, r + i));
+    }
+  }
+  vm.collect();
 
   return 0;
 }
