@@ -25,12 +25,11 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include <Core/MemoryEvolve.hh>
+#include <Tests/Harness.hh>
 
 int main(int argc, char* argv[]) {
   _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
 
   std::cout << "Welcome to MemoryEvolve !!!" << std::endl;
-
-  return 0;
+  return _mevo::run_all_harness();
 }
