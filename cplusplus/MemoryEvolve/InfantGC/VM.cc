@@ -16,11 +16,11 @@ VM::~VM() {
 }
 
 void VM::reclaim_object(BaseObject* o) {
-  std::cout << "reclaim object `" << object_asstr(o) << "`" << std::endl;
+  std::cout << "reclaim object => " << object_asstr(o) << std::endl;
   delete o;
 }
 
-void VM::append_to_roots(BaseObject* o) {
+void VM::append_object(BaseObject* o) {
   if (objects_.size() > kGCThreshold)
     collect();
 

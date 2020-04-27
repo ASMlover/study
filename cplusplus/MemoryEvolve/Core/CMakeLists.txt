@@ -29,8 +29,8 @@ set(OUTPUT_NAME "_mevo")
 
 file(GLOB_RECURSE _MEVO_CORE_HEADERS *.hh)
 file(GLOB_RECURSE _MEVO_CORE_SOURCES *.cc)
-source_group("Header Files" FILES _MEVO_CORE_HEADERS)
-source_group("Source Files" FILES _MEVO_CORE_SOURCES)
+source_group("Header Files" FILES ${_MEVO_CORE_HEADERS})
+source_group("Source Files" FILES ${_MEVO_CORE_SOURCES})
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_CORE_HEADERS: ${_MEVO_CORE_HEADERS}")
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_CORE_SOURCES: ${_MEVO_CORE_SOURCES}")
 

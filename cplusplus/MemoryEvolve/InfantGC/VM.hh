@@ -9,7 +9,7 @@ namespace _mevo::infant {
 class BaseObject;
 
 class VM final : private UnCopyable {
-  static constexpr sz_t kGCThreshold = 1 << 5;
+  static constexpr sz_t kGCThreshold = 1 << 8;
 
   std::vector<BaseObject*> roots_;
   std::list<BaseObject*> objects_;
@@ -25,7 +25,7 @@ public:
     return _ins;
   }
 
-  void append_to_roots(BaseObject* o);
+  void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
 
   void push(BaseObject* o);
@@ -38,7 +38,7 @@ public:
 template <typename T, typename... Args>
 inline T* create_object(VM& vm, Args&&... args) {
   auto* o = new T(std::forward<Args>(args)...);
-  vm.append_to_roots(o);
+  vm.append_object(o);
   return o;
 }
 

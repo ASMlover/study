@@ -1,4 +1,4 @@
-# Copyright (c) 2018 ASMlover. All rights reserved.
+# Copyright (c) 2020 ASMlover. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -25,38 +25,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.14)
-project(MemoryEvolve CXX)
+set(OUTPUT_NAME "_mevo.tadpole")
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "choose build type [Debug|Release]" FORCE)
-endif()
-message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+file(GLOB_RECURSE _MEVO_TADPOLE_HEADERS *.hh)
+file(GLOB_RECURSE _MEVO_TADPOLE_SOURCES *.cc)
+source_group("Header Files" FILES ${_MEVO_TADPOLE_HEADERS})
+source_group("Source Files" FILES ${_MEVO_TADPOLE_SOURCES})
+message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_TADPOLE_HEADERS: ${_MEVO_TADPOLE_HEADERS}")
+message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_TADPOLE_SOURCES: ${_MEVO_TADPOLE_SOURCES}")
 
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  add_definitions(
-    /DUNICODE
-    /D_UNICODE
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest")
-  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd")
-  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /Ox /MD")
-else()
-  add_definitions(
-    -Wno-format-truncation)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z -Wall -Werror -march=native")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
-  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
-endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
-message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
-
-include_directories(${PROJECT_SOURCE_DIR})
-add_subdirectory(Core)
-add_subdirectory(Tests)
-add_subdirectory(InfantGC)
-add_subdirectory(Tadpole)
+add_executable(${OUTPUT_NAME} ${_MEVO_TADPOLE_HEADERS} ${_MEVO_TADPOLE_SOURCES})
+target_link_libraries(${OUTPUT_NAME} _mevo)
