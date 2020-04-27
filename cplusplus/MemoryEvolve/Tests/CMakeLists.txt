@@ -29,8 +29,8 @@ set(OUTPUT_NAME "_mevo.test")
 
 file(GLOB_RECURSE _MEVO_TESTS_HEADERS *.hh)
 file(GLOB_RECURSE _MEVO_TESTS_SOURCES *.cc)
-source_group("Header Files" FILES _MEVO_TESTS_HEADERS)
-source_group("Source Files" FILES _MEVO_TESTS_SOURCES)
+source_group("Header Files" FILES ${_MEVO_TESTS_HEADERS})
+source_group("Source Files" FILES ${_MEVO_TESTS_SOURCES})
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_TESTS_HEADERS: ${_MEVO_TESTS_HEADERS}")
 message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}` _MEVO_TESTS_SOURCES: ${_MEVO_TESTS_SOURCES}")
 
