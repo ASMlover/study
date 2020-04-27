@@ -4,7 +4,9 @@
 namespace _mevo::infant {
 
 str_t IntObject::stringify() const {
-  return std::to_string(value_);
+  ss_t ss;
+  ss << "Int{`0x" << this << "`, " << value_ << "}";
+  return ss.str();
 }
 
 IntObject* IntObject::create(VM& vm, int value) {
