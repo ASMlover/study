@@ -32,9 +32,11 @@ file(GLOB_RECURSE _MEVO_TADPOLE_SOURCES *.cc)
 source_group("Header Files" FILES ${_MEVO_TADPOLE_HEADERS})
 source_group("Source Files" FILES ${_MEVO_TADPOLE_SOURCES})
 
-message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}`:")
+message(STATUS "Scanning `${PROJECT_NAME}.${OUTPUT_NAME}`:")
 foreach(_MEVO_TADPOLE_FILE IN LISTS _MEVO_TADPOLE_HEADERS _MEVO_TADPOLE_SOURCES)
-  message(STATUS "`${PROJECT_NAME}.${OUTPUT_NAME}`: ${_MEVO_TADPOLE_FILE}")
+  get_filename_component(CURRDIR ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+  get_filename_component(CURRFILE ${_MEVO_TADPOLE_FILE} NAME)
+  message(STATUS "Scanning CXX File `${PROJECT_NAME}.${OUTPUT_NAME}`: ${CURRDIR}/${CURRFILE}")
 endforeach()
 
 add_executable(${OUTPUT_NAME} ${_MEVO_TADPOLE_HEADERS} ${_MEVO_TADPOLE_SOURCES})
