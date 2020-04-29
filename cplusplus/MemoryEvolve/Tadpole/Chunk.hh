@@ -71,7 +71,7 @@ public:
   inline const u8_t* codes() const noexcept { return codes_.data(); }
   inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
   template <typename T>
-  inline void set_code(T c) noexcept { codes_[i] = as_type<u8_t>(c); }
+  inline void set_code(sz_t i, T c) noexcept { codes_[i] = as_type<u8_t>(c); }
   inline int get_line(sz_t i) const noexcept { return lines_[i]; }
   inline const Value& get_constant(sz_t i) const noexcept { return constants_[i]; }
   inline int codes_offset(const u8_t* ip) const { return as_type<int>(ip - codes()); }
