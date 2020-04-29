@@ -85,7 +85,36 @@ Token Lexer::make_numeric() {
 }
 
 Token Lexer::make_string() {
-  return Token{};
+  str_t literal;
+  while (!is_end() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek(1)) {
+      case '"': c = '"'; advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+
+  if (is_end())
+    return make_error("unterminated string");
+
+  advance();
+  return make_token(TokenKind::TK_STRING, literal);
 }
 
 }
