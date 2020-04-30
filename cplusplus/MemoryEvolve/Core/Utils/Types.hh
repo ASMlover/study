@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cstdint>
+#include <iomanip>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -99,6 +100,12 @@ inline T* get_raw_pointer(const std::unique_ptr<T>& p) noexcept {
 template <typename T>
 inline T* get_raw_pointer(const std::shared_ptr<T>& p) noexcept {
   return p.get();
+}
+
+inline str_t convert_to_string(double d) noexcept {
+  ss_t ss;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
+  return ss.str();
 }
 
 }

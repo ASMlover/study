@@ -51,6 +51,10 @@ enum class Code {
   RETURN,
 };
 
+inline u8_t operator-(Code a, Code b) noexcept {
+  return as_type<u8_t>(a) - as_type<u8_t>(b);
+}
+
 class Chunk final : private UnCopyable {
   std::vector<u8_t> codes_;
   std::vector<int> lines_;
@@ -64,17 +68,17 @@ public:
 
   inline u8_t add_constant(Value value) noexcept {
     constants_.push_back(value);
-    return as_type<u8_t>(constants_.size());
+    return as_type<u8_t>(constants_.size() - 1);
   }
 
-  inline int count() const noexcept { return as_type<int>(codes_.size()); }
+  inline sz_t count() const noexcept { return codes_.size(); }
   inline const u8_t* codes() const noexcept { return codes_.data(); }
   inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
   template <typename T>
   inline void set_code(sz_t i, T c) noexcept { codes_[i] = as_type<u8_t>(c); }
   inline int get_line(sz_t i) const noexcept { return lines_[i]; }
   inline const Value& get_constant(sz_t i) const noexcept { return constants_[i]; }
-  inline int codes_offset(const u8_t* ip) const { return as_type<int>(ip - codes()); }
+  inline sz_t codes_offset(const u8_t* ip) const { return as_type<sz_t>(ip - codes()); }
 
   template <typename Fn> inline void iter_constants(Fn&& fn) {
     for (auto& c : constants_)
@@ -82,7 +86,7 @@ public:
   }
 
   void dis(const str_t& s);
-  int dis_code(int i);
+  sz_t dis_code(sz_t i);
 };
 
 }
