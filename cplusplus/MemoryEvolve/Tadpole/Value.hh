@@ -157,4 +157,34 @@ public:
   static NativeObject* create(VM& vm, NativeFn&& fn);
 };
 
+class FunctionObject final : public BaseObject {
+  StringObject* name_{};
+  int arity_{};
+  int upvalues_count_{};
+  Chunk* chunk_{};
+public:
+  FunctionObject(StringObject* name = nullptr) noexcept;
+  virtual ~FunctionObject();
+
+  inline StringObject* name() const noexcept { return name_; }
+  inline const char* name_asstr() const noexcept { return name_ ? name_->cstr() : "<tadpole>"; }
+  inline void set_name(StringObject* name) noexcept { name_ = name; }
+  inline int arity() const noexcept { return arity_; }
+  inline int inc_arity() noexcept { return arity_++; }
+  inline int upvalues_count() const noexcept { return upvalues_count_; }
+  inline int inc_upvalues_count() noexcept { return upvalues_count_++; }
+  inline Chunk* chunk() const noexcept { return chunk_; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static FunctionObject* create(VM& vm, StringObject* name = nullptr);
+};
+
+class ClosureObject final : public BaseObject {
+};
+
+class UpvalueObject final : public BaseObject {
+};
+
 }
