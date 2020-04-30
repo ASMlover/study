@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include <Tests/Harness.hh>
+#include <Core/Harness.hh>
 
 int main(int argc, char* argv[]) {
   _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
