@@ -68,7 +68,7 @@ public:
 
   inline u8_t add_constant(Value value) noexcept {
     constants_.push_back(value);
-    return as_type<u8_t>(constants_.size());
+    return as_type<u8_t>(constants_.size() - 1);
   }
 
   inline sz_t count() const noexcept { return codes_.size(); }
