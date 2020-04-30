@@ -1,3 +1,4 @@
+#include <cstring>
 #include <Tadpole/Value.hh>
 
 namespace _mevo::tadpole {
