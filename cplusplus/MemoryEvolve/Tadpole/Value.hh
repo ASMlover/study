@@ -55,19 +55,106 @@ enum class ValueType {
 class Value final : public Copyable {
   ValueType type_{ValueType::NIL};
   union {
-    bool boolean{};
+    bool boolean;
     double numeric;
-    BaseObject* object;
+    BaseObject* object{};
   } as_;
+
+  inline bool _is(ObjType type) const noexcept {
+    return is_object() && objtype() == type;
+  }
+
+  template <typename T> inline void set_numeric(T x) noexcept {
+    as_.numeric = as_type<double>(x);
+  }
 public:
   Value() noexcept {}
   Value(nil_t) noexcept {}
+  Value(bool b) noexcept : type_(ValueType::BOOLEAN) { as_.boolean = b; }
+  Value(i8_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(u8_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(i16_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(u16_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(i32_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(u32_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(i64_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(u64_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(float n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(double d) noexcept : type_(ValueType::NUMERIC) { as_.numeric = d; }
+  Value(BaseObject* o) noexcept : type_(ValueType::OBJECT) { as_.object = o; }
 
-  str_t stringify() const { return "value"; }
+  inline ObjType objtype() const noexcept { return as_.object->type(); }
+
+  inline bool is_nil() const noexcept { return type_ == ValueType::NIL; }
+  inline bool is_boolean() const noexcept { return type_ == ValueType::BOOLEAN; }
+  inline bool is_numeric() const noexcept { return type_ == ValueType::NUMERIC; }
+  inline bool is_object() const noexcept { return type_ == ValueType::OBJECT; }
+  inline bool is_string() const noexcept { return _is(ObjType::STRING); }
+  inline bool is_native() const noexcept { return _is(ObjType::NATIVE); }
+  inline bool is_function() const noexcept { return _is(ObjType::FUNCTION); }
+  inline bool is_closure() const noexcept { return _is(ObjType::CLOSURE); }
+  inline bool is_upvalue() const noexcept { return _is(ObjType::UPVALUE); }
+
+  inline bool as_boolean() const noexcept { return as_.boolean; }
+  inline double as_numeric() const noexcept { return as_.numeric; }
+  inline BaseObject* as_object() const noexcept { return as_.object; }
+  inline StringObject* as_string() const noexcept { return as_.object->as_string(); }
+  inline const char* as_cstring() const noexcept { return as_.object->as_cstring(); }
+  inline NativeObject* as_native() const noexcept { return as_.object->as_native(); }
+  inline FunctionObject* as_function() const noexcept { return as_.object->as_function(); }
+  inline ClosureObject* as_closure() const noexcept { return as_.object->as_closure(); }
+  inline UpvalueObject* as_upvalue() const noexcept { return as_.object->as_upvalue(); }
+
+  bool is_truthy() const;
+  str_t stringify() const;
 };
 
 inline std::ostream& operator<<(std::ostream& out, Value val) {
   return out << val.stringify();
 }
+
+using NativeFn = std::function<Value (int, Value*)>;
+
+class StringObject final : public BaseObject {
+  char* data_{};
+  sz_t size_{};
+  u32_t hash_{};
+public:
+  StringObject(const char* s, sz_t n, u32_t h, bool replace_owner = false) noexcept;
+  virtual ~StringObject();
+
+  inline const char* data() const noexcept { return data_; }
+  inline const char* cstr() const noexcept { return data_; }
+  inline sz_t size() const noexcept { return size_; }
+  inline u32_t hash() const noexcept { return hash_; }
+
+  virtual str_t stringify() const override;
+
+  static StringObject* create(VM& vm, const char* s, sz_t n);
+  static StringObject* concat(VM& vm, StringObject* s1, StringObject* s2);
+
+  template <typename T>
+  static StringObject* create(VM& vm, const char* s, T n) {
+    return create(vm, s, as_type<sz_t>(n));
+  }
+
+  static StringObject* create(VM& vm, const str_t& s) {
+    return create(vm, s.data(), s.size());
+  }
+};
+
+class NativeObject final : public BaseObject {
+  NativeFn fn_{};
+public:
+  NativeObject(NativeFn&& fn) noexcept
+    : BaseObject(ObjType::NATIVE), fn_(fn) {
+  }
+
+  inline NativeFn fn() const noexcept { return fn_; }
+
+  virtual str_t stringify() const override;
+
+  static NativeObject* create(VM& vm, NativeFn&& fn);
+};
 
 }
