@@ -37,6 +37,21 @@ _MEVO_TEST(TadpoleChunk, _mevo::FakeTester) {
   c.write(c.add_constant(67), 0);
   c.write(_mevo::tadpole::Code::ADD, 0);
 
+  // (45 + 67) - 89
+  c.write(_mevo::tadpole::Code::CONSTANT, 0);
+  c.write(c.add_constant(89), 0);
+  c.write(_mevo::tadpole::Code::SUB, 0);
+
+  // ((45 + 67) - 89) * 34.56
+  c.write(_mevo::tadpole::Code::CONSTANT, 0);
+  c.write(c.add_constant(34.56), 0);
+  c.write(_mevo::tadpole::Code::MUL, 0);
+
+  // (((45 + 67) - 89) * 34.56) / 78.23
+  c.write(_mevo::tadpole::Code::CONSTANT, 0);
+  c.write(c.add_constant(78.23), 0);
+  c.write(_mevo::tadpole::Code::DIV, 0);
+
   c.write(_mevo::tadpole::Code::RETURN, 1);
 
   c.dis("Tadpole.Chunk");
