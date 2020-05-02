@@ -88,17 +88,17 @@ template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
 }
 
-template <typename T, typename S> inline T* down(S* x) noexcept {
+template <typename T, typename S> inline T* as_down(S* x) noexcept {
   return dynamic_cast<T*>(x);
 }
 
 template <typename T>
-inline T* get_raw_pointer(const std::unique_ptr<T>& p) noexcept {
+inline T* get_rawptr(const std::unique_ptr<T>& p) noexcept {
   return p.get();
 }
 
 template <typename T>
-inline T* get_raw_pointer(const std::shared_ptr<T>& p) noexcept {
+inline T* get_rawptr(const std::shared_ptr<T>& p) noexcept {
   return p.get();
 }
 
