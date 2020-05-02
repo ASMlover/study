@@ -31,19 +31,19 @@
 namespace _mevo::tadpole {
 
 StringObject* BaseObject::as_string() {
-  return down<StringObject>(this);
+  return as_down<StringObject>(this);
 }
 
 const char* BaseObject::as_cstring() {
-  return down<StringObject>(this)->cstr();
+  return as_down<StringObject>(this)->cstr();
 }
 
 NativeObject* BaseObject::as_native() {
-  return down<NativeObject>(this);
+  return as_down<NativeObject>(this);
 }
 
 FunctionObject* BaseObject::as_function() {
-  return down<FunctionObject>(this);
+  return as_down<FunctionObject>(this);
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
