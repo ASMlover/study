@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <ctime>
-#include <Core/MemoryEvolve.hh>
+#include <Core/MEvolve.hh>
 #include <InfantGC/IntObject.hh>
 #include <InfantGC/PairObject.hh>
 #include <InfantGC/VM.hh>
