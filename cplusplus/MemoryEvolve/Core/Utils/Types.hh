@@ -103,8 +103,9 @@ inline T* get_raw_pointer(const std::shared_ptr<T>& p) noexcept {
 }
 
 inline str_t convert_to_string(double d) noexcept {
+  // ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
   ss_t ss;
-  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
+  ss << d;
   return ss.str();
 }
 
