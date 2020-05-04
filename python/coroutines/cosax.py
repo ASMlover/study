@@ -33,12 +33,11 @@ import coroutine
 from typing import Generator, Tuple, Union
 
 AttrsType   = xml.sax.xmlreader.AttributesImpl
-ItemEntry   = Union[str, Tuple[str, dict]]
-SendItem    = Tuple[str, ItemEntry]
+YieldType   = Tuple[str, Union[str, Tuple[str, dict]]]
 
 
 class EventHandler(xml.sax.ContentHandler):
-    def __init__(self, target: Generator[None, SendItem, None]) -> None:
+    def __init__(self, target: Generator[YieldType, None, None]) -> None:
         self.target = target
 
     def startElement(self, name: str, attrs: AttrsType) -> None:
@@ -51,7 +50,7 @@ class EventHandler(xml.sax.ContentHandler):
         self.target.send(('end', name))
 
 @coroutine.corouine
-def printer() -> Generator[None, SendItem, None]:
+def printer() -> Generator[YieldType, None, None]:
     while True:
         event = (yield)
         print(f"event is: {event}")
