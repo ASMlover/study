@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include <Tadpole/Chunk.hh>
+#include <Tadpole/VM.hh>
 #include <Tadpole/Value.hh>
 
 namespace _mevo::tadpole {
@@ -47,11 +48,11 @@ FunctionObject* BaseObject::as_function() {
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
-  return nullptr;
+  return as_down<UpvalueObject>(this);
 }
 
 ClosureObject* BaseObject::as_closure() {
-  return nullptr;
+  return as_down<ClosureObject>(this);
 }
 
 bool Value::is_truthy() const {
@@ -86,7 +87,7 @@ inline u32_t get_hash(const char* s, sz_t n) noexcept {
 template <typename Object, typename... Args>
 inline Object* make_object(VM& vm, Args&&... args) noexcept {
   auto* o = new Object(std::forward<Args>(args)...);
-  // vm.append_object(o); // TODO:
+  vm.append_object(o);
   return o;
 }
 
@@ -115,11 +116,11 @@ str_t StringObject::stringify() const {
 
 StringObject* StringObject::create(VM& vm, const char* s, sz_t n) {
   u32_t h = get_hash(s, n);
-  // if (auto* o = vm.get_interned(h); o != nullptr)
-  //   return o;
+  if (auto* o = vm.get_interned(h); o != nullptr)
+    return o;
 
   auto* o = make_object<StringObject>(vm, s, n, h);
-  // vm.set_interned(h, o);
+  vm.set_interned(h, o);
   return o;
 }
 
@@ -131,13 +132,13 @@ StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) {
   s[n] = 0;
 
   u32_t h = get_hash(s, n);
-  // if (auto* o = vm.get_interned(h); o != nullptr) {
-  //   delete [] s;
-  //   return o;
-  // }
+  if (auto* o = vm.get_interned(h); o != nullptr) {
+    delete [] s;
+    return o;
+  }
 
   auto* o = make_object<StringObject>(vm, s, n, h, true);
-  // vm.set_interned(h, o);
+  vm.set_interned(h, o);
   return o;
 }
 
@@ -167,11 +168,64 @@ str_t FunctionObject::stringify() const {
 }
 
 void FunctionObject::gc_blacken(VM& vm) {
-  // TODO:
+  vm.mark_object(name_);
+  chunk_->iter_constants([&vm](const Value& v) { vm.mark_value(v); });
 }
 
 FunctionObject* FunctionObject::create(VM& vm, StringObject* name) {
   return make_object<FunctionObject>(vm, name);
+}
+
+UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
+  : BaseObject(ObjType::UPVALUE)
+  , value_(value)
+  , next_(next) {
+}
+
+str_t UpvalueObject::stringify() const {
+  ss_t ss;
+  ss << "<upvalue at `" << this << "`>";
+  return ss.str();
+}
+
+void UpvalueObject::gc_blacken(VM& vm) {
+  vm.mark_value(closed_);
+}
+
+UpvalueObject* UpvalueObject::create(VM& vm, Value* value, UpvalueObject* next) {
+  return make_object<UpvalueObject>(vm, value, next);
+}
+
+ClosureObject::ClosureObject(FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE)
+  , fn_(fn)
+  , upvalues_count_(fn->upvalues_count()) {
+  if (upvalues_count_ > 0) {
+    upvalues_ = new UpvalueObject* [upvalues_count_];
+    for (int i = 0; i < upvalues_count_; ++i)
+      upvalues_[i] = nullptr;
+  }
+}
+
+ClosureObject::~ClosureObject() {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
+}
+
+str_t ClosureObject::stringify() const {
+  ss_t ss;
+  ss << "<closure function `" << fn_->name_asstr() << "` at `" << this << "`>";
+  return ss.str();
+}
+
+void ClosureObject::gc_blacken(VM& vm) {
+  vm.mark_object(fn_);
+  for (int i = 0; i < upvalues_count_; ++i)
+    vm.mark_object(upvalues_[i]);
+}
+
+ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
+  return make_object<ClosureObject>(vm, fn);
 }
 
 }

@@ -207,10 +207,49 @@ public:
   static FunctionObject* create(VM& vm, StringObject* name = nullptr);
 };
 
-class ClosureObject final : public BaseObject {
+class UpvalueObject final : public BaseObject {
+  Value* value_{};
+  Value closed_{};
+  UpvalueObject* next_{};
+public:
+  UpvalueObject(Value* value, UpvalueObject* next = nullptr) noexcept;
+
+  inline Value* value() const noexcept { return value_; }
+  inline Value* value_asptr() const noexcept { return value_; }
+  inline const Value& value_asref() const noexcept { return *value_; }
+  inline void set_value(Value* value) noexcept { value_ = value; }
+  inline void set_value(const Value& value) noexcept { *value_ = value; }
+  inline const Value& closed() const noexcept { return closed_; }
+  inline Value* closed_asptr() noexcept { return &closed_; }
+  inline const Value& closed_asref() const noexcept { return closed_; }
+  inline void set_closed(const Value& closed) noexcept { closed_ = closed; }
+  inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
+  inline UpvalueObject* next() const noexcept { return next_; }
+  inline void set_next(UpvalueObject* next) noexcept { next_ = next; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static UpvalueObject* create(VM& vm, Value* value, UpvalueObject* next = nullptr);
 };
 
-class UpvalueObject final : public BaseObject {
+class ClosureObject final : public BaseObject {
+  FunctionObject* fn_{};
+  int upvalues_count_{};
+  UpvalueObject** upvalues_{};
+public:
+  ClosureObject(FunctionObject* fn) noexcept;
+  virtual ~ClosureObject();
+
+  inline FunctionObject* fn() const noexcept { return fn_; }
+  inline int upvalues_count() const noexcept { return upvalues_count_; }
+  inline UpvalueObject* get_upvalue(int i) const noexcept { return upvalues_[i]; }
+  inline void set_upvalue(int i, UpvalueObject* u) noexcept { upvalues_[i] = u; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
 
 }

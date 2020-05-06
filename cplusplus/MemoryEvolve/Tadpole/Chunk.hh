@@ -81,6 +81,10 @@ inline u8_t operator-(Code a, Code b) noexcept {
   return as_type<u8_t>(a) - as_type<u8_t>(b);
 }
 
+inline Code operator+(Code a, u8_t b) noexcept {
+  return as_type<Code>(as_type<u8_t>(a) + b);
+}
+
 class Chunk final : private UnCopyable {
   std::vector<u8_t> codes_;
   std::vector<int> lines_;
