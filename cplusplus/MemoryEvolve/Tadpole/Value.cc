@@ -174,4 +174,24 @@ FunctionObject* FunctionObject::create(VM& vm, StringObject* name) {
   return make_object<FunctionObject>(vm, name);
 }
 
+UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
+  : BaseObject(ObjType::UPVALUE)
+  , value_(value)
+  , next_(next) {
+}
+
+str_t UpvalueObject::stringify() const {
+  ss_t ss;
+  ss << "<upvalue at `" << this << "`>";
+  return ss.str();
+}
+
+void UpvalueObject::gc_blacken(VM& vm) {
+  // TODO:
+}
+
+UpvalueObject* UpvalueObject::create(VM& vm, Value* value, UpvalueObject* next) {
+  return make_object<UpvalueObject>(vm, value, next);
+}
+
 }
