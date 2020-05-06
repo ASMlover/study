@@ -158,7 +158,7 @@ public:
 };
 
 class GlobalParser final : private UnCopyable {
-  static constexpr int kMaxArguments = 8;
+  static constexpr sz_t kMaxArguments = 8;
 
   VM& vm_;
   Lexer& lex_;
@@ -262,6 +262,167 @@ class GlobalParser final : private UnCopyable {
     curr_compiler_ = curr_compiler_->enclosing();
 
     return fn;
+  }
+
+  void enter_scope() {
+    curr_compiler_->enter_scope();
+  }
+
+  void leave_scope() {
+    curr_compiler_->leave_scope([this](const LocalVar& local) {
+      emit_byte(local.is_upvalue ? Code::CLOSE_UPVALUE : Code::POP);
+      });
+  }
+
+  inline u8_t identifier_constant(const Token& name) noexcept {
+    return curr_chunk()->add_constant(StringObject::create(vm_, name.as_string()));
+  }
+
+  u8_t parse_variable(const str_t& msg) {
+    consume(TokenKind::TK_IDENTIFIER, msg);
+
+    curr_compiler_->declare_localvar(prev_, [this](const str_t& msg) { error(msg); });
+    if (curr_compiler_->scope_depth() > 0)
+      return 0;
+    return identifier_constant(prev_);
+  }
+
+  void mark_initialized() {
+    if (curr_compiler_->scope_depth() == 0)
+      return;
+    curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
+  }
+
+  void define_global(u8_t global) {
+    if (curr_compiler_->scope_depth() > 0) {
+      mark_initialized();
+      return;
+    }
+    emit_bytes(Code::DEF_GLOBAL, global);
+  }
+
+  u8_t arguments() {
+    u8_t argc = 0;
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        // expression(); // TODO:
+        ++argc;
+
+        if (argc > kMaxArguments)
+          error("cannot have more than `" + std::to_string(kMaxArguments) + "` arguments");
+      } while (match(TokenKind::TK_COMMA));
+    }
+
+    return argc;
+  }
+
+  void named_variable(const Token& name, bool can_assign) {
+    auto errfn = [this](const str_t& msg) { error(msg); };
+
+    Code getop, setop;
+    int arg = curr_compiler_->resolve_local(name, errfn);
+    if (arg != -1) {
+      getop = Code::GET_LOCAL;
+      setop = Code::SET_LOCAL;
+    }
+    else if (arg = curr_compiler_->resolve_upvalue(name, errfn); arg != -1) {
+      getop = Code::GET_UPVALUE;
+      setop = Code::SET_UPVALUE;
+    }
+    else {
+      arg = identifier_constant(name);
+      getop = Code::GET_GLOBAL;
+      setop = Code::SET_GLOBAL;
+    }
+
+    if (can_assign && match(TokenKind::TK_EQ)) {
+      // expression(); // TODO:
+      emit_bytes(setop, arg);
+    }
+    else {
+      emit_bytes(getop, arg);
+    }
+  }
+
+  const ParseRule& get_rule(TokenKind kind) const {
+#define _RULE(fn) [](GlobalParser& p, bool b) { p.fn(b); }
+
+    static const ParseRule _rules[] = {
+      {_RULE(grouping), _RULE(call), Precedence::CALL}, // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(COMMA, ",")
+      {nullptr, _RULE(binary), Precedence::TERM},       // PUNCTUATOR(MINUS, "-")
+      {nullptr, _RULE(binary), Precedence::TERM},       // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(SEMI, ";")
+      {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(SLASH, "/")
+      {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(STAR, "*")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(EQ, "=")
+
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(IDENTIFIER, "IDENTIFIER")
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(NUMERIC, "NUMERIC")
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(STRING, "STRING")
+
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(FN, "fn")
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(NIL, "nil")
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(VAR, "var")
+
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(EOF, "EOF")
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(ERR, "ERR")
+    };
+
+#undef _RULE
+    return _rules[as_type<int>(kind)];
+  }
+
+  void parse_precedence(Precedence precedence) {
+    advance();
+    auto& prefix_fn = get_rule(prev_.kind()).prefix;
+    if (!prefix_fn) {
+      error("expect expression");
+      return;
+    }
+
+    bool can_assign = precedence <= Precedence::ASSIGNMENT;
+    prefix_fn(*this, can_assign);
+
+    while (precedence <= get_rule(curr_.kind()).precedence) {
+      advance();
+      auto& infix_fn = get_rule(prev_.kind()).infix;
+
+      if (infix_fn)
+        infix_fn(*this, can_assign);
+    }
+
+    if (can_assign && match(TokenKind::TK_EQ)) {
+      error("invalid assignment target");
+      // expression(); // TODO:
+    }
+  }
+
+  void binary(bool can_assign) {
+    TokenKind op = prev_.kind();
+
+    parse_precedence(get_rule(op).precedence + 1);
+    switch (op) {
+    case TokenKind::TK_PLUS: emit_byte(Code::ADD); break;
+    case TokenKind::TK_MINUS: emit_byte(Code::SUB); break;
+    case TokenKind::TK_STAR: emit_byte(Code::MUL); break;
+    case TokenKind::TK_SLASH: emit_byte(Code::DIV); break;
+    default: return;
+    }
+  }
+
+  void call(bool can_assign) {
+    emit_byte(Code::CALL_0 + arguments());
+  }
+
+  void grouping(bool can_assign) {
+    // expression(); // TODO:
+    consume(TokenKind::TK_RPAREN, "expect `)` after grouping expression");
   }
 };
 
