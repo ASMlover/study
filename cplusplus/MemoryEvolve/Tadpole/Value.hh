@@ -219,12 +219,10 @@ public:
   inline const Value& value_asref() const noexcept { return *value_; }
   inline void set_value(Value* value) noexcept { value_ = value; }
   inline void set_value(const Value& value) noexcept { *value_ = value; }
-  inline void set_value(Value value) noexcept { *value_ = value; }
   inline const Value& closed() const noexcept { return closed_; }
   inline Value* closed_asptr() noexcept { return &closed_; }
   inline const Value& closed_asref() const noexcept { return closed_; }
   inline void set_closed(const Value& closed) noexcept { closed_ = closed; }
-  inline void set_closed(Value closed) noexcept { closed_ = closed; }
   inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
   inline UpvalueObject* next() const noexcept { return next_; }
   inline void set_next(UpvalueObject* next) noexcept { next_ = next; }
