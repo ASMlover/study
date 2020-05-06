@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <cstdarg>
 #include <Tadpole/Chunk.hh>
+#include <Tadpole/Compiler.hh>
 #include <Tadpole/VM.hh>
 
 namespace _mevo::tadpole {
@@ -51,14 +52,14 @@ public:
 };
 
 VM::VM() noexcept {
-  // gcompiler_ = new GlobalCompiler();
+  gcompiler_ = new GlobalCompiler();
   stack_.reserve(kDefaultCap);
 
   // register_core();
 }
 
 VM::~VM() {
-  // delete gcompiler_;
+  delete gcompiler_;
 
   globals_.clear();
   interned_strings_.clear();
@@ -77,7 +78,14 @@ void VM::define_native(const str_t& name, NativeFn&& fn) {
 }
 
 InterpretRet VM::interpret(const str_t& source_bytes) {
-  // TODO:
+  FunctionObject* fn = gcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::ECOMPILE;
+
+  push(fn);
+  ClosureObject* closure = ClosureObject::create(*this, fn);
+  pop();
+  call(closure, 0);
 
   return run();
 }
@@ -114,7 +122,7 @@ void VM::collect() {
     mark_object(u);
   for (auto& g : globals_)
     mark_value(g.second);
-  // gcompiler_
+  gcompiler_->mark_compiler();
 
   while (!worklist_.empty()) {
     auto* o = worklist_.back();
