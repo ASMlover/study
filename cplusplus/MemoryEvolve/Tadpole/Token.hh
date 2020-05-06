@@ -91,7 +91,7 @@ public:
 
   inline TokenKind kind() const noexcept { return kind_; }
   inline const str_t& literal() const noexcept { return literal_; }
-  inline int line() const noexcept { return lineno_; }
+  inline int lineno() const noexcept { return lineno_; }
   inline double as_numeric() const noexcept { return std::atof(literal_.c_str()); }
   inline const str_t& as_string() const noexcept { return literal_; }
 

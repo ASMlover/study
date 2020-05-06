@@ -31,7 +31,7 @@ _MEVO_TEST(TadpoleLexer, _mevo::FakeTester) {
   auto token_repr = [](const _mevo::tadpole::Token& tok) {
     std::fprintf(stdout, "%-16s|%4d|%s\n",
       _mevo::tadpole::get_token_name(tok.kind()),
-      tok.line(),
+      tok.lineno(),
       tok.literal().c_str());
   };
 
