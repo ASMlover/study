@@ -236,6 +236,22 @@ public:
 };
 
 class ClosureObject final : public BaseObject {
+  FunctionObject* fn_{};
+  int upvalues_count_{};
+  UpvalueObject** upvalues_{};
+public:
+  ClosureObject(FunctionObject* fn) noexcept;
+  virtual ~ClosureObject();
+
+  inline FunctionObject* fn() const noexcept { return fn_; }
+  inline int upvalues_count() const noexcept { return upvalues_count_; }
+  inline UpvalueObject* get_upvalue(int i) const noexcept { return upvalues_[i]; }
+  inline void set_upvalue(int i, UpvalueObject* u) noexcept { upvalues_[i] = u; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
 
 }

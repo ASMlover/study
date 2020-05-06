@@ -47,11 +47,11 @@ FunctionObject* BaseObject::as_function() {
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
-  return nullptr;
+  return as_down<UpvalueObject>(this);
 }
 
 ClosureObject* BaseObject::as_closure() {
-  return nullptr;
+  return as_down<ClosureObject>(this);
 }
 
 bool Value::is_truthy() const {
@@ -192,6 +192,36 @@ void UpvalueObject::gc_blacken(VM& vm) {
 
 UpvalueObject* UpvalueObject::create(VM& vm, Value* value, UpvalueObject* next) {
   return make_object<UpvalueObject>(vm, value, next);
+}
+
+ClosureObject::ClosureObject(FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE)
+  , fn_(fn)
+  , upvalues_count_(fn->upvalues_count()) {
+  if (upvalues_count_ > 0) {
+    upvalues_ = new UpvalueObject* [upvalues_count_];
+    for (int i = 0; i < upvalues_count_; ++i)
+      upvalues_[i] = nullptr;
+  }
+}
+
+ClosureObject::~ClosureObject() {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
+}
+
+str_t ClosureObject::stringify() const {
+  ss_t ss;
+  ss << "<closure function `" << fn_->name_asstr() << "` at `" << this << "`>";
+  return ss.str();
+}
+
+void ClosureObject::gc_blacken(VM& vm) {
+  // TODO:
+}
+
+ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
+  return make_object<ClosureObject>(vm, fn);
 }
 
 }
