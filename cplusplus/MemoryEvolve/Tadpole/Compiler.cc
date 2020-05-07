@@ -312,6 +312,7 @@ class GlobalParser final : private UnCopyable {
           error("cannot have more than `" + std::to_string(kMaxArguments) + "` arguments");
       } while (match(TokenKind::TK_COMMA));
     }
+    consume(TokenKind::TK_RPAREN, "expect `;` after function arguments");
 
     return argc;
   }
