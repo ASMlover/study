@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <Tadpole/Chunk.hh>
 #include <Tadpole/Compiler.hh>
+#include <Tadpole/Builtins.hh>
 #include <Tadpole/VM.hh>
 
 namespace _mevo::tadpole {
@@ -55,7 +56,7 @@ VM::VM() noexcept {
   gcompiler_ = new GlobalCompiler();
   stack_.reserve(kDefaultCap);
 
-  // register_core();
+  register_builtins(*this);
 }
 
 VM::~VM() {
