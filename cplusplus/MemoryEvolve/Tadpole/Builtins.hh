@@ -24,35 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Core/MEvolve.hh>
-#include <Tadpole/VM.hh>
+#pragma once
 
-int main(int argc, char* argv[]) {
-  _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
+namespace _mevo::tadpole {
 
-#if defined(TADPOLE_TEST)
-  _mevo::run_all_harness();
-#endif
+class VM;
 
-  std::cout
-    << "[[T A D P O L E]] - v0.1" << std::endl
-    << "Type `exit();` to exit."
-    << std::endl;
+void register_builtins(VM& vm);
 
-  _mevo::tadpole::VM vm;
-  _mevo::str_t line;
-  for (;;) {
-    if (!vm.is_running())
-      break;
-
-    std::cout << ">>> ";
-    if (!std::getline(std::cin, line))
-      break;
-
-    if (vm.interpret(line) != _mevo::tadpole::InterpretRet::OK) {
-      // TODO: something
-    }
-  }
-
-  return 0;
 }

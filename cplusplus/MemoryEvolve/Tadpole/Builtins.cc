@@ -24,35 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <Core/MEvolve.hh>
+#include <chrono>
+#include <iostream>
 #include <Tadpole/VM.hh>
+#include <Tadpole/Builtins.hh>
 
-int main(int argc, char* argv[]) {
-  _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
+namespace _mevo::tadpole {
 
-#if defined(TADPOLE_TEST)
-  _mevo::run_all_harness();
-#endif
+void register_builtins(VM& vm) {
+  // fn print(args, ...)
+  vm.define_native("print", [](int argc, Value* args) -> Value {
+    for (int i = 0; i < argc; ++i)
+      std::cout << args[i] << " ";
+    std::cout << std::endl;
+    return nullptr;
+    });
 
-  std::cout
-    << "[[T A D P O L E]] - v0.1" << std::endl
-    << "Type `exit();` to exit."
-    << std::endl;
+  // fn clock()
+  vm.define_native("clock", [](int argc, Value* args) -> Value {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+      std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+    });
 
-  _mevo::tadpole::VM vm;
-  _mevo::str_t line;
-  for (;;) {
-    if (!vm.is_running())
-      break;
+  // fn exit()
+  vm.define_native("exit", [&vm](int argc, Value* args) -> Value {
+    vm.stop_vm();
+    return nullptr;
+    });
+}
 
-    std::cout << ">>> ";
-    if (!std::getline(std::cin, line))
-      break;
-
-    if (vm.interpret(line) != _mevo::tadpole::InterpretRet::OK) {
-      // TODO: something
-    }
-  }
-
-  return 0;
 }

@@ -1,3 +1,29 @@
+// Copyright (c) 2020 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <Tadpole/Lexer.hh>
 #include <Tadpole/Value.hh>
@@ -158,7 +184,7 @@ public:
 };
 
 class GlobalParser final : private UnCopyable {
-  static constexpr sz_t kMaxArguments = 8;
+  static constexpr int kMaxArguments = 8;
 
   VM& vm_;
   Lexer& lex_;
@@ -257,8 +283,12 @@ class GlobalParser final : private UnCopyable {
     emit_return();
 
     FunctionObject* fn = curr_compiler_->fn();
+
+#if defined(TADPOLE_DEBUG_VM)
     if (!had_error_)
       curr_chunk()->dis(fn->name_asstr());
+#endif
+
     curr_compiler_ = curr_compiler_->enclosing();
 
     return fn;
@@ -305,13 +335,14 @@ class GlobalParser final : private UnCopyable {
     u8_t argc = 0;
     if (!check(TokenKind::TK_RPAREN)) {
       do {
-        // expression(); // TODO:
+        expression();
         ++argc;
 
         if (argc > kMaxArguments)
           error("cannot have more than `" + std::to_string(kMaxArguments) + "` arguments");
       } while (match(TokenKind::TK_COMMA));
     }
+    consume(TokenKind::TK_RPAREN, "expect `;` after function arguments");
 
     return argc;
   }
@@ -336,7 +367,7 @@ class GlobalParser final : private UnCopyable {
     }
 
     if (can_assign && match(TokenKind::TK_EQ)) {
-      // expression(); // TODO:
+      expression();
       emit_bytes(setop, arg);
     }
     else {
@@ -360,14 +391,14 @@ class GlobalParser final : private UnCopyable {
       {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(STAR, "*")
       {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(EQ, "=")
 
-      {nullptr, nullptr, Precedence::NONE},             // TOKEN(IDENTIFIER, "IDENTIFIER")
-      {nullptr, nullptr, Precedence::NONE},             // TOKEN(NUMERIC, "NUMERIC")
-      {nullptr, nullptr, Precedence::NONE},             // TOKEN(STRING, "STRING")
+      {_RULE(variable), nullptr, Precedence::NONE},     // TOKEN(IDENTIFIER, "IDENTIFIER")
+      {_RULE(numeric), nullptr, Precedence::NONE},      // TOKEN(NUMERIC, "NUMERIC")
+      {_RULE(string), nullptr, Precedence::NONE},       // TOKEN(STRING, "STRING")
 
-      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(FALSE, "false")
+      {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(FALSE, "false")
       {nullptr, nullptr, Precedence::NONE},             // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(TRUE, "true")
+      {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(NIL, "nil")
+      {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(TRUE, "true")
       {nullptr, nullptr, Precedence::NONE},             // KEYWORD(VAR, "var")
 
       {nullptr, nullptr, Precedence::NONE},             // TOKEN(EOF, "EOF")
@@ -399,7 +430,7 @@ class GlobalParser final : private UnCopyable {
 
     if (can_assign && match(TokenKind::TK_EQ)) {
       error("invalid assignment target");
-      // expression(); // TODO:
+      expression();
     }
   }
 
@@ -412,7 +443,6 @@ class GlobalParser final : private UnCopyable {
     case TokenKind::TK_MINUS: emit_byte(Code::SUB); break;
     case TokenKind::TK_STAR: emit_byte(Code::MUL); break;
     case TokenKind::TK_SLASH: emit_byte(Code::DIV); break;
-    default: return;
     }
   }
 
@@ -421,16 +451,173 @@ class GlobalParser final : private UnCopyable {
   }
 
   void grouping(bool can_assign) {
-    // expression(); // TODO:
+    expression();
     consume(TokenKind::TK_RPAREN, "expect `)` after grouping expression");
+  }
+
+  void literal(bool can_assign) {
+    switch (prev_.kind()) {
+    case TokenKind::KW_NIL: emit_byte(Code::NIL); break;
+    case TokenKind::KW_FALSE: emit_byte(Code::FALSE); break;
+    case TokenKind::KW_TRUE: emit_byte(Code::TRUE); break;
+    }
+  }
+
+  void variable(bool can_assign) {
+    named_variable(prev_, can_assign);
+  }
+
+  void numeric(bool can_assign) {
+    emit_constant(prev_.as_numeric());
+  }
+
+  void string(bool can_assign) {
+    emit_constant(StringObject::create(vm_, prev_.as_string()));
+  }
+
+  void block() {
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+      declaration();
+    consume(TokenKind::TK_RBRACE, "expect `}` after block body");
+  }
+
+  void function(FunType fn_type) {
+    Compiler fn_compiler;
+    init_compiler(&fn_compiler, 1, fn_type);
+
+    consume(TokenKind::TK_LPAREN, "expect `(` after function name");
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        u8_t param_constant = parse_variable("expect function parameter name");
+        define_global(param_constant);
+
+        curr_compiler_->fn()->inc_arity();
+        if (curr_compiler_->fn()->arity() > kMaxArguments)
+          error("cannot have more than `" + std::to_string(kMaxArguments) + "` parameters");
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `)` after function parameters");
+
+    consume(TokenKind::TK_LBRACE, "expect `{` before function body");
+    block();
+
+    leave_scope();
+    FunctionObject* fn = finish_compiler();
+
+    emit_bytes(Code::CLOSURE, curr_chunk()->add_constant(fn));
+    for (int i = 0; i < fn->upvalues_count(); ++i) {
+      auto& upvalue = fn_compiler.get_upvalue(i);
+      emit_bytes(upvalue.is_local ? 1 : 0, upvalue.index);
+    }
+  }
+
+  void synchronize() {
+    panic_mode_ = false;
+
+    while (!check(TokenKind::TK_EOF)) {
+      if (prev_.kind() == TokenKind::TK_SEMI)
+        break;
+
+      switch (curr_.kind()) {
+      case TokenKind::KW_FN:
+      case TokenKind::KW_VAR:
+        return;
+      default: break;
+      }
+      advance();
+    }
+  }
+
+  void expression() {
+    parse_precedence(Precedence::ASSIGNMENT);
+  }
+
+  void declaration() {
+    if (match(TokenKind::KW_FN))
+      fn_decl();
+    else if (match(TokenKind::KW_VAR))
+      var_decl();
+    else
+      statement();
+
+    if (panic_mode_)
+      synchronize();
+  }
+
+  void statement() {
+    if (match(TokenKind::TK_LBRACE)) {
+      enter_scope();
+      block();
+      leave_scope();
+    }
+    else {
+      expr_stmt();
+    }
+  }
+
+  void fn_decl() {
+    u8_t fn_constant = parse_variable("expect function name");
+    mark_initialized();
+    function(FunType::FUNCTION);
+
+    define_global(fn_constant);
+  }
+
+  void var_decl() {
+    u8_t var_constant = parse_variable("expect variable name");
+
+    if (match(TokenKind::TK_EQ))
+      expression();
+    else
+      emit_byte(Code::NIL);
+    consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
+
+    define_global(var_constant);
+  }
+
+  void expr_stmt() {
+    expression();
+    consume(TokenKind::TK_SEMI, "expect `;` after expression");
+    emit_byte(Code::POP);
+  }
+public:
+  GlobalParser(VM& vm, Lexer& lex) noexcept
+    : vm_(vm), lex_(lex) {
+  }
+
+  inline void mark_compiler() {
+    for (Compiler* c = curr_compiler_; c != nullptr; c = c->enclosing())
+      vm_.mark_object(c->fn());
+  }
+
+  FunctionObject* compile() {
+    Compiler compiler;
+    init_compiler(&compiler, 0, FunType::TOPLEVEL);
+
+    advance();
+    while (!check(TokenKind::TK_EOF))
+      declaration();
+    FunctionObject* fn = finish_compiler();
+
+    return had_error_ ? nullptr : fn;
   }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
+  Lexer lex(source_bytes);
+
+  if (gparser_ = new GlobalParser(vm, lex); gparser_ != nullptr) {
+    FunctionObject* fn = gparser_->compile();
+    delete gparser_;
+
+    return fn;
+  }
   return nullptr;
 }
 
 void GlobalCompiler::mark_compiler() {
+  if (gparser_ != nullptr)
+    gparser_->mark_compiler();
 }
 
 }

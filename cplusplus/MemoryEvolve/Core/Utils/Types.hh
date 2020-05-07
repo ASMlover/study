@@ -109,4 +109,14 @@ inline str_t convert_to_string(double d) noexcept {
   return ss.str();
 }
 
+template <typename T, typename... Args>
+inline str_t mevo_string(T&& x, Args&&... args) noexcept {
+  ss_t ss;
+
+  ss << std::forward<T>(x);
+  ((ss << std::forward<Args>(args)), ...);
+
+  return ss.str();
+}
+
 }
