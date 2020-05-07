@@ -104,7 +104,9 @@ void VM::mark_object(BaseObject* o) {
   if (o->marked())
     return;
 
+#if defined(TADPOLE_DEBUG_GC)
   std::cout << "`" << o << "` mark object `" << o->stringify() << "`" << std::endl;
+#endif
   o->set_marked();
   worklist_.push_back(o);
 }
@@ -153,7 +155,10 @@ void VM::collect() {
 }
 
 void VM::reclaim_object(BaseObject* o) {
+#if defined(TADPOLE_DEBUG_GC)
   std::cout << "`" << o << "` reclaim object `" << o->stringify() << "`" << std::endl;
+#endif
+
   delete o;
 }
 
@@ -283,12 +288,14 @@ InterpretRet VM::run() {
   } while (false)
 
   for (;;) {
+#if defined(TADPOLE_DEBUG_VM)
     auto* frame_chunk = frame->frame_chunk();
     std::cout << "          ";
     for (auto& v : stack_)
       std::cout << "[" << v << "]";
     std::cout << std::endl;
     frame_chunk->dis_code(frame_chunk->codes_offset(frame->ip()));
+#endif
 
     switch (Code c = as_type<Code>(_RDBYTE())) {
     case Code::CONSTANT: push(_RDCONST()); break;

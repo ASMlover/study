@@ -257,8 +257,12 @@ class GlobalParser final : private UnCopyable {
     emit_return();
 
     FunctionObject* fn = curr_compiler_->fn();
+
+#if defined(TADPOLE_DEBUG_VM)
     if (!had_error_)
       curr_chunk()->dis(fn->name_asstr());
+#endif
+
     curr_compiler_ = curr_compiler_->enclosing();
 
     return fn;

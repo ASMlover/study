@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Core/MEvolve.hh>
+#include <Tadpole/VM.hh>
 
 int main(int argc, char* argv[]) {
   _MEVO_UNUSED(argc), _MEVO_UNUSED(argv);
@@ -32,6 +33,21 @@ int main(int argc, char* argv[]) {
 #if defined(TADPOLE_TEST)
   _mevo::run_all_harness();
 #endif
+
+  _mevo::tadpole::VM vm;
+  _mevo::str_t line;
+  for (;;) {
+    if (!vm.is_running())
+      break;
+
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line))
+      break;
+
+    if (vm.interpret(line) != _mevo::tadpole::InterpretRet::OK) {
+      // TODO: something
+    }
+  }
 
   return 0;
 }
