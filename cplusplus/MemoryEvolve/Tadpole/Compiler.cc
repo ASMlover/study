@@ -158,7 +158,7 @@ public:
 };
 
 class GlobalParser final : private UnCopyable {
-  static constexpr sz_t kMaxArguments = 8;
+  static constexpr int kMaxArguments = 8;
 
   VM& vm_;
   Lexer& lex_;
