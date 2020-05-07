@@ -55,7 +55,7 @@ Token Lexer::next_token() {
   case '=': return make_token(TokenKind::TK_EQ);
   case '"': return make_string();
   }
-  return make_error("unexpected charactor");
+  return make_error(mevo_string("unexpected charactor `", c, "`"));
 }
 
 void Lexer::skip_whitespace() {

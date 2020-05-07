@@ -34,6 +34,11 @@ int main(int argc, char* argv[]) {
   _mevo::run_all_harness();
 #endif
 
+  std::cout
+    << "[[T A D P O L E]] - v0.1" << std::endl
+    << "Type `exit();` to exit."
+    << std::endl;
+
   _mevo::tadpole::VM vm;
   _mevo::str_t line;
   for (;;) {
