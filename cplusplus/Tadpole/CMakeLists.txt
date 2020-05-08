@@ -35,12 +35,16 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(TADPOLE_DEBUG_GC "enable/disable debug gc information" OFF)
 option(TADPOLE_DEBUG_VM "enable/disable debug vm information" OFF)
+option(TADPOLE_RUN_HARNESS "enable/disable run test harness" OFF)
 
 if (TADPOLE_DEBUG_GC)
     add_compile_options(-D_TADPOLE_DEBUG_GC)
 endif()
 if (TADPOLE_DEBUG_VM)
     add_compile_options(-D_TADPOLE_DEBUG_VM)
+endif()
+if (TADPOLE_RUN_HARNESS)
+    add_compile_options(-D_TADPOLE_RUN_HARNESS)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     << "[[T A D P O L E]] - v0.1" << std::endl
     << "Type `exit();` to exit." << std::endl;
 
-#if defined(TADPOLE_RUN_HARNESS)
+#if defined(_TADPOLE_RUN_HARNESS)
   tadpole::harness::run_all_harness();
 #endif
 
