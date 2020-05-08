@@ -27,6 +27,26 @@ using str_t   = std::string;
 using strv_t  = std::string_view;
 using ss_t    = std::stringstream;
 
+class Copyable {
+protected:
+  Copyable() noexcept = default;
+  ~Copyable() noexcept = default;
+  Copyable(const Copyable&) noexcept = default;
+  Copyable(Copyable&&) noexcept = default;
+  Copyable& operator=(const Copyable&) noexcept = default;
+  Copyable& operator=(Copyable&&) noexcept = default;
+};
+
+class UnCopyable {
+  UnCopyable(const UnCopyable&) noexcept = delete;
+  UnCopyable(UnCopyable&&) noexcept = delete;
+  UnCopyable& operator=(const UnCopyable&) noexcept = delete;
+  UnCopyable& operator=(UnCopyable&&) noexcept = delete;
+protected:
+  UnCopyable() noexcept = default;
+  ~UnCopyable() noexcept = default;
+};
+
 template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
 }
