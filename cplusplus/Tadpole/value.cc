@@ -1,3 +1,4 @@
+#include <cstring>
 #include "vm.hh"
 #include "value.hh"
 
