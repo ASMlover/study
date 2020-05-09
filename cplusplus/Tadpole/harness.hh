@@ -6,7 +6,7 @@
 
 namespace tadpole::harness {
 
-class Tester final : public Copyable {
+class Tester final : private UnCopyable {
   bool ok_{true};
   strv_t fname_{};
   int lineno_{};
@@ -69,6 +69,12 @@ int run_all_harness();
 #define TADPOLE_CHECK_LT(a, b)  tadpole::harness::Tester(__FILE__, __LINE__).is_lt((a), (b))
 #define TADPOLE_CHECK_LE(a, b)  tadpole::harness::Tester(__FILE__, __LINE__).is_le((a), (b))
 
+#if defined(_TADPOLE_RUN_HARNESS)
+# define _TADPOLE_IGNORED_REG(N, Fn) bool _Ignored_TadpoleHarness_##N = tadpole::harness::register_harness(#N, Fn);
+#else
+# define _TADPOLE_IGNORED_REG(N, Fn)
+#endif
+
 #define TADPOLE_TEST(Name)\
 class TadpoleHarness_##Name final : private tadpole::UnCopyable {\
   void _run();\
@@ -78,6 +84,5 @@ public:\
     _ins._run();\
   }\
 };\
-bool _Ignored_TadpoleHarness_##Name =\
-  tadpole::harness::register_harness(#Name, & TadpoleHarness_##Name::_run_harness);\
+_TADPOLE_IGNORED_REG(Name, &TadpoleHarness_##Name::_run_harness)\
 void TadpoleHarness_##Name::_run()

@@ -2,10 +2,11 @@
 
 #include <vector>
 #include "common.hh"
+#include "value.hh"
 
 namespace tadpole {
 
-enum class Code {
+enum class Code : u8_t {
   CONSTANT,
 
   NIL,
@@ -47,8 +48,6 @@ inline int operator-(Code a, Code b) noexcept {
   return as_type<int>(a) - as_type<int>(b);
 }
 
-using Value = double;
-
 class Chunk final : private UnCopyable {
   std::vector<u8_t> codes_;
   std::vector<int> lines_;
@@ -65,6 +64,11 @@ public:
     return as_type<u8_t>(constants_.size() - 1);
   }
 
+  inline void write_constant(Value value, int lineno) noexcept {
+    write(Code::CONSTANT, lineno);
+    write(add_constant(value), lineno);
+  }
+
   inline sz_t codes_count() const noexcept { return codes_.size(); }
   inline const u8_t* codes() const noexcept { return codes_.data(); }
   inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
@@ -72,6 +76,7 @@ public:
   inline void set_code(sz_t i, T c) noexcept { codes_[i] = as_type<Code>(c); }
   inline int get_line(sz_t i) const noexcept { return lines_[i]; }
   inline const Value& get_constant(sz_t i) const noexcept { return constants_[i]; }
+  inline sz_t offset(const u8_t* ip) const noexcept { return as_type<sz_t>(ip - codes()); }
 
   template <typename Fn> inline void iter_constants(Fn&& fn) {
     for (auto& c : constants_)
