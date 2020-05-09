@@ -1,3 +1,4 @@
+#include <iostream>
 #include "chunk.hh"
 #include "compiler.hh"
 #include "vm.hh"
@@ -36,17 +37,25 @@ void VM::mark_object(BaseObject* o) {
   if (o == nullptr || o->is_marked())
     return;
 
-  // TODO: output debug
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout << "[" << o << "] mark object: `" << o->stringify() << "`" << std::endl;
+#endif
 
   o->set_marked(true);
   worklist_.push_back(o);
 }
 
-void VM::mark_value(const Value& v) {}
+void VM::mark_value(const Value& v) {
+  if (v.is_object())
+    mark_object(v.as_object());
+}
+
 void VM::collect() {}
 
 void VM::reclaim_object(BaseObject* o) {
-  // TODO: output debug
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout << "[" << o << "] reclaim object: `" << o->stringify() << "`" << std::endl;
+#endif
 
   delete o;
 }
