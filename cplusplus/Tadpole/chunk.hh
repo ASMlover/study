@@ -65,6 +65,11 @@ public:
     return as_type<u8_t>(constants_.size() - 1);
   }
 
+  inline void write_constant(Value value, int lineno) noexcept {
+    write(Code::CONSTANT, lineno);
+    write(add_constant(value), lineno);
+  }
+
   inline sz_t codes_count() const noexcept { return codes_.size(); }
   inline const u8_t* codes() const noexcept { return codes_.data(); }
   inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
