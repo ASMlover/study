@@ -45,4 +45,4 @@ if __name__ == '__main__':
     sched = Scheduler()
     sched.new(foo())
     sched.new(bar())
-    sched.miniloop()
+    sched.mainloop()

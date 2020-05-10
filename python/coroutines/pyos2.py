@@ -59,7 +59,7 @@ class Scheduler(object):
     def schedule(self, task: Task) -> None:
         self.ready.append(task)
 
-    def miniloop(self) -> None:
+    def mainloop(self) -> None:
         while self.taskmap:
             task = self.ready.popleft()
             task.run()
@@ -79,4 +79,4 @@ if __name__ == '__main__':
     sched = Scheduler()
     sched.new(foo())
     sched.new(bar())
-    sched.miniloop()
+    sched.mainloop()
