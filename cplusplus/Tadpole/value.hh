@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include "common.hh"
 
 namespace tadpole {
@@ -108,6 +109,8 @@ public:
   str_t stringify() const;
 };
 
+using NativeFn = std::function<Value (int, Value*)>;
+
 inline std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
 }
@@ -142,6 +145,20 @@ public:
   static StringObject* create(VM& vm, strv_t s) {
     return create(vm, s.data(), s.size());
   }
+};
+
+class NativeObject final : public BaseObject {
+  NativeFn fn_{};
+public:
+  NativeObject(NativeFn&& fn) noexcept
+    : BaseObject(ObjType::NATIVE), fn_(std::move(fn)) {
+  }
+
+  inline NativeFn fn() const noexcept { return fn_; }
+
+  virtual str_t stringify() const override;
+
+  static NativeObject* create(VM& vm, NativeFn&& fn);
 };
 
 }
