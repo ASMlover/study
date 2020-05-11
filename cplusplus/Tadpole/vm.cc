@@ -26,6 +26,10 @@ VM::~VM() {
   }
 }
 
+void VM::define_native(const str_t& name, NativeFn&& fn) {
+  globals_[name] = NativeObject::create(*this, std::move(fn));
+}
+
 void VM::append_object(BaseObject* o) {
   if (objects_.size() >= kGCThreshold)
     collect();

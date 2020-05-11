@@ -42,6 +42,8 @@ public:
   VM() noexcept;
   ~VM();
 
+  void define_native(const str_t& name, NativeFn&& fn);
+
   void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
