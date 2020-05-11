@@ -1,3 +1,4 @@
+#include <cstring>
 #include "chunk.hh"
 #include "vm.hh"
 #include "value.hh"
