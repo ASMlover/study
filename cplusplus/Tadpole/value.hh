@@ -203,6 +203,8 @@ public:
   inline const Value& closed_asref() const noexcept { return closed_; }
   inline void set_closed(const Value& closed) noexcept { closed_ = closed; }
   inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
+  inline UpvalueObject* next() const noexcept { return next_; }
+  inline void set_next(UpvalueObject* next) noexcept { next_ = next; }
 
   virtual str_t stringify() const override;
   virtual void gc_blacken(VM& vm) override;
