@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include "common.hh"
 
 namespace tadpole {
@@ -108,6 +109,8 @@ public:
   str_t stringify() const;
 };
 
+using NativeFn = std::function<Value (int, Value*)>;
+
 inline std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
 }
@@ -142,6 +145,89 @@ public:
   static StringObject* create(VM& vm, strv_t s) {
     return create(vm, s.data(), s.size());
   }
+};
+
+class NativeObject final : public BaseObject {
+  NativeFn fn_{};
+public:
+  NativeObject(NativeFn&& fn) noexcept
+    : BaseObject(ObjType::NATIVE), fn_(std::move(fn)) {
+  }
+
+  inline NativeFn fn() const noexcept { return fn_; }
+
+  virtual str_t stringify() const override;
+
+  static NativeObject* create(VM& vm, NativeFn&& fn);
+};
+
+class FunctionObject final : public BaseObject {
+  StringObject* name_{};
+  sz_t arity_{};
+  sz_t upvalues_count_{};
+  Chunk* chunk_{};
+public:
+  FunctionObject(StringObject* name = nullptr) noexcept;
+  virtual ~FunctionObject();
+
+  inline StringObject* name() const noexcept { return name_; }
+  inline const char* name_asstr() const noexcept { return name_ ? name_->cstr() : "<tadpole>"; }
+  inline sz_t arity() const noexcept { return arity_; }
+  inline sz_t inc_arity() noexcept { return arity_++; }
+  inline sz_t upvalues_count() const noexcept { return upvalues_count_; }
+  inline sz_t inc_upvalues_count() noexcept { return upvalues_count_++; }
+  inline Chunk* chunk() const noexcept { return chunk_; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static FunctionObject* create(VM& vm, StringObject* name = nullptr);
+};
+
+class UpvalueObject final : public BaseObject {
+  Value* value_{};
+  Value closed_{};
+  UpvalueObject* next_{};
+public:
+  UpvalueObject(Value* value, UpvalueObject* next = nullptr) noexcept
+    : BaseObject(ObjType::UPVALUE), value_(value), next_(next) {
+  }
+
+  inline Value* value() const noexcept { return value_; }
+  inline Value* value_asptr() const noexcept { return value_; }
+  inline const Value& value_asref() const noexcept { return *value_; }
+  inline void set_value(Value* value) noexcept { value_ = value; }
+  inline void set_value(const Value& value) noexcept { *value_ = value; }
+  inline const Value& closed() const noexcept { return closed_; }
+  inline Value* closed_asptr() noexcept { return &closed_; }
+  inline const Value& closed_asref() const noexcept { return closed_; }
+  inline void set_closed(const Value& closed) noexcept { closed_ = closed; }
+  inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
+  inline UpvalueObject* next() const noexcept { return next_; }
+  inline void set_next(UpvalueObject* next) noexcept { next_ = next; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static UpvalueObject* create(VM& vm, Value* value);
+};
+
+class ClosureObject final : public BaseObject {
+  FunctionObject* fn_{};
+  UpvalueObject** upvalues_{};
+public:
+  ClosureObject(FunctionObject* fn) noexcept;
+  virtual ~ClosureObject();
+
+  inline FunctionObject* fn() const noexcept { return fn_; }
+  inline sz_t upvalues_count() const noexcept { return fn_->upvalues_count(); }
+  inline UpvalueObject* get_upvalue(sz_t i) const noexcept { return upvalues_[i]; }
+  inline void set_upvalue(sz_t i, UpvalueObject* u) noexcept { upvalues_[i] = u; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static ClosureObject* create(VM& vm, FunctionObject* fn);
 };
 
 }
