@@ -210,4 +210,22 @@ public:
   static UpvalueObject* create(VM& vm, Value* value);
 };
 
+class ClosureObject final : public BaseObject {
+  FunctionObject* fn_{};
+  UpvalueObject** upvalues_{};
+public:
+  ClosureObject(FunctionObject* fn) noexcept;
+  virtual ~ClosureObject();
+
+  inline FunctionObject* fn() const noexcept { return fn_; }
+  inline sz_t upvalues_count() const noexcept { return fn_->upvalues_count(); }
+  inline UpvalueObject* get_upvalue(sz_t i) const noexcept { return upvalues_[i]; }
+  inline void set_upvalue(sz_t i, UpvalueObject* u) noexcept { upvalues_[i] = u; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(VM& vm) override;
+
+  static ClosureObject* create(VM& vm, FunctionObject* fn);
+};
+
 }

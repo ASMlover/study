@@ -26,7 +26,7 @@ UpvalueObject* BaseObject::as_upvalue() {
 }
 
 ClosureObject* BaseObject::as_closure() {
-  return nullptr;
+  return as_down<ClosureObject>(this);
 }
 
 bool Value::is_truthy() const {
@@ -164,6 +164,35 @@ void UpvalueObject::gc_blacken(VM& vm) {
 
 UpvalueObject* UpvalueObject::create(VM& vm, Value* value) {
   return make_object<UpvalueObject>(vm, value);
+}
+
+ClosureObject::ClosureObject(FunctionObject* fn) noexcept
+  : BaseObject(ObjType::CLOSURE), fn_(fn) {
+  if (auto n = fn_->upvalues_count(); n > 0) {
+    upvalues_ = new UpvalueObject* [n];
+    for (sz_t i = 0; i < n; ++i)
+      upvalues_[i] = nullptr;
+  }
+}
+
+ClosureObject::~ClosureObject() {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
+}
+
+str_t ClosureObject::stringify() const {
+  ss_t ss;
+  ss << "<closure function `" << fn_->name_asstr() << "` at `" << this << "`>";
+  return ss.str();
+}
+
+void ClosureObject::gc_blacken(VM& vm) {
+  for (sz_t i = 0; i < upvalues_count(); ++i)
+    vm.mark_object(upvalues_[i]);
+}
+
+ClosureObject* ClosureObject::create(VM& vm, FunctionObject* fn) {
+  return make_object<ClosureObject>(vm, fn);
 }
 
 }
