@@ -1,3 +1,4 @@
+#include <cstdarg>
 #include <algorithm>
 #include <iostream>
 #include "chunk.hh"
@@ -119,6 +120,33 @@ void VM::reclaim_object(BaseObject* o) {
 #endif
 
   delete o;
+}
+
+void VM::reset() {
+  stack_.clear();
+  frames_.clear();
+  open_upvalues_ = nullptr;
+}
+
+void VM::runtime_error(const char* format, ...) {
+  std::cerr << "Traceback (most recent call last):" << std::endl;
+  for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
+    auto& frame = *it;
+
+    sz_t i = frame.frame_chunk()->offset(frame.ip()) - 1;
+    std::cerr
+      << "  [LINE: " << frame.frame_chunk()->get_line(i) << "] in "
+      << "`" << frame.frame_fn()->name_asstr() << "()`"
+      << std::endl;
+  }
+
+  va_list ap;
+  va_start(ap, format);
+  std::vfprintf(stderr, format, ap);
+  va_end(ap);
+  std::fprintf(stderr, "\n");
+
+  reset();
 }
 
 }

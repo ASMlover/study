@@ -36,6 +36,9 @@ class VM final : private UnCopyable {
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> worklist_;
 
+  void reset();
+  void runtime_error(const char* format, ...);
+
   void collect();
   void reclaim_object(BaseObject* o);
 public:
