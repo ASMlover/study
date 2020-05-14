@@ -109,7 +109,7 @@ public:
   str_t stringify() const;
 };
 
-using NativeFn = std::function<Value (int, Value*)>;
+using NativeFn = std::function<Value (sz_t, Value*)>;
 
 inline std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
