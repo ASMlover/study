@@ -7,7 +7,7 @@
 
 namespace tadpole {
 
-class CallFrame final : private UnCopyable {
+class CallFrame final : public Copyable {
   ClosureObject* closure_{};
   const u8_t* ip_{};
   sz_t stack_begpos_{};
@@ -147,6 +147,55 @@ void VM::runtime_error(const char* format, ...) {
   std::fprintf(stderr, "\n");
 
   reset();
+}
+
+void VM::push(Value value) noexcept {
+  stack_.push_back(value);
+}
+
+Value VM::pop() noexcept {
+  Value value = stack_.back();
+  stack_.pop_back();
+  return value;
+}
+
+const Value& VM::peek(sz_t distance) const noexcept {
+  return stack_[stack_.size() - 1 - distance];
+}
+
+bool VM::call(ClosureObject* closure, sz_t argc) {
+  FunctionObject* fn = closure->fn();
+  if (fn->arity() != argc) {
+    runtime_error("%s() takes exactly %ud arguments (%ud given)",
+      fn->name_asstr(), fn->arity(), argc);
+    return false;
+  }
+
+  frames_.push_back(CallFrame(closure, fn->chunk()->codes(), stack_.size() - argc - 1));
+  return true;
+}
+
+bool VM::call(const Value& callee, sz_t argc) {
+  if (callee.is_object()) {
+    switch (callee.objtype()) {
+    case ObjType::NATIVE:
+    {
+      Value* args = nullptr;
+      if (argc > 0 && stack_.size() > argc)
+        args = &stack_[stack_.size() - argc];
+
+      Value result = callee.as_native()->fn()(argc, args);
+      stack_.resize(stack_.size() - argc - 1);
+      push(result);
+
+      return true;
+    }
+    case ObjType::CLOSURE: return call(callee.as_closure(), argc);
+    }
+  }
+
+  runtime_error("can only call function");
+  return false;
 }
 
 }
