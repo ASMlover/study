@@ -72,6 +72,19 @@ void VM::mark_value(const Value& v) {
     mark_object(v.as_object());
 }
 
+InterpretRet VM::interpret(const str_t& source_bytes) {
+  FunctionObject* fn = tcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::ECOMPILE;
+
+  push(fn);
+  ClosureObject* closure = ClosureObject::create(*this, fn);
+  pop();
+  call(closure, 0);
+
+  return run();
+}
+
 void VM::collect() {
   // mark root objects
   tcompiler_->mark_compiler();
@@ -196,6 +209,199 @@ bool VM::call(const Value& callee, sz_t argc) {
 
   runtime_error("can only call function");
   return false;
+}
+
+UpvalueObject* VM::capture_upvalue(Value* local) {
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(*this, local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* upvalue = open_upvalues_;
+  UpvalueObject* prev_upvalue = nullptr;
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  UpvalueObject* new_upvalue = UpvalueObject::create(*this, local, upvalue);
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = new_upvalue;
+  else
+    prev_upvalue->set_next(new_upvalue);
+  return new_upvalue;
+}
+
+void VM::close_upvalues(Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    UpvalueObject* upvalue = open_upvalues_;
+    upvalue->set_closed(upvalue->value_asref());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    open_upvalues_ = upvalue->next();
+  }
+}
+
+InterpretRet VM::run() {
+  CallFrame* frame = &frames_.back();
+
+#define _RDBYTE()   frame->inc_ip()
+#define _RDCONST()  frame->frame_chunk()->get_constant(_RDBYTE())
+#define _RDSTR()    _RDCONST().as_string()
+#define _RDCSTR()   _RDCONST().as_cstring()
+#define _BINOP(op)  do {\
+    if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+      runtime_error("operands must be two numerics");\
+      return InterpretRet::ERUNTIME;\
+    }\
+    double b = pop().as_numeric();\
+    double a = pop().as_numeric();\
+    push(a op b);\
+  } while (false)
+
+  for (;;) {
+#if defined(_TADPOLE_DEBUG_VM)
+    auto* frame_chunk = frame->frame_chunk();
+    std::cout << "          ";
+    for (auto& v : stack_)
+      std::cout << "[" << v << "]";
+    std::cout << std::endl;
+    frame_chunk->dis_code(frame_chunk->offset(frame->ip()));
+#endif
+
+    switch (Code c = as_type<Code>(_RDBYTE())) {
+    case Code::CONSTANT: push(_RDCONST()); break;
+    case Code::NIL: push(nullptr); break;
+    case Code::FALSE: push(false); break;
+    case Code::TRUE: push(true); break;
+    case Code::POP: pop(); break;
+    case Code::DEF_GLOBAL:
+    {
+      const char* name = _RDCSTR();
+      if (auto it = globals_.find(name); it != globals_.end()) {
+        runtime_error("name `%s` is redefined", name);
+        return InterpretRet::ERUNTIME;
+      }
+      else {
+        globals_[name] = pop();
+      }
+    } break;
+    case Code::GET_GLOBAL:
+    {
+      const char* name = _RDCSTR();
+      if (auto it = globals_.find(name); it != globals_.end()) {
+        push(it->second);
+      }
+      else {
+        runtime_error("name `%s` is not defined", name);
+        return InterpretRet::ERUNTIME;
+      }
+    } break;
+    case Code::SET_GLOBAL:
+    {
+      const char* name = _RDCSTR();
+      if (auto it = globals_.find(name); it != globals_.end()) {
+        it->second = peek();
+      }
+      else {
+        runtime_error("name `%s` is not defined", name);
+        return InterpretRet::ERUNTIME;
+      }
+    } break;
+    case Code::GET_LOCAL: push(stack_[frame->stack_begpos() + _RDBYTE()]); break;
+    case Code::SET_LOCAL: stack_[frame->stack_begpos() + _RDBYTE()] = peek(); break;
+    case Code::GET_UPVALUE:
+    {
+      u8_t slot = _RDBYTE();
+      push(frame->closure()->get_upvalue(slot)->value_asref());
+    } break;
+    case Code::SET_UPVALUE:
+    {
+      u8_t slot = _RDBYTE();
+      frame->closure()->get_upvalue(slot)->set_value(peek());
+    } break;
+    case Code::ADD:
+    {
+      if (peek(0).is_string() && peek(1).is_string()) {
+        StringObject* b = peek(0).as_string();
+        StringObject* a = peek(1).as_string();
+        StringObject* s = StringObject::concat(*this, a, b);
+        pop();
+        pop();
+        push(s);
+      }
+      else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+        double b = pop().as_numeric();
+        double a = pop().as_numeric();
+        push(a + b);
+      }
+      else {
+        runtime_error("operands must be two strings or two numerics");
+        return InterpretRet::ERUNTIME;
+      }
+    } break;
+    case Code::SUB: _BINOP(-); break;
+    case Code::MUL: _BINOP(*); break;
+    case Code::DIV: _BINOP(/); break;
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+    {
+      sz_t argc = c - Code::CALL_0;
+      if (!call(peek(argc), argc))
+        return InterpretRet::ERUNTIME;
+      frame = &frames_.back();
+    } break;
+    case Code::CLOSURE:
+    {
+      FunctionObject* fn = _RDCONST().as_function();
+      ClosureObject* closure = ClosureObject::create(*this, fn);
+      push(closure);
+
+      for (sz_t i = 0; i < fn->upvalues_count(); ++i) {
+        u8_t is_local = _RDBYTE();
+        u8_t index = _RDBYTE();
+        if (is_local)
+          closure->set_upvalue(i, capture_upvalue(&stack_[frame->stack_begpos() + index]));
+        else
+          closure->set_upvalue(i, frame->closure()->get_upvalue(index));
+      }
+    } break;
+    case Code::CLOSE_UPVALUE: close_upvalues(&stack_.back()); pop(); break;
+    case Code::RETURN:
+    {
+      Value result = pop();
+      if (frame->stack_begpos() > 0 && stack_.size() > frame->stack_begpos())
+        close_upvalues(&stack_[frame->stack_begpos()]);
+      else
+        close_upvalues(nullptr);
+
+      frames_.pop_back();
+      if (frames_.empty())
+        return InterpretRet::OK;
+
+      stack_.resize(frame->stack_begpos());
+      push(result);
+
+      frame = &frames_.back();
+    } break;
+    }
+  }
+
+#undef _BINOP
+#undef _RDCSTR
+#undef _RDSTR
+#undef _RDCONST
+#undef _RDBYTE
+  return InterpretRet::OK;
 }
 
 }

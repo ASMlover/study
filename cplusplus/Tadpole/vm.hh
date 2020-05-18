@@ -45,6 +45,10 @@ class VM final : private UnCopyable {
 
   bool call(ClosureObject* closure, sz_t argc);
   bool call(const Value& callee, sz_t argc);
+  UpvalueObject* capture_upvalue(Value* local);
+  void close_upvalues(Value* last);
+
+  InterpretRet run();
 
   void collect();
   void reclaim_object(BaseObject* o);
@@ -57,6 +61,8 @@ public:
   void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
+
+  InterpretRet interpret(const str_t& source_bytes);
 
   inline bool is_running() const noexcept { return is_running_; }
   inline void terminate() noexcept { is_running_ = false; }

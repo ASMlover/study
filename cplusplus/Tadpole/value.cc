@@ -162,8 +162,8 @@ void UpvalueObject::gc_blacken(VM& vm) {
   vm.mark_value(closed_);
 }
 
-UpvalueObject* UpvalueObject::create(VM& vm, Value* value) {
-  return make_object<UpvalueObject>(vm, value);
+UpvalueObject* UpvalueObject::create(VM& vm, Value* value, UpvalueObject* next) {
+  return make_object<UpvalueObject>(vm, value, next);
 }
 
 ClosureObject::ClosureObject(FunctionObject* fn) noexcept
