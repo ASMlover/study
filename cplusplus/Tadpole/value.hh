@@ -209,7 +209,7 @@ public:
   virtual str_t stringify() const override;
   virtual void gc_blacken(VM& vm) override;
 
-  static UpvalueObject* create(VM& vm, Value* value);
+  static UpvalueObject* create(VM& vm, Value* value, UpvalueObject* next = nullptr);
 };
 
 class ClosureObject final : public BaseObject {
