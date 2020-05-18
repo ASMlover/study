@@ -62,6 +62,8 @@ public:
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
 
+  InterpretRet interpret(const str_t& source_bytes);
+
   inline bool is_running() const noexcept { return is_running_; }
   inline void terminate() noexcept { is_running_ = false; }
 
