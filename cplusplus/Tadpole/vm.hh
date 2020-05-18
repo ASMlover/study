@@ -45,6 +45,10 @@ class VM final : private UnCopyable {
 
   bool call(ClosureObject* closure, sz_t argc);
   bool call(const Value& callee, sz_t argc);
+  UpvalueObject* capture_upvalue(Value* local);
+  void close_upvalues(Value* last);
+
+  InterpretRet run();
 
   void collect();
   void reclaim_object(BaseObject* o);
