@@ -83,7 +83,7 @@ inline str_t as_string(T&& x, Args&&... args) noexcept {
 
 template <typename... Args>
 inline str_t string_format(strv_t fmt, const Args&... args) {
-  sz_t sz = std::snprintf(nullptr, 0, fmt.data(), args...) + 1;
+  int sz = std::snprintf(nullptr, 0, fmt.data(), args...) + 1;
   std::unique_ptr<char[]> buf{ new char[sz] };
   std::snprintf(buf.get(), sz, fmt.data(), args...);
   return str_t(buf.get(), buf.get() + sz - 1);
