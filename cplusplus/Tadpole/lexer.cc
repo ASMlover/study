@@ -1,4 +1,3 @@
-#include <cstdarg>
 #include "lexer.hh"
 
 namespace tadpole {
@@ -30,7 +29,7 @@ Token Lexer::next_token() {
   case '=': return make_token(TokenKind::TK_EQ);
   case '"': return make_string();
   }
-  return make_error("unexpected charactor `%c`", c);
+  return make_error(string_format("unexpected charactor `%c`", c));
 }
 
 void Lexer::skip_whitespace() {
@@ -63,29 +62,6 @@ Token Lexer::make_token(TokenKind kind) {
 
 Token Lexer::make_error(const str_t& message) {
   return Token(TokenKind::TK_ERR, message, lineno_);
-}
-
-Token Lexer::make_error(const char* format, ...) {
-  ss_t ss;
-  va_list ap;
-
-  va_start(ap, format);
-  while (*format) {
-    switch (*format++) {
-    case 'c':
-      ss << (char)va_arg(ap, char);
-      break;
-    case 'd':
-      ss << (int)va_arg(ap, int);
-      break;
-    case 's':
-      ss << (char*)va_arg(ap, char*);
-      break;
-    }
-  }
-  va_end(ap);
-
-  return Token(TokenKind::TK_ERR, ss.str(), lineno_);
 }
 
 Token Lexer::make_identifier() {

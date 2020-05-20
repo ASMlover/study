@@ -38,7 +38,6 @@ class Lexer final : private UnCopyable {
   Token make_token(TokenKind kind, const str_t& literal);
   Token make_token(TokenKind kind);
   Token make_error(const str_t& message);
-  Token make_error(const char* format, ...);
   Token make_identifier();
   Token make_numeric();
   Token make_string();
