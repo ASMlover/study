@@ -66,4 +66,8 @@ public:
   }
 };
 
+inline std::ostream& operator<<(std::ostream& out, TokenKind kind) {
+  return out << get_token_name(kind);
+}
+
 }
