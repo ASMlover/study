@@ -68,7 +68,7 @@ class Scheduler(object):
     def new(self, target: TaskGenerator) -> int:
         new_task = Task(target)
         self.taskmap[new_task.tid] = new_task
-        self.schedule(task)
+        self.schedule(new_task)
         return new_task.tid
 
     def schedule(self, task: Task) -> None:
