@@ -17,8 +17,10 @@ public:
   }
 
   ~Tester() noexcept {
-    std::cerr << fname_ << "(" << lineno_ << "): " << ss_.str() << std::endl;
-    std::exit(-1);
+    if (!ok_) {
+      std::cerr << fname_ << "(" << lineno_ << "): " << ss_.str() << std::endl;
+      std::exit(-1);
+    }
   }
 
   inline Tester& is_true(bool cond, strv_t msg) noexcept {
