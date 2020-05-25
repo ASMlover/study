@@ -55,11 +55,20 @@ public:
     return *this;
   }
 
+  inline bool operator==(const Token& r) const noexcept {
+    return literal_ == r.literal_;
+  }
+
+  inline bool operator!=(const Token& r) const noexcept {
+    return literal_ != r.literal_;
+  }
+
   inline TokenKind kind() const noexcept { return kind_; }
   inline const str_t& literal() const noexcept { return literal_; }
   inline int lineno() const noexcept { return lineno_; }
   inline double as_numeric() const noexcept { return std::atof(literal_.c_str()); }
   inline const str_t& as_string() const noexcept { return literal_; }
+  inline const char* as_cstring() const noexcept { return literal_.c_str(); }
 
   static Token make(const str_t& literal) {
     return Token(TokenKind::TK_STRING, literal, 0);
