@@ -55,6 +55,14 @@ public:
     return *this;
   }
 
+  inline bool operator==(const Token& r) const noexcept {
+    return literal_ == r.literal_;
+  }
+
+  inline bool operator!=(const Token& r) const noexcept {
+    return literal_ != r.literal_;
+  }
+
   inline TokenKind kind() const noexcept { return kind_; }
   inline const str_t& literal() const noexcept { return literal_; }
   inline int lineno() const noexcept { return lineno_; }
