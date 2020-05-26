@@ -9,7 +9,7 @@ TADPOLE_TEST(TadpoleLexer) {
       auto t = lex.next_token();\
       std::fprintf(stdout, "%-24s | %-32s | %d\n",\
         tadpole::get_token_name(t.kind()),\
-        t.literal().c_str(),\
+        t.as_cstring(),\
         t.lineno());\
       if (t.kind() == TK::TK_EOF)\
         break;\
