@@ -1,4 +1,5 @@
 #include <functional>
+#include <iostream>
 #include <vector>
 #include "lexer.hh"
 #include "value.hh"
@@ -165,6 +166,129 @@ public:
         errfn(string_format("name `%s` is redefined", name.as_cstring()));
     }
     locals_.push_back(LocalVar(name, -1, false));
+  }
+};
+
+class TadpoleParser final : private UnCopyable {
+  static constexpr int kMaxArguments = 8;
+
+  VM& vm_;
+  Lexer& lex_;
+  Token prev_;
+  Token curr_;
+
+  bool had_error_{};
+  bool panic_mode_{};
+
+  Compiler* curr_compiler_{};
+
+  void error_at(const Token& tok, const str_t& msg) noexcept {
+    if (panic_mode_)
+      return;
+    panic_mode_ = true;
+
+    std::cerr
+      << "SyntaxError:" << std::endl
+      << "  [LINE: " << tok.lineno() << "] ERROR ";
+    if (tok.kind() == TokenKind::TK_EOF)
+      std::cerr << "at end ";
+    else if (tok.kind() == TokenKind::TK_ERR)
+      (void)0;
+    else
+      std::cerr << "at `" << tok.literal() << "` ";
+    std::cerr << ": " << msg << std::endl;
+
+    had_error_ = true;
+  }
+
+  inline void error_at_current(const str_t& msg) noexcept { error_at(curr_, msg); }
+  inline void error(const str_t& msg) noexcept { error_at(prev_, msg); }
+  inline Chunk* curr_chunk() const noexcept { return curr_compiler_->fn()->chunk(); }
+  inline bool check(TokenKind kind) const noexcept { return curr_.kind() == kind; }
+
+  void advance() {
+    prev_ = curr_;
+
+    for (;;) {
+      curr_ = lex_.next_token();
+      if (!check(TokenKind::TK_ERR))
+        break;
+
+      error_at_current(curr_.as_string());
+    }
+  }
+
+  void consume(TokenKind kind, const str_t& msg) {
+    if (check(kind))
+      advance();
+    else
+      error_at_current(msg);
+  }
+
+  bool match(TokenKind kind) {
+    if (check(kind)) {
+      advance();
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T> inline void emit_byte(T byte) noexcept {
+    curr_chunk()->write(byte, prev_.lineno());
+  }
+
+  template <typename T, typename U> inline void emit_bytes(T b1, U b2) noexcept {
+    emit_byte(b1);
+    emit_byte(b2);
+  }
+
+  inline void emit_return() noexcept { emit_bytes(Code::NIL, Code::RETURN); }
+
+  inline void emit_constant(const Value& v) noexcept {
+    emit_bytes(Code::CONSTANT, curr_chunk()->add_constant(v));
+  }
+
+  void init_compiler(Compiler* compiler, int scope_depth, FunType fn_type) {
+    StringObject* func_name{};
+    if (fn_type == FunType::FUNCTION)
+      func_name = StringObject::create(vm_, prev_.as_string());
+
+    compiler->set_compiler(
+      curr_compiler_,
+      FunctionObject::create(vm_, func_name),
+      fn_type,
+      scope_depth);
+    curr_compiler_ = compiler;
+
+    curr_compiler_->append_local(LocalVar(Token::make(""), curr_compiler_->scope_depth(), false));
+  }
+
+  FunctionObject* finish_compiler() {
+    emit_return();
+
+    FunctionObject* fn = curr_compiler_->fn();
+
+#if defined(TADPOLE_DEBUG_VM)
+    if (!had_error_)
+      curr_chunk()->dis(fn->name_asstr());
+#endif
+
+    curr_compiler_ = curr_compiler_->enclosing();
+    return fn;
+  }
+
+  inline void enter_scope() {
+    curr_compiler_->enter_scope();
+  }
+
+  inline void leave_scope() {
+    curr_compiler_->leave_scope([this](const LocalVar& var) {
+      emit_byte(var.is_upvalue ? Code::CLOSE_UPVALUE : Code::POP);
+      });
+  }
+
+  inline u8_t identifier_constant(const Token& name) noexcept {
+    return curr_chunk()->add_constant(StringObject::create(vm_, name.as_string()));
   }
 };
 
