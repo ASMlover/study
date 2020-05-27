@@ -290,6 +290,75 @@ class TadpoleParser final : private UnCopyable {
   inline u8_t identifier_constant(const Token& name) noexcept {
     return curr_chunk()->add_constant(StringObject::create(vm_, name.as_string()));
   }
+
+  u8_t parse_variable(const str_t& msg) {
+    consume(TokenKind::TK_IDENTIFIER, msg);
+
+    curr_compiler_->declare_localvar(prev_, [this](const str_t& msg) { error(msg); });
+    if (curr_compiler_->scope_depth() > 0)
+      return 0;
+    return identifier_constant(prev_);
+  }
+
+  void make_initialized() {
+    if (curr_compiler_->scope_depth() == 0)
+      return;
+    curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
+  }
+
+  void define_global(u8_t global) {
+    if (curr_compiler_->scope_depth() > 0) {
+      make_initialized();
+      return;
+    }
+    emit_bytes(Code::DEF_GLOBAL, global);
+  }
+
+  u8_t arguments() {
+    u8_t argc = 0;
+    if (!check(TokenKind::TK_LPAREN)) {
+      do {
+        expression();
+        ++argc;
+
+        if (argc > kMaxArguments)
+          error(string_format("cannot have more than `%d` arguments", kMaxArguments));
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `;` after function arguments");
+
+    return argc;
+  }
+
+  void named_variable(const Token& name, bool can_assign) {
+    auto errfn = [this](const str_t& msg) { error(msg); };
+
+    Code getop, setop;
+    int arg = curr_compiler_->resolve_local(name, errfn);
+    if (arg != -1) {
+      getop = Code::GET_LOCAL;
+      setop = Code::SET_LOCAL;
+    }
+    else if (arg = curr_compiler_->resolve_upvalue(name, errfn); arg != -1) {
+      getop = Code::GET_UPVALUE;
+      setop = Code::SET_UPVALUE;
+    }
+    else {
+      arg = identifier_constant(name);
+      getop = Code::GET_GLOBAL;
+      setop = Code::SET_GLOBAL;
+    }
+
+    if (can_assign && match(TokenKind::TK_EQ)) {
+      expression();
+      emit_bytes(setop, arg);
+    }
+    else {
+      emit_bytes(getop, arg);
+    }
+  }
+
+  void expression() {}
 };
 
 FunctionObject* TadpoleCompiler::compile(VM& vm, const str_t& source_bytes) {
