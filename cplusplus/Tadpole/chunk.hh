@@ -48,6 +48,10 @@ inline int operator-(Code a, Code b) noexcept {
   return as_type<int>(a) - as_type<int>(b);
 }
 
+template <typename T> inline Code operator+(Code a, T b) noexcept {
+  return as_type<Code>(as_type<int>(a) + as_type<int>(b));
+}
+
 class Chunk final : private UnCopyable {
   std::vector<u8_t> codes_;
   std::vector<int> lines_;
