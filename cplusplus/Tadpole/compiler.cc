@@ -358,6 +358,106 @@ class TadpoleParser final : private UnCopyable {
     }
   }
 
+  const ParseRule& get_rule(TokenKind kind) const {
+#define _RULE(fn) [](TadpoleParser& p, bool b) { p.fn(b); }
+
+    static const ParseRule _rules[] = {
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(COMMA, ",")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(MINUS, "-")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SEMI, ";")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SLASH, "/")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(STAR, "*")
+      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(EQ, "=")
+
+      {nullptr, nullptr, Precedence::NONE}, // TOKEN(IDENTIFIER, "Tadpole-Identifier")
+      {nullptr, nullptr, Precedence::NONE}, // TOKEN(NUMERIC, "Tadpole-Numeric")
+      {nullptr, nullptr, Precedence::NONE}, // TOKEN(STRING, "Tadpole-String")
+
+      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FN, "fn")
+      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(NIL, "nil")
+      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(VAR, "var")
+
+      {nullptr, nullptr, Precedence::NONE}, // TOKEN(EOF, "Tadpole-EOF")
+      {nullptr, nullptr, Precedence::NONE}, // TOKEN(ERR, "Tadpole-ERR")
+    };
+
+#undef _RULE
+    return _rules[as_type<int>(kind)];
+  }
+
+  void parse_precedence(Precedence precedence) {
+    advance();
+    auto& prefix_fn = get_rule(prev_.kind()).prefix;
+    if (!prefix_fn) {
+      error("expect expression");
+      return;
+    }
+
+    bool can_assign = precedence <= Precedence::ASSIGN;
+    prefix_fn(*this, can_assign);
+
+    while (precedence <= get_rule(curr_.kind()).precedence) {
+      advance();
+      auto& infix_fn = get_rule(prev_.kind()).infix;
+
+      if (infix_fn)
+        infix_fn(*this, can_assign);
+    }
+
+    if (can_assign && match(TokenKind::TK_EQ)) {
+      error("invalid assignment target");
+      expression();
+    }
+  }
+
+  void binary(bool can_assign) {
+    TokenKind op = prev_.kind();
+
+    parse_precedence(get_rule(op).precedence + 1);
+    switch (op) {
+    case TokenKind::TK_PLUS: emit_byte(Code::ADD); break;
+    case TokenKind::TK_MINUS: emit_byte(Code::SUB); break;
+    case TokenKind::TK_STAR: emit_byte(Code::MUL); break;
+    case TokenKind::TK_SLASH: emit_byte(Code::DIV); break;
+    }
+  }
+
+  void call(bool can_assign) {
+    emit_byte(Code::CALL_0 + arguments());
+  }
+
+  void grouping(bool can_assign) {
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after grouping expression");
+  }
+
+  void literal(bool can_assign) {
+    switch (prev_.kind()) {
+    case TokenKind::KW_NIL: emit_byte(Code::NIL); break;
+    case TokenKind::KW_TRUE: emit_byte(Code::TRUE); break;
+    case TokenKind::KW_FALSE: emit_byte(Code::FALSE); break;
+    }
+  }
+
+  void variable(bool can_assign) {
+    named_variable(prev_, can_assign);
+  }
+
+  void numeric(bool can_assign) {
+    emit_constant(prev_.as_numeric());
+  }
+
+  void string(bool can_assign) {
+    emit_constant(StringObject::create(vm_, prev_.as_string()));
+  }
+
   void expression() {}
 };
 
