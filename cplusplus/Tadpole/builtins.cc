@@ -24,55 +24,43 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <cctype>
-#include "token.hh"
+#include <chrono>
+#include <ctime>
+#include <iostream>
+#include "vm.hh"
+#include "builtins.hh"
 
 namespace tadpole {
 
-class Lexer final : private UnCopyable {
-  const str_t& source_bytes_;
-  sz_t begpos_{};
-  sz_t curpos_{};
-  int lineno_{1};
+void register_builtins(VM& vm) {
+  // fn print(arg1: Value, arg2: Value, ...) -> nil
+  vm.define_native("print", [](sz_t argc, Value* args) -> Value {
+      for (sz_t i = 0; i < argc; ++i)
+        std::cout << args[i] << " ";
+      std::cout << std::endl;
 
-  inline bool is_alpha(char c) const noexcept { return std::isalpha(c) || c == '_'; }
-  inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
-  inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
-  inline bool is_tail() const noexcept { return curpos_ >= source_bytes_.size(); }
-  inline char advance() noexcept { return source_bytes_[curpos_++]; }
+      return nullptr;
+    });
 
-  inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
-    return source_bytes_.substr(begpos, endpos - begpos);
-  }
+  // fn exit() -> nil
+  vm.define_native("exit", [&vm](sz_t, Value*) -> Value {
+      vm.terminate();
+      return nullptr;
+    });
 
-  inline char peek(int distance = 0) const noexcept {
-    return curpos_ + distance >= source_bytes_.size()
-      ? 0 : source_bytes_[curpos_ + distance];
-  }
+  // fn time() -> numeric
+  //  UNIT: s
+  vm.define_native("time", [](sz_t, Value*) -> Value {
+      return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+    });
 
-  inline bool match(char expected) noexcept {
-    if (source_bytes_[curpos_] == expected) {
-      advance();
-      return true;
-    }
-    return false;
-  }
-
-  void skip_whitespace();
-  Token make_token(TokenKind kind, const str_t& literal);
-  Token make_token(TokenKind kind);
-  Token make_error(const str_t& message);
-  Token make_identifier();
-  Token make_numeric();
-  Token make_string();
-public:
-  Lexer(const str_t& source_bytes) noexcept
-    : source_bytes_(source_bytes) {
-  }
-
-  Token next_token();
-};
+  // fn clock() -> numeric
+  //  UNIT: us
+  vm.define_native("clock", [](sz_t, Value*) -> Value {
+      return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    });
+}
 
 }

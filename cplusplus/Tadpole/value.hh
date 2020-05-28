@@ -1,3 +1,29 @@
+// Copyright (c) 2020 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <functional>
@@ -81,6 +107,10 @@ public:
   Value(u64_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
   Value(float n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
   Value(double n) noexcept : type_(ValueType::NUMERIC) { as_.numeric = n; }
+#if defined(__GNUC__) || defined(__clang__)
+  Value(long long n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(unsigned long long n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+#endif
   Value(BaseObject* o) noexcept : type_(ValueType::OBJECT) { as_.object = o; }
 
   inline ObjType objtype() const noexcept { return as_.object->type(); }
@@ -96,7 +126,7 @@ public:
   inline bool is_closure() const noexcept { return is(ObjType::CLOSURE); }
 
   inline bool as_boolean() const noexcept { return as_.boolean; }
-  inline bool as_numeric() const noexcept { return as_.numeric; }
+  inline double as_numeric() const noexcept { return as_.numeric; }
   inline BaseObject* as_object() const noexcept { return as_.object; }
   inline StringObject* as_string() const noexcept { return as_.object->as_string(); }
   inline const char* as_cstring() const noexcept { return as_.object->as_cstring(); }
