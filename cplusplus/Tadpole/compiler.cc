@@ -300,7 +300,7 @@ class TadpoleParser final : private UnCopyable {
     return identifier_constant(prev_);
   }
 
-  void make_initialized() {
+  void mark_initilized() {
     if (curr_compiler_->scope_depth() == 0)
       return;
     curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
@@ -308,7 +308,7 @@ class TadpoleParser final : private UnCopyable {
 
   void define_global(u8_t global) {
     if (curr_compiler_->scope_depth() > 0) {
-      make_initialized();
+      mark_initilized();
       return;
     }
     emit_bytes(Code::DEF_GLOBAL, global);
@@ -316,7 +316,7 @@ class TadpoleParser final : private UnCopyable {
 
   u8_t arguments() {
     u8_t argc = 0;
-    if (!check(TokenKind::TK_LPAREN)) {
+    if (!check(TokenKind::TK_RPAREN)) {
       do {
         expression();
         ++argc;
@@ -362,30 +362,30 @@ class TadpoleParser final : private UnCopyable {
 #define _RULE(fn) [](TadpoleParser& p, bool b) { p.fn(b); }
 
     static const ParseRule _rules[] = {
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LPAREN, "(")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACE, "{")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACE, "}")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(COMMA, ",")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(MINUS, "-")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(PLUS, "+")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SEMI, ";")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SLASH, "/")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(STAR, "*")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(EQ, "=")
+      {_RULE(grouping), _RULE(call), Precedence::CALL}, // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(COMMA, ",")
+      {nullptr, _RULE(binary), Precedence::TERM},       // PUNCTUATOR(MINUS, "-")
+      {nullptr, _RULE(binary), Precedence::TERM},       // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(SEMI, ";")
+      {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(SLASH, "/")
+      {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(STAR, "*")
+      {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(EQ, "=")
 
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(IDENTIFIER, "Tadpole-Identifier")
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(NUMERIC, "Tadpole-Numeric")
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(STRING, "Tadpole-String")
+      {_RULE(variable), nullptr, Precedence::NONE},     // TOKEN(IDENTIFIER, "Tadpole-Identifier")
+      {_RULE(numeric), nullptr, Precedence::NONE},      // TOKEN(NUMERIC, "Tadpole-Numeric")
+      {_RULE(string), nullptr, Precedence::NONE},       // TOKEN(STRING, "Tadpole-String")
 
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FALSE, "false")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(TRUE, "true")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(VAR, "var")
+      {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(FN, "fn")
+      {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(NIL, "nil")
+      {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE},             // KEYWORD(VAR, "var")
 
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(EOF, "Tadpole-EOF")
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(ERR, "Tadpole-ERR")
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(EOF, "Tadpole-EOF")
+      {nullptr, nullptr, Precedence::NONE},             // TOKEN(ERR, "Tadpole-ERR")
     };
 
 #undef _RULE
@@ -458,15 +458,149 @@ class TadpoleParser final : private UnCopyable {
     emit_constant(StringObject::create(vm_, prev_.as_string()));
   }
 
-  void expression() {}
+  void block() {
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+      declaration();
+    consume(TokenKind::TK_LBRACE, "expect `}` after block body");
+  }
+
+  void function(FunType fn_type) {
+    Compiler fn_compiler;
+    init_compiler(&fn_compiler, 1, fn_type);
+
+    consume(TokenKind::TK_LPAREN, "expect `(` after function name");
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        u8_t param_constant = parse_variable("expect function parameter's name");
+        define_global(param_constant);
+
+        curr_compiler_->fn()->inc_arity();
+        if (curr_compiler_->fn()->arity() > kMaxArguments)
+          error(string_format("cannot have more than `%d` parameters", kMaxArguments));
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `)` after function parameters");
+
+    consume(TokenKind::TK_LBRACE, "expect `{` before function body");
+    block();
+
+    leave_scope();
+    FunctionObject* fn = finish_compiler();
+
+    emit_bytes(Code::CLOSURE, curr_chunk()->add_constant(fn));
+    for (sz_t i = 0; i < fn->upvalues_count(); ++i) {
+      auto& upvalue = fn_compiler.get_upvalue(i);
+      emit_bytes(upvalue.is_local ? 1 : 0, upvalue.index);
+    }
+  }
+
+  void synchronize() {
+    panic_mode_ = false;
+
+    while (!check(TokenKind::TK_EOF)) {
+      if (prev_.kind() == TokenKind::TK_SEMI)
+        break;
+
+      switch (curr_.kind()) {
+      case TokenKind::KW_FN:
+      case TokenKind::KW_VAR:
+        return;
+      default: break;
+      }
+      advance();
+    }
+  }
+
+  void expression() {
+    parse_precedence(Precedence::ASSIGN);
+  }
+
+  void declaration() {
+    if (match(TokenKind::KW_FN))
+      fn_decl();
+    else if (match(TokenKind::KW_VAR))
+      var_decl();
+    else
+      statement();
+
+    if (panic_mode_)
+      synchronize();
+  }
+
+  void statement() {
+    if (match(TokenKind::TK_LPAREN)) {
+      enter_scope();
+      block();
+      leave_scope();
+    }
+    else {
+      expr_stmt();
+    }
+  }
+
+  void fn_decl() {
+    u8_t fn_constant = parse_variable("expect function name");
+    mark_initilized();
+    function(FunType::FUNCTION);
+
+    define_global(fn_constant);
+  }
+
+  void var_decl() {
+    u8_t var_constant = parse_variable("expect variable name");
+
+    if (match(TokenKind::TK_EQ))
+      expression();
+    else
+      emit_byte(Code::NIL);
+    consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
+
+    define_global(var_constant);
+  }
+
+  void expr_stmt() {
+    expression();
+    consume(TokenKind::TK_SEMI, "expect `;` after expression");
+    emit_byte(Code::POP);
+  }
+public:
+  TadpoleParser(VM& vm, Lexer& lex) noexcept
+    : vm_(vm), lex_(lex) {
+  }
+
+  inline void mark_parser() {
+    for (Compiler* c = curr_compiler_; c != nullptr; c = c->enclosing())
+      vm_.mark_object(c->fn());
+  }
+
+  FunctionObject* compile() {
+    Compiler compiler;
+    init_compiler(&compiler, 0, FunType::TOPLEVEL);
+
+    advance();
+    while (!check(TokenKind::TK_EOF))
+      declaration();
+    FunctionObject* fn = finish_compiler();
+
+    return had_error_ ? nullptr : fn;
+  }
 };
 
 FunctionObject* TadpoleCompiler::compile(VM& vm, const str_t& source_bytes) {
-  // TODO:
+  Lexer lex(source_bytes);
 
+  if (tparser_ = new TadpoleParser(vm, lex); tparser_ != nullptr) {
+    FunctionObject* fn = tparser_->compile();
+    delete tparser_;
+
+    return fn;
+  }
   return nullptr;
 }
 
-void TadpoleCompiler::mark_compiler() {}
+void TadpoleCompiler::mark_compiler() {
+  if (tparser_ != nullptr)
+    tparser_->mark_parser();
+}
 
 }
