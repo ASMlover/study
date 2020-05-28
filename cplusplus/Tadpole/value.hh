@@ -81,6 +81,10 @@ public:
   Value(u64_t n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
   Value(float n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
   Value(double n) noexcept : type_(ValueType::NUMERIC) { as_.numeric = n; }
+#if defined(__GNUC__) || defined(__clang__)
+  Value(long long n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+  Value(unsigned long long n) noexcept : type_(ValueType::NUMERIC) { set_numeric(n); }
+#endif
   Value(BaseObject* o) noexcept : type_(ValueType::OBJECT) { as_.object = o; }
 
   inline ObjType objtype() const noexcept { return as_.object->type(); }
