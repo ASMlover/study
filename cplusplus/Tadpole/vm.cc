@@ -3,6 +3,7 @@
 #include <iostream>
 #include "chunk.hh"
 #include "compiler.hh"
+#include "builtins.hh"
 #include "vm.hh"
 
 namespace tadpole {
@@ -29,6 +30,8 @@ public:
 VM::VM() noexcept {
   tcompiler_ = new TadpoleCompiler();
   stack_.reserve(kDefaultCap);
+
+  register_builtins(*this);
 }
 
 VM::~VM() {

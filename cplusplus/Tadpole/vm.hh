@@ -28,7 +28,7 @@ class VM final : private UnCopyable {
   std::vector<Value> stack_;
   std::vector<CallFrame> frames_;
 
-  std::unordered_map<strv_t, Value> globals_;
+  std::unordered_map<str_t, Value> globals_;
   std::unordered_map<u32_t, StringObject*> interned_strings_;
   UpvalueObject* open_upvalues_{};
 
