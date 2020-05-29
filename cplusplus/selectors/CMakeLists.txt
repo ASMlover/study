@@ -44,12 +44,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         /DUNICODE
         /D_UNICODE
         /D_CRT_SECURE_NO_WARNINGS
-        /D_CRT_NONSTDC_NO_WARNINGS)
+        /D_CRT_NONSTDC_NO_WARNINGS
+        /DSEL_WIN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest /await")
     set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
     set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 else()
-    add_definitions(-Wno-switch)
+    add_definitions(-DSEL_LINUX -Wno-switch)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -Wall -Werror -march=native")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
