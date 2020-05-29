@@ -1,13 +1,22 @@
 #pragma once
 
 #include <cstdint>
+#include <future>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <thread>
 
 #if !defined(SEL_UNUSED)
 # define SEL_UNUSED(x) ((void)x)
+#endif
+
+#if defined(__x86_64) || defined(__x86_64__) ||\
+  defined(__amd64__) || defined(__amd64) || defined(_M_X64)
+# define SEL_ARCH64
+#else
+# define SEL_ARCH32
 #endif
 
 namespace sel {
@@ -23,6 +32,11 @@ using u32_t   = std::uint32_t;
 using i64_t   = std::int64_t;
 using u64_t   = std::uint64_t;
 using sz_t    = std::size_t;
+#if defined(SEL_ARCH64)
+using ssz_t   = std::int64_t;
+#else
+using ssz_t   = std::int32_t;
+#endif
 using str_t   = std::string;
 using strv_t  = std::string_view;
 using ss_t    = std::stringstream;
@@ -47,6 +61,14 @@ protected:
   ~UnCopyable() noexcept = default;
 };
 
+template <typename Object> class Singleton : private UnCopyable {
+public:
+  static Object& get_instance() {
+    static Object _ins;
+    return _ins;
+  }
+};
+
 template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
 }
@@ -57,6 +79,12 @@ template <typename T> inline T* as_rawptr(const std::unique_ptr<T>& p) noexcept 
 
 template <typename T> inline T* as_rawptr(const std::shared_ptr<T>& p) noexcept {
   return p.get();
+}
+
+template <typename Fn, typename... Args>
+inline auto async_wrap(Fn&& fn, Args&&... args) noexcept {
+  return std::async(std::launch::async,
+    std::forward<Fn>(fn), std::forward<Args>(args)...);
 }
 
 }
