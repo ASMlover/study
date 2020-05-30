@@ -87,4 +87,22 @@ inline auto async_wrap(Fn&& fn, Args&&... args) noexcept {
     std::forward<Fn>(fn), std::forward<Args>(args)...);
 }
 
+template <typename T, typename... Args>
+inline str_t as_string(T&& x, Args&&... args) noexcept {
+  ss_t ss;
+
+  ss << std::forward<T>(x);
+  ((ss << std::forward<Args>(args)), ...);
+
+  return ss.str();
+}
+
+template <typename... Args>
+inline str_t string_format(strv_t fmt, const Args&... args) {
+  int sz = std::snprintf(nullptr, 0, fmt.data(), args...);
+  std::unique_ptr<char[]> buf{ new char[sz + 1] };
+  std::snprintf(buf.get(), sz, fmt.data(), args...);
+  return str_t(buf.get(), buf.get() + sz);
+}
+
 }
