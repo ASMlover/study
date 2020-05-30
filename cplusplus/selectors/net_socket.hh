@@ -22,6 +22,7 @@ public:
   void close(std::error_code& ec);
 
   void setblocking(bool flag);
+  void setblocking(bool flag, std::error_code& ec);
 
   bool listen(strv_t host = "0.0.0.0", u16_t port = 5555, int backlog = 5);
   bool connect(strv_t host = "127.0.0.1", u16_t port = 5555);
