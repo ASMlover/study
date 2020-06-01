@@ -2,64 +2,19 @@
 # include <WS2tcpip.h>
 # include <WinSock2.h>
 
-# define NATIVE_ERR(e)                e
-# define SOCKET_ERR(e)                WSA##e
-# define WIN_OR_POSIX(e_win, e_posix) e_win
-
-# define SHUT_RD                      SD_RECEIVE
-# define SHUT_WR                      SD_SEND
-# define SHUT_RDWR                    SD_BOTH
+# define SHUT_RD    SD_RECEIVE
+# define SHUT_WR    SD_SEND
+# define SHUT_RDWR  SD_BOTH
 #else
 # include <arpa/inet.h>
 # include <netdb.h>
 # include <fcntl.h>
 # include <unistd.h>
-
-# define NATIVE_ERR(e)                e
-# define SOCKET_ERR(e)                e
-# define WIN_OR_POSIX(e_win, e_posix) e_posix
 #endif
-#include <cerrno>
+#include "net_error.hh"
 #include "net_socket.hh"
 
 namespace sel::net {
-
-namespace error {
-  enum Errors {
-    ACCESS_DENIED           = SOCKET_ERR(EACCES),
-    ADDRESS_IN_USE          = SOCKET_ERR(EADDRINUSE),
-    ALREADY_CONNECTED       = SOCKET_ERR(EISCONN),
-    ALREADY_STARTED         = SOCKET_ERR(EALREADY),
-    CONNECTION_ABORTED      = SOCKET_ERR(ECONNABORTED),
-    CONNECTION_REFUSED      = SOCKET_ERR(ECONNREFUSED),
-    CONNECTION_RESET        = SOCKET_ERR(ECONNRESET),
-    BAD_DESCRIPTOR          = SOCKET_ERR(EBADF),
-    FAULT                   = SOCKET_ERR(EFAULT),
-    HOST_UNREACHABLE        = SOCKET_ERR(EHOSTUNREACH),
-    IN_PROGRESS             = SOCKET_ERR(EINPROGRESS),
-    INTERRUPTED             = SOCKET_ERR(EINTR),
-    INVALID_ARGUMENT        = SOCKET_ERR(EINVAL),
-    MESSAGE_SIZE            = SOCKET_ERR(EMSGSIZE),
-    NAME_TOO_LONG           = SOCKET_ERR(ENAMETOOLONG),
-    NETWORK_DOWN            = SOCKET_ERR(ENETDOWN),
-    NETWORK_RESET           = SOCKET_ERR(ENETRESET),
-    NETWORK_UNREACHABLE     = SOCKET_ERR(ENETUNREACH),
-    NO_DESCRIPTOR           = SOCKET_ERR(EMFILE),
-    NO_BUFFER               = SOCKET_ERR(ENOBUFS),
-    NO_MEMORY               = WIN_OR_POSIX(NATIVE_ERR(ERROR_OUTOFMEMORY), NATIVE_ERR(ENOMEM)),
-    NO_PERMISSION           = WIN_OR_POSIX(NATIVE_ERR(ERROR_ACCESS_DENIED), NATIVE_ERR(EPERM)),
-    NO_PROTOCAL_OPTION      = SOCKET_ERR(ENOPROTOOPT),
-    NO_SUCH_DEVIVE          = WIN_OR_POSIX(NATIVE_ERR(ERROR_BAD_UNIT), NATIVE_ERR(ENODEV)),
-    NOT_CONNECTED           = SOCKET_ERR(ENOTCONN),
-    NOT_SOCKET              = SOCKET_ERR(ENOTSOCK),
-    OPERATION_ABORTED       = WIN_OR_POSIX(NATIVE_ERR(ERROR_OPERATION_ABORTED), NATIVE_ERR(ECANCELED)),
-    OPERATION_NOT_SUPPORTED = SOCKET_ERR(EOPNOTSUPP),
-    SHUTDOWN                = SOCKET_ERR(ESHUTDOWN),
-    TIMED_OUT               = SOCKET_ERR(ETIMEDOUT),
-    TRYAGAIN                = WIN_OR_POSIX(NATIVE_ERR(ERROR_RETRY), NATIVE_ERR(EAGAIN)),
-    WOULDBLOCK              = NATIVE_ERR(EWOULDBLOCK),
-  };
-}
 
 inline void clear_errno() noexcept {
 #if defined(SEL_WIN)
@@ -218,6 +173,49 @@ socket_t accept(socket_t sockfd, std::error_code& ec) {
   return newfd;
 }
 
+int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = make_error(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  sockaddr_in host_addr;
+  set_addr(host_addr, host, port);
+  socklen_t addr_len = sizeof(host_addr);
+
+  clear_errno();
+  int r = error_wrap(::connect(sockfd, (const sockaddr*)&host_addr, addr_len), ec);
+  if (r == 0)
+    ec = std::error_code();
+  return r;
+}
+
+int read(socket_t sockfd, sz_t len, void* buf, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = make_error(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  clear_errno();
+  auto nread = error_wrap(::recv(sockfd, as_type<char*>(buf), as_type<int>(len), 0), ec);
+  if (nread >= 0)
+    ec = std::error_code();
+  return nread;
+}
+
+int write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = make_error(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  clear_errno();
+  auto nwrote = error_wrap(::send(sockfd, as_type<const char*>(buf), as_type<int>(len), 0), ec);
+  if (nwrote >= 0)
+    ec = std::error_code();
+  return nwrote;
+}
+
 }
 
 void Socket::open() {
@@ -248,17 +246,41 @@ void Socket::close(std::error_code& ec) {
     impl::close(sockfd_, ec);
 }
 
-void Socket::setblocking(bool flag) {
+void Socket::setblocking(bool is_blocking) {
   std::error_code ec;
-  impl::setblocking(sockfd_, flag, ec);
+  if (impl::setblocking(sockfd_, is_blocking, ec))
+    blocking_ = is_blocking;
   throw_error(ec, "setblocking");
 }
 
-void Socket::setblocking(bool flag, std::error_code& ec) {
-  impl::setblocking(sockfd_, flag, ec);
+void Socket::setblocking(bool is_blocking, std::error_code& ec) {
+  if (impl::setblocking(sockfd_, is_blocking, ec))
+    blocking_ = is_blocking;
 }
 
-bool Socket::listen(strv_t host, u16_t port, int backlog) { return false; }
-bool Socket::connect(strv_t host, u16_t port) { return false; }
+void Socket::listen(strv_t host, u16_t port) {
+  std::error_code ec;
+  impl::bind(sockfd_, host, port, ec);
+  throw_error(ec, "listen(bind)");
+
+  auto r = impl::listen(sockfd_, ec);
+  throw_error(ec, "listen(listen)");
+}
+
+void Socket::listen(strv_t host, u16_t port, std::error_code& ec) {
+  int r = impl::bind(sockfd_, host, port, ec);
+  if (r == 0)
+    impl::listen(sockfd_, ec);
+}
+
+void Socket::connect(strv_t host, u16_t port) {
+  std::error_code ec;
+  impl::connect(sockfd_, host, port, ec);
+  throw_error(ec, "connect");
+}
+
+void Socket::connect(strv_t host, u16_t port, std::error_code& ec) {
+  impl::connect(sockfd_, host, port, ec);
+}
 
 }
