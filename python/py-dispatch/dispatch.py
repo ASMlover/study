@@ -84,3 +84,15 @@ class Scheduler(object):
 
         for task in self.exit_waiting.pop(tid, []):
             self.schedule(task)
+
+    def waitfor_exit(self, task: Task, waitid: int) -> bool:
+        if waitid in self.taskmap:
+            self.exit_waiting.setdefault(waitid, []).append(task)
+            return True
+        return False
+
+    def waitfor_read(self, task: Task, fd: int) -> None:
+        self.read_waiting[fd] = task
+
+    def waitfor_write(self, task: Task, fd: int) -> None:
+        self.writ_waiting[fd] = task
