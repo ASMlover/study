@@ -34,7 +34,7 @@ namespace wrencc {
 
 class FakeTester {};
 
-class Tester final : public Copyable {
+class Tester final : private UnCopyable {
   bool ok_{true};
   strv_t fname_{};
   int lineno_{};
@@ -52,7 +52,7 @@ public:
     }
   }
 
-  Tester& is_true(bool b, strv_t msg) noexcept {
+  inline Tester& is_true(bool b, strv_t msg) noexcept {
     if (!b) {
       ss_ << " Assection failure: " << msg;
       ok_ = false;
@@ -60,11 +60,11 @@ public:
     return *this;
   }
 
-#define WRENCC_HARNESS_BINOP(name, op)\
+#define WRENCC_HARNESS_BINOP(Name, Op)\
   template <typename X, typename Y>\
-  Tester& name(const X& x, const Y& y) noexcept {\
-    if (!(x op y)) {\
-      ss_ << " failed: " << x << (" " #op " ") << y;\
+  inline Tester& Name(const X& x, const Y& y) noexcept {\
+    if (!(x Op y)) {\
+      ss_ << " failed: " << x << (" " #Op " ") << y;\
       ok_ = false;\
     }\
     return *this;\
@@ -79,7 +79,7 @@ public:
 #undef WRENCC_HARNESS_BINOP
 
   template <typename V>
-  Tester& operator<<(const V& value) noexcept {
+  inline Tester& operator<<(const V& value) noexcept {
     if (!ok_)
       ss_ << " " << value;
     return *this;
@@ -101,6 +101,13 @@ int run_all_harness();
 #define WRENCC_CHECK_LE(a, b) wrencc::Tester(__FILE__, __LINE__).is_le((a), (b))
 #define WRENCC_CHECK_LT(a, b) wrencc::Tester(__FILE__, __LINE__).is_lt((a), (b))
 
+#if defined(_WRENCC_RUN_HARNESS)
+# define _WRENCC_HARNESS_IGNORED(Base, Name, Fn)\
+  bool _WrenccHarness_ignored_##Name = wrencc::register_harness(#Base, #Name, Fn);
+#else
+# define _WRENCC_HARNESS_IGNORED(Name, Base, Fn)
+#endif
+
 #define WRENCC_TEST(Name, Base)\
 class _WrenccHarness_##Name : public Base {\
 public:\
@@ -110,6 +117,5 @@ public:\
     t._run();\
   }\
 };\
-bool _WrenccHarness_ignored_##Name =\
-  wrencc::register_harness(#Base, #Name, &_WrenccHarness_##Name::_run_harness);\
+_WRENCC_HARNESS_IGNORED(Base, Name, &_WrenccHarness_##Name::_run_harness)\
 void _WrenccHarness_##Name::_run()

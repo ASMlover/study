@@ -29,5 +29,9 @@
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  return wrencc::run_all_harness();
+#if defined(_WRENCC_RUN_HARNESS)
+  wrencc::run_all_harness();
+#endif
+
+  return 0;
 }

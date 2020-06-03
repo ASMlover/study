@@ -30,23 +30,24 @@
 
 namespace wrencc {
 
-using HarnessContext = std::tuple<strv_t, strv_t, ClosureFn>;
-std::vector<HarnessContext>* g_harness(nullptr);
+using HarnessContext      = std::tuple<strv_t, strv_t, ClosureFn>;
+using HarnessContextList  = std::vector<HarnessContext>;
+std::vector<HarnessContext>* g_harness{};
 
 bool register_harness(strv_t base, strv_t name, ClosureFn&& closure) {
   if (!g_harness)
-    g_harness = new std::vector<HarnessContext>;
+    g_harness = new HarnessContextList;
 
-  g_harness->push_back(std::make_tuple(base, name, std::move(closure)));
+  g_harness->push_back({base, name, std::move(closure)});
   return true;
 }
 
 int run_all_harness() {
-  int total_tests = 0;
-  int passes_tests = 0;
+  sz_t total_tests = 0;
+  sz_t passes_tests = 0;
 
   if (g_harness && !g_harness->empty()) {
-    total_tests = Xt::as_type<int>(g_harness->size());
+    total_tests = g_harness->size();
 
     for (auto& hc : *g_harness) {
       auto [_, hc_name, hc_fn] = hc;
