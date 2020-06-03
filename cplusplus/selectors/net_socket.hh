@@ -30,6 +30,12 @@ public:
   void listen(strv_t host, u16_t port, std::error_code& ec);
   void connect(strv_t host = "127.0.0.1", u16_t port = 5555);
   void connect(strv_t host, u16_t port, std::error_code& ec);
+  socket_t accept();
+  socket_t accept(std::error_code& ec);
+  sz_t read(char* buf, sz_t len);
+  sz_t read(char* buf, sz_t len, std::error_code& ec);
+  sz_t write(const char* buf, sz_t len);
+  sz_t write(const char* buf, sz_t len, std::error_code& ec);
 };
 
 }
