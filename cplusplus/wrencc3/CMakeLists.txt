@@ -33,20 +33,26 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
+option(WRENCC_RUN_HARNESS "enable/disable run harness" OFF)
+
+if (WRENCC_RUN_HARNESS)
+  add_compile_options(-D_WRENCC_RUN_HARNESS)
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   add_definitions(
     /DUNICODE
     /D_UNICODE
     /D_CRT_SECURE_NO_WARNINGS
     /D_CRT_NONSTDC_NO_WARNINGS
-    /D_WREN_WIN)
+    /D_WRENCC_WIN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest")
   set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 else()
   add_definitions(
     -Wno-unused-function
-    -D_WREN_LINUX)
+    -D_WRENCC_LINUX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1z -static-libgc -static-libstdc++ -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
