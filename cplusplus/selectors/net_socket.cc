@@ -295,26 +295,26 @@ socket_t Socket::accept(std::error_code& ec) {
   return sockfd;
 }
 
-sz_t Socket::read(char* buf, sz_t len) {
+sz_t Socket::read(const MutableBuf& buf) {
   std::error_code ec;
-  auto nread = impl::read(sockfd_, len, buf, ec);
+  auto nread = impl::read(sockfd_, buf.size(), buf.data(), ec);
   throw_error(ec, "read");
   return nread;
 }
 
-sz_t Socket::read(char* buf, sz_t len, std::error_code& ec) {
-  return impl::read(sockfd_, len, buf, ec);
+sz_t Socket::read(const MutableBuf& buf, std::error_code& ec) {
+  return impl::read(sockfd_, buf.size(), buf.data(), ec);
 }
 
-sz_t Socket::write(const char* buf, sz_t len) {
+sz_t Socket::write(const ConstBuf& buf) {
   std::error_code ec;
-  auto nwrote = impl::write(sockfd_, buf, len, ec);
+  auto nwrote = impl::write(sockfd_, buf.data(), buf.size(), ec);
   throw_error(ec, "write");
   return nwrote;
 }
 
-sz_t Socket::write(const char* buf, sz_t len, std::error_code& ec) {
-  return impl::write(sockfd_, buf, len, ec);
+sz_t Socket::write(const ConstBuf& buf, std::error_code& ec) {
+  return impl::write(sockfd_, buf.data(), buf.size(), ec);
 }
 
 }

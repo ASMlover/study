@@ -33,10 +33,10 @@ public:
   void connect(strv_t host, u16_t port, std::error_code& ec);
   socket_t accept();
   socket_t accept(std::error_code& ec);
-  sz_t read(char* buf, sz_t len);
-  sz_t read(char* buf, sz_t len, std::error_code& ec);
-  sz_t write(const char* buf, sz_t len);
-  sz_t write(const char* buf, sz_t len, std::error_code& ec);
+  sz_t read(const MutableBuf& buf);
+  sz_t read(const MutableBuf& buf, std::error_code& ec);
+  sz_t write(const ConstBuf& buf);
+  sz_t write(const ConstBuf& buf, std::error_code& ec);
 };
 
 }
