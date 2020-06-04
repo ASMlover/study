@@ -2,6 +2,7 @@
 
 #include <system_error>
 #include "net_types.hh"
+#include "net_buffer.hh"
 
 namespace sel::net {
 
