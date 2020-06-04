@@ -2,6 +2,7 @@
 
 #include <system_error>
 #include "net_types.hh"
+#include "net_buffer.hh"
 
 namespace sel::net {
 
@@ -30,6 +31,12 @@ public:
   void listen(strv_t host, u16_t port, std::error_code& ec);
   void connect(strv_t host = "127.0.0.1", u16_t port = 5555);
   void connect(strv_t host, u16_t port, std::error_code& ec);
+  socket_t accept();
+  socket_t accept(std::error_code& ec);
+  sz_t read(const MutableBuf& buf);
+  sz_t read(const MutableBuf& buf, std::error_code& ec);
+  sz_t write(const ConstBuf& buf);
+  sz_t write(const ConstBuf& buf, std::error_code& ec);
 };
 
 }

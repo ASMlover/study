@@ -283,4 +283,38 @@ void Socket::connect(strv_t host, u16_t port, std::error_code& ec) {
   impl::connect(sockfd_, host, port, ec);
 }
 
+socket_t Socket::accept() {
+  std::error_code ec;
+  socket_t sockfd = impl::accept(sockfd_, ec);
+  throw_error(ec, "accept");
+  return sockfd;
+}
+
+socket_t Socket::accept(std::error_code& ec) {
+  socket_t sockfd = impl::accept(sockfd_, ec);
+  return sockfd;
+}
+
+sz_t Socket::read(const MutableBuf& buf) {
+  std::error_code ec;
+  auto nread = impl::read(sockfd_, buf.size(), buf.data(), ec);
+  throw_error(ec, "read");
+  return nread;
+}
+
+sz_t Socket::read(const MutableBuf& buf, std::error_code& ec) {
+  return impl::read(sockfd_, buf.size(), buf.data(), ec);
+}
+
+sz_t Socket::write(const ConstBuf& buf) {
+  std::error_code ec;
+  auto nwrote = impl::write(sockfd_, buf.data(), buf.size(), ec);
+  throw_error(ec, "write");
+  return nwrote;
+}
+
+sz_t Socket::write(const ConstBuf& buf, std::error_code& ec) {
+  return impl::write(sockfd_, buf.data(), buf.size(), ec);
+}
+
 }
