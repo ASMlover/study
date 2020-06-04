@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+  <buses>
+    <bus>
+      <id>7574</id>
+      <route>147</route>
+      <color>#3300ff</color>
+      <revenue>true</revenue>
+      <direction>North Bound</direction>
+      <latitude>41.925682067871094</latitude>
+      <longitude>-87.63092803955078</longitude>
+      <pattern>2499</pattern>
+      <patternDirection>North Bound</patternDirection>
+      <run>P675</run>
+      <finalStop><![CDATA[Paulina & Howard Terminal]]></finalStop>
+      <operator>42493</operator>
+    </bus>
+    <bus>
+      ...
+    </bus>
+  </buses>
