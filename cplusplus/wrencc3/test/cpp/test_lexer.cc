@@ -28,16 +28,37 @@
 #include "../../lexer.hh"
 
 WRENCC_TEST(Lexer, wrencc::FakeTester) {
-  wrencc::Lexer lex("class A {}");
+#define _CHECK(Kind) WRENCC_CHECK_EQ(lex.next_token().kind(), wrencc::TokenKind::Kind)
 
-  auto t = lex.next_token();
-  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::KW_CLASS);
-  t = lex.next_token();
-  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_INDENTIFIER);
-  t = lex.next_token();
-  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_LBRACE);
-  t = lex.next_token();
-  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_RBRACE);
-  t = lex.next_token();
-  WRENCC_CHECK_EQ(t.kind(), wrencc::TokenKind::TK_EOF);
+  {
+    wrencc::Lexer lex("class A {}");
+    _CHECK(KW_CLASS);
+    _CHECK(TK_INDENTIFIER);
+    _CHECK(TK_LBRACE);
+    _CHECK(TK_RBRACE);
+    _CHECK(TK_EOF);
+  }
+
+  {
+    wrencc::Lexer lex("var a = 56\nvar b = 56\nprint(a + b)");
+    _CHECK(KW_VAR);
+    _CHECK(TK_INDENTIFIER);
+    _CHECK(TK_EQ);
+    _CHECK(TK_NUMERIC);
+    _CHECK(TK_NL);
+    _CHECK(KW_VAR);
+    _CHECK(TK_INDENTIFIER);
+    _CHECK(TK_EQ);
+    _CHECK(TK_NUMERIC);
+    _CHECK(TK_NL);
+    _CHECK(TK_INDENTIFIER);
+    _CHECK(TK_LPAREN);
+    _CHECK(TK_INDENTIFIER);
+    _CHECK(TK_PLUS);
+    _CHECK(TK_INDENTIFIER);
+    _CHECK(TK_RPAREN);
+    _CHECK(TK_EOF);
+  }
+
+#undef _CHECK
 }
