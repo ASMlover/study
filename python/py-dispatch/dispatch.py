@@ -28,6 +28,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import select
 import types
 from collections import deque
 from typing import Any, Deque, Dict, Generator, List, Optional, TextIO, Union
@@ -96,3 +97,19 @@ class Scheduler(object):
 
     def waitfor_write(self, task: Task, fd: int) -> None:
         self.writ_waiting[fd] = task
+
+    def io_task(self) -> DispGenerator:
+        while True:
+            if not self.ready_queue:
+                self.io_poll(None)
+            else:
+                self.io_poll(0)
+            yield
+
+    def io_poll(self, timeout: Optional[float]) -> None:
+        if self.read_waiting or self.writ_waiting:
+            r, w, e = select.select(self.read_waiting, self.writ_waiting, [], timeout)
+            for fd in r:
+                self.schedule(self.read_waiting.pop(fd))
+            for fd in w:
+                self.schedule(self.writ_waiting.pop(fd))
