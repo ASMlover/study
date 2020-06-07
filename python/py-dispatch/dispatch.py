@@ -65,8 +65,9 @@ class Scheduler(object):
         self.ready_queue: Deque[Task] = deque()
         self.taskmap: Dict[int, Task] = {}
         self.exit_waiting: Dict[int, List[Task]] = {}
-        self.read_waiting: Dict[int, Task] = {}
-        self.writ_waiting: Dict[int, Task] = {}
+        self.read_waiting: Dict[int, Task] = {} # reading waiting list
+        self.writ_waiting: Dict[int, Task] = {} # writing waiting list
+        self.expt_waiting: Dict[int, Task] = {} # exceptional waiting list
 
     def create(self, target: DispGenerator) -> int:
         new_task = Task(target)
@@ -76,6 +77,9 @@ class Scheduler(object):
 
     def schedule(self, task: Task) -> None:
         self.ready_queue.append(task)
+
+    def get_task(self, tid: int) -> Optional[Task]:
+        return self.taskmap.get(tid)
 
     def exit(self, task: Task) -> None:
         tid = task.tid
@@ -98,6 +102,9 @@ class Scheduler(object):
     def waitfor_write(self, task: Task, fd: int) -> None:
         self.writ_waiting[fd] = task
 
+    def waitfor_except(self, task: Task, fd: int) -> None:
+        self.expt_waiting[fd] = task
+
     def io_task(self) -> DispGenerator:
         while True:
             if not self.ready_queue:
@@ -108,8 +115,76 @@ class Scheduler(object):
 
     def io_poll(self, timeout: Optional[float]) -> None:
         if self.read_waiting or self.writ_waiting:
-            r, w, e = select.select(self.read_waiting, self.writ_waiting, [], timeout)
+            r, w, e = select.select(self.read_waiting,
+                    self.writ_waiting, self.expt_waiting, timeout)
             for fd in r:
                 self.schedule(self.read_waiting.pop(fd))
             for fd in w:
                 self.schedule(self.writ_waiting.pop(fd))
+            for fd in e:
+                self.schedule(self.expt_waiting.pop(fd))
+
+    def main_loop(self) -> None:
+        self.create(self.io_task())
+        while self.taskmap:
+            task = self.ready_queue.popleft()
+            try:
+                result = task.run()
+                if isinstance(result, SystemCall):
+                    result.task = task
+                    result.sched = self
+                    result.handle()
+                    continue
+            except StopIteration:
+                self.exit(task)
+                continue
+            self.schedule(task)
+
+class GetTid(SystemCall):
+    def handle(self) -> None:
+        self.task.sendval = self.task.tid
+        self.sched.schedule(self.task)
+
+class NewTask(SystemCall):
+    def __init__(self, target: DispGenerator) -> None:
+        super(NewTask, self).__init__()
+        self.target = target
+
+    def handle(self) -> None:
+        tid = self.sched.create(self.target)
+        self.task.sendval = tid
+        self.sched.schedule(self.task)
+
+class KillTask(SystemCall):
+    def __init__(self, tid: int) -> None:
+        super(KillTask, self).__init__()
+        self.tid = tid
+
+    def handle(self) -> None:
+        task = self.sched.get_task(self.tid)
+        if task:
+            task.target.close()
+            self.task.sendval = True
+        else:
+            self.task.sendval = False
+        self.sched.schedule(self.task)
+
+def __get_tid() -> SystemCall:
+    return GetTid()
+
+def __create_task(target: DispGenerator) -> SystemCall:
+    return NewTask(target)
+
+def __kill_task(tid: int) -> SystemCall:
+    return KillTask(tid)
+
+__CALLMAP = {
+    "gettid": __get_tid,
+    "newtask": __create_task,
+    "killtask": __kill_task,
+}
+def syscall(func_name: str, *args, **kwds) -> Optional[SystemCall]:
+    func = __CALLMAP.get(func_name)
+    if func:
+        return func(*args, **kwds)
+    return None
