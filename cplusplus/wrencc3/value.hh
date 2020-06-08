@@ -153,6 +153,10 @@ public:
   ObjValue(u64_t n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
   ObjValue(float n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
   ObjValue(double d) noexcept : type_(ValueType::NUMERIC) { as_.num = d; }
+#if defined(_WRENCC_LINUX)
+  ObjValue(long long n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+  ObjValue(unsigned long long n) noexcept : type_(ValueType::NUMERIC) { set_decimal(n); }
+#endif
   ObjValue(BaseObject* o) noexcept : type_(ValueType::OBJECT) { as_.obj = o; }
 
   inline ValueType type() const noexcept { return type_; }
@@ -627,6 +631,44 @@ public:
   virtual void gc_blacken(WrenVM& vm) override;
 
   static ClosureObject* create(WrenVM& vm, FunctionObject* fn);
+};
+
+struct CallFrame {
+  // pointer to the current instruction in the function's bytecode
+  const u8_t* ip{};
+
+  // the closure being executed
+  ClosureObject* closure{};
+
+  // index to the first stack slot used by this call frame, this will contain
+  // the receiver, followed by the function's parameters, then local variables
+  // and temporaries
+  int stack_start{};
+
+  CallFrame() noexcept {}
+  CallFrame(const u8_t* _ip, ClosureObject* _closure, int _stack_start) noexcept
+    : ip(_ip), closure(_closure), stack_start(_stack_start) {
+  }
+};
+
+// tracks how this fiber has been invoked, aside from ways that can be
+// detected from the state of other fields in the fiber
+enum class FiberState {
+  // the fiber is being run from another fiber using a call to `try()`
+  FIBER_TRY,
+
+  // the fiber was directly invoked by `interpret()`, this means it's the
+  // initial fiber used by a call to `wren_call()` or `wren_interpret()`
+  FIBER_ROOT,
+
+  // the fiber is invoked some other way, if [caller] is `nil` then the fiber
+  // was invoked using `call()`, if [num_frames] is zero, then the fiber has
+  // finished running and is done, if [num_frames] is one and that frame's
+  // `ip` points to the first byte to code, the fiber has not been started yet
+  FIBER_OTEHR,
+};
+
+class FiberObject final : public BaseObject {
 };
 
 }

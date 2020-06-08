@@ -72,8 +72,7 @@ ClosureObject* BaseObject::as_closure() noexcept {
 }
 
 FiberObject* BaseObject::as_fiber() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<FiberObject>(this);
 }
 
 ClassObject* BaseObject::as_class() noexcept {
