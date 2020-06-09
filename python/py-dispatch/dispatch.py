@@ -140,14 +140,14 @@ class Scheduler(object):
                 continue
             self.schedule(task)
 
-class GetTid(SystemCall):
+class _Task_GetTid(SystemCall):
     def handle(self) -> None:
         self.task.sendval = self.task.tid
         self.sched.schedule(self.task)
 
-class NewTask(SystemCall):
+class _Task_NewTask(SystemCall):
     def __init__(self, target: DispGenerator) -> None:
-        super(NewTask, self).__init__()
+        super(_Task_NewTask, self).__init__()
         self.target = target
 
     def handle(self) -> None:
@@ -155,9 +155,9 @@ class NewTask(SystemCall):
         self.task.sendval = tid
         self.sched.schedule(self.task)
 
-class KillTask(SystemCall):
+class _Task_KillTask(SystemCall):
     def __init__(self, tid: int) -> None:
-        super(KillTask, self).__init__()
+        super(_Task_KillTask, self).__init__()
         self.tid = tid
 
     def handle(self) -> None:
@@ -169,19 +169,61 @@ class KillTask(SystemCall):
             self.task.sendval = False
         self.sched.schedule(self.task)
 
-def __get_tid() -> SystemCall:
-    return GetTid()
+class _Task_ReadWait(SystemCall):
+    # wait reading event task
+    def __init__(self, f: TextIO) -> None:
+        super(_Task_ReadWait, self).__init__()
+        self.f = f
 
-def __create_task(target: DispGenerator) -> SystemCall:
-    return NewTask(target)
+    def handle(self) -> None:
+        fd = self.f.fileno()
+        self.sched.waitfor_read(self.task, fd)
 
-def __kill_task(tid: int) -> SystemCall:
-    return KillTask(tid)
+class _Task_WritWait(SystemCall):
+    # wait writing event task
+    def __init__(self, f: TextIO) -> None:
+        super(_Task_WritWait, self).__init__()
+        self.f = f
+
+    def handle(self) -> None:
+        fd = self.f.fileno()
+        self.sched.waitfor_write(self.task, fd)
+
+class _Task_ExptWait(SystemCall):
+    # wait exceptional event task
+    def __init__(self, f: TextIO) -> None:
+        super(_Task_ExptWait, self).__init__()
+        self.f = f
+
+    def handle(self) -> None:
+        fd = self.f.fileno()
+        self.sched.waitfor_except(self.task, fd)
+
+def __gettid() -> SystemCall:
+    return _Task_GetTid()
+
+def __newtask(target: DispGenerator) -> SystemCall:
+    return _Task_NewTask(target)
+
+def __killtask(tid: int) -> SystemCall:
+    return _Task_KillTask(tid)
+
+def __readwait(f: TextIO) -> SystemCall:
+    return _Task_ReadWait(f)
+
+def __writwait(f: TextIO) -> SystemCall:
+    return _Task_WritWait(f)
+
+def __exptwait(f: TextIO) -> SystemCall:
+    return _Task_ExptWait(f)
 
 __CALLMAP = {
-    "gettid": __get_tid,
-    "newtask": __create_task,
-    "killtask": __kill_task,
+    "gettid": __gettid,
+    "newtask": __newtask,
+    "killtask": __killtask,
+    "readwait": __readwait,
+    "writwait": __writwait,
+    "exptwait": __exptwait,
 }
 def syscall(func_name: str, *args, **kwds) -> Optional[SystemCall]:
     func = __CALLMAP.get(func_name)
