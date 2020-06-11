@@ -18,6 +18,7 @@ public:
   inline operator socket_t() const noexcept { return sockfd_; }
   inline bool is_valid() const noexcept { return sockfd_ != kINVALID; }
   inline operator bool() const noexcept { return sockfd_ != kINVALID; }
+  inline bool is_blocking() const noexcept { return blocking_; }
 
   void open();
   void open(std::error_code& ec);
@@ -35,8 +36,12 @@ public:
   socket_t accept(std::error_code& ec);
   sz_t read(const MutableBuf& buf);
   sz_t read(const MutableBuf& buf, std::error_code& ec);
+  sz_t read_some(const MutableBuf& buf);
+  sz_t read_some(const MutableBuf& buf, std::error_code& ec);
   sz_t write(const ConstBuf& buf);
   sz_t write(const ConstBuf& buf, std::error_code& ec);
+  sz_t write_some(const ConstBuf& buf);
+  sz_t write_some(const ConstBuf& buf, std::error_code& ec);
 };
 
 }
