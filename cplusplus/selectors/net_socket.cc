@@ -203,6 +203,20 @@ int read(socket_t sockfd, sz_t len, void* buf, std::error_code& ec) {
   return nread;
 }
 
+int read_some(socket_t sockfd, bool is_blocking, sz_t len, void* buf, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = make_error(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  clear_errno();
+  auto nread = error_wrap(::recv(sockfd, as_type<char*>(buf), as_type<int>(len), 0), ec);
+  if (nread > 0 || (nread == 0 && !is_blocking
+    && ec.value() == error::TRYAGAIN && ec.value() == error::WOULDBLOCK))
+    ec = std::error_code();
+  return nread;
+}
+
 int write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = make_error(error::BAD_DESCRIPTOR);
@@ -212,6 +226,20 @@ int write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
   clear_errno();
   auto nwrote = error_wrap(::send(sockfd, as_type<const char*>(buf), as_type<int>(len), 0), ec);
   if (nwrote >= 0)
+    ec = std::error_code();
+  return nwrote;
+}
+
+int write_some(socket_t sockfd, bool is_blocking, const void* buf, sz_t len, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = make_error(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  clear_errno();
+  auto nwrote = error_wrap(::send(sockfd, as_type<const char*>(buf), as_type<int>(len), 0), ec);
+  if (nwrote > 0 || (nwrote == 0 && !is_blocking
+    && ec.value() == error::TRYAGAIN && ec.value() == error::WOULDBLOCK))
     ec = std::error_code();
   return nwrote;
 }
@@ -306,6 +334,17 @@ sz_t Socket::read(const MutableBuf& buf, std::error_code& ec) {
   return impl::read(sockfd_, buf.size(), buf.data(), ec);
 }
 
+sz_t Socket::read_some(const MutableBuf& buf) {
+  std::error_code ec;
+  auto nread = impl::read_some(sockfd_, blocking_, buf.size(), buf.data(), ec);
+  throw_error(ec, "read_some");
+  return nread;
+}
+
+sz_t Socket::read_some(const MutableBuf& buf, std::error_code& ec) {
+  return impl::read_some(sockfd_, blocking_, buf.size(), buf.data(), ec);
+}
+
 sz_t Socket::write(const ConstBuf& buf) {
   std::error_code ec;
   auto nwrote = impl::write(sockfd_, buf.data(), buf.size(), ec);
@@ -315,6 +354,17 @@ sz_t Socket::write(const ConstBuf& buf) {
 
 sz_t Socket::write(const ConstBuf& buf, std::error_code& ec) {
   return impl::write(sockfd_, buf.data(), buf.size(), ec);
+}
+
+sz_t Socket::write_some(const ConstBuf& buf) {
+  std::error_code ec;
+  auto nwrote = impl::write_some(sockfd_, blocking_, buf.data(), buf.size(), ec);
+  throw_error(ec, "write_some");
+  return nwrote;
+}
+
+sz_t Socket::write_some(const ConstBuf& buf, std::error_code& ec) {
+  return impl::write_some(sockfd_, blocking_, buf.data(), buf.size(), ec);
 }
 
 }
