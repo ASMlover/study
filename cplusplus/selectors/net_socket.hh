@@ -44,4 +44,9 @@ public:
   sz_t write_some(const ConstBuf& buf, std::error_code& ec);
 };
 
+template <typename... Args>
+inline auto make_socket(Args&&... args) noexcept {
+  return std::make_shared<Socket>(std::forward<Args>(args)...);
+}
+
 }
