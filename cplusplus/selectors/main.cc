@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "harness.hh"
+#include "examples.hh"
 
 int main(int argc, char* argv[]) {
   SEL_UNUSED(argc), SEL_UNUSED(argv);
@@ -33,5 +34,6 @@ int main(int argc, char* argv[]) {
   sel::harness::run_all_harness();
 #endif
 
-  return 0;
+  sel::strv_t alias = argc > 1 ? argv[1] : "";
+  return sel::examples::launch_examples(alias);
 }
