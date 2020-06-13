@@ -24,9 +24,15 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "./common/common.hh"
+#include "./common/harness.hh"
 
 int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+  SSER_UNUSED(argc), SSER_UNUSED(argv);
+
+#if defined(SSER_RUN_HARNESS)
+  sser::harness::run_all_harness();
+#endif
 
   return 0;
 }
