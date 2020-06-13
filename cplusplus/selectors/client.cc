@@ -22,6 +22,7 @@ void launch_client() {
 
 }
 
-SEL_EXAMPLE(Client, c, "client example for `selectors`") {
+SEL_EXAMPLE(Client, ec, "client example for `selectors`") {
+  sel::net::Initializer<> init;
   echo::client::launch_client();
 }
