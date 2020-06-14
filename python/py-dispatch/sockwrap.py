@@ -44,3 +44,22 @@ def _sock_write(sock: socket.socket, buf: bytes) -> DispGenerator:
 def _sock_read(sock: socket.socket, max_bytes: int) -> DispGenerator:
     yield syscall("readwait", sock)
     yield sock.recv(max_bytes)
+
+
+class Socket(object):
+    def __init__(self, sock: socket.socket) -> None:
+        self.sock = sock
+
+    def accept(self) -> DispGenerator:
+        yield syscall("readwait", self.sock)
+        client, addr = self.sock.accept
+        yield Socket(client), addr
+
+    def write(self, buf: bytes) -> DispGenerator:
+        _sock_write(self.sock)
+
+    def read(self, max_bytes: int) -> DispGenerator:
+        _sock_read(self.sock, max_bytes)
+
+    def close(self):
+        yield self.sock.close()
