@@ -21,7 +21,7 @@ inline bool operator|(Event a, Event b) noexcept {
   return as_type<bool>(as_type<u8_t>(a) | as_type<u8_t>(b));
 }
 
-inline Event operator|=(Event a, Event b) noexcept {
+inline Event& operator|=(Event& a, Event b) noexcept {
   a = as_type<Event>(as_type<u8_t>(a) | as_type<u8_t>(b));
   return a;
 }
@@ -30,7 +30,7 @@ inline bool operator&(Event a, Event b) noexcept {
   return as_type<bool>(as_type<u8_t>(a) & as_type<u8_t>(b));
 }
 
-inline Event operator&=(Event a, Event b) noexcept {
+inline Event& operator&=(Event& a, Event b) noexcept {
   a = as_type<Event>(as_type<u8_t>(a) & as_type<u8_t>(b));
   return a;
 }

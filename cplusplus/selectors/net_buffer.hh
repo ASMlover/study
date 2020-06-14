@@ -72,7 +72,7 @@ template <typename PodType, sz_t N> inline MutableBuf buffer(PodType (&buf)[N]) 
   return MutableBuf(buf, N * sizeof(PodType));
 }
 
-template <typename PodType, sz_t N> inline ConstBuf buffer(PodType (&buf)[N]) noexcept {
+template <typename PodType, sz_t N> inline ConstBuf buffer(const PodType (&buf)[N]) noexcept {
   return ConstBuf(buf, N * sizeof(PodType));
 }
 
@@ -82,7 +82,7 @@ inline MutableBuf buffer(PodType (&buf)[N], sz_t max_bytes) noexcept {
 }
 
 template <typename PodType, sz_t N>
-inline ConstBuf buffer(PodType (&buf)[N], sz_t max_bytes) noexcept {
+inline ConstBuf buffer(const PodType (&buf)[N], sz_t max_bytes) noexcept {
   return ConstBuf(buf, N * sizeof(PodType) < max_bytes ? N * sizeof(PodType) : max_bytes);
 }
 
