@@ -33,10 +33,10 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-option(SSERVE_RUN_HARNESS "enable/disable run test harness" OFF)
+option(SSER_RUN_HARNESS "enable/disable run test harness" OFF)
 
-if (SSERVE_RUN_HARNESS)
-	add_compile_options(-DSSERVE_RUN_HARNESS)
+if (SSER_RUN_HARNESS)
+	add_compile_options(-DSSER_RUN_HARNESS)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -45,12 +45,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         /D_UNICODE
         /D_CRT_SECURE_NO_WARNINGS
         /D_CRT_NONSTDC_NO_WARNINGS
-        /DSSERVE_WIN)
+        /DSSER_WIN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest /await")
     set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
     set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 else()
-    add_definitions(-DSSERVE_NIX -Wno-switch)
+    add_definitions(-DSSER_NIX -Wno-switch)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -Wall -Werror -march=native")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
