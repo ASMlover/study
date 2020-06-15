@@ -31,6 +31,10 @@ public:
   ConstBuf() noexcept {}
   ConstBuf(const void* buf, sz_t len) noexcept : data_(buf), size_(len) {}
 
+  ConstBuf(const MutableBuf& b) noexcept
+    : data_(b.data()), size_(b.size()) {
+  }
+
   inline const void* data() const noexcept { return data_; }
   inline sz_t size() const noexcept { return size_; }
 
