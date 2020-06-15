@@ -34,9 +34,13 @@ endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(SSER_RUN_HARNESS "enable/disable run test harness" OFF)
+option(SSER_RUN_EXAMPLES "enable/disable run examples" OFF)
 
 if (SSER_RUN_HARNESS)
-	add_compile_options(-DSSER_RUN_HARNESS)
+    add_compile_options(-DSSER_RUN_HARNESS)
+endif()
+if (SSER_RUN_EXAMPLES)
+    add_compile_options(-DSSER_RUN_EXAMPLES)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
