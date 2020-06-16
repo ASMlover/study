@@ -17,7 +17,7 @@ void on_read(sel::net::SocketPtr& sock, sel::net::Event ev) {
     return;
   }
 
-  sock->write_some(sel::net::buffer(static_cast<const char (&)[1024]>(buf), nread), ec);
+  sock->write_some(sel::net::buffer(buf, nread), ec);
 }
 
 void on_accept(sel::net::SocketPtr& sock, sel::net::Event ev) {

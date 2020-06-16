@@ -26,12 +26,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "./common/common.hh"
 #include "./common/harness.hh"
+#include "./common/examples.hh"
 
 int main(int argc, char* argv[]) {
   SSER_UNUSED(argc), SSER_UNUSED(argv);
 
 #if defined(SSER_RUN_HARNESS)
   sser::harness::run_all_harness();
+#endif
+
+#if defined(SSER_RUN_EXAMPLES)
+  sser::strv_t alias = argc > 1 ? argv[1] : "";
+  sser::examples::launch_examples(alias);
 #endif
 
   return 0;

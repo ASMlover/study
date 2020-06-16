@@ -72,9 +72,10 @@ int run_all_harness();
 #define SSER_CHECK_LE(a, b) sser::harness::Tester(__FILE__, __LINE__).is_le((a), (b))
 
 #if defined(SSER_RUN_HARNESS)
-# define _SSER_IGNORED_DEF(Name, Fn)  bool _Ignored_SSerHarness_##Name = sser::harness::register_harness(#Name, Fn);
+# define _SSER_IGNORED_HARNESS(Name, Fn)\
+  bool _Ignored_SSerHarness_##Name = sser::harness::register_harness(#Name, Fn);
 #else
-# define _SSER_IGNORED_DEF(Name, Fn)
+# define _SSER_IGNORED_HARNESS(Name, Fn)
 #endif
 
 #define SSER_TEST(Name)\
@@ -86,5 +87,5 @@ public:\
     _ins._run();\
   }\
 };\
-_SSER_IGNORED_DEF(Name, &SSerHarness_##Name::_run_harness)\
+_SSER_IGNORED_HARNESS(Name, &SSerHarness_##Name::_run_harness)\
 void SSerHarness_##Name::_run()
