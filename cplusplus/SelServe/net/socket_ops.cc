@@ -116,15 +116,14 @@ int listen(socket_t sockfd, int backlog, std::error_code& ec) {
   return r;
 }
 
-socket_t accept(socket_t sockfd, std::error_code& ec) {
+socket_t accept(socket_t sockfd, void* addr, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
     return kINVALID;
   }
 
   error::clear_errno();
-  sockaddr_in addr;
-  socklen_t addrlen = sizeof(addr);
+  socklen_t addrlen = sizeof(sockaddr_in);
   socket_t new_sockfd = error::wrap(::accept(sockfd, (sockaddr*)&addr, &addrlen), ec);
   if (new_sockfd != kINVALID)
     ec = error::none();
@@ -143,6 +142,63 @@ int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
   if (r == 0)
     ec = error::none();
   return r;
+}
+
+sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return 0;
+  }
+
+  error::clear_errno();
+  auto nread = error::wrap(::recv(sockfd, (char*)buf, (int)len, 0), ec);
+  if (nread >= 0)
+    ec = error::none();
+  return nread;
+}
+
+sz_t write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return 0;
+  }
+
+  error::clear_errno();
+  auto nwrote = error::wrap(::send(sockfd, (const char*)buf, (int)len, 0), ec);
+  if (nwrote >= 0)
+    ec = error::none();
+  return nwrote;
+}
+
+sz_t read_from(socket_t sockfd, void* buf, sz_t len, void* addr, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  socklen_t addrlen = sizeof(sockaddr_in);
+  error::clear_errno();
+  auto nread = error::wrap(::recvfrom(sockfd,
+    (char*)buf, (int)len, 0, (sockaddr*)addr, &addrlen), ec);
+  if (nread >= 0)
+    ec = error::none();
+  return nread;
+}
+
+sz_t write_to(socket_t sockfd,
+  const void* buf, sz_t len, strv_t host, u16_t port, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  auto addr = gen_addr(host, port);
+  error::clear_errno();
+  auto nwrote = error::wrap(::sendto(sockfd,
+    (const char*)buf, (int)len, 0, (const sockaddr*)&addr, sizeof(addr)), ec);
+  if (nwrote >= 0)
+    ec = error::none();
+  return nwrote;
 }
 
 }
