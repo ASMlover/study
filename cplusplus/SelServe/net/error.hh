@@ -70,6 +70,10 @@ inline int get_errno() noexcept {
 #endif
 }
 
+inline std::error_code none() noexcept {
+  return std::error_code();
+}
+
 inline std::error_code make_err(int ec) noexcept {
   return std::error_code(ec, std::system_category());
 }
