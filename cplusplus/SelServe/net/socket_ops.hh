@@ -7,6 +7,8 @@ namespace sser::net::ops {
 
 // socket state bits
 enum class SockState : u8_t {
+  NONE                      = 0x00,
+
   // the user wants a non-blocking socket
   USER_NON_BLOCKING         = 0x01,
 
@@ -64,8 +66,8 @@ int bind(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec);
 int listen(socket_t sockfd, int backlog, std::error_code& ec);
 
 socket_t accept(socket_t sockfd, void* addr, std::error_code& ec);
-socket_t sync_accept(socket_t sockfd, bool non_blocking, void* addr, std::error_code& ec);
-bool non_blocking_accept(socket_t sockfd, bool non_blocking, void* addr, std::error_code& ec, socket_t& new_sockfd);
+socket_t sync_accept(socket_t sockfd, SockState state, void* addr, std::error_code& ec);
+bool non_blocking_accept(socket_t sockfd, SockState state, void* addr, std::error_code& ec, socket_t& new_sockfd);
 int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec);
 void sync_connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec);
 bool non_blocking_connect(socket_t sockfd, std::error_code& ec);
@@ -76,7 +78,7 @@ sz_t read_from(socket_t sockfd, void* buf, sz_t len, void* addr, std::error_code
 sz_t write_to(socket_t sockfd, const void* buf, sz_t len, strv_t host, u16_t port, std::error_code& ec);
 
 int poll_connect(socket_t sockfd, int msec, std::error_code& ec);
-int poll_read(socket_t sockfd, bool non_blocking, int msec, std::error_code& ec);
+int poll_read(socket_t sockfd, SockState state, int msec, std::error_code& ec);
 
 int set_option(socket_t sockfd, SockState& state,
   int level, int optname, const void* optval, sz_t optlen, std::error_code& ec);

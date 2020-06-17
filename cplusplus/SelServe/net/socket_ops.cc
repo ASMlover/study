@@ -131,28 +131,38 @@ socket_t accept(socket_t sockfd, void* addr, std::error_code& ec) {
   return new_sockfd;
 }
 
-socket_t sync_accept(socket_t sockfd, bool non_blocking, void* addr, std::error_code& ec) {
+socket_t sync_accept(socket_t sockfd, SockState state, void* addr, std::error_code& ec) {
   for (;;) {
     socket_t new_sockfd = accept(sockfd, addr, ec);
     if (new_sockfd != kINVALID)
       return new_sockfd;
 
     if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN) {
-      if (non_blocking)
+      if (state & SockState::NON_BLOCKING)
         return kINVALID;
     }
+    else if (ec.value() == error::CONNECTION_ABORTED) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return kINVALID;
+    }
+#if defined(EPROTO)
+    else if (ec.value() == EPROTO) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return kINVALID;
+    }
+#endif
     else {
       return kINVALID;
     }
 
     // wait for socket to become ready
-    if (poll_read(sockfd, non_blocking, -1, ec) < 0)
+    if (poll_read(sockfd, SockState::NONE, -1, ec) < 0)
       return kINVALID;
   }
 }
 
 bool non_blocking_accept(socket_t sockfd,
-  bool non_blocking, void* addr, std::error_code& ec, socket_t& new_sockfd) {
+  SockState state, void* addr, std::error_code& ec, socket_t& new_sockfd) {
   for (;;) {
     new_sockfd = accept(sockfd, addr, ec);
     if (new_sockfd != kINVALID)
@@ -163,6 +173,16 @@ bool non_blocking_accept(socket_t sockfd,
 
     if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN) {
     }
+    else if (ec.value() == error::CONNECTION_ABORTED) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return true;
+    }
+#if defined(EPROTO)
+    else if (ec.value() == EPROTO) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return true;
+    }
+#endif
     else {
       return true;
     }
@@ -193,6 +213,13 @@ void sync_connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec)
   // wait for socket to become ready
   if (poll_connect(sockfd, -1, ec) < 0)
     return;
+
+  int connerr{};
+  sz_t connerr_len = sizeof(connerr);
+  if (get_option(sockfd, SockState::NONE,
+    SOL_SOCKET, SO_ERROR, &connerr, &connerr_len, ec) == kERROR)
+    return;
+  ec = error::make_err(connerr);
 }
 
 bool non_blocking_connect(socket_t sockfd, std::error_code& ec) {
@@ -283,7 +310,7 @@ int poll_connect(socket_t sockfd, int msec, std::error_code& ec) {
   return r;
 }
 
-int poll_read(socket_t sockfd, bool non_blocking, int msec, std::error_code& ec) {
+int poll_read(socket_t sockfd, SockState state, int msec, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
     return kERROR;
@@ -294,7 +321,7 @@ int poll_read(socket_t sockfd, bool non_blocking, int msec, std::error_code& ec)
   FD_SET(sockfd, &fds);
   timeval timeout_obj;
   timeval* timeout{};
-  if (non_blocking) {
+  if (state & SockState::NON_BLOCKING) {
     timeout_obj.tv_sec = 0;
     timeout_obj.tv_usec = 0;
     timeout = &timeout_obj;
@@ -308,7 +335,7 @@ int poll_read(socket_t sockfd, bool non_blocking, int msec, std::error_code& ec)
   error::clear_errno();
   int r = error::wrap(::select((int)(sockfd + 1), &fds, nullptr, nullptr, timeout), ec);
   if (r == 0)
-    ec = non_blocking ? error::make_err(error::WOULDBLOCK) : error::none();
+    ec = (state & SockState::NON_BLOCKING) ? error::make_err(error::WOULDBLOCK) : error::none();
   else if (r > 0)
     ec = error::none();
   return r;
