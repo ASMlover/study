@@ -7,6 +7,7 @@
 # define SHUT_RDWR  SD_BOTH
 #else
 # include <arpa/inet.h>
+# include <sys/select.h>
 # include <netdb.h>
 # include <fcntl.h>
 # include <unistd.h>
@@ -130,6 +131,46 @@ socket_t accept(socket_t sockfd, void* addr, std::error_code& ec) {
   return new_sockfd;
 }
 
+socket_t sync_accept(socket_t sockfd, bool non_blocking, void* addr, std::error_code& ec) {
+  for (;;) {
+    socket_t new_sockfd = accept(sockfd, addr, ec);
+    if (new_sockfd != kINVALID)
+      return new_sockfd;
+
+    if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN) {
+      if (non_blocking)
+        return kINVALID;
+    }
+    else {
+      return kINVALID;
+    }
+
+    // wait for socket to become ready
+    if (poll_read(sockfd, non_blocking, -1, ec) < 0)
+      return kINVALID;
+  }
+}
+
+bool non_blocking_accept(socket_t sockfd,
+  bool non_blocking, void* addr, std::error_code& ec, socket_t& new_sockfd) {
+  for (;;) {
+    new_sockfd = accept(sockfd, addr, ec);
+    if (new_sockfd != kINVALID)
+      return true;
+
+    if (ec.value() == error::INTERRUPTED)
+      continue;
+
+    if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN) {
+    }
+    else {
+      return true;
+    }
+
+    return false;
+  }
+}
+
 int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
@@ -142,6 +183,21 @@ int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
   if (r == 0)
     ec = error::none();
   return r;
+}
+
+void sync_connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
+  connect(sockfd, host, port, ec);
+  if (ec.value() != error::IN_PROGRESS && ec.value() != error::WOULDBLOCK)
+    return;
+
+  // wait for socket to become ready
+  if (poll_connect(sockfd, -1, ec) < 0)
+    return;
+}
+
+bool non_blocking_connect(socket_t sockfd, std::error_code& ec) {
+  // TODO:
+  return false;
 }
 
 sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
@@ -199,6 +255,63 @@ sz_t write_to(socket_t sockfd,
   if (nwrote >= 0)
     ec = error::none();
   return nwrote;
+}
+
+int poll_connect(socket_t sockfd, int msec, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  fd_set write_fds, except_fds;
+  FD_ZERO(&write_fds);
+  FD_SET(sockfd, &write_fds);
+  FD_ZERO(&except_fds);
+  FD_SET(sockfd, &except_fds);
+  timeval timeout_obj;
+  timeval* timeout{};
+  if (msec >= 0) {
+    timeout_obj.tv_sec = msec / 1000;
+    timeout_obj.tv_usec = (msec % 1000) * 1000;
+    timeout = &timeout_obj;
+  }
+
+  error::clear_errno();
+  int r = error::wrap(::select((int)(sockfd + 1), nullptr, &write_fds, &except_fds, timeout), ec);
+  if (r >= 0)
+    ec = error::none();
+  return r;
+}
+
+int poll_read(socket_t sockfd, bool non_blocking, int msec, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(sockfd, &fds);
+  timeval timeout_obj;
+  timeval* timeout{};
+  if (non_blocking) {
+    timeout_obj.tv_sec = 0;
+    timeout_obj.tv_usec = 0;
+    timeout = &timeout_obj;
+  }
+  else if (msec >= 0) {
+    timeout_obj.tv_sec = msec / 1000;
+    timeout_obj.tv_usec = (msec % 1000) * 1000;
+    timeout = &timeout_obj;
+  }
+
+  error::clear_errno();
+  int r = error::wrap(::select((int)(sockfd + 1), &fds, nullptr, nullptr, timeout), ec);
+  if (r == 0)
+    ec = non_blocking ? error::make_err(error::WOULDBLOCK) : error::none();
+  else if (r > 0)
+    ec = error::none();
+  return r;
 }
 
 }
