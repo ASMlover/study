@@ -21,7 +21,10 @@ namespace sser::net {
   using socket_t    = int;
 #endif
 
-static constexpr socket_t kINVALID  = (socket_t)(~0);
-static constexpr int      kERROR    = -1;
+constexpr socket_t  kINVALID                = (socket_t)(~0);
+constexpr int       kERROR                  = -1;
+constexpr int       kCUSTOM_SOCKOPTLEVEL    = 0xA5100000;
+constexpr int       kENABLE_CONNABORTEDOPT  = 1;
+constexpr int       kALWAYS_FAILOPT         = 2;
 
 }
