@@ -314,4 +314,68 @@ int poll_read(socket_t sockfd, bool non_blocking, int msec, std::error_code& ec)
   return r;
 }
 
+int set_option(socket_t sockfd, SockState& state,
+  int level, int optname, const void* optval, sz_t optlen, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kALWAYS_FAILOPT) {
+    ec = error::make_err(error::INVALID_ARGUMENT);
+    return kERROR;
+  }
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kENABLE_CONNABORTEDOPT) {
+    if (optlen != sizeof(int)) {
+      ec = error::make_err(error::INVALID_ARGUMENT);
+      return kERROR;
+    }
+
+    if (*as_type<const int*>(optval))
+      state |= SockState::ENABLE_CONNECTION_ABORTED;
+    else
+      state &= ~SockState::ENABLE_CONNECTION_ABORTED;
+    ec = error::none();
+    return 0;
+  }
+
+  if (level == SOL_SOCKET || optname == SO_LINGER)
+    state |= SockState::USER_SET_LINGER;
+
+  error::clear_errno();
+  int r = error::wrap(::setsockopt(sockfd, level, optname, (const char*)optval,(int)optlen), ec);
+  if (r == 0)
+    ec = error::none();
+  return r;
+}
+
+int get_option(socket_t sockfd, SockState state,
+  int level, int optname, void* optval, sz_t* optlen, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kALWAYS_FAILOPT) {
+    ec = error::make_err(error::INVALID_ARGUMENT);
+    return kERROR;
+  }
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kENABLE_CONNABORTEDOPT) {
+    if (*optlen != sizeof(int)) {
+      ec = error::make_err(error::INVALID_ARGUMENT);
+      return kERROR;
+    }
+
+    *as_type<int*>(optval) = (state & SockState::ENABLE_CONNECTION_ABORTED) ? 1 : 0;
+    ec = error::none();
+    return 0;
+  }
+
+  error::clear_errno();
+  int r = error::wrap(::getsockopt(sockfd, level, optname, (char*)optval, (int*)optlen), ec);
+  if (r == 0)
+    ec = error::none();
+  return r;
+}
+
 }
