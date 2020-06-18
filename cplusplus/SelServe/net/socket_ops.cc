@@ -223,8 +223,27 @@ void sync_connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec)
 }
 
 bool non_blocking_connect(socket_t sockfd, std::error_code& ec) {
-  // TODO:
-  return false;
+  FD_SET write_fds, except_fds;
+  FD_ZERO(&write_fds);
+  FD_SET(sockfd, &write_fds);
+  FD_ZERO(&except_fds);
+  FD_SET(sockfd, &except_fds);
+  timeval timeout{};
+  int nready = ::select((int)(sockfd + 1), nullptr, &write_fds, &except_fds, &timeout);
+  if (nready == 0)
+    return false;
+
+  // get the error code from the connect operation
+  int connerr{};
+  sz_t connerr_len = sizeof(connerr);
+  if (get_option(sockfd,
+    SockState::NONE, SOL_SOCKET, SO_ERROR, &connerr, &connerr_len, ec) == 0) {
+    if (connerr)
+      ec = error::make_err(connerr);
+    else
+      ec = error::none();
+  }
+  return true;
 }
 
 sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
@@ -235,8 +254,15 @@ sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
 
   error::clear_errno();
   auto nread = error::wrap(::recv(sockfd, (char*)buf, (int)len, 0), ec);
-  if (nread >= 0)
+  if (nread >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nread;
 }
 
