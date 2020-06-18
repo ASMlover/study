@@ -7,6 +7,7 @@
 # define SHUT_RDWR  SD_BOTH
 #else
 # include <arpa/inet.h>
+# include <sys/select.h>
 # include <netdb.h>
 # include <fcntl.h>
 # include <unistd.h>
@@ -130,6 +131,66 @@ socket_t accept(socket_t sockfd, void* addr, std::error_code& ec) {
   return new_sockfd;
 }
 
+socket_t sync_accept(socket_t sockfd, SockState state, void* addr, std::error_code& ec) {
+  for (;;) {
+    socket_t new_sockfd = accept(sockfd, addr, ec);
+    if (new_sockfd != kINVALID)
+      return new_sockfd;
+
+    if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN) {
+      if (state & SockState::NON_BLOCKING)
+        return kINVALID;
+    }
+    else if (ec.value() == error::CONNECTION_ABORTED) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return kINVALID;
+    }
+#if defined(EPROTO)
+    else if (ec.value() == EPROTO) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return kINVALID;
+    }
+#endif
+    else {
+      return kINVALID;
+    }
+
+    // wait for socket to become ready
+    if (poll_read(sockfd, SockState::NONE, -1, ec) < 0)
+      return kINVALID;
+  }
+}
+
+bool non_blocking_accept(socket_t sockfd,
+  SockState state, void* addr, std::error_code& ec, socket_t& new_sockfd) {
+  for (;;) {
+    new_sockfd = accept(sockfd, addr, ec);
+    if (new_sockfd != kINVALID)
+      return true;
+
+    if (ec.value() == error::INTERRUPTED)
+      continue;
+
+    if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN) {
+    }
+    else if (ec.value() == error::CONNECTION_ABORTED) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return true;
+    }
+#if defined(EPROTO)
+    else if (ec.value() == EPROTO) {
+      if (state & SockState::ENABLE_CONNECTION_ABORTED)
+        return true;
+    }
+#endif
+    else {
+      return true;
+    }
+
+    return false;
+  }
+}
+
 int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
@@ -144,6 +205,47 @@ int connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
   return r;
 }
 
+void sync_connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec) {
+  connect(sockfd, host, port, ec);
+  if (ec.value() != error::IN_PROGRESS && ec.value() != error::WOULDBLOCK)
+    return;
+
+  // wait for socket to become ready
+  if (poll_connect(sockfd, -1, ec) < 0)
+    return;
+
+  int connerr{};
+  sz_t connerr_len = sizeof(connerr);
+  if (get_option(sockfd, SockState::NONE,
+    SOL_SOCKET, SO_ERROR, &connerr, &connerr_len, ec) == kERROR)
+    return;
+  ec = error::make_err(connerr);
+}
+
+bool non_blocking_connect(socket_t sockfd, std::error_code& ec) {
+  FD_SET write_fds, except_fds;
+  FD_ZERO(&write_fds);
+  FD_SET(sockfd, &write_fds);
+  FD_ZERO(&except_fds);
+  FD_SET(sockfd, &except_fds);
+  timeval timeout{};
+  int nready = ::select((int)(sockfd + 1), nullptr, &write_fds, &except_fds, &timeout);
+  if (nready == 0)
+    return false;
+
+  // get the error code from the connect operation
+  int connerr{};
+  sz_t connerr_len = sizeof(connerr);
+  if (get_option(sockfd,
+    SockState::NONE, SOL_SOCKET, SO_ERROR, &connerr, &connerr_len, ec) == 0) {
+    if (connerr)
+      ec = error::make_err(connerr);
+    else
+      ec = error::none();
+  }
+  return true;
+}
+
 sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
@@ -152,8 +254,15 @@ sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
 
   error::clear_errno();
   auto nread = error::wrap(::recv(sockfd, (char*)buf, (int)len, 0), ec);
-  if (nread >= 0)
+  if (nread >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nread;
 }
 
@@ -199,6 +308,127 @@ sz_t write_to(socket_t sockfd,
   if (nwrote >= 0)
     ec = error::none();
   return nwrote;
+}
+
+int poll_connect(socket_t sockfd, int msec, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  fd_set write_fds, except_fds;
+  FD_ZERO(&write_fds);
+  FD_SET(sockfd, &write_fds);
+  FD_ZERO(&except_fds);
+  FD_SET(sockfd, &except_fds);
+  timeval timeout_obj;
+  timeval* timeout{};
+  if (msec >= 0) {
+    timeout_obj.tv_sec = msec / 1000;
+    timeout_obj.tv_usec = (msec % 1000) * 1000;
+    timeout = &timeout_obj;
+  }
+
+  error::clear_errno();
+  int r = error::wrap(::select((int)(sockfd + 1), nullptr, &write_fds, &except_fds, timeout), ec);
+  if (r >= 0)
+    ec = error::none();
+  return r;
+}
+
+int poll_read(socket_t sockfd, SockState state, int msec, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(sockfd, &fds);
+  timeval timeout_obj;
+  timeval* timeout{};
+  if (state & SockState::NON_BLOCKING) {
+    timeout_obj.tv_sec = 0;
+    timeout_obj.tv_usec = 0;
+    timeout = &timeout_obj;
+  }
+  else if (msec >= 0) {
+    timeout_obj.tv_sec = msec / 1000;
+    timeout_obj.tv_usec = (msec % 1000) * 1000;
+    timeout = &timeout_obj;
+  }
+
+  error::clear_errno();
+  int r = error::wrap(::select((int)(sockfd + 1), &fds, nullptr, nullptr, timeout), ec);
+  if (r == 0)
+    ec = (state & SockState::NON_BLOCKING) ? error::make_err(error::WOULDBLOCK) : error::none();
+  else if (r > 0)
+    ec = error::none();
+  return r;
+}
+
+int set_option(socket_t sockfd, SockState& state,
+  int level, int optname, const void* optval, sz_t optlen, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kALWAYS_FAILOPT) {
+    ec = error::make_err(error::INVALID_ARGUMENT);
+    return kERROR;
+  }
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kENABLE_CONNABORTEDOPT) {
+    if (optlen != sizeof(int)) {
+      ec = error::make_err(error::INVALID_ARGUMENT);
+      return kERROR;
+    }
+
+    if (*as_type<const int*>(optval))
+      state |= SockState::ENABLE_CONNECTION_ABORTED;
+    else
+      state &= ~SockState::ENABLE_CONNECTION_ABORTED;
+    ec = error::none();
+    return 0;
+  }
+
+  if (level == SOL_SOCKET || optname == SO_LINGER)
+    state |= SockState::USER_SET_LINGER;
+
+  error::clear_errno();
+  int r = error::wrap(::setsockopt(sockfd, level, optname, (const char*)optval,(int)optlen), ec);
+  if (r == 0)
+    ec = error::none();
+  return r;
+}
+
+int get_option(socket_t sockfd, SockState state,
+  int level, int optname, void* optval, sz_t* optlen, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return kERROR;
+  }
+
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kALWAYS_FAILOPT) {
+    ec = error::make_err(error::INVALID_ARGUMENT);
+    return kERROR;
+  }
+  if (level == kCUSTOM_SOCKOPTLEVEL && optname == kENABLE_CONNABORTEDOPT) {
+    if (*optlen != sizeof(int)) {
+      ec = error::make_err(error::INVALID_ARGUMENT);
+      return kERROR;
+    }
+
+    *as_type<int*>(optval) = (state & SockState::ENABLE_CONNECTION_ABORTED) ? 1 : 0;
+    ec = error::none();
+    return 0;
+  }
+
+  error::clear_errno();
+  int r = error::wrap(::getsockopt(sockfd, level, optname, (char*)optval, (int*)optlen), ec);
+  if (r == 0)
+    ec = error::none();
+  return r;
 }
 
 }
