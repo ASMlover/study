@@ -274,8 +274,15 @@ sz_t write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
 
   error::clear_errno();
   auto nwrote = error::wrap(::send(sockfd, (const char*)buf, (int)len, 0), ec);
-  if (nwrote >= 0)
+  if (nwrote >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nwrote;
 }
 
@@ -289,8 +296,15 @@ sz_t read_from(socket_t sockfd, void* buf, sz_t len, void* addr, std::error_code
   error::clear_errno();
   auto nread = error::wrap(::recvfrom(sockfd,
     (char*)buf, (int)len, 0, (sockaddr*)addr, &addrlen), ec);
-  if (nread >= 0)
+  if (nread >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nread;
 }
 
@@ -305,8 +319,15 @@ sz_t write_to(socket_t sockfd,
   error::clear_errno();
   auto nwrote = error::wrap(::sendto(sockfd,
     (const char*)buf, (int)len, 0, (const sockaddr*)&addr, sizeof(addr)), ec);
-  if (nwrote >= 0)
+  if (nwrote >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nwrote;
 }
 
