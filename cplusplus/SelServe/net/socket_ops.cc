@@ -266,6 +266,62 @@ sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
   return nread;
 }
 
+sz_t sync_read(socket_t sockfd, SockState state, void* buf, sz_t len, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return 0;
+  }
+
+  if (len == 0 && (state & SockState::STREAM_ORIENTED)) {
+    ec = error::none();
+    return 0;
+  }
+
+  // read some data
+  for (;;) {
+    sz_t nread = read(sockfd, buf, len, ec);
+    if (nread > 0)
+      return nread;
+
+    if ((state & SockState::STREAM_ORIENTED) && nread == 0) {
+      ec = error::none();
+      return 0;
+    }
+
+    if ((state & SockState::NON_BLOCKING) ||
+      (ec.value() != error::WOULDBLOCK && ec.value() != error::TRYAGAIN))
+      return 0;
+
+    if (poll_read(sockfd, SockState::NONE, -1, ec) < 0)
+      return 0;
+  }
+}
+
+bool non_blocking_read(socket_t sockfd,
+  void* buf, sz_t len, bool is_stream, std::error_code& ec, sz_t& nread) {
+  for (;;) {
+    sz_t bytes = read(sockfd, buf, len, ec);
+    if (is_stream && bytes == 0) {
+      ec = error::make_err(error::ENDOF);
+      return true;
+    }
+
+    if (ec.value() == error::INTERRUPTED)
+      continue;
+
+    if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN)
+      return false;
+    if (bytes >= 0) {
+      ec = error::none();
+      nread = bytes;
+    }
+    else {
+      nread = 0;
+    }
+    return true;
+  }
+}
+
 sz_t write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
@@ -274,8 +330,15 @@ sz_t write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
 
   error::clear_errno();
   auto nwrote = error::wrap(::send(sockfd, (const char*)buf, (int)len, 0), ec);
-  if (nwrote >= 0)
+  if (nwrote >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nwrote;
 }
 
@@ -289,8 +352,15 @@ sz_t read_from(socket_t sockfd, void* buf, sz_t len, void* addr, std::error_code
   error::clear_errno();
   auto nread = error::wrap(::recvfrom(sockfd,
     (char*)buf, (int)len, 0, (sockaddr*)addr, &addrlen), ec);
-  if (nread >= 0)
+  if (nread >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nread;
 }
 
@@ -305,8 +375,15 @@ sz_t write_to(socket_t sockfd,
   error::clear_errno();
   auto nwrote = error::wrap(::sendto(sockfd,
     (const char*)buf, (int)len, 0, (const sockaddr*)&addr, sizeof(addr)), ec);
-  if (nwrote >= 0)
+  if (nwrote >= 0) {
     ec = error::none();
+  }
+  else {
+    if (ec.value() == ERROR_NETNAME_DELETED)
+      ec = error::make_err(error::CONNECTION_RESET);
+    else if (ec.value() == ERROR_PORT_UNREACHABLE)
+      ec = error::make_err(error::CONNECTION_REFUSED);
+  }
   return nwrote;
 }
 

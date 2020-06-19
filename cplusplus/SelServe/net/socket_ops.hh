@@ -73,6 +73,8 @@ void sync_connect(socket_t sockfd, strv_t host, u16_t port, std::error_code& ec)
 bool non_blocking_connect(socket_t sockfd, std::error_code& ec);
 
 sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec);
+sz_t sync_read(socket_t sockfd, SockState state, void* buf, sz_t len, std::error_code& ec);
+bool non_blocking_read(socket_t sockfd, void* buf, sz_t len, bool is_stream, std::error_code& ec, sz_t& nread);
 sz_t write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec);
 sz_t read_from(socket_t sockfd, void* buf, sz_t len, void* addr, std::error_code& ec);
 sz_t write_to(socket_t sockfd, const void* buf, sz_t len, strv_t host, u16_t port, std::error_code& ec);

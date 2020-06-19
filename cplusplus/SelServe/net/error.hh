@@ -54,6 +54,20 @@ enum Errors {
   WOULDBLOCK              = SOCKET_ERR(EWOULDBLOCK),
 };
 
+enum MiscErrors {
+  // already open
+  ALREADY_OPEN = 1,
+
+  // end of file or stream
+  ENDOF,
+
+  // element not found
+  NOT_FOUND,
+
+  // the descriptor cannot fit into the select system call's fd_set
+  FDSET_FAILURE,
+};
+
 inline void clear_errno() noexcept {
 #if defined(SSER_WIN)
   ::WSASetLastError(0);
