@@ -266,6 +266,62 @@ sz_t read(socket_t sockfd, void* buf, sz_t len, std::error_code& ec) {
   return nread;
 }
 
+sz_t sync_read(socket_t sockfd, SockState state, void* buf, sz_t len, std::error_code& ec) {
+  if (sockfd == kINVALID) {
+    ec = error::make_err(error::BAD_DESCRIPTOR);
+    return 0;
+  }
+
+  if (len == 0 && (state & SockState::STREAM_ORIENTED)) {
+    ec = error::none();
+    return 0;
+  }
+
+  // read some data
+  for (;;) {
+    sz_t nread = read(sockfd, buf, len, ec);
+    if (nread > 0)
+      return nread;
+
+    if ((state & SockState::STREAM_ORIENTED) && nread == 0) {
+      ec = error::none();
+      return 0;
+    }
+
+    if ((state & SockState::NON_BLOCKING) ||
+      (ec.value() != error::WOULDBLOCK && ec.value() != error::TRYAGAIN))
+      return 0;
+
+    if (poll_read(sockfd, SockState::NONE, -1, ec) < 0)
+      return 0;
+  }
+}
+
+bool non_blocking_read(socket_t sockfd,
+  void* buf, sz_t len, bool is_stream, std::error_code& ec, sz_t& nread) {
+  for (;;) {
+    sz_t bytes = read(sockfd, buf, len, ec);
+    if (is_stream && bytes == 0) {
+      ec = error::make_err(error::ENDOF);
+      return true;
+    }
+
+    if (ec.value() == error::INTERRUPTED)
+      continue;
+
+    if (ec.value() == error::WOULDBLOCK || ec.value() == error::TRYAGAIN)
+      return false;
+    if (bytes >= 0) {
+      ec = error::none();
+      nread = bytes;
+    }
+    else {
+      nread = 0;
+    }
+    return true;
+  }
+}
+
 sz_t write(socket_t sockfd, const void* buf, sz_t len, std::error_code& ec) {
   if (sockfd == kINVALID) {
     ec = error::make_err(error::BAD_DESCRIPTOR);
