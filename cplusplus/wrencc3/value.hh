@@ -763,7 +763,7 @@ public:
     frames_.clear();
   }
 
-  void ensure_stack(WrenVM& vm, int needed);
+  void ensure_stack(WrenVM& vm, sz_t needed);
   void call_function(WrenVM& vm, ClosureObject* closure, int argc = 0);
   UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
   void close_upvalue();

@@ -571,4 +571,73 @@ ClosureObject* ClosureObject::create(WrenVM& vm, FunctionObject* fn) {
   return nullptr;
 }
 
+FiberObject::FiberObject(ClassObject* cls, ClosureObject* closure) noexcept
+  : BaseObject(ObjType::FIBER, cls) {
+  // add one slot for the unused implicit receiver slot that the compiler
+  // assumes all functions have
+  stack_capacity_ = closure == nullptr
+    ? 1 : Xt::power_of_2ceil(Xt::as_type<sz_t>(closure->fn()->max_slots() + 1));
+  stack_.reserve(stack_capacity_);
+  frames_.reserve(kFrameCapacity);
+
+  if (closure != nullptr) {
+    // initialize the first call frame
+    const u8_t* ip = closure->fn()->codes();
+    frames_.push_back(CallFrame(ip, closure, 0));
+
+    // the first slot always holds the closure
+    stack_.push_back(closure);
+  }
+}
+
+void FiberObject::ensure_stack(WrenVM& vm, sz_t needed) {
+  if (stack_capacity_ >= needed)
+    return;
+
+  stack_capacity_ = Xt::power_of_2ceil(needed);
+  const Value* old_stack = stack_.data();
+  stack_.reserve(stack_capacity_);
+
+  // if the reallocation moves the stack, then we need to recalculate every
+  // pointer that points into the old stack to into the same relative distance
+  // in the new stack, we have to be a little careful about how these are
+  // calculated because pointer subtraction is only well-defined within a
+  // single array, hence the slightly redundant-looking arithmetic below
+  const Value* new_stack = stack_.data();
+  if (new_stack != old_stack) {
+    // TODO: reset vim api stack
+
+    // open values
+    for (auto* uv = open_values_; uv != nullptr; uv = uv->next())
+      uv->set_value(new_stack + (uv->value() - old_stack));
+  }
+}
+
+void FiberObject::call_function(WrenVM& vm, ClosureObject* closure, int argc) {
+  // grow the call frame vector if needed
+
+  // grow the stack if needed
+  sz_t needed = stack_.size() + closure->fn()->max_slots();
+  ensure_stack(vm, needed);
+
+  const u8_t* ip = closure->fn()->codes();
+  frames_.push_back(CallFrame(ip, closure, Xt::as_type<int>(stack_.size()) - argc));
+}
+
+UpvalueObject* FiberObject::capture_upvalue(WrenVM& vm, int slot) {
+  return nullptr;
+}
+void FiberObject::close_upvalue() {}
+void FiberObject::close_upvalues(int slot) {}
+void FiberObject::riter_frames(
+    std::function<void (const CallFrame&, FunctionObject*)>&& visitor) {
+}
+str_t FiberObject::stringify() const { return ""; }
+void FiberObject::gc_blacken(WrenVM& vm) {}
+
+FiberObject* FiberObject::create(WrenVM& vm, ClosureObject* closure) {
+  // TODO:
+  return nullptr;
+}
+
 }
