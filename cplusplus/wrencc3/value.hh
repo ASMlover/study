@@ -669,6 +669,113 @@ enum class FiberState {
 };
 
 class FiberObject final : public BaseObject {
+  static constexpr sz_t kStackCapacity = 1<<10;
+  static constexpr sz_t kFrameCapacity = 4;
+
+  // the number of allocated slots in the stack array
+  sz_t stack_capacity_{};
+
+  // the stack of value slots, this is used for holding local variables and
+  // temporaries while the fiber is executing, it heap-allocated and grown
+  // as needed
+  std::vector<Value> stack_;
+
+  // the stack of call frames, this is a dynamic array that grows as needed
+  // but never shrinks
+  std::vector<CallFrame> frames_;
+
+  // pointer to the first node in the linked list of open upvalues that are
+  // pointing to values still on the stack. the headd of the list will be
+  // the upvalue closest to the top of the stack, and then the list works
+  // downwards
+  UpvalueObject* open_values_{};
+
+  // the fiber that ran this one, if this fiber is yielded, control will
+  // resume to this one, maybe `nil`
+  FiberObject* caller_{};
+  FiberState state_{FiberState::FIBER_OTEHR};
+
+  // if the fiber failed because of a runtime error, this will contain the
+  // error object, otherwise it will be nil
+  Value error_{nullptr};
+
+  FiberObject(ClassObject* cls, ClosureObject* closure) noexcept;
+  virtual ~FiberObject() {}
+public:
+  inline Value* values_at(sz_t i = 0) noexcept { return stack_.data() + i; }
+  inline const Value* values_at(sz_t i = 0) const noexcept { return stack_.data() + i; }
+  inline Value* values_at_beg() noexcept { return values_at(); }
+  inline const Value* values_at_beg() const noexcept { return values_at(); }
+  inline Value* values_at_top() noexcept { return values_at(stack_.size()); }
+  inline const Value* values_at_top() const noexcept { return values_at(stack_.size()); }
+  inline void resize_stack(sz_t n) { stack_.resize(n); }
+  inline sz_t stack_size() const noexcept { return stack_.size(); }
+  inline sz_t frame_size() const noexcept { return frames_.size(); }
+  inline void pop_frame() { frames_.pop_back(); }
+  inline bool is_frame_empty() const noexcept { return frames_.empty(); }
+  inline Value& get_value(sz_t i) noexcept { return stack_[i]; }
+  inline const Value& get_value(sz_t i) const noexcept { return stack_[i]; }
+  inline void set_value(sz_t i, Value v) noexcept { stack_[i] = v; }
+  inline const CallFrame& get_frame(sz_t i) const noexcept { return frames_[i]; }
+  inline FiberObject* caller() const noexcept { return caller_; }
+  inline void set_fiber(FiberObject* caller) noexcept { caller_ = caller; }
+  inline FiberState state() const noexcept { return state_; }
+  inline void set_state(FiberState state) noexcept { state_ = state; }
+  inline const Value& error() const noexcept { return error_; }
+  inline const char* error_asstr() const noexcept { return error_.as_cstring(); }
+  inline bool has_error() const noexcept { return !error_.is_nil(); }
+
+  inline Value& peek_value(sz_t distance = 0) noexcept {
+    return stack_[stack_.size() - 1 - distance];
+  }
+
+  inline const Value& peek_value(sz_t distance = 0) const noexcept {
+    return stack_[stack_.size() - 1 - distance];
+  }
+
+  inline CallFrame& peek_frame(sz_t distance = 0) noexcept {
+    return frames_[frames_.size() - 1 - distance];
+  }
+
+  inline const CallFrame& peek_frame(sz_t distance = 0) const noexcept {
+    return frames_[frames_.size() - 1 - distance];
+  }
+
+  inline void push(Value v) noexcept {
+    stack_.push_back(v);
+  }
+
+  inline Value pop() noexcept {
+    Value r = stack_.back();
+    stack_.pop_back();
+    return r;
+  }
+
+  inline void set_value_safely(sz_t i, Value v) noexcept {
+    if (i < stack_.size())
+      stack_[i] = v;
+    else
+      stack_.push_back(v);
+  }
+
+  inline void reset_fiber() noexcept {
+    stack_.clear();
+    frames_.clear();
+  }
+
+  void ensure_stack(WrenVM& vm, int needed);
+  void call_function(WrenVM& vm, ClosureObject* closure, int argc = 0);
+  UpvalueObject* capture_upvalue(WrenVM& vm, int slot);
+  void close_upvalue();
+  void close_upvalues(int slot);
+
+  void riter_frames(
+      std::function<void (const CallFrame&, FunctionObject*)>&& visitor);
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static FiberObject* create(WrenVM& vm, ClosureObject* closure);
 };
 
 }
