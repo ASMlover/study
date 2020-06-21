@@ -28,9 +28,11 @@
 
 #include <optional>
 #include <tuple>
+#include <variant>
 #include <vector>
 #include "common.hh"
 #include "utility.hh"
+#include "wren.hh"
 
 namespace wrencc {
 
@@ -776,6 +778,85 @@ public:
   virtual void gc_blacken(WrenVM& vm) override;
 
   static FiberObject* create(WrenVM& vm, ClosureObject* closure);
+};
+
+// the type of a primitive function
+//
+// primitives are similiar to foreign functions, but have more direct access
+// to VM internals, it is passed the arguments in [args], if it returns a
+// value, it places it in `args[0]` and returns `true`, if it causes a runtime
+// error or midifies the running fiber, it returns `false`
+using PrimitiveFn = std::function<bool (WrenVM& vm, Value* args)>;
+
+enum class MethodType {
+  // a primitive method implemented in C++ in the vm, unlike foreign
+  // methods, this can directly manipulate the fiber's stack
+  PRIMITIVE,
+
+  // a externally-defined C++ method
+  FOREIGN,
+
+  // a normal user-defined method
+  BLOCK,
+
+  // no method for the given symbol
+  NONE,
+};
+
+struct Method {
+  MethodType type{MethodType::NONE};
+
+  // the method function itself, the [type] determines which field of the
+  // variant is used
+  std::variant<PrimitiveFn, WrenForeignFn, ClosureObject*> m{};
+
+  Method() noexcept {}
+  Method(MethodType t) noexcept : type(t) {}
+  Method(const PrimitiveFn& fn) noexcept : type(MethodType::PRIMITIVE), m(fn) {}
+  Method(const WrenForeignFn& fn) noexcept : type(MethodType::FOREIGN), m(fn) {}
+  Method(ClosureObject* closure) noexcept : type(MethodType::BLOCK), m(closure) {}
+  Method(MethodType t, const PrimitiveFn& fn) noexcept : type(t), m(fn) {}
+  Method(MethodType t, const WrenForeignFn& fn) noexcept : type(t), m(fn) {}
+  Method(MethodType t, ClosureObject* closure) noexcept : type(t), m(closure) {}
+
+  inline MethodType get_type() const noexcept { return type; }
+  inline void set_type(MethodType t) noexcept { type = t; }
+  inline const PrimitiveFn& primitive() const noexcept { return std::get<PrimitiveFn>(m); }
+  inline const WrenForeignFn& foreign() const noexcept { return std::get<WrenForeignFn>(m); }
+  inline ClosureObject* closure() const noexcept { return std::get<ClosureObject*>(m); }
+
+  inline Method& operator=(const PrimitiveFn& primitive) noexcept {
+    type = MethodType::PRIMITIVE;
+    m = primitive;
+    return *this;
+  }
+
+  inline Method& operator=(const WrenForeignFn& foreign) noexcept {
+    type = MethodType::FOREIGN;
+    m = foreign;
+    return *this;
+  }
+
+  inline Method& operator=(ClosureObject* closure) noexcept {
+    type = MethodType::BLOCK;
+    m = closure;
+    return *this;
+  }
+
+  inline void assign(const PrimitiveFn& primitive) noexcept {
+    type = MethodType::PRIMITIVE;
+    m = primitive;
+  }
+
+  inline void assign(const WrenForeignFn& foreign) noexcept {
+    type = MethodType::FOREIGN;
+    m = foreign;
+  }
+
+  inline void assign(ClosureObject* closure) noexcept {
+    type = MethodType::BLOCK;
+    m = closure;
+  }
 };
 
 }
