@@ -590,6 +590,7 @@ FiberObject::FiberObject(ClassObject* cls, ClosureObject* closure) noexcept
   }
 }
 
+// ensures [fiber]'s stack has at least [needed] slots
 void FiberObject::ensure_stack(WrenVM& vm, sz_t needed) {
   if (stack_capacity_ >= needed)
     return;
@@ -689,9 +690,23 @@ void FiberObject::close_upvalues(int slot) {
 
 void FiberObject::riter_frames(
     std::function<void (const CallFrame&, FunctionObject*)>&& visitor) {
+  for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
+    auto& frame = *it;
+    FunctionObject* fn = frame.closure->fn();
+
+    visitor(frame, fn);
+  }
 }
-str_t FiberObject::stringify() const { return ""; }
-void FiberObject::gc_blacken(WrenVM& vm) {}
+
+str_t FiberObject::stringify() const {
+  ss_t ss;
+  ss << "[fiber " << this << "]";
+  return ss.str();
+}
+
+void FiberObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
 
 FiberObject* FiberObject::create(WrenVM& vm, ClosureObject* closure) {
   // TODO:
