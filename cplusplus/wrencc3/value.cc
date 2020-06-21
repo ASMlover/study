@@ -608,11 +608,13 @@ void FiberObject::ensure_stack(WrenVM& vm, sz_t needed) {
     // TODO: reset vim api stack
 
     // open values
-    for (auto* uv = open_values_; uv != nullptr; uv = uv->next())
+    for (auto* uv = open_upvalues_; uv != nullptr; uv = uv->next())
       uv->set_value(new_stack + (uv->value() - old_stack));
   }
 }
 
+// pushes [closure] onto [fiber]'s callstack to invoke it, expects [args]
+// arguments (including the receiver) to be on the top of the stack already
 void FiberObject::call_function(WrenVM& vm, ClosureObject* closure, int argc) {
   // grow the call frame vector if needed
 
@@ -624,11 +626,67 @@ void FiberObject::call_function(WrenVM& vm, ClosureObject* closure, int argc) {
   frames_.push_back(CallFrame(ip, closure, Xt::as_type<int>(stack_.size()) - argc));
 }
 
+// captures the local variables in [slot] into an [UpvalueObject], if that local
+// is already in an upvalue, the existing one will be used, (this is important
+// to ensure that multiple closures closing over the same variable actually see
+// the same variable), otherwise it will create a new open upvalue and add it
+// the fiber's list of upvalues
 UpvalueObject* FiberObject::capture_upvalue(WrenVM& vm, int slot) {
-  return nullptr;
+  Value* local = &stack_[slot];
+  // if there are no open upvalues at all, we must need to create a new one
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(vm, local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* prev_upvalue{};
+  UpvalueObject* upvalue = open_upvalues_;
+
+  // walk towards the bottom of the stack until we find a previously
+  // existing upvalue or pass where it should be
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  // found the existing upvalue for this local
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  // we've walked past this local on the stack, so there must not be an
+  // upvalue for it already, make a new one and link it in the right place
+  // to keep the list sorted
+  UpvalueObject* created_upvalue = UpvalueObject::create(vm, local);
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = created_upvalue;
+  else
+    prev_upvalue->set_next(created_upvalue);
+  created_upvalue->set_next(upvalue);
+
+  return created_upvalue;
 }
-void FiberObject::close_upvalue() {}
-void FiberObject::close_upvalues(int slot) {}
+
+void FiberObject::close_upvalue() {
+  UpvalueObject* upvalue = open_upvalues_;
+
+  // move the value into the upvalue itself and point the upvalue to it
+  upvalue->set_closed(upvalue->value_asref());
+  upvalue->set_value(upvalue->closed_asptr());
+
+  // remove it from the open upvalue list
+  open_upvalues_ = upvalue->next();
+}
+
+// closes any open upvalues that have been created for stack slots at
+// [slot] and above
+void FiberObject::close_upvalues(int slot) {
+  Value* last = nullptr;
+  if (slot < stack_.size())
+    last = &stack_[slot];
+
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last)
+    close_upvalue();
+}
+
 void FiberObject::riter_frames(
     std::function<void (const CallFrame&, FunctionObject*)>&& visitor) {
 }

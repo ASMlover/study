@@ -688,7 +688,7 @@ class FiberObject final : public BaseObject {
   // pointing to values still on the stack. the headd of the list will be
   // the upvalue closest to the top of the stack, and then the list works
   // downwards
-  UpvalueObject* open_values_{};
+  UpvalueObject* open_upvalues_{};
 
   // the fiber that ran this one, if this fiber is yielded, control will
   // resume to this one, maybe `nil`
