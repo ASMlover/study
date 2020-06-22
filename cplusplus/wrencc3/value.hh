@@ -859,4 +859,57 @@ struct Method {
   }
 };
 
+class ClassObject final : public BaseObject {
+  ClassObject* superclass_{};
+
+  // the number of fields needed for an instance of this class, including
+  // all of its superclass fields
+  sz_t num_fields_{};
+
+  // the name of class
+  StringObject* name_{};
+
+  // the table of methods that are defined in or inherited by this class,
+  // methods are called by symbol, and the symbol directly maps to an index
+  // in this table, this makes method calls fast at the expense of empty
+  // calls in the list for methods the class doesn't support
+  //
+  // you can think of it as a hash table that never has collisiions but has
+  // a really low load factor, since methods are pretty small (just a type
+  // and a pointer), this should be a worthwhile treade-off
+  std::vector<Method> methods_;
+
+  ClassObject() noexcept;
+  ClassObject(ClassObject* metacls,
+      ClassObject* supercls = nullptr, sz_t num_fields = 0, StringObject* name = nullptr) noexcept;
+public:
+  inline ClassObject* superclass() const noexcept { return superclass_; }
+  inline sz_t num_fields() const noexcept { return num_fields_; }
+  inline StringObject* name() const noexcept { return name_; }
+  inline const char* name_cstr() const noexcept { return name_->cstr(); }
+  inline sz_t methods_count() const noexcept { return methods_.size(); }
+  inline Method& get_method(sz_t i) noexcept { return methods_[i]; }
+  inline const Method& get_method(sz_t i) const noexcept { return methods_[i]; }
+  inline void set_method(sz_t i, const PrimitiveFn& primitive) noexcept { methods_[i] = primitive; }
+  inline void set_method(sz_t i, const WrenForeignFn& foreign) noexcept { methods_[i] = foreign; }
+  inline void set_method(sz_t i, ClosureObject* closure) noexcept { methods_[i] = closure; }
+
+  void bind_superclass(ClassObject* superclass);
+  void bind_method(FunctionObject* fn);
+  void bind_method(sz_t i, const Method& method);
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+  virtual u32_t hasher() const override;
+
+  // creates a new `raw` class, it has no metaclass or superclass whatsover
+  // this is only used for bootstrapping the initial Object and Class classes,
+  // which are a little special
+  static ClassObject* create_raw(WrenVM& vm, StringObject* name = nullptr);
+
+  // creates a new class object as well as its associated metaclass
+  static ClassObject* create(WrenVM& vm,
+      ClassObject* superclass = nullptr, sz_t num_fields = 0, StringObject* name = nullptr);
+};
+
 }

@@ -76,8 +76,7 @@ FiberObject* BaseObject::as_fiber() noexcept {
 }
 
 ClassObject* BaseObject::as_class() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<ClassObject>(this);
 }
 
 InstanceObject* BaseObject::as_instance() noexcept {
@@ -712,5 +711,28 @@ FiberObject* FiberObject::create(WrenVM& vm, ClosureObject* closure) {
   // TODO:
   return nullptr;
 }
+
+ClassObject::ClassObject() noexcept
+  : BaseObject(ObjType::CLASS, nullptr) {
+}
+
+ClassObject::ClassObject(ClassObject* metacls,
+    ClassObject* supercls, sz_t num_fields, StringObject* name) noexcept
+  : BaseObject(ObjType::CLASS, metacls)
+  , num_fields_(num_fields)
+  , name_(name) {
+  if (supercls != nullptr)
+    bind_superclass(supercls);
+}
+
+void ClassObject::bind_superclass(ClassObject* superclass) {}
+void ClassObject::bind_method(FunctionObject* fn) {}
+void ClassObject::bind_method(sz_t i, const Method& method) {}
+str_t ClassObject::stringify() const { return ""; }
+void ClassObject::gc_blacken(WrenVM& vm) {}
+u32_t ClassObject::hasher() const { return name_->hasher(); }
+ClassObject* ClassObject::create_raw(WrenVM& vm, StringObject* name) { return nullptr; }
+ClassObject* ClassObject::create(WrenVM& vm,
+    ClassObject* superclass, sz_t num_fields, StringObject* name) { return nullptr; }
 
 }
