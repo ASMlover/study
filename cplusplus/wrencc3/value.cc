@@ -25,11 +25,19 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
+#include <cstdarg>
+#include "vm.hh"
 #include "value.hh"
 
 namespace wrencc {
 
 static const Value kUndefined;
+
+template <typename Object>
+inline Object* object_wrap(WrenVM& vm, Object* o) noexcept {
+  vm.append_object(o);
+  return o;
+}
 
 StringObject* BaseObject::as_string() noexcept {
   return Xt::down<StringObject>(this);
@@ -169,6 +177,19 @@ void StringObject::hash_string() noexcept {
   hash_ = hash;
 }
 
+StringObject* StringObject::concat(WrenVM& vm, const char* s1, sz_t n1, const char* s2, sz_t n2) {
+  ASSERT(s1 != nullptr && n1 > 0, "unexpected string `s1`");
+  ASSERT(s2 != nullptr && n2 > 0, "unexpected string `s2`");
+
+  sz_t n = n1 + n2;
+  char* s = new char[n + 1];
+  std::memcpy(s, s1, n1);
+  std::memcpy(s + n1, s2, n2);
+  s[n] = 0;
+
+  return object_wrap(vm, new StringObject(vm.str_cls(), s, n, true));
+}
+
 int StringObject::find(StringObject* sub, sz_t off) const {
   if (sub->size_ == 0)
     return Xt::as_type<int>(off);
@@ -192,45 +213,57 @@ u32_t StringObject::hasher() const {
 }
 
 StringObject* StringObject::create(WrenVM& vm, char c) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new StringObject(vm.str_cls(), c));
 }
 
+// creates a new string object of [n] and copies [s] into it
+//
+// [s] may be nullptr if [n] is zero
 StringObject* StringObject::create(WrenVM& vm, const char* s, sz_t n) {
-  // TODO:
-  return nullptr;
+  ASSERT(s != nullptr && n > 0, "unexpected null string");
+
+  return object_wrap(vm, new StringObject(vm.str_cls(), s, n));
 }
 
 StringObject* StringObject::create(WrenVM& vm, const str_t& s) {
-  // TODO:
-  return nullptr;
+  return create(vm, s.data(), s.size());
 }
 
 StringObject* StringObject::concat(
     WrenVM& vm, StringObject* s1, StringObject* s2) {
-  // TODO:
-  return nullptr;
+  return concat(vm, s1->data(), s1->size(), s2->data(), s2->size());
 }
 
 StringObject* StringObject::concat(WrenVM& vm, const char* s1, const char* s2) {
-  // TODO:
-  return nullptr;
+  return concat(vm, s1, std::strlen(s1), s2, std::strlen(s2));
 }
 
 StringObject* StringObject::concat(
     WrenVM& vm, const str_t& s1, const str_t& s2) {
-  // TODO:
-  return nullptr;
+  return concat(vm, s1.data(), s1.size(), s2.data(), s2.size());
 }
 
+StringObject* StringObject::concat(WrenVM& vm, strv_t s1, strv_t s2) {
+  return concat(vm, s1.data(), s1.size(), s2.data(), s2.size());
+}
+
+// creates a new string object from the integer representation of a byte
 StringObject* StringObject::from_byte(WrenVM& vm, u8_t value) {
-  // TODO:
-  return nullptr;
+  return create(vm, Xt::as_type<char>(value));
 }
 
+// produces a string representation of [value]
 StringObject* StringObject::from_numeric(WrenVM& vm, double value) {
-  // TODO:
-  return nullptr;
+  // edge case: if the value is NaN or infinity, different versions of libc
+  // produce different outputs (some will format it signed and some won't)
+  // to get reliable output, handle it ourselves
+
+  if (std::isnan(value))
+    return create(vm, "nan");
+  if (std::isinf(value))
+    return create(vm, value > 0.0 ? "infinity" : "-infinity");
+
+  return create(vm, Xt::to_string(value));
 }
 
 StringObject* StringObject::from_range(
@@ -239,9 +272,34 @@ StringObject* StringObject::from_range(
   return nullptr;
 }
 
+// creates a new formatted string from [format] and any additional arguments
+// used in the format string
+//
+// this is a very restricted flavor of formatting, intended onlu for internal
+// use by the VM, two formatting characters are supported, each of which reads
+// the next argument as a certain type:
+//
+// $ -> a C string
+// % -> a C++ string
+// @ -> a StringObject
 StringObject* StringObject::format(WrenVM& vm, const char* format, ...) {
-  // TODO:
-  return nullptr;
+  va_list ap;
+
+  // calculate the length of the result string, do this up front so we can
+  // create the final string with a single allocation
+  str_t text;
+  va_start(ap, format);
+  for (const char* c = format; *c != '\0'; ++c) {
+    switch (*c) {
+    case '$': text += va_arg(ap, const char*); break;
+    case '%': text += va_arg(ap, str_t); break;
+    case '@': text += va_arg(ap, Value).as_cstring(); break;
+    default: text.push_back(*c); break; // any other character is interpreted literally
+    }
+  }
+  va_end(ap);
+
+  return create(vm, text);
 }
 
 ListObject::ListObject(ClassObject* cls, sz_t n, Value v) noexcept

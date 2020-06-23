@@ -235,6 +235,8 @@ class StringObject final : public BaseObject {
   virtual ~StringObject() noexcept;
 
   void hash_string() noexcept;
+
+  static StringObject* concat(WrenVM& vm, const char* s1, sz_t n1, const char* s2, sz_t n2);
 public:
   inline sz_t size() const noexcept { return size_; }
   inline sz_t length() const noexcept { return size_; }
@@ -272,6 +274,7 @@ public:
   static StringObject* concat(WrenVM& vm, StringObject* s1, StringObject* s2);
   static StringObject* concat(WrenVM& vm, const char* s1, const char* s2);
   static StringObject* concat(WrenVM& vm, const str_t& s1, const str_t& s2);
+  static StringObject* concat(WrenVM& vm, strv_t s1, strv_t s2);
   static StringObject* from_byte(WrenVM& vm, u8_t value);
   static StringObject* from_numeric(WrenVM& vm, double value);
   static StringObject* from_range(
