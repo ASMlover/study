@@ -777,14 +777,61 @@ ClassObject::ClassObject(ClassObject* metacls,
     bind_superclass(supercls);
 }
 
-void ClassObject::bind_superclass(ClassObject* superclass) {}
-void ClassObject::bind_method(FunctionObject* fn) {}
-void ClassObject::bind_method(sz_t i, const Method& method) {}
-str_t ClassObject::stringify() const { return ""; }
-void ClassObject::gc_blacken(WrenVM& vm) {}
-u32_t ClassObject::hasher() const { return name_->hasher(); }
-ClassObject* ClassObject::create_raw(WrenVM& vm, StringObject* name) { return nullptr; }
+// makes [superclass] the superclass of [class], and causes [class] to
+// inherit its methods, this should be called before any methods are
+// defined on [class]
+void ClassObject::bind_superclass(ClassObject* superclass) {
+  ASSERT(superclass != nullptr, "must have superclass");
+
+  superclass_ = superclass;
+  // include the superclass in the total number of fields
+  if (num_fields_ != -1)
+    num_fields_ += superclass->num_fields_;
+  else
+    ASSERT(num_fields_ == 0, "a foreign class cannot inherit from a class with fields");
+
+  // inherit methods from its superclass
+  sz_t super_methods_count = superclass_->methods_count();
+  for (sz_t i = 0; i < super_methods_count; ++i)
+    bind_method(i, superclass_->methods_[i]);
+}
+
+void ClassObject::bind_method(FunctionObject* fn) {
+  // TODO:
+}
+
+void ClassObject::bind_method(sz_t i, const Method& method) {
+  // make sure the buffer is big enough to contain the symbol's index
+  if (i >= methods_count())
+    methods_.insert(methods_.end(), i - methods_count() + 1, Method());
+  methods_[i] = method;
+}
+
+str_t ClassObject::stringify() const {
+  ss_t ss;
+  ss << "[class `" << name_cstr() << "` at `" << this << "`]";
+  return ss.str();
+}
+
+void ClassObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+u32_t ClassObject::hasher() const {
+  return name_->hasher();
+}
+
+ClassObject* ClassObject::create_raw(WrenVM& vm, StringObject* name) {
+  return object_wrap(vm, new ClassObject(nullptr, nullptr, 0, name));
+}
+
 ClassObject* ClassObject::create(WrenVM& vm,
-    ClassObject* superclass, int num_fields, StringObject* name) { return nullptr; }
+    ClassObject* superclass, int num_fields, StringObject* name) {
+  // create the metaclass
+  StringObject* metaclass_name = StringObject::format(vm, "@ metaclass", name);
+
+  // TODO:
+  return nullptr;
+}
 
 }
