@@ -134,6 +134,8 @@ public:
 
   void collect();
   void append_object(BaseObject* obj);
+  void gray_object(BaseObject* obj);
+  void gray_value(const Value& val);
 };
 
 }

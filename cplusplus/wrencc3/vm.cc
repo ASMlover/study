@@ -41,4 +41,33 @@ void WrenVM::append_object(BaseObject* obj) {
   all_objects_.push_back(obj);
 }
 
+// mark [obj] as reachable and still in use, this should only be called
+// during the sweep phase of a garbage collection
+void WrenVM::gray_object(BaseObject* obj) {
+  if (obj == nullptr)
+    return;
+
+  // stop if the object is already darkened so we don't get stuck in a cycle
+  if (obj->is_darken())
+    return;
+
+  // it's been reached
+  obj->set_darken(true);
+
+  // add it to the gray list so it can be recursively explored for more
+  // marks later
+  if (gray_objects_.size() >= gray_capacity_) {
+    gray_capacity_ = gray_objects_.size() * 2;
+    gray_objects_.reserve(gray_capacity_);
+  }
+  gray_objects_.push_back(obj);
+}
+
+// mark [val] as reachable and still in use, this should only be called
+// during the sweep phase of a garbage collection
+void WrenVM::gray_value(const Value& val) {
+  if (val.is_object())
+    gray_value(val.as_object());
+}
+
 }
