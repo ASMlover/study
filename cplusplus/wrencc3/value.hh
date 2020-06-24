@@ -867,7 +867,7 @@ class ClassObject final : public BaseObject {
 
   // the number of fields needed for an instance of this class, including
   // all of its superclass fields
-  sz_t num_fields_{};
+  int num_fields_{};
 
   // the name of class
   StringObject* name_{};
@@ -884,10 +884,10 @@ class ClassObject final : public BaseObject {
 
   ClassObject() noexcept;
   ClassObject(ClassObject* metacls,
-      ClassObject* supercls = nullptr, sz_t num_fields = 0, StringObject* name = nullptr) noexcept;
+      ClassObject* supercls = nullptr, int num_fields = 0, StringObject* name = nullptr) noexcept;
 public:
   inline ClassObject* superclass() const noexcept { return superclass_; }
-  inline sz_t num_fields() const noexcept { return num_fields_; }
+  inline int num_fields() const noexcept { return num_fields_; }
   inline StringObject* name() const noexcept { return name_; }
   inline const char* name_cstr() const noexcept { return name_->cstr(); }
   inline sz_t methods_count() const noexcept { return methods_.size(); }
@@ -912,7 +912,7 @@ public:
 
   // creates a new class object as well as its associated metaclass
   static ClassObject* create(WrenVM& vm,
-      ClassObject* superclass = nullptr, sz_t num_fields = 0, StringObject* name = nullptr);
+      ClassObject* superclass = nullptr, int num_fields = 0, StringObject* name = nullptr);
 };
 
 }

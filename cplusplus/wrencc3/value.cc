@@ -332,8 +332,7 @@ void ListObject::gc_blacken(WrenVM& vm) {
 }
 
 ListObject* ListObject::create(WrenVM& vm, sz_t n, Value v) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new ListObject(vm.list_cls(), n, v));
 }
 
 bool RangeObject::is_equal(BaseObject* r) const {
@@ -351,8 +350,7 @@ u32_t RangeObject::hasher() const {
 
 RangeObject* RangeObject::create(
     WrenVM& vm, double from, double to, bool is_inclusive) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new RangeObject(vm.range_cls(), from, to, is_inclusive));
 }
 
 std::tuple<bool, int> MapObject::find_entry(Value key) const {
@@ -462,8 +460,7 @@ void MapObject::gc_blacken(WrenVM& vm) {
 }
 
 MapObject* MapObject::create(WrenVM& vm) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new MapObject(vm.map_cls()));
 }
 
 std::optional<sz_t> ModuleObject::find_variable(const str_t& name) const {
@@ -500,8 +497,8 @@ void ModuleObject::gc_blacken(WrenVM& vm) {
 }
 
 ModuleObject* ModuleObject::create(WrenVM& vm, StringObject* name) {
-  // TODO:
-  return nullptr;
+  // modules are never used as first-class objects, so don't need a class
+  return object_wrap(vm, new ModuleObject(name));
 }
 
 FunctionObject::FunctionObject(
@@ -554,8 +551,7 @@ int FunctionObject::get_argc(
 
 FunctionObject* FunctionObject::create(
     WrenVM& vm, ModuleObject* module, int max_slots) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new FunctionObject(vm.fn_cls(), module, max_slots));
 }
 
 FunctionObject* FunctionObject::create(WrenVM& vm,
@@ -563,8 +559,10 @@ FunctionObject* FunctionObject::create(WrenVM& vm,
     Value* constants, int constants_count,
     ModuleObject* module, int max_slots, int num_upvalues, int arity,
     const str_t& name, int* source_lines, int lines_count) {
-  // TODO:
-  return nullptr;
+  auto* o = new FunctionObject(vm.fn_cls(),
+      codes, codes_count, constants, constants_count,
+      module, max_slots, num_upvalues, arity, name, source_lines, lines_count);
+  return object_wrap(vm, o);
 }
 
 str_t ForeignObject::stringify() const {
@@ -576,8 +574,7 @@ void ForeignObject::finalize(WrenVM& vm) {
 }
 
 ForeignObject* ForeignObject::create(WrenVM& vm, ClassObject* cls, sz_t count) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new ForeignObject(cls, count));
 }
 
 UpvalueObject::UpvalueObject(Value* value, UpvalueObject* next) noexcept
@@ -596,8 +593,7 @@ void UpvalueObject::gc_blacken(WrenVM& vm) {
 
 UpvalueObject* UpvalueObject::create(
     WrenVM& vm, Value* value, UpvalueObject* next) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new UpvalueObject(value, next));
 }
 
 ClosureObject::ClosureObject(ClassObject* cls, FunctionObject* fn) noexcept
@@ -624,8 +620,7 @@ void ClosureObject::gc_blacken(WrenVM& vm) {
 }
 
 ClosureObject* ClosureObject::create(WrenVM& vm, FunctionObject* fn) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new ClosureObject(vm.fn_cls(), fn));
 }
 
 FiberObject::FiberObject(ClassObject* cls, ClosureObject* closure) noexcept
@@ -766,8 +761,7 @@ void FiberObject::gc_blacken(WrenVM& vm) {
 }
 
 FiberObject* FiberObject::create(WrenVM& vm, ClosureObject* closure) {
-  // TODO:
-  return nullptr;
+  return object_wrap(vm, new FiberObject(vm.fiber_cls(), closure));
 }
 
 ClassObject::ClassObject() noexcept
@@ -775,7 +769,7 @@ ClassObject::ClassObject() noexcept
 }
 
 ClassObject::ClassObject(ClassObject* metacls,
-    ClassObject* supercls, sz_t num_fields, StringObject* name) noexcept
+    ClassObject* supercls, int num_fields, StringObject* name) noexcept
   : BaseObject(ObjType::CLASS, metacls)
   , num_fields_(num_fields)
   , name_(name) {
@@ -791,6 +785,6 @@ void ClassObject::gc_blacken(WrenVM& vm) {}
 u32_t ClassObject::hasher() const { return name_->hasher(); }
 ClassObject* ClassObject::create_raw(WrenVM& vm, StringObject* name) { return nullptr; }
 ClassObject* ClassObject::create(WrenVM& vm,
-    ClassObject* superclass, sz_t num_fields, StringObject* name) { return nullptr; }
+    ClassObject* superclass, int num_fields, StringObject* name) { return nullptr; }
 
 }
