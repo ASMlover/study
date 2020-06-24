@@ -915,4 +915,19 @@ public:
       ClassObject* superclass = nullptr, int num_fields = 0, StringObject* name = nullptr);
 };
 
+class InstanceObject final : public BaseObject {
+  std::vector<Value> fields_;
+
+  InstanceObject(ClassObject* cls) noexcept;
+public:
+  inline Value& get_field(sz_t i) noexcept { return fields_[i]; }
+  inline const Value& get_field(sz_t i) const noexcept { return fields_[i]; }
+  inline void set_field(sz_t i, Value v) noexcept { fields_[i] = v; }
+
+  virtual str_t stringify() const override;
+  virtual void gc_blacken(WrenVM& vm) override;
+
+  static InstanceObject* create(WrenVM& vm, ClassObject* cls);
+};
+
 }

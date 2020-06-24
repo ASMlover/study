@@ -834,4 +834,26 @@ ClassObject* ClassObject::create(WrenVM& vm,
   return nullptr;
 }
 
+InstanceObject::InstanceObject(ClassObject* cls) noexcept
+  : BaseObject(ObjType::INSTANCE, cls)
+  , fields_(cls->num_fields()) {
+  // initialize fields to nil
+  for (int i = 0; i < cls->num_fields(); ++i)
+    fields_[i] = nullptr;
+}
+
+str_t InstanceObject::stringify() const {
+  ss_t ss;
+  ss << "[instance `" << this << "` of " << cls()->name_cstr() << "]";
+  return ss.str();
+}
+
+void InstanceObject::gc_blacken(WrenVM& vm) {
+  // TODO:
+}
+
+InstanceObject* InstanceObject::create(WrenVM& vm, ClassObject* cls) {
+  return object_wrap(vm, new InstanceObject(cls));
+}
+
 }
