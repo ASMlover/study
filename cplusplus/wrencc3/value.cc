@@ -88,8 +88,7 @@ ClassObject* BaseObject::as_class() noexcept {
 }
 
 InstanceObject* BaseObject::as_instance() noexcept {
-  // TODO:
-  return nullptr;
+  return Xt::down<InstanceObject>(this);
 }
 
 bool ObjValue::is_same(ObjValue r) const noexcept {
@@ -328,7 +327,8 @@ str_t ListObject::stringify() const {
 }
 
 void ListObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  for (auto& e : elements_)
+    vm.gray_value(e);
 }
 
 ListObject* ListObject::create(WrenVM& vm, sz_t n, Value v) {
@@ -456,7 +456,12 @@ str_t MapObject::stringify() const {
 }
 
 void MapObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  for (auto& entry : entries_) {
+    if (!entry.first.is_undefined()) {
+      vm.gray_value(entry.first);
+      vm.gray_value(entry.second);
+    }
+  }
 }
 
 MapObject* MapObject::create(WrenVM& vm) {
@@ -493,7 +498,11 @@ str_t ModuleObject::stringify() const {
 }
 
 void ModuleObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  for (auto& v : variables_)
+    vm.gray_value(v);
+  for (auto* v : variable_names_)
+    vm.gray_object(v);
+  vm.gray_object(name_);
 }
 
 ModuleObject* ModuleObject::create(WrenVM& vm, StringObject* name) {
@@ -536,7 +545,8 @@ str_t FunctionObject::stringify() const {
 }
 
 void FunctionObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  for (auto& c : constants_)
+    vm.gray_value(c);
 }
 
 u32_t FunctionObject::hasher() const {
@@ -588,7 +598,7 @@ str_t UpvalueObject::stringify() const {
 }
 
 void UpvalueObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  vm.gray_value(closed_);
 }
 
 UpvalueObject* UpvalueObject::create(
@@ -616,7 +626,9 @@ str_t ClosureObject::stringify() const {
 }
 
 void ClosureObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  vm.gray_object(fn_);
+  for (int i = 0; i < fn_->num_upvalues(); ++i)
+    vm.gray_object(upvalues_[i]);
 }
 
 ClosureObject* ClosureObject::create(WrenVM& vm, FunctionObject* fn) {
@@ -757,7 +769,15 @@ str_t FiberObject::stringify() const {
 }
 
 void FiberObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  for (auto& v : stack_)
+    vm.gray_value(v);
+  for (auto& f : frames_)
+    vm.gray_object(f.closure);
+  for (auto* uv = open_upvalues_; uv != nullptr; uv = uv->next())
+    vm.gray_object(uv);
+
+  vm.gray_object(caller_);
+  vm.gray_value(error_);
 }
 
 FiberObject* FiberObject::create(WrenVM& vm, ClosureObject* closure) {
@@ -814,7 +834,13 @@ str_t ClassObject::stringify() const {
 }
 
 void ClassObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  vm.gray_object(cls());
+  vm.gray_object(superclass_);
+  vm.gray_object(name_);
+  for (auto& m : methods_) {
+    if (m.get_type() == MethodType::BLOCK)
+      vm.gray_object(m.closure());
+  }
 }
 
 u32_t ClassObject::hasher() const {
@@ -849,7 +875,9 @@ str_t InstanceObject::stringify() const {
 }
 
 void InstanceObject::gc_blacken(WrenVM& vm) {
-  // TODO:
+  vm.gray_object(cls());
+  for (auto& v : fields_)
+    vm.gray_value(v);
 }
 
 InstanceObject* InstanceObject::create(WrenVM& vm, ClassObject* cls) {
