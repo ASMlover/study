@@ -797,6 +797,11 @@ ClassObject::ClassObject(ClassObject* metacls,
     bind_superclass(supercls);
 }
 
+ClassObject* ClassObject::make_class(WrenVM& vm,
+    StringObject* name, ClassObject* metaclass, ClassObject* superclass, int num_fields) {
+  return object_wrap(vm, new ClassObject(metaclass, superclass, num_fields, name));
+}
+
 // makes [superclass] the superclass of [class], and causes [class] to
 // inherit its methods, this should be called before any methods are
 // defined on [class]
@@ -848,16 +853,21 @@ u32_t ClassObject::hasher() const {
 }
 
 ClassObject* ClassObject::create_raw(WrenVM& vm, StringObject* name) {
-  return object_wrap(vm, new ClassObject(nullptr, nullptr, 0, name));
+  return make_class(vm, name);
 }
 
 ClassObject* ClassObject::create(WrenVM& vm,
     ClassObject* superclass, int num_fields, StringObject* name) {
   // create the metaclass
   StringObject* metaclass_name = StringObject::format(vm, "@ metaclass", name);
+  TRoosGuard metaclass_name_guard(vm, metaclass_name);
 
-  // TODO:
-  return nullptr;
+  // metaclass always inherit Class and do not parallel the non-metaclass hierarchy
+  ClassObject* metaclass = make_class(vm, metaclass_name, vm.class_cls(), vm.class_cls());
+  // make sure the metaclass isn't collected when we allocate the class
+  TRoosGuard metaclass_guard(vm, metaclass);
+
+  return make_class(vm, name, metaclass, superclass, num_fields);
 }
 
 InstanceObject::InstanceObject(ClassObject* cls) noexcept

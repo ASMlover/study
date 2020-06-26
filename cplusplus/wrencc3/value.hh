@@ -885,6 +885,9 @@ class ClassObject final : public BaseObject {
   ClassObject() noexcept;
   ClassObject(ClassObject* metacls,
       ClassObject* supercls = nullptr, int num_fields = 0, StringObject* name = nullptr) noexcept;
+
+  static ClassObject* make_class(WrenVM& vm, StringObject* name = nullptr,
+      ClassObject* metaclass = nullptr, ClassObject* superclass = nullptr, int num_fields = 0);
 public:
   inline ClassObject* superclass() const noexcept { return superclass_; }
   inline int num_fields() const noexcept { return num_fields_; }
