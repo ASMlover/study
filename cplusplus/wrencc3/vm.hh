@@ -188,4 +188,27 @@ public:
   void gray_value(const Value& val);
 };
 
+// temporary roots guard
+class TRoosGuard final : private UnCopyable {
+  WrenVM& vm_;
+  bool has_guard_{};
+public:
+  TRoosGuard(WrenVM& vm) noexcept : vm_(vm) {}
+
+  TRoosGuard(WrenVM& vm, BaseObject* obj) noexcept
+    : vm_(vm) {
+    guard_object(obj);
+  }
+
+  ~TRoosGuard() noexcept {
+    if (has_guard_)
+      vm_.pop_root();
+  }
+
+  inline void guard_object(BaseObject* obj) noexcept {
+    vm_.push_root(obj);
+    has_guard_ = true;
+  }
+};
+
 }
