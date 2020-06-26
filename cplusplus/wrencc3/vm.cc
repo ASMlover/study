@@ -31,6 +31,19 @@ namespace wrencc {
 WrenVM::WrenVM() noexcept {}
 WrenVM::~WrenVM() {}
 
+void WrenVM::push_root(BaseObject* obj) {
+  ASSERT(obj != nullptr, "cannot root nullptr");
+  ASSERT(temp_roots_.size() < kMaxTempRoots, "too many temporary roots");
+
+  temp_roots_.push_back(obj);
+}
+
+void WrenVM::pop_root() {
+  ASSERT(temp_roots_.size() > 0, "no temporary roots to release");
+
+  temp_roots_.pop_back();
+}
+
 void WrenVM::collect() {}
 
 void WrenVM::append_object(BaseObject* obj) {

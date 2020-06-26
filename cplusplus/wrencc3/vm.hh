@@ -29,9 +29,48 @@
 #include <list>
 #include <vector>
 #include "common.hh"
+#include "utility.hh"
 #include "value.hh"
 
 namespace wrencc {
+
+enum class Code : u8_t {
+#undef CODEF
+#define CODEF(c, _) c,
+#include "codes_def.hh"
+#undef CODEF
+};
+
+template <typename _Int> inline Code operator+(Code a, _Int b) noexcept {
+  return Xt::as_type<Code>(Xt::as_type<_Int>(a) + b);
+}
+
+template <typename _Int> inline Code operator+(_Int a, Code b) noexcept {
+  return Xt::as_type<Code>(a + Xt::as_type<_Int>(b));
+}
+
+template <typename _Int> inline _Int operator-(Code a, Code b) noexcept {
+  return Xt::as_type<_Int>(a) - Xt::as_type<_Int>(b);
+}
+
+// a handle to a value, basically just a linked list of extra GC roots
+//
+// NOTE: even non-heap-allocated values can be stored here
+struct WrenHandle {
+  Value value{};
+
+  WrenHandle* prev{};
+  WrenHandle* next{};
+
+  WrenHandle(Value v, WrenHandle* p = nullptr, WrenHandle* n = nullptr) noexcept
+    : value(v), prev(p), next(n) {
+  }
+
+  void clear() noexcept {
+    value = nullptr;
+    prev = next = nullptr;
+  }
+};
 
 class WrenVM final : private UnCopyable {
   static constexpr sz_t kMaxTempRoots = 5;
@@ -90,6 +129,10 @@ class WrenVM final : private UnCopyable {
   // pushed object can be released
   std::vector<BaseObject*> temp_roots_;
 
+  // pointer to the first node in the linked list of active handles or nullptr
+  // if there are none
+  WrenHandle* handles_{};
+
   // pointer to the bottom of the range of stack slots available for use from
   // the C/C++ API, during a foreign method, this will be in the stack of the
   // fiber that is executing a method
@@ -102,8 +145,10 @@ class WrenVM final : private UnCopyable {
   // WrenConfig   -> config
   //
   // Compiler     -> compier
-  //
-  // SymbolTable  -> method_names
+
+  // there is a single global symbol table for all method names on all classes,
+  // method calls are dispatched directly by index in this table
+  SymbolTable method_names_;
 public:
   WrenVM() noexcept;
   ~WrenVM();
@@ -131,6 +176,11 @@ public:
   inline void set_list_cls(ClassObject* cls) noexcept { list_class_ = cls; }
   inline void set_range_cls(ClassObject* cls) noexcept { range_class_ = cls; }
   inline void set_map_cls(ClassObject* cls) noexcept { map_class_ = cls; }
+
+  // markes [obj] as a GC root so that it doesn't get collected
+  void push_root(BaseObject* obj);
+  // removes the most recently pushed temporary root
+  void pop_root();
 
   void collect();
   void append_object(BaseObject* obj);
