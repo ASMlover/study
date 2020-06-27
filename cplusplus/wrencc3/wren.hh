@@ -233,4 +233,86 @@ enum class WrenType {
   UNKNOWN,
 };
 
+// immediately run the garbage collector to free unused memory
+void wrenCollectGarbage(WrenVM& vm);
+
+// runs [source_bytes], a string of `wrencc` source code in a new fiber in [vm] in
+// the context of resolved [module]
+InterpretRet wrenInterpret(WrenVM& vm, const str_t& module, const str_t& source_bytes);
+
+// creates a handle that can be used to invoke a method with [signature] on
+// using a receiver and arguments that are set up on the stack
+//
+// this handle can be used repeatedly to directly invoke that method from
+// C/C++ code using [wrenCall]
+//
+// when you are done with this handle, it must be released using
+// [wrenReleaseHandle]
+WrenHandle* wrenMakeCallHandle(WrenVM& vm, const str_t& signature);
+
+// releases the reference stored in [handle], after calling this, [handle]
+// can no longer be used
+void wrenReleaseHandle(WrenVM& vm, WrenHandle* handle);
+
+// calls [method], using the receiver and arguments previously set up on the
+// stack
+//
+// [method] must have been created by a call to [wrenMakeCallHandle], the arguments
+// to the method must be already on the stack, the receiver should be in slot 0
+// with the remaining arguments following it, in order, it is an error if the
+// number of arguments provided does not match the method's signature
+//
+// after this returns, you can access the return value from slot 0 on the stack
+InterpretRet wrenCall(WrenVM& vm, WrenHandle* method);
+
+// the following functions are intended to be called from foreign methods or
+// finalizers, the interface `wrencc` provides to a foreign method is like a
+// register machine: you are given a numbered array of slots that values can
+// be read from and written to, values always live in a slot (unless explicitly
+// captured using [wrenGetSlotHandle()], which ensures the garbage collector
+// can find them)
+//
+// when your foreign function is called, you are given one slot for the receiver
+// and each argument to the method, the receiver is in slot 0 and the arguments
+// are in increasingly numbered slots after that, you are free to read and write
+// to those slots as you want, if you want more slots to use as scratch space,
+// you can call [wrenEnsureSlots()] to add more
+//
+// when your function returns, every slot except slot 0 is discarded and the value
+// in slot 0 is used ad the return value of the method, if you don't store a
+// return value in slot yourself, it will return its previous value, the receiver
+//
+// while `wrencc` is dynamically typed, C/C++ is not, this means the C/C++ interface
+// has to support the various types of primitive values a `wrencc` variable can
+// hold: bool, double, string, etc, if we supported this for every operation in
+// the C/C++ API, there would be a combinatorial explosiion of funcitons, like "get
+// a double-valued element from a list", "insert a string key and double value into
+// a map", etc
+//
+// to avoid that, the only way to convert to and from a raw C/C++ value is by going
+// into and out of a slot, all other funcitons work with values already in a slot.
+// so to add an element to a list, you put the list in one slot, and the element in
+// another, then there is a single API function [wrenInsertInList()] that takes the
+// element out of that slot and puts it into the list
+//
+// the goal of this API is to be easy to use while not compromising performance, the
+// latter means it does not do type or bounds checking at runtime except using
+// assertions which are generally removed from release builds, C/C++ is an unsafe
+// language, so it's up to you to be careful to use it correctly, in return, you get
+// a very fast FFI
+
+// returns the number of slots avaiable to the current foreign method
+sz_t wrenGetSlotCount(WrenVM& vm);
+
+// ensures that the foreign method stack has at least [num_slots] avaiable for use,
+// growing the stack if needed
+//
+// does not shrink the stack if it has more that enough slots
+//
+// it is an error to call this from a finalizer
+void wrenEnsureSlots(WrenVM& vm, sz_t num_slots);
+
+// gets the type of the object in [slot]
+WrenType wrenGetSlotType(WrenVM& vm, int slot);
+
 }
