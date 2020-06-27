@@ -313,6 +313,101 @@ sz_t wrenGetSlotCount(WrenVM& vm);
 void wrenEnsureSlots(WrenVM& vm, sz_t num_slots);
 
 // gets the type of the object in [slot]
-WrenType wrenGetSlotType(WrenVM& vm, int slot);
+WrenType wrenGetSlotType(WrenVM& vm, sz_t slot);
+
+// reads a boolean value from [slot]
+//
+// it is an error to call this if the slot does not contain a boolean value
+bool wrenGetSlotBool(WrenVM& vm, sz_t slot);
+
+// reads a numeric value from [slot]
+//
+// it is an error to call this if the slot does not contain a numeric value
+double wrenGetSlotDouble(WrenVM& vm, sz_t slot);
+
+// reads a string from [slot]
+//
+// the memory from the returned string is owned by `wrencc`, you can inspect
+// it while in your foreign method, but cannot keep a pointer to it after the
+// function returns, since the garbage collector may reclaim it
+//
+// it is an error to call this if the slot does not contain a string value
+const char* wrenGetSlotString(WrenVM& vm, sz_t slot);
+
+// creates a handle for the value stored in [slot]
+//
+// this will prevent the object that is referred to from being garbage collected
+// until the handle is released by calling [wrenReleaseHandle()]
+WrenHandle* wrenGetSlotHandle(WrenVM& vm, sz_t slot);
+
+// reads a foreign object from [slot] and returns a pointer to the foreign
+// data stored with it
+//
+// it is an error to call this if the slot does not contain an instance of a
+// foreign class
+void* wrenGetSlotForeign(WrenVM& vm, sz_t slot);
+
+// stores `nil` in [slot]
+void wrenSetSlotNil(WrenVM& vm, sz_t slot);
+
+// stores the boolean [value] in [slot]
+void wrenSetSlotBool(WrenVM& vm, sz_t slot, bool value);
+
+// stores the numeric [value] in [slot]
+void wrenSetSlotDouble(WrenVM& vm, sz_t slot, double value);
+
+// stores the string [text] in [slot]
+//
+// the [text] is copied to a nee string within heap of `wrencc`, so you can
+// free memory used by it after this is called, the length is calculated by
+// std::string method, if the string may contain any null bytes in the middile
+// then you should use [wrenSetSlotBytes()] instead
+void wrenSetSlotString(WrenVM& vm, sz_t slot, const str_t& text);
+
+// stores the value captured in [handle] in [slot]
+//
+// this does not release the handle for the value
+void wrenSetSlotHandle(WrenVM& vm, sz_t slot, WrenHandle* handle);
+
+// creates a new instance of the foreign class stored in [class_slot] with
+// [size] bytes of raw storage and places the resulting object in [slot]
+//
+// this does not invoke the foreign class's constructor on the new instance,
+// if you need that to happen, call the constructor from `wrencc`, which will
+// then call the allocator foreign method, in there, call this to create the
+// object and then the constructor will be invoked when the allocator returns
+//
+// returns a pointer to the foreign object's data
+void* wrenSetSlotNewForeign(WrenVM& vm, sz_t slot, sz_t class_slot, sz_t size);
+
+// stores a new empty list in [slot]
+void wrenSetSlotNewList(WrenVM& vm, sz_t slot);
+
+// returns the number of elements in the list stored in [slot]
+sz_t wrenGetListCount(WrenVM& vm, sz_t slot);
+
+// reads element [index] from the list in [list_slot] and stores it in [element_slot]
+void wrenGetListElement(WrenVM& vm, sz_t list_slot, int index, sz_t element_slot);
+
+// takes the value stored at [element_slot] and inserts it into the list
+// stored at [list_slot] at [index]
+//
+// as in `wrencc`, negative indexes can be used to insert from the end,
+// to append an element, use `-1` for the index
+void wrenInsertInList(WrenVM& vm, sz_t list_slot, int index, sz_t element_slot);
+
+// looks up the top level variable with [name] in resolved [module] and
+// stores it in [to_slot]
+void wrenGetVariable(WrenVM& vm, const str_t& module, const str_t& name, sz_t to_slot);
+
+// sets the current fiber to be aborted, and uses the value in [slot] as
+// the runtime error object
+void wrenAbortFiber(WrenVM& vm, sz_t slot);
+
+// returns the user data associated with the VM
+void* wrenGetUserData(WrenVM& vm);
+
+// sets user data associated with the VM
+void wrenSetUserData(WrenVM& vm, void* user_data);
 
 }
