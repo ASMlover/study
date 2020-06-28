@@ -141,9 +141,9 @@ class WrenVM final : private UnCopyable {
   // slots by calling `wrenEnsureSlots()`, a stack is created and this is initialized
   Value* api_stack_{};
 
+  WrenConfig config_{};
+
   // TODO:
-  // WrenConfig   -> config
-  //
   // Compiler     -> compier
 
   // there is a single global symbol table for all method names on all classes,
@@ -186,6 +186,8 @@ public:
   void append_object(BaseObject* obj);
   void gray_object(BaseObject* obj);
   void gray_value(const Value& val);
+
+  InterpretRet interpret(const str_t& module, const str_t& source_bytes);
 };
 
 // temporary roots guard

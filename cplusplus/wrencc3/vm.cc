@@ -83,4 +83,9 @@ void WrenVM::gray_value(const Value& val) {
     gray_value(val.as_object());
 }
 
+InterpretRet WrenVM::interpret(const str_t& module, const str_t& source_bytes) {
+  // TODO:
+  return InterpretRet::SUCCESS;
+}
+
 }
