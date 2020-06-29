@@ -24,12 +24,30 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "vm.hh"
 
 namespace wrencc {
 
 WrenVM::WrenVM() noexcept {}
 WrenVM::~WrenVM() {}
+
+void WrenVM::print_stacktrace() {}
+void WrenVM::runtime_error() {}
+
+void WrenVM::free_object(BaseObject* obj) {
+#if defined(WRENCC_TRACE_MEMORY)
+  std::cout
+    << "`" << Xt::cast<void>(obj) << "` free object"
+# if defined(WRENCC_TRACE_OBJECT_DETAIL)
+    << " `" << obj->stringify() << "`"
+# endif
+    << std::endl;
+#endif
+
+  obj->finalize(*this);
+  delete obj;
+}
 
 void WrenVM::push_root(BaseObject* obj) {
   ASSERT(obj != nullptr, "cannot root nullptr");
@@ -54,8 +72,6 @@ void WrenVM::append_object(BaseObject* obj) {
   all_objects_.push_back(obj);
 }
 
-// mark [obj] as reachable and still in use, this should only be called
-// during the sweep phase of a garbage collection
 void WrenVM::gray_object(BaseObject* obj) {
   if (obj == nullptr)
     return;
@@ -76,11 +92,19 @@ void WrenVM::gray_object(BaseObject* obj) {
   gray_objects_.push_back(obj);
 }
 
-// mark [val] as reachable and still in use, this should only be called
-// during the sweep phase of a garbage collection
 void WrenVM::gray_value(const Value& val) {
   if (val.is_object())
-    gray_value(val.as_object());
+    gray_object(val.as_object());
+}
+
+void WrenVM::blacken_objects() {
+  while (!gray_objects_.empty()) {
+    // pop an item from the gray stack
+    BaseObject* obj = gray_objects_.back();
+    gray_objects_.pop_back();
+
+    obj->gc_blacken(*this);
+  }
 }
 
 InterpretRet WrenVM::interpret(const str_t& module, const str_t& source_bytes) {

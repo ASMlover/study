@@ -149,6 +149,20 @@ class WrenVM final : private UnCopyable {
   // there is a single global symbol table for all method names on all classes,
   // method calls are dispatched directly by index in this table
   SymbolTable method_names_;
+
+  // prints the stack trace for the current fiber
+  //
+  // used when a fiber throws a runtime error which is not caught
+  void print_stacktrace();
+
+  // handles the current fiber having aborted because of an error
+  //
+  // walks the call chain of fibers, aborting each one until it hits a fiber that
+  // handles the error, if none do, tell the VM to stop
+  void runtime_error();
+
+  // releases all memory owned by [obj], including [obj] itself
+  void free_object(BaseObject* obj);
 public:
   WrenVM() noexcept;
   ~WrenVM();
@@ -177,16 +191,41 @@ public:
   inline void set_range_cls(ClassObject* cls) noexcept { range_class_ = cls; }
   inline void set_map_cls(ClassObject* cls) noexcept { map_class_ = cls; }
 
+  inline FiberObject* fiber() noexcept { return fiber_; }
+  inline const FiberObject* fiber() const noexcept { return fiber_; }
+  inline void set_fiber(FiberObject* fiber) noexcept { fiber_ =  fiber; }
+  inline MapObject* modules() const noexcept { return modules_; }
+  inline Value* api_stack() const noexcept { return api_stack_; }
+  inline Value& get_api_stack(sz_t i) noexcept { return api_stack_[i]; }
+  inline const Value& get_api_stack(sz_t i) const noexcept { return api_stack_[i]; }
+  inline void set_api_stack(sz_t i, const Value& v) noexcept { api_stack_[i] = v; }
+  inline SymbolTable& mnames() noexcept { return method_names_; }
+  inline const SymbolTable& mnames() const noexcept { return method_names_; }
+
   // markes [obj] as a GC root so that it doesn't get collected
   void push_root(BaseObject* obj);
   // removes the most recently pushed temporary root
   void pop_root();
 
+  // immediately run the garbage collector to free unused memory
   void collect();
   void append_object(BaseObject* obj);
+
+  // mark [obj] as reachable and still in use, this should only be called
+  // during the sweep phase of a garbage collection
   void gray_object(BaseObject* obj);
+
+  // mark [val] as reachable and still in use, this should only be called
+  // during the sweep phase of a garbage collection
   void gray_value(const Value& val);
 
+  // processes every object in the gray stack until all reachable objects have
+  // been marked, after that, all object are either white (freeable) or black
+  // (in use and fully traversed)
+  void blacken_objects();
+
+  // runs [source_bytes], a string of source code in a new fiber in this VM in
+  // the context of resolved [module]
   InterpretRet interpret(const str_t& module, const str_t& source_bytes);
 };
 
