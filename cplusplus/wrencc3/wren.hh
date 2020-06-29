@@ -116,7 +116,7 @@ enum class WrenError {
 // reports an error to the user
 //
 // an error detected during compile time is reported by calling this once with
-// [errno] `WrenError::COMPILE`, the resolved name of the [module] and [lineno]
+// [ec] `WrenError::COMPILE`, the resolved name of the [module] and [lineno]
 // where the error occurs, and the compiler's error [message]
 //
 // a runtime is reported by calling this once with [errono] `WrenError::RUNTIME`,
@@ -125,7 +125,7 @@ enum class WrenError {
 // trace. each of those has the resolved [module] and [lineno] where the method
 // or function is defined and [message] is the name of the method of function
 using WrenErrorFn = std::function<void (WrenVM& vm,
-    WrenError errno, const str_t& module, int lineno, const str_t& message)>;
+    WrenError ec, const str_t& module, int lineno, const str_t& message)>;
 
 struct WrenConfig {
   // the callback `wrencc` will use to allocate, reallocate, and deallocate memory
