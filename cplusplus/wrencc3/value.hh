@@ -723,11 +723,12 @@ public:
   inline void set_value(sz_t i, Value v) noexcept { stack_[i] = v; }
   inline const CallFrame& get_frame(sz_t i) const noexcept { return frames_[i]; }
   inline FiberObject* caller() const noexcept { return caller_; }
-  inline void set_fiber(FiberObject* caller) noexcept { caller_ = caller; }
+  inline void set_caller(FiberObject* caller) noexcept { caller_ = caller; }
   inline FiberState state() const noexcept { return state_; }
   inline void set_state(FiberState state) noexcept { state_ = state; }
   inline const Value& error() const noexcept { return error_; }
   inline const char* error_asstr() const noexcept { return error_.as_cstring(); }
+  inline void set_error(Value error) noexcept { error_ = error; }
   inline bool has_error() const noexcept { return !error_.is_nil(); }
 
   inline Value& peek_value(sz_t distance = 0) noexcept {
