@@ -28,7 +28,7 @@
 #include "../common.hh"
 #include "../harness.hh"
 
-// [ADDR] https://leetcode-cn.com/problems/add-two-numbers/?utm_source=LCUS&utm_medium=ip_redirect_q_uns&utm_campaign=transfer2china
+// [ADDR] https://leetcode-cn.com/problems/add-two-numbers
 //
 // 说明:
 //

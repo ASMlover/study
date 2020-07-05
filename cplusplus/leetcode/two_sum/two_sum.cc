@@ -29,7 +29,7 @@
 #include "../common.hh"
 #include "../harness.hh"
 
-// [ADDR] https://leetcode-cn.com/problems/two-sum/?utm_source=LCUS&utm_medium=ip_redirect_q_uns&utm_campaign=transfer2china
+// [ADDR] https://leetcode-cn.com/problems/two-sum
 //
 // 说明：
 //
