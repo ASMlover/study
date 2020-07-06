@@ -32,8 +32,68 @@ namespace wrencc {
 WrenVM::WrenVM() noexcept {}
 WrenVM::~WrenVM() {}
 
-void WrenVM::print_stacktrace() {}
-void WrenVM::runtime_error() {}
+void WrenVM::print_stacktrace() {
+  // bail if the host doesn't enable printing errors
+  if (!config_.error_fn)
+    return;
+
+  if (fiber_->error().is_string()) {
+    config_.error_fn(*this, WrenError::RUNTIME, "", -1, fiber_->error().as_cstring());
+  }
+  else {
+    // TODO:
+    config_.error_fn(*this, WrenError::RUNTIME, "", -1, "[error object]");
+  }
+
+  fiber_->riter_frames([this](const CallFrame& frame, FunctionObject* fn) {
+        ModuleObject* m = fn->module();
+        const FunctionDebug& debug = fn->debug();
+
+        // skip over stub functions for calling methods from the C/C++ API
+        if (m == nullptr)
+          return;
+
+        // the built-in core module has no name, we explicitly omit it from stack
+        // traces since we don't want to highlight to a user the implementation
+        // detail of what part of the core module is written in C/C++ and what is
+        // `wrencc`
+        if (m->name() == nullptr)
+          return;
+
+        int lineno = debug.get_line(Xt::as_type<int>(frame.ip - fn->codes()) - 1);
+        config_.error_fn(*this, WrenError::STACK_TRACE, m->name_cstr(), lineno, debug.name());
+      });
+}
+
+void WrenVM::runtime_error() {
+  ASSERT(fiber_->has_error(), "should only call this after an error");
+
+  FiberObject* curr_fiber = fiber_;
+  Value error = curr_fiber->error();
+  while (curr_fiber != nullptr) {
+    // every fiber along the call chain gets aborted with the same error
+    curr_fiber->set_error(error);
+
+    // if the caller ran this fiber using "try", give it the error and stop
+    if (curr_fiber->state() == FiberState::FIBER_TRY) {
+      // make the caller's try method return the error message
+      sz_t i = curr_fiber->caller()->stack_size() - 1;
+      curr_fiber->caller()->set_value(i, fiber_->error());
+      fiber_ = curr_fiber->caller();
+      return;
+    }
+
+    // otherwise, unhook the caller since we will never resume and return to it
+    FiberObject* caller = curr_fiber->caller();
+    curr_fiber->set_caller(nullptr);
+    curr_fiber = caller;
+  }
+
+  // if we got here, nothing caught the error, so show the stack trace
+  print_stacktrace();
+  fiber_ = nullptr;
+  api_stack_ = nullptr;
+}
 
 void WrenVM::free_object(BaseObject* obj) {
 #if defined(WRENCC_TRACE_MEMORY)
