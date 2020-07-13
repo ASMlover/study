@@ -4,7 +4,7 @@
 
 # 目录
 - 服务器架构演化简介
-- Messiash服务器架构简介
+- Messiah服务器架构简介
 - 其他架构设计
 
 ---
@@ -89,7 +89,15 @@
 
 ---
 
-# Messiash服务器架构
+# Messiah服务器架构
+![Messiah1](./pic/Messiah1.png)
+
+![Messiah2](./pic/Messiah2.png)
+
+---
+
+# Messiah跨服结构
+![MessiahCross](./pic/MessiahCross.png)
 
 ---
 
@@ -97,4 +105,3 @@
 - 棋牌游戏
 ![ChessServer](./pic/ChessServer.png)
 
----
