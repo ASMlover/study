@@ -101,7 +101,33 @@
 
 ---
 
+# 回头看看单服结构
+![Game1](./pic/Game1.png)
+
+---
+
+# 单服中所有对象直接访问
+![Game2](./pic/Game2.png)
+
+---
+
+# Messiah中的对象抽象（对象虚拟化）
+![Game3](./pic/Game3.png)
+
+---
+
+# Messiah中的对象抽象（分shard）
+![Game4](./pic/Game4.png)
+
+---
+
 # 其他架构
-- 棋牌游戏
+* 棋牌游戏
 ![ChessServer](./pic/ChessServer.png)
+
+---
+
+# 其他架构
+* MOBA游戏
+![Cluster](./pic/Cluster.png)
 
