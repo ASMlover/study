@@ -163,17 +163,17 @@
 
 ---
 
-# Messiah服务器架构
-![Messiah2](./pic/Messiah2.png)
+# Messiah服务器
+![Messiah1](./pic/Messiah1.png)
+
+- Gate隔离外网增加安全性，提供加解密、广播、Game间消息转发
+- 场景（进程）间迁移方便
+- 负载均衡
+- 扩容方便
 
 ---
 
-# Messiah跨服结构
-![MessiahCross](./pic/MessiahCross.png)
-
----
-
-# 回头看看单服结构
+# 再看看单服结构
 ![Game1](./pic/Game1.png)
 
 ---
@@ -186,25 +186,95 @@
 # Messiah中的对象抽象（对象虚拟化）
 ![Game3](./pic/Game3.png)
 
+- 对象（entity）可以创建在任意game上
+- 对象之间使用消息交互
+
 ---
 
-# Messiah中的对象抽象（分shard）
+# Stub
+- Stub中数据集中
+- 逻辑处理方便，开发简单
+- 成为单点性能瓶颈
+- 单点故障，将影响所有玩家
+
+---
+
+# Messiah中的对象抽象（sharding）
 ![Game4](./pic/Game4.png)
 
+- 分shard缓解了单点故障的影响
+- 不同功能的stub分布在不同的game上，某个game故障时，只影响部分功能
+
 ---
 
-# 其他架构
-* 棋牌游戏
+# Messiah跨服结构
+![MessiahCross](./pic/MessiahCross.png)
+
+- 同一组服务器内迁移和多组服务器之间迁移没有本质上的区别
+- 对玩家透明
+- 普通服务器（OrdinaryServer）：玩家登录创建，进行普通单服玩法时所在的服务器
+- 跨服服务器（CrossServer）：允许多个普通服玩法在此服务器上共同进行跨服玩法的服务器
+
+---
+
+# 全球同服开房间战斗？
+
+---
+
+# Messiah单服结构的连接
+![Messiah2](./pic/Messiah2.png)
+
+---
+
+# Messiah单服结构
+
+- 超大规模大集群连接数爆炸
+- GameManager负载高
+- 场内逻辑和场外逻辑混合
+- 进程crash风险不可控
+
+---
+
+# Messiah跨服结构的连接
+![MessiahCross2](./pic/MessiahCross2.png)
+
+---
+
+# 再看看复杂的Messiah跨服结构呢？
+![MessiahCross3](./pic/MessiahCross3.png)
+
+- MMO跨服
+- Gate连接数多
+- 跨服Gate利用率低
+
+---
+
+# 其他开房间游戏架构（棋牌游戏）
 ![ChessServer](./pic/ChessServer.png)
 
 ---
 
-# 其他架构
-* 跨集群机构
+# 其他开房间游戏架构（跨集群结构）
 ![Cluster](./pic/Cluster.png)
 
 ---
 
-# 跨集群匹配架构
+# 其他开房间游戏架构（跨集群结构）
+- 每个“服务器”都是独立的MessiahServer（MobileServer）
+- 多个小的战斗服可动态水平扩展
+- 集群内扩展不需要增加Gate连接数
+- 同时连接大厅和匹配到的战斗服
+- 无迁移
+
+---
+
+# 跨集群匹配
 ![MatchCluster](./pic/MatchCluster.png)
 
+---
+
+# 跨集群就更好吗？
+
+---
+
+# END
