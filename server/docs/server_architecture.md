@@ -268,6 +268,11 @@
 
 ---
 
+# 其他开房间游戏架构（复杂跨集群结构）
+![Cluster2](./pic/Cluster2.png)
+
+---
+
 # 跨集群匹配
 ![MatchCluster](./pic/MatchCluster.png)
 
