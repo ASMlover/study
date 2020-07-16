@@ -27,4 +27,37 @@
 #include "lexer.hh"
 
 namespace tadpole {
+
+Token Lexer::next_token() {
+  char c = 0;
+  return make_error(from_fmt("unexpected character `%c`", c));
+}
+
+void Lexer::skip_whitespace() {
+}
+
+Token Lexer::make_token(TokenKind kind) {
+  return Token(kind, gen_literal(begpos_, curpos_), lineno_);
+}
+
+Token Lexer::make_token(TokenKind kind, const str_t& literal) {
+  return Token(kind, literal, lineno_);
+}
+
+Token Lexer::make_error(const str_t& message) {
+  return Token(TokenKind::TK_ERR, message, lineno_);
+}
+
+Token Lexer::make_identifier() {
+  return make_token(TokenKind::TK_IDENTIFIER);
+}
+
+Token Lexer::make_numeric() {
+  return make_token(TokenKind::TK_NUMERIC);
+}
+
+Token Lexer::make_string() {
+  return make_token(TokenKind::TK_STRING);
+}
+
 }
