@@ -42,6 +42,10 @@ enum class TokenKind {
 const char* get_kind_name(TokenKind kind);
 TokenKind get_keyword_kind(const str_t& key);
 
+inline std::ostream& operator<<(std::ostream& out, TokenKind kind) noexcept {
+  return out << get_kind_name(kind);
+}
+
 class Token final : public Copyable {
   TokenKind kind_{TokenKind::TK_ERR};
   str_t literal_;
