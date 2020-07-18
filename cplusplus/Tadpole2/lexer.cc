@@ -34,6 +34,23 @@ Token Lexer::next_token() {
 }
 
 void Lexer::skip_whitespace() {
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(); break;
+    case '\n': ++lineno_; advance(); break;
+    case '/':
+      if (peek(1) == '/') {
+        while (peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      break;
+    default: return;
+    }
+  }
 }
 
 Token Lexer::make_token(TokenKind kind) {
@@ -49,15 +66,56 @@ Token Lexer::make_error(const str_t& message) {
 }
 
 Token Lexer::make_identifier() {
-  return make_token(TokenKind::TK_IDENTIFIER);
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(begpos_, curpos_);
+  return make_token(get_keyword_kind(literal), literal);
 }
 
 Token Lexer::make_numeric() {
+  while (is_digit(peek()))
+    advance();
+  if (peek() == '.' && is_digit(peek(1))) {
+    advance();
+    while (is_digit(peek()))
+      advance();
+  }
+
   return make_token(TokenKind::TK_NUMERIC);
 }
 
 Token Lexer::make_string() {
-  return make_token(TokenKind::TK_STRING);
+  str_t literal;
+  while (!is_tail() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek()) {
+      case '"': c = '"'; advance(); break;
+      case '\\': c = '\\'; advance(); break;
+      case '%': c = '%'; advance(); break;
+      case '0': c = '\0'; advance(); break;
+      case 'a': c = '\a'; advance(); break;
+      case 'b': c = '\b'; advance(); break;
+      case 'f': c = '\f'; advance(); break;
+      case 'n': c = '\n'; advance(); break;
+      case 'r': c = '\r'; advance(); break;
+      case 't': c = '\t'; advance(); break;
+      case 'v': c = '\v'; advance(); break;
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+
+  if (is_tail())
+    return make_error("unterminated string");
+
+  advance();
+  return make_token(TokenKind::TK_STRING, literal);
 }
 
 }
