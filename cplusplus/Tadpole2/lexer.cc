@@ -29,7 +29,35 @@
 namespace tadpole {
 
 Token Lexer::next_token() {
-  char c = 0;
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_tail())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (is_alpha(c))
+    return make_identifier();
+  if (is_digit(c))
+    return make_numeric();
+
+#define _MAKE_TOKEN(c, k) case c: return make_token(TokenKind::TK_##k)
+  switch (c) {
+  _MAKE_TOKEN('(', LPAREN);
+  _MAKE_TOKEN(')', RPAREN);
+  _MAKE_TOKEN('{', LBRACE);
+  _MAKE_TOKEN('}', RBRACE);
+  _MAKE_TOKEN(',', COMMA);
+  _MAKE_TOKEN('-', MINUS);
+  _MAKE_TOKEN('+', PLUS);
+  _MAKE_TOKEN(';', SEMI);
+  _MAKE_TOKEN('/', SLASH);
+  _MAKE_TOKEN('*', STAR);
+  _MAKE_TOKEN('=', EQ);
+  case '"': return make_string();
+  }
+#undef _MAKE_TOKEN
+
   return make_error(from_fmt("unexpected character `%c`", c));
 }
 
@@ -86,6 +114,8 @@ Token Lexer::make_numeric() {
 }
 
 Token Lexer::make_string() {
+#define _MAKE_CHAR(x, y) case x: c = y; advance(); break;
+
   str_t literal;
   while (!is_tail() && peek() != '"') {
     char c = peek();
@@ -93,23 +123,24 @@ Token Lexer::make_string() {
     case '\n': ++lineno_; break;
     case '\\':
       switch (peek()) {
-      case '"': c = '"'; advance(); break;
-      case '\\': c = '\\'; advance(); break;
-      case '%': c = '%'; advance(); break;
-      case '0': c = '\0'; advance(); break;
-      case 'a': c = '\a'; advance(); break;
-      case 'b': c = '\b'; advance(); break;
-      case 'f': c = '\f'; advance(); break;
-      case 'n': c = '\n'; advance(); break;
-      case 'r': c = '\r'; advance(); break;
-      case 't': c = '\t'; advance(); break;
-      case 'v': c = '\v'; advance(); break;
+      _MAKE_CHAR('"', '"');
+      _MAKE_CHAR('\\', '\\');
+      _MAKE_CHAR('%', '%');
+      _MAKE_CHAR('0', '\0');
+      _MAKE_CHAR('a', '\a');
+      _MAKE_CHAR('b', '\b');
+      _MAKE_CHAR('f', '\f');
+      _MAKE_CHAR('n', '\n');
+      _MAKE_CHAR('r', '\r');
+      _MAKE_CHAR('t', '\t');
+      _MAKE_CHAR('v', '\v');
       }
       break;
     }
     literal.push_back(c);
     advance();
   }
+#undef _MAKE_CHAR
 
   if (is_tail())
     return make_error("unterminated string");
