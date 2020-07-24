@@ -49,6 +49,17 @@ TADPOLE_TEST(TadpoleLexer) {
     DUMP_LEX();
   }
 
+  {
+    std::string s = "var a = 34;";
+    tadpole::Lexer lex(s);
+    TEST_EQ(TK::KW_VAR);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_EQ);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_SEMI);
+    TEST_EQ(TK::TK_EOF);
+  }
+
 #undef DUMP_LEX
 #undef TEST_EQ
 }
