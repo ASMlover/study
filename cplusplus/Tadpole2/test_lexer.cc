@@ -60,6 +60,21 @@ TADPOLE_TEST(TadpoleLexer) {
     TEST_EQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "print(\"34 + 56 =\", 34 + 56);";
+    tadpole::Lexer lex(s);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_LPAREN);
+    TEST_EQ(TK::TK_STRING);
+    TEST_EQ(TK::TK_COMMA);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_PLUS);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_RPAREN);
+    TEST_EQ(TK::TK_SEMI);
+    TEST_EQ(TK::TK_EOF);
+  }
+
 #undef DUMP_LEX
 #undef TEST_EQ
 }
