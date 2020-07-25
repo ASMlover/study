@@ -75,6 +75,24 @@ TADPOLE_TEST(TadpoleLexer) {
     TEST_EQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "fn show(msg) { print(msg); }";
+    tadpole::Lexer lex(s);
+    TEST_EQ(TK::KW_FN);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_LPAREN);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_RPAREN);
+    TEST_EQ(TK::TK_LBRACE);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK::TK_LPAREN);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_RPAREN);
+    TEST_EQ(TK::TK_SEMI);
+    TEST_EQ(TK::TK_RBRACE);
+    TEST_EQ(TK::TK_EOF);
+  }
+
 #undef DUMP_LEX
 #undef TEST_EQ
 }
