@@ -85,11 +85,30 @@ TADPOLE_TEST(TadpoleLexer) {
     TEST_EQ(TK::TK_RPAREN);
     TEST_EQ(TK::TK_LBRACE);
     TEST_EQ(TK::TK_IDENTIFIER);
-    TEST_EQ(TK::TK::TK_LPAREN);
+    TEST_EQ(TK::TK_LPAREN);
     TEST_EQ(TK::TK_IDENTIFIER);
     TEST_EQ(TK::TK_RPAREN);
     TEST_EQ(TK::TK_SEMI);
     TEST_EQ(TK::TK_RBRACE);
+    TEST_EQ(TK::TK_EOF);
+  }
+
+  {
+    std::string s = "print(45 + 56 * 22 / 8.9 - 200);";
+    tadpole::Lexer lex(s);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_LPAREN);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_PLUS);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_STAR);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_SLASH);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_MINUS);
+    TEST_EQ(TK::TK_NUMERIC);
+    TEST_EQ(TK::TK_RPAREN);
+    TEST_EQ(TK::TK_SEMI);
     TEST_EQ(TK::TK_EOF);
   }
 
