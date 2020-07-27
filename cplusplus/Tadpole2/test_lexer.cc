@@ -112,6 +112,26 @@ TADPOLE_TEST(TadpoleLexer) {
     TEST_EQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "var a = nil; print(a, true, false);";
+    tadpole::Lexer lex(s);
+    TEST_EQ(TK::KW_VAR);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_EQ);
+    TEST_EQ(TK::KW_NIL);
+    TEST_EQ(TK::TK_SEMI);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_LPAREN);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_COMMA);
+    TEST_EQ(TK::KW_TRUE);
+    TEST_EQ(TK::TK_COMMA);
+    TEST_EQ(TK::KW_FALSE);
+    TEST_EQ(TK::TK_RPAREN);
+    TEST_EQ(TK::TK_SEMI);
+    TEST_EQ(TK::TK_EOF);
+  }
+
 #undef DUMP_LEX
 #undef TEST_EQ
 }
