@@ -132,6 +132,16 @@ TADPOLE_TEST(TadpoleLexer) {
     TEST_EQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "var a = \"ERROR";
+    tadpole::Lexer lex(s);
+    TEST_EQ(TK::KW_VAR);
+    TEST_EQ(TK::TK_IDENTIFIER);
+    TEST_EQ(TK::TK_EQ);
+    TEST_EQ(TK::TK_ERR);
+    TEST_EQ(TK::TK_EOF);
+  }
+
 #undef DUMP_LEX
 #undef TEST_EQ
 }
