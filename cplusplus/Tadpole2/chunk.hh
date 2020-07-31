@@ -78,4 +78,43 @@ template <typename T> inline Code operator+(Code a, T b) noexcept {
   return as_type<Code>(as_type<int>(a) + as_type<int>(b));
 }
 
+class Chunk final : private UnCopyable {
+  std::vector<u8_t> codes_;
+  std::vector<int> lines_;
+  std::vector<Value> constants_;
+public:
+  template <typename T> inline u8_t write(T c, int lineno) noexcept {
+    codes_.push_back(as_type<u8_t>(c));
+    lines_.push_back(lineno);
+    return as_type<u8_t>(codes_.size() - 1);
+  }
+
+  inline u8_t add_constant(Value value) noexcept {
+    constants_.push_back(value);
+    return as_type<u8_t>(constants_.size() - 1);
+  }
+
+  inline void write_constant(Value value, int lineno) noexcept {
+    write(Code::CONSTANT, lineno);
+    write(add_constant(value), lineno);
+  }
+
+  inline sz_t codes_count() const noexcept { return codes_.size(); }
+  inline const u8_t* codes() const noexcept { return codes_.data(); }
+  inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
+  template <typename T>
+  inline void set_code(sz_t i, T c) noexcept { return codes_[i] = as_type<u8_t>(c); }
+  inline int get_line(sz_t i) const noexcept { return lines_[i]; }
+  inline const Value& get_constant(sz_t i) const noexcept { return constants_[i]; }
+  inline sz_t offset(const u8_t* ip) const noexcept { return as_type<sz_t>(ip - codes()); }
+
+  template <typename Fn> inline void iter_constants(Fn&& fn) {
+    for (auto& c : constants_)
+      fn(c);
+  }
+
+  void dis(strv_t prompt);
+  sz_t dis_code(sz_t offset);
+};
+
 }
