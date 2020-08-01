@@ -24,7 +24,39 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "chunk.hh"
 
 namespace tadpole {
+
+inline sz_t dis_compound(
+    Chunk* chunk, const char* msg, sz_t i, bool with_constant = false) noexcept {
+  auto c = chunk->get_code(i + 1);
+  std::fprintf(stdout, "%-16s %4d", msg, c);
+  if (with_constant)
+    std::cout << " `" << chunk->get_constant(c) << "`";
+  std::cout << std::endl;
+
+  return i + 2;
+}
+
+inline sz_t dis_simple(Chunk* chunk, const char* msg, sz_t i, int n = 0) noexcept {
+  std::cout << msg;
+  if (n > 0)
+    std::cout << "_" << n;
+  std::cout << std::endl;
+
+  return i + 1;
+}
+
+void Chunk::dis(strv_t prompt) {
+  std::cout << "========= [" << prompt << "] =========" << std::endl;
+  for (sz_t offset = 0; offset < codes_count();)
+    offset = dis_code(offset);
+}
+
+sz_t Chunk::dis_code(sz_t offset) {
+  return offset;
+}
+
 }
