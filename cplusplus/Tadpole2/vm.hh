@@ -61,6 +61,8 @@ class VM final : private UnCopyable {
   sz_t gc_threshold_{kGCThreshold};
   std::list<BaseObject*> objects_;
   std::list<BaseObject*> worklist_;
+
+  void collect();
 public:
   VM() noexcept;
   ~VM();
@@ -72,6 +74,16 @@ public:
   void mark_value(const Value& v);
 
   InterpretRet interpret(const str_t& source_bytes);
+
+  inline void set_interned(u32_t h, StringObject* s) noexcept {
+    interned_strings_[h] = s;
+  }
+
+  inline StringObject* get_interned(u32_t h) const noexcept {
+    if (auto it = interned_strings_.find(h); it != interned_strings_.end())
+      return it->second;
+    return nullptr;
+  }
 };
 
 }

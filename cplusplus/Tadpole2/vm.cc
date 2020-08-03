@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "vm.hh"
 
 namespace tadpole {
@@ -35,6 +36,36 @@ VM::VM() noexcept {
 }
 
 VM::~VM() {
+}
+
+void VM::define_native(const str_t& name, NativeFn&& fn) {
+}
+
+void VM::append_object(BaseObject* o) {
+  if (objects_.size() >= kGCThreshold)
+    collect();
+
+  objects_.push_back(o);
+}
+
+void VM::mark_object(BaseObject* o) {
+  if (o == nullptr || o->is_marked())
+    return;
+
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout << "[" << o << "] mark object: `" << o->stringify() << "`" << std::endl;
+#endif
+
+  o->set_marked(true);
+  worklist_.push_back(o);
+}
+
+void VM::mark_value(const Value& v) {
+  if (v.is_object())
+    mark_object(v.as_object());
+}
+
+void VM::collect() {
 }
 
 }
