@@ -140,4 +140,35 @@ inline std::ostream& operator<<(std::ostream& out, const Value& val) {
   return out << val.stringify();
 }
 
+class StringObject final : public BaseObject {
+  sz_t size_{};
+  char* data_{};
+  u32_t hash_{};
+public:
+  StringObject(const char* s, sz_t n, u32_t h, bool is_move = false) noexcept;
+  virtual ~StringObject();
+
+  inline sz_t size() const noexcept { return size_; }
+  inline const char* data() const noexcept { return data_; }
+  inline const char* cstr() const noexcept { return data_; }
+
+  virtual bool is_truthy() const override;
+  virtual str_t stringify() const override;
+
+  static StringObject* create(VM& vm, const char* s, sz_t n);
+  static StringObject* concat(VM& vm, StringObject* s1, StringObject* s2);
+
+  template <typename N> static StringObject* create(VM& vm, const char* s, N n) {
+    return create(vm, s, as_type<sz_t>(n));
+  }
+
+  static StringObject* create(VM& vm, const str_t& s) {
+    return create(vm, s.data(), s.size());
+  }
+
+  static StringObject* create(VM& vm, strv_t s) {
+    return create(vm, s.data(), s.size());
+  }
+};
+
 }

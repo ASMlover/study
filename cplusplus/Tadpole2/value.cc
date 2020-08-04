@@ -24,16 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "vm.hh"
 #include "value.hh"
 
 namespace tadpole {
 
 StringObject* BaseObject::as_string() {
-  return nullptr;
+  return as_down<StringObject>(this);
 }
 
 const char* BaseObject::as_cstring() {
-  return nullptr;
+  return as_down<StringObject>(this)->cstr();
 }
 
 NativeObject* BaseObject::as_native() {
@@ -70,6 +71,76 @@ str_t Value::stringify() const {
   case ValueType::OBJECT: return as_.object->stringify();
   }
   return "<value>";
+}
+
+template <typename Obj, typename... Args>
+inline Obj* make_object(VM& vm, Args&&... args) noexcept {
+  Obj* o = new Obj(std::forward<Args>(args)...);
+  vm.append_object(o);
+  return o;
+}
+
+inline u32_t string_hash(const char* s, sz_t n) noexcept {
+  u32_t hash = 2166136261u;
+  for (sz_t i = 0; i < n; ++i) {
+    hash ^= s[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
+
+StringObject::StringObject(const char* s, sz_t n, u32_t h, bool is_move) noexcept
+  : BaseObject(ObjType::STRING)
+  , size_(n)
+  , hash_(h) {
+  if (is_move) {
+    data_ = const_cast<char*>(s);
+  }
+  else {
+    data_ = new char[size_ + 1];
+    std::memcpy(data_, s, n);
+    data_[size_] = 0;
+  }
+}
+
+StringObject::~StringObject() {
+  delete [] data_;
+}
+
+bool StringObject::is_truthy() const {
+  return size_ > 0;
+}
+
+str_t StringObject::stringify() const {
+  return data_;
+}
+
+StringObject* StringObject::create(VM& vm, const char* s, sz_t n) {
+  u32_t h = string_hash(s, n);
+  if (auto* o = vm.get_interned(h); o != nullptr)
+    return o;
+
+  auto* o = make_object<StringObject>(vm, s, n, h, false);
+  vm.set_interned(h, o);
+  return o;
+}
+
+StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) {
+  sz_t n = s1->size() + s2->size();
+  char* s = new char [n + 1];
+  std::memcpy(s, s1->data(), s1->size());
+  std::memcpy(s + s1->size(), s2->data(), s2->size());
+  s[n] = 0;
+
+  u32_t h = string_hash(s, n);
+  if (auto* o = vm.get_interned(h); o != nullptr) {
+    delete [] s;
+    return o;
+  }
+
+  auto* o = make_object<StringObject>(vm, s, n, h, true);
+  vm.set_interned(h, o);
+  return o;
 }
 
 }
