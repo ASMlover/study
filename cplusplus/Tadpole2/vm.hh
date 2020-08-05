@@ -75,6 +75,9 @@ public:
 
   InterpretRet interpret(const str_t& source_bytes);
 
+  inline bool is_running() const noexcept { return is_running_; }
+  inline void terminate() noexcept { is_running_ = false; }
+
   inline void set_interned(u32_t h, StringObject* s) noexcept {
     interned_strings_[h] = s;
   }
