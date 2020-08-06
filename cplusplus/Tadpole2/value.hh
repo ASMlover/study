@@ -171,4 +171,18 @@ public:
   }
 };
 
+class NativeObject final : public BaseObject {
+  NativeFn fn_{};
+public:
+  NativeObject(NativeFn&& fn) noexcept
+    : BaseObject(ObjType::NATIVE), fn_(std::move(fn)) {
+  }
+
+  inline const NativeFn& fn() const noexcept { return fn_; }
+
+  virtual str_t stringify() const override;
+
+  static NativeObject* create(VM& vm, NativeFn&& fn);
+};
+
 }

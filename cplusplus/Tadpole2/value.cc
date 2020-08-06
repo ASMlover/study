@@ -38,7 +38,7 @@ const char* BaseObject::as_cstring() {
 }
 
 NativeObject* BaseObject::as_native() {
-  return nullptr;
+  return as_down<NativeObject>(this);
 }
 
 FunctionObject* BaseObject::as_function() {
@@ -141,6 +141,16 @@ StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) {
   auto* o = make_object<StringObject>(vm, s, n, h, true);
   vm.set_interned(h, o);
   return o;
+}
+
+str_t NativeObject::stringify() const {
+  ss_t ss;
+  ss << "<native function at `" << this << "`>";
+  return ss.str();
+}
+
+NativeObject* NativeObject::create(VM& vm, NativeFn&& fn) {
+  return make_object<NativeObject>(vm, std::move(fn));
 }
 
 }
