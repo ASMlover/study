@@ -65,7 +65,19 @@ void VM::mark_value(const Value& v) {
     mark_object(v.as_object());
 }
 
+InterpretRet VM::interpret(const str_t& source_bytes) {
+  return InterpretRet::OK;
+}
+
 void VM::collect() {
+}
+
+void VM::reclaim_object(BaseObject* o) {
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout << "[" << o << "] reclaim object: `" << o->stringify() << "`" << std::endl;
+#endif
+
+  delete o;
 }
 
 }

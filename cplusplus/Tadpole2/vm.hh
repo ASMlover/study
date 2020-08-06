@@ -63,6 +63,7 @@ class VM final : private UnCopyable {
   std::list<BaseObject*> worklist_;
 
   void collect();
+  void reclaim_object(BaseObject* o);
 public:
   VM() noexcept;
   ~VM();
