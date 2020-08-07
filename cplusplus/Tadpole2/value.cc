@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "chunk.hh"
 #include "vm.hh"
 #include "value.hh"
 
@@ -42,7 +43,7 @@ NativeObject* BaseObject::as_native() {
 }
 
 FunctionObject* BaseObject::as_function() {
-  return nullptr;
+  return as_down<FunctionObject>(this);
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
@@ -151,6 +152,29 @@ str_t NativeObject::stringify() const {
 
 NativeObject* NativeObject::create(VM& vm, NativeFn&& fn) {
   return make_object<NativeObject>(vm, std::move(fn));
+}
+
+FunctionObject::FunctionObject(StringObject* name) noexcept
+  : BaseObject(ObjType::FUNCTION), name_(name) {
+  chunk_ = new Chunk();
+}
+
+FunctionObject::~FunctionObject() {
+  delete chunk_;
+}
+
+str_t FunctionObject::stringify() const {
+  ss_t ss;
+  ss << "<function `" << name_asstr() << "` at `" << this << "`>";
+  return ss.str();
+}
+
+void FunctionObject::gc_blacken(VM& vm) {
+  vm.mark_object(name_);
+}
+
+FunctionObject* FunctionObject::create(VM& vm, StringObject* name) {
+  return make_object<FunctionObject>(vm, name);
 }
 
 }
