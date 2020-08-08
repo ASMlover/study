@@ -47,7 +47,7 @@ FunctionObject* BaseObject::as_function() {
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
-  return nullptr;
+  return as_down<UpvalueObject>(this);
 }
 
 ClosureObject* BaseObject::as_closure() {
@@ -175,6 +175,20 @@ void FunctionObject::gc_blacken(VM& vm) {
 
 FunctionObject* FunctionObject::create(VM& vm, StringObject* name) {
   return make_object<FunctionObject>(vm, name);
+}
+
+str_t UpvalueObject::stringify() const {
+  ss_t ss;
+  ss << "<upvalue at `" << this << "`>";
+  return ss.str();
+}
+
+void UpvalueObject::gc_blacken(VM& vm) {
+  vm.mark_value(closed_);
+}
+
+UpvalueObject* UpvalueObject::create(VM& vm, Value* value, UpvalueObject* next) {
+  return make_object<UpvalueObject>(vm, value, next);
 }
 
 }
