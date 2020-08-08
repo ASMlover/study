@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "compiler.hh"
 #include "vm.hh"
 
 namespace tadpole {
@@ -78,6 +79,34 @@ void VM::reclaim_object(BaseObject* o) {
 #endif
 
   delete o;
+}
+
+void VM::reset() {
+}
+void VM::runtime_error(const char* format, ...) {
+}
+
+void VM::push(Value value) noexcept {
+  stack_.push_back(value);
+}
+
+Value VM::pop() noexcept {
+  Value value = stack_.back();
+  stack_.pop_back();
+  return value;
+}
+
+const Value& VM::peek(sz_t distance) const noexcept {
+  return stack_[stack_.size() - 1 - distance];
+}
+
+bool VM::call(ClosureObject* closure, sz_t argc) { return false; }
+bool VM::call(const Value& callee, sz_t argc) { return false; }
+UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
+void VM::close_upvalues(Value* last) {}
+
+InterpretRet VM::run() {
+  return InterpretRet::OK;
 }
 
 }
