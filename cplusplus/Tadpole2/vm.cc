@@ -24,13 +24,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
+#include <algorithm>
 #include <iostream>
+#include "chunk.hh"
 #include "compiler.hh"
 #include "vm.hh"
 
 namespace tadpole {
 
 class CallFrame final : public Copyable {
+  ClosureObject* closure_{};
+  const u8_t* ip_{};
+  sz_t stack_begpos_{};
+public:
+  CallFrame() noexcept {}
+  CallFrame(ClosureObject* c, const u8_t* i, sz_t begpos = 0) noexcept
+    : closure_(c), ip_(i), stack_begpos_(begpos) {
+  }
+
+  inline ClosureObject* closure() const noexcept { return closure_; }
+  inline FunctionObject* frame_fn() const noexcept { return closure_->fn(); }
+  inline Chunk* frame_chunk() const noexcept { return frame_fn()->chunk(); }
+  inline const u8_t* ip() const noexcept { return ip_; }
+  inline u8_t get_ip(sz_t i) const noexcept { return ip_[i]; }
+  inline u8_t inc_ip() noexcept { return *ip_++; }
+  inline u8_t dec_ip() noexcept { return *ip_--; }
+  inline sz_t stack_begpos() const noexcept { return stack_begpos_; }
 };
 
 VM::VM() noexcept {
