@@ -54,12 +54,28 @@ public:
 };
 
 VM::VM() noexcept {
+  gcompiler_ = new GlobalCompiler();
+  stack_.reserve(kDefaultCap);
+
+  // TODO: register built-in functions
 }
 
 VM::~VM() {
+  delete gcompiler_;
+
+  globals_.clear();
+  interned_strings_.clear();
+
+  while (!objects_.empty()) {
+    auto* o = objects_.back();
+    objects_.pop_back();
+
+    reclaim_object(o);
+  }
 }
 
 void VM::define_native(const str_t& name, NativeFn&& fn) {
+  globals_[name] = NativeObject::create(*this, std::move(fn));
 }
 
 void VM::append_object(BaseObject* o) {
@@ -87,10 +103,58 @@ void VM::mark_value(const Value& v) {
 }
 
 InterpretRet VM::interpret(const str_t& source_bytes) {
-  return InterpretRet::OK;
+  FunctionObject* fn = gcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::ECOMPILE;
+
+  push(fn);
+  ClosureObject* closure = ClosureObject::create(*this, fn);
+  pop();
+  call(closure, 0);
+
+  return run();
 }
 
 void VM::collect() {
+  // mark root objects
+  gcompiler_->mark_compiler();
+  for (auto& v : stack_)
+    mark_value(v);
+  for (auto& f : frames_)
+    mark_object(f.closure());
+  for (auto& g : globals_)
+    mark_value(g.second);
+  for (auto* u = open_upvalues_; u != nullptr; u = u->next())
+    mark_object(u);
+
+  // mark reference objects
+  while (!worklist_.empty()) {
+    auto* o = worklist_.back();
+    worklist_.pop_back();
+    o->gc_blacken(*this);
+  }
+
+  // delete unmarked interned string objects
+  for (auto it = interned_strings_.begin(); it != interned_strings_.end();) {
+    if (!it->second->is_marked())
+      interned_strings_.erase(it++);
+    else
+      ++it;
+  }
+
+  // sweep and reclaim unmarked objects
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!(*it)->is_marked()) {
+      reclaim_object(*it);
+      objects_.erase(it++);
+    }
+    else {
+      (*it)->set_marked(false);
+      ++it;
+    }
+  }
+
+  gc_threshold_ = std::max(kGCThreshold, objects_.size() * kGCFactor);
 }
 
 void VM::reclaim_object(BaseObject* o) {
@@ -102,7 +166,11 @@ void VM::reclaim_object(BaseObject* o) {
 }
 
 void VM::reset() {
+  stack_.clear();
+  frames_.clear();
+  open_upvalues_ = nullptr;
 }
+
 void VM::runtime_error(const char* format, ...) {
 }
 
