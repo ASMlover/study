@@ -241,8 +241,38 @@ bool VM::call(const Value& callee, sz_t argc) {
   return false;
 }
 
-UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
-void VM::close_upvalues(Value* last) {}
+UpvalueObject* VM::capture_upvalue(Value* local) {
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(*this, local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* upvalue = open_upvalues_;
+  UpvalueObject* prev_upvalue = nullptr;
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  UpvalueObject* new_upvalue = UpvalueObject::create(*this, local, upvalue);
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = new_upvalue;
+  else
+    prev_upvalue->set_next(new_upvalue);
+  return new_upvalue;
+}
+
+void VM::close_upvalues(Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    UpvalueObject* upvalue = open_upvalues_;
+    upvalue->set_closed(upvalue->value_asref());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    open_upvalues_ = upvalue->next();
+  }
+}
 
 InterpretRet VM::run() {
   return InterpretRet::OK;
