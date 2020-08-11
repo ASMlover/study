@@ -352,6 +352,29 @@ InterpretRet VM::run() {
         u8_t slot = _RDBYTE();
         frame->closure()->get_upvalue(slot)->set_value(peek());
       } break;
+    case Code::ADD:
+      {
+        if (peek(0).is_string() && peek(1).is_string()) {
+          StringObject* b = peek(0).as_string();
+          StringObject* a = peek(1).as_string();
+          StringObject* s = StringObject::concat(*this, a, b);
+          pop();
+          pop();
+          push(s);
+        }
+        else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+          double b = pop().as_numeric();
+          double a = pop().as_numeric();
+          push(a + b);
+        }
+        else {
+          runtime_error("operands must be two strings or two numerics");
+          return InterpretRet::ERUNTIME;
+        }
+      } break;
+    case Code::SUB: _BINOP(-); break;
+    case Code::MUL: _BINOP(*); break;
+    case Code::DIV: _BINOP(/); break;
     }
   }
 
