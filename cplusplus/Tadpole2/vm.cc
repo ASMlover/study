@@ -375,6 +375,21 @@ InterpretRet VM::run() {
     case Code::SUB: _BINOP(-); break;
     case Code::MUL: _BINOP(*); break;
     case Code::DIV: _BINOP(/); break;
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+      {
+        sz_t argc = c - Code::CALL_0;
+        if (!call(peek(argc), argc))
+          return InterpretRet::ERUNTIME;
+        frame = &frames_.back();
+      } break;
     }
   }
 
