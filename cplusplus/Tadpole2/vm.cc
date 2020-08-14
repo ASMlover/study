@@ -405,6 +405,24 @@ InterpretRet VM::run() {
             closure->set_upvalue(i, frame->closure()->get_upvalue(index));
         }
       } break;
+    case Code::CLOSE_UPVALUE: close_upvalues(&stack_.back()); pop(); break;
+    case Code::RETURN:
+      {
+        Value result = pop();
+        if (frame->stack_begpos() > 0 && stack_.size() > frame->stack_begpos())
+          close_upvalues(&stack_[frame->stack_begpos()]);
+        else
+          close_upvalues(nullptr);
+
+        frames_.pop_back();
+        if (frames_.empty())
+          return InterpretRet::OK;
+
+        stack_.resize(frame->stack_begpos());
+        push(result);
+
+        frame = &frames_.back();
+      } break;
     }
   }
 
