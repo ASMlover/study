@@ -35,6 +35,60 @@
 
 namespace tadpole {
 
+enum class Precedence {
+  NONE,
+
+  ASSIGN, // =
+  TERM,   // - +
+  FACTOR, // / *
+  CALL,   // ()
+
+  PRIMARY,
+};
+
+template <typename T> inline Precedence operator+(Precedence a, T b) noexcept {
+  return as_type<Precedence>(as_type<int>(a) + as_type<int>(b));
+}
+
+struct ParseRule {
+  using ParseFn = std::function<void (GlobalParser&, bool)>;
+
+  ParseFn prefix;
+  ParseFn infix;
+  Precedence precedence;
+};
+
+struct LocalVar {
+  Token name;
+  int depth{};
+  bool is_upvalue{};
+
+  LocalVar(const Token& arg_name, int arg_depth = -1, bool arg_upvalue = false) noexcept
+    : name(arg_name), depth(arg_depth), is_upvalue(arg_upvalue) {
+  }
+};
+
+struct Upvalue {
+  u8_t index{};
+  bool is_local{};
+
+  Upvalue(u8_t arg_index = 0, bool arg_local = false) noexcept
+    : index(arg_index), is_local(arg_local) {
+  }
+
+  inline bool operator==(Upvalue r) const noexcept {
+    return index == r.index && is_local == r.is_local;
+  }
+
+  inline bool operator!=(Upvalue r) const noexcept {
+    return !(*this == r);
+  }
+
+  inline bool is_equal(u8_t arg_index, bool arg_local) const noexcept {
+    return index == arg_index && is_local == arg_local;
+  }
+};
+
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
   return nullptr;
 }
