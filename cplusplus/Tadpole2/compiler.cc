@@ -135,6 +135,64 @@ public:
   inline Upvalue& get_upvalue(sz_t i) noexcept { return upvalues_[i]; }
   inline const Upvalue& get_upvalue(sz_t i) const noexcept { return upvalues_[i]; }
   inline void append_upvalue(const Upvalue& u) noexcept { upvalues_.push_back(u); }
+
+  void enter_scope() noexcept { ++scope_depth_; }
+  template <typename Fn> void leave_scope(Fn&& visitor) {
+    --scope_depth_;
+    while (!locals_.empty() && peek_local().depth > scope_depth_) {
+      visitor(peek_local());
+      locals_.pop_back();
+    }
+  }
+
+  int resolve_local(const Token& name, const ErrorFn& errfn) {
+    for (int i = locals_count() - 1; i >= 0; --i) {
+      auto& local = locals_[i];
+      if (local.name == name) {
+        if (local.depth == -1)
+          errfn(from_fmt("cannot load local variable `%s` in its own initializer", name.as_cstring()));
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  int add_upvalue(u8_t index, bool is_local) {
+    for (int i = 0; i < fn_->upvalues_count(); ++i) {
+      if (upvalues_[i].is_equal(index, is_local))
+        return i;
+    }
+
+    upvalues_.push_back(Upvalue(index, is_local));
+    return as_type<int>(fn_->inc_upvalues_count());
+  }
+
+  int resolve_upvalue(const Token& name, const ErrorFn& errfn) {
+    if (enclosing_ == nullptr)
+      return -1;
+
+    if (int local = enclosing_->resolve_local(name, errfn); local != -1) {
+      enclosing_->locals_[local].is_upvalue = true;
+      return add_upvalue(as_type<u8_t>(local), true);
+    }
+    if (int Upvalue = enclosing_->resolve_upvalue(name, errfn); Upvalue != -1)
+      return add_upvalue(as_type<u8_t>(Upvalue), false);
+    return -1;
+  }
+
+  void declare_localvar(const Token& name, const ErrorFn& errfn) {
+    if (scope_depth_ == 0)
+      return;
+
+    for (auto it = locals_.rbegin(); it != locals_.rend(); ++it) {
+      if (it->depth != -1 && it->depth < scope_depth_)
+        break;
+
+      if (it->name == name)
+        errfn(from_fmt("name `%s` is redefined", name.as_cstring()));
+    }
+    locals_.push_back(LocalVar(name, -1, false));
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
