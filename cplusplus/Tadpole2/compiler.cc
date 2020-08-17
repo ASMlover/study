@@ -195,6 +195,44 @@ public:
   }
 };
 
+class GlobalParser final : private UnCopyable {
+  static constexpr int kMaxArgs = 8;
+
+  VM& vm_;
+  Lexer& lex_;
+  Token prev_;
+  Token curr_;
+
+  bool had_error_{};
+  bool panic_mode_{};
+
+  Compiler* curr_compiler_{};
+
+  void error_at(const Token& tok, const str_t& msg) noexcept {
+    if (panic_mode_)
+      return;
+    panic_mode_ = true;
+
+    std::cerr
+      << "SyntaxError:" << std::endl
+      << "  [LINE: " << tok.lineno() << "] ERROR ";
+    if (tok.kind() == TokenKind::TK_EOF)
+      std::cerr << "at end ";
+    else if (tok.kind() == TokenKind::TK_ERR)
+      (void)0;
+    else
+      std::cerr << "at `" << tok.literal() << "` ";
+    std::cerr << ": " << msg << std::endl;
+
+    had_error_ = true;
+  }
+
+  inline void error_at_current(const str_t& msg) noexcept { error_at(curr_, msg); }
+  inline void error(const str_t& msg) noexcept { error_at(prev_, msg); }
+  inline Chunk* curr_chunk() const noexcept { return curr_compiler_->fn()->chunk(); }
+  inline bool check(TokenKind kind) const noexcept { return curr_.kind() == kind; }
+};
+
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
   return nullptr;
 }
