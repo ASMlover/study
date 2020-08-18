@@ -231,6 +231,33 @@ class GlobalParser final : private UnCopyable {
   inline void error(const str_t& msg) noexcept { error_at(prev_, msg); }
   inline Chunk* curr_chunk() const noexcept { return curr_compiler_->fn()->chunk(); }
   inline bool check(TokenKind kind) const noexcept { return curr_.kind() == kind; }
+
+  void advance() {
+    prev_ = curr_;
+
+    for (;;) {
+      curr_ = lex_.next_token();
+      if (!check(TokenKind::TK_ERR))
+        break;
+
+      error_at_current(curr_.as_string());
+    }
+  }
+
+  void consume(TokenKind kind, const str_t& msg) {
+    if (check(kind))
+      advance();
+    else
+      error_at_current(msg);
+  }
+
+  bool match(TokenKind kind) {
+    if (check(kind)) {
+      advance();
+      return true;
+    }
+    return false;
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
