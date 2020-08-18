@@ -258,6 +258,21 @@ class GlobalParser final : private UnCopyable {
     }
     return false;
   }
+
+  template <typename T> inline void emit_byte(T byte) noexcept {
+    curr_chunk()->write(byte, prev_.lineno());
+  }
+
+  template <typename T, typename U> inline void emit_bytes(T b1, U b2) noexcept {
+    emit_byte(b1);
+    emit_byte(b2);
+  }
+
+  inline void emit_return() noexcept { return emit_bytes(Code::NIL, Code::RETURN); }
+
+  inline void emit_constant(const Value& v) noexcept {
+    emit_bytes(Code::CONSTANT, curr_chunk()->add_constant(v));
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
