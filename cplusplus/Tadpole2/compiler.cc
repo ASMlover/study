@@ -273,6 +273,45 @@ class GlobalParser final : private UnCopyable {
   inline void emit_constant(const Value& v) noexcept {
     emit_bytes(Code::CONSTANT, curr_chunk()->add_constant(v));
   }
+
+  void init_compiler(Compiler* compiler, int scope_depth, FunType fn_type) {
+    StringObject* func_name{};
+    if (fn_type == FunType::FUNCTION)
+      func_name = StringObject::create(vm_, prev_.as_string());
+
+    compiler->set_compiler(
+        curr_compiler_,
+        FunctionObject::create(vm_, func_name),
+        fn_type,
+        scope_depth);
+    curr_compiler_ = compiler;
+
+    curr_compiler_->append_local(LocalVar(Token::make(""), curr_compiler_->scope_depth(), false));
+  }
+
+  FunctionObject* finish_compiler() {
+    emit_return();
+
+    FunctionObject* fn = curr_compiler_->fn();
+
+#if defined(_TADPOLE_DEBUG_VM)
+    if (!had_error_)
+      curr_chunk()->dis(fn->name_asstr());
+#endif
+
+    curr_compiler_ = curr_compiler_->enclosing();
+    return fn;
+  }
+
+  inline void enter_scope() {
+    curr_compiler_->enter_scope();
+  }
+
+  inline void leave_scope() {
+    curr_compiler_->leave_scope([this](const LocalVar& var) {
+          emit_byte(var.is_upvalue ? Code::CLOSE_UPVALUE : Code::POP);
+        });
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
