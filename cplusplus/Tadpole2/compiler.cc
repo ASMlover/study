@@ -312,6 +312,19 @@ class GlobalParser final : private UnCopyable {
           emit_byte(var.is_upvalue ? Code::CLOSE_UPVALUE : Code::POP);
         });
   }
+
+  inline u8_t identifier_constant(const Token& name) noexcept {
+    return curr_chunk()->add_constant(StringObject::create(vm_, name.as_string()));
+  }
+
+  u8_t parse_variable(const str_t& msg) {
+    consume(TokenKind::TK_IDENTIFIER, msg);
+
+    curr_compiler_->declare_localvar(prev_, [this](const str_t& m) { error(m); });
+    if (curr_compiler_->scope_depth() > 0)
+      return 0;
+    return identifier_constant(prev_);
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
