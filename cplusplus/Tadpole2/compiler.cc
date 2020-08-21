@@ -325,6 +325,20 @@ class GlobalParser final : private UnCopyable {
       return 0;
     return identifier_constant(prev_);
   }
+
+  void mark_initialized() {
+    if (curr_compiler_->scope_depth() == 0)
+      return;
+    curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
+  }
+
+  void define_global(u8_t global) {
+    if (curr_compiler_->scope_depth() > 0) {
+      mark_initialized();
+      return;
+    }
+    emit_bytes(Code::DEF_GLOBAL, global);
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
