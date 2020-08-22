@@ -339,6 +339,24 @@ class GlobalParser final : private UnCopyable {
     }
     emit_bytes(Code::DEF_GLOBAL, global);
   }
+
+  u8_t arguments() {
+    u8_t argc = 0;
+    if (!check(TokenKind::TK_RPAREN)) {
+       do {
+         expression();
+         ++argc;
+
+         if (argc > kMaxArgs)
+           error(from_fmt("cannot have more than `%d` arguments", kMaxArgs));
+       } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `;` after function arguments");
+
+    return argc;
+  }
+
+  void expression() {}
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
