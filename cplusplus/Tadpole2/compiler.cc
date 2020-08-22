@@ -356,6 +356,34 @@ class GlobalParser final : private UnCopyable {
     return argc;
   }
 
+  void named_variable(const Token& name, bool can_assign) {
+    auto errfn = [this](const str_t& msg) { error(msg); };
+
+    Code getop, setop;
+    int arg = curr_compiler_->resolve_local(name, errfn);
+    if (arg != -1) {
+      getop = Code::GET_LOCAL;
+      setop = Code::SET_LOCAL;
+    }
+    else if (arg = curr_compiler_->resolve_upvalue(name, errfn); arg != -1) {
+      getop = Code::GET_UPVALUE;
+      setop = Code::SET_UPVALUE;
+    }
+    else {
+      arg = identifier_constant(name);
+      getop = Code::GET_GLOBAL;
+      setop = Code::SET_GLOBAL;
+    }
+
+    if (can_assign && match(TokenKind::TK_EQ)) {
+      expression();
+      emit_bytes(setop, arg);
+    }
+    else {
+      emit_bytes(getop, arg);
+    }
+  }
+
   void expression() {}
 };
 
