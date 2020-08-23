@@ -388,30 +388,30 @@ class GlobalParser final : private UnCopyable {
 #define _RULE(fn) [](GlobalParser& p, bool b) { p.fn(b); }
 
     static const ParseRule _rules[] = {
-      {nullptr, _RULE(call), Precedence::CALL},     // PUNCTUATOR(LPAREN, "(")
-      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(RPAREN, ")")
-      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(LBRACE, "{")
-      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(RBRACE, "}")
-      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(COMMA, ",")
-      {nullptr, _RULE(binary), Precedence::TERM},   // PUNCTUATOR(MINUS, "-")
-      {nullptr, _RULE(binary), Precedence::TERM},   // PUNCTUATOR(PLUS, "+")
-      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(SEMI, ";")
-      {nullptr, _RULE(binary), Precedence::FACTOR}, // PUNCTUATOR(SLASH, "/")
-      {nullptr, _RULE(binary), Precedence::FACTOR}, // PUNCTUATOR(STAR, "*")
-      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(EQ, "=")
+      {_RULE(grouping), _RULE(call), Precedence::CALL},   // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(COMMA, ",")
+      {nullptr, _RULE(binary), Precedence::TERM},         // PUNCTUATOR(MINUS, "-")
+      {nullptr, _RULE(binary), Precedence::TERM},         // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(SEMI, ";")
+      {nullptr, _RULE(binary), Precedence::FACTOR},       // PUNCTUATOR(SLASH, "/")
+      {nullptr, _RULE(binary), Precedence::FACTOR},       // PUNCTUATOR(STAR, "*")
+      {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(EQ, "=")
 
-      {nullptr, nullptr, Precedence::NONE},         // TOKEN(IDENTIFIER, "Identifier")
-      {nullptr, nullptr, Precedence::NONE},         // TOKEN(NUMERIC, "Numeric")
-      {nullptr, nullptr, Precedence::NONE},         // TOKEN(STRING, "String")
+      {nullptr, nullptr, Precedence::NONE},               // TOKEN(IDENTIFIER, "Identifier")
+      {nullptr, nullptr, Precedence::NONE},               // TOKEN(NUMERIC, "Numeric")
+      {nullptr, nullptr, Precedence::NONE},               // TOKEN(STRING, "String")
 
-      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(FALSE, "false")
-      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(TRUE, "true")
-      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(VAR, "var")
+      {_RULE(literal), nullptr, Precedence::NONE},        // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::NONE},               // KEYWORD(FN, "fn")
+      {_RULE(literal), nullptr, Precedence::NONE},        // KEYWORD(NIL, "nil")
+      {_RULE(literal), nullptr, Precedence::NONE},        // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE},               // KEYWORD(VAR, "var")
 
-      {nullptr, nullptr, Precedence::NONE},         // TOKEN(EOF, "Eof")
-      {nullptr, nullptr, Precedence::NONE},         // TOKEN(ERR, "Error")
+      {nullptr, nullptr, Precedence::NONE},               // TOKEN(EOF, "Eof")
+      {nullptr, nullptr, Precedence::NONE},               // TOKEN(ERR, "Error")
     };
 
 #undef _RULE
@@ -470,6 +470,18 @@ class GlobalParser final : private UnCopyable {
     case TokenKind::KW_TRUE: emit_byte(Code::TRUE); break;
     case TokenKind::KW_FALSE: emit_byte(Code::FALSE); break;
     }
+  }
+
+  void variable(bool can_assign) {
+    named_variable(prev_, can_assign);
+  }
+
+  void numeric(bool can_assign) {
+    emit_constant(prev_.as_numeric());
+  }
+
+  void string(bool can_assign) {
+    emit_constant(StringObject::create(vm_, prev_.as_string()));
   }
 
   void expression() {}
