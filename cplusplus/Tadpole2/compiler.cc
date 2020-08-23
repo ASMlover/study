@@ -418,6 +418,47 @@ class GlobalParser final : private UnCopyable {
     return _rules[as_type<int>(kind)];
   }
 
+  void parse_precedence(Precedence precedence) {
+    advance();
+    auto& prefix_fn = get_rule(prev_.kind()).prefix;
+    if (!prefix_fn) {
+      error("expect expression");
+      return;
+    }
+
+    bool can_assign = precedence <= Precedence::ASSIGN;
+    prefix_fn(*this, can_assign);
+
+    while (precedence <= get_rule(curr_.kind()).precedence) {
+      advance();
+      auto& infix_fn = get_rule(prev_.kind()).infix;
+
+      if (infix_fn)
+        infix_fn(*this, can_assign);
+    }
+
+    if (can_assign && match(TokenKind::TK_EQ)) {
+      error("invalid assignment target");
+      expression();
+    }
+  }
+
+  void binary(bool can_assign) {
+    TokenKind op = prev_.kind();
+
+    parse_precedence(get_rule(op).precedence + 1);
+    switch (op) {
+    case TokenKind::TK_PLUS: emit_byte(Code::ADD); break;
+    case TokenKind::TK_MINUS: emit_byte(Code::SUB); break;
+    case TokenKind::TK_STAR: emit_byte(Code::MUL); break;
+    case TokenKind::TK_SLASH: emit_byte(Code::DIV); break;
+    }
+  }
+
+  void call(bool can_assign) {
+    emit_byte(Code::CALL_0 + arguments());
+  }
+
   void expression() {}
 };
 
