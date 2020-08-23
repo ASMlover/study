@@ -388,30 +388,30 @@ class GlobalParser final : private UnCopyable {
 #define _RULE(fn) [](GlobalParser& p, bool b) { p.fn(b); }
 
     static const ParseRule _rules[] = {
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LPAREN, "(")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACE, "{")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACE, "}")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(COMMA, ",")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(MINUS, "-")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(PLUS, "+")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SEMI, ";")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SLASH, "/")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(STAR, "*")
-      {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(EQ, "=")
+      {nullptr, _RULE(call), Precedence::CALL},     // PUNCTUATOR(LPAREN, "(")
+      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(RPAREN, ")")
+      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(LBRACE, "{")
+      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(RBRACE, "}")
+      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(COMMA, ",")
+      {nullptr, _RULE(binary), Precedence::TERM},   // PUNCTUATOR(MINUS, "-")
+      {nullptr, _RULE(binary), Precedence::TERM},   // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(SEMI, ";")
+      {nullptr, _RULE(binary), Precedence::FACTOR}, // PUNCTUATOR(SLASH, "/")
+      {nullptr, _RULE(binary), Precedence::FACTOR}, // PUNCTUATOR(STAR, "*")
+      {nullptr, nullptr, Precedence::NONE},         // PUNCTUATOR(EQ, "=")
 
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(IDENTIFIER, "Identifier")
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(NUMERIC, "Numeric")
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(STRING, "String")
+      {nullptr, nullptr, Precedence::NONE},         // TOKEN(IDENTIFIER, "Identifier")
+      {nullptr, nullptr, Precedence::NONE},         // TOKEN(NUMERIC, "Numeric")
+      {nullptr, nullptr, Precedence::NONE},         // TOKEN(STRING, "String")
 
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FALSE, "false")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FN, "fn")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(TRUE, "true")
-      {nullptr, nullptr, Precedence::NONE}, // KEYWORD(VAR, "var")
+      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(FN, "fn")
+      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(NIL, "nil")
+      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::NONE},         // KEYWORD(VAR, "var")
 
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(EOF, "Eof")
-      {nullptr, nullptr, Precedence::NONE}, // TOKEN(ERR, "Error")
+      {nullptr, nullptr, Precedence::NONE},         // TOKEN(EOF, "Eof")
+      {nullptr, nullptr, Precedence::NONE},         // TOKEN(ERR, "Error")
     };
 
 #undef _RULE
@@ -457,6 +457,19 @@ class GlobalParser final : private UnCopyable {
 
   void call(bool can_assign) {
     emit_byte(Code::CALL_0 + arguments());
+  }
+
+  void grouping(bool can_assign) {
+    expression();
+    consume(TokenKind::TK_RPAREN, "expect `)` after grouping expression");
+  }
+
+  void literal(bool can_assign) {
+    switch (prev_.kind()) {
+    case TokenKind::KW_NIL: emit_byte(Code::NIL); break;
+    case TokenKind::KW_TRUE: emit_byte(Code::TRUE); break;
+    case TokenKind::KW_FALSE: emit_byte(Code::FALSE); break;
+    }
   }
 
   void expression() {}
