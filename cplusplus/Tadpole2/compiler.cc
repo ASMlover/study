@@ -484,7 +484,34 @@ class GlobalParser final : private UnCopyable {
     emit_constant(StringObject::create(vm_, prev_.as_string()));
   }
 
+  void block() {
+    while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+      declaration();
+    consume(TokenKind::TK_RBRACE, "expect `}` after block body");
+  }
+
+  void function(FunType fn_type) {
+  }
+
+  void synchronize() {
+    panic_mode_ = false;
+
+    while (!check(TokenKind::TK_EOF)) {
+      if (prev_.kind() == TokenKind::TK_SEMI)
+        break;
+
+      switch (curr_.kind()) {
+      case TokenKind::KW_FN:
+      case TokenKind::KW_VAR:
+        return;
+      default: break;
+      }
+      advance();
+    }
+  }
+
   void expression() {}
+  void declaration() {}
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
