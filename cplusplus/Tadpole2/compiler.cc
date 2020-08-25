@@ -400,9 +400,9 @@ class GlobalParser final : private UnCopyable {
       {nullptr, _RULE(binary), Precedence::FACTOR},       // PUNCTUATOR(STAR, "*")
       {nullptr, nullptr, Precedence::NONE},               // PUNCTUATOR(EQ, "=")
 
-      {nullptr, nullptr, Precedence::NONE},               // TOKEN(IDENTIFIER, "Identifier")
-      {nullptr, nullptr, Precedence::NONE},               // TOKEN(NUMERIC, "Numeric")
-      {nullptr, nullptr, Precedence::NONE},               // TOKEN(STRING, "String")
+      {_RULE(variable), nullptr, Precedence::NONE},       // TOKEN(IDENTIFIER, "Identifier")
+      {_RULE(numeric), nullptr, Precedence::NONE},        // TOKEN(NUMERIC, "Numeric")
+      {_RULE(string), nullptr, Precedence::NONE},         // TOKEN(STRING, "String")
 
       {_RULE(literal), nullptr, Precedence::NONE},        // KEYWORD(FALSE, "false")
       {nullptr, nullptr, Precedence::NONE},               // KEYWORD(FN, "fn")
