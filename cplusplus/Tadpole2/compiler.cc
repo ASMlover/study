@@ -491,6 +491,33 @@ class GlobalParser final : private UnCopyable {
   }
 
   void function(FunType fn_type) {
+    Compiler fn_compiler;
+    init_compiler(&fn_compiler, 1, fn_type);
+
+    consume(TokenKind::TK_LPAREN, "expect `(` after function name");
+    if (!check(TokenKind::TK_RPAREN)) {
+      do {
+        u8_t param_constant = parse_variable("expect function parameter's name");
+        define_global(param_constant);
+
+        curr_compiler_->fn()->inc_arity();
+        if (curr_compiler_->fn()->arity() > kMaxArgs)
+          error(from_fmt("cannot have more than `%d` parameters", kMaxArgs));
+      } while (match(TokenKind::TK_COMMA));
+    }
+    consume(TokenKind::TK_RPAREN, "expect `)` after function parameters");
+
+    consume(TokenKind::TK_LBRACE, "expect `{` before function body");
+    block();
+
+    leave_scope();
+    FunctionObject* fn = finish_compiler();
+
+    emit_bytes(Code::CLOSURE, curr_chunk()->add_constant(fn));
+    for (sz_t i = 0; i < fn->upvalues_count(); ++i) {
+      auto& upvalue = fn_compiler.get_upvalue(i);
+      emit_bytes(upvalue.is_local ? 1 : 0, upvalue.index);
+    }
   }
 
   void synchronize() {
