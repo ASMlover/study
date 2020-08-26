@@ -537,8 +537,36 @@ class GlobalParser final : private UnCopyable {
     }
   }
 
-  void expression() {}
-  void declaration() {}
+  void expression() {
+    parse_precedence(Precedence::ASSIGN);
+  }
+
+  void declaration() {
+    if (match(TokenKind::KW_FN))
+      fn_decl();
+    else if (match(TokenKind::KW_VAR))
+      var_decl();
+    else
+      statement();
+
+    if (panic_mode_)
+      synchronize();
+  }
+
+  void statement() {
+    if (match(TokenKind::TK_LPAREN)) {
+      enter_scope();
+      block();
+      leave_scope();
+    }
+    else {
+      expr_stmt();
+    }
+  }
+
+  void fn_decl() {}
+  void var_decl() {}
+  void expr_stmt();
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
