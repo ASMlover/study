@@ -564,7 +564,14 @@ class GlobalParser final : private UnCopyable {
     }
   }
 
-  void fn_decl() {}
+  void fn_decl() {
+    u8_t fn_constant = parse_variable("expect function name");
+    mark_initialized();
+    function(FunType::FUNCTION);
+
+    define_global(fn_constant);
+  }
+
   void var_decl() {}
   void expr_stmt();
 };
