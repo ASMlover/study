@@ -572,8 +572,23 @@ class GlobalParser final : private UnCopyable {
     define_global(fn_constant);
   }
 
-  void var_decl() {}
-  void expr_stmt();
+  void var_decl() {
+    u8_t var_constant = parse_variable("expect variable name");
+
+    if (match(TokenKind::TK_EQ))
+      expression();
+    else
+      emit_byte(Code::NIL);
+    consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
+
+    define_global(var_constant);
+  }
+
+  void expr_stmt() {
+    expression();
+    consume(TokenKind::TK_SEMI, "expect `;` after expression");
+    emit_byte(Code::POP);
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
