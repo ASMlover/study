@@ -589,13 +589,42 @@ class GlobalParser final : private UnCopyable {
     consume(TokenKind::TK_SEMI, "expect `;` after expression");
     emit_byte(Code::POP);
   }
+public:
+  GlobalParser(VM& vm, Lexer& lex) noexcept : vm_(vm), lex_(lex) {}
+
+  inline void mark_parser() {
+    for (Compiler* c = curr_compiler_; c != nullptr; c = c->enclosing())
+      vm_.mark_object(c->fn());
+  }
+
+  FunctionObject* compile() {
+    Compiler compiler;
+    init_compiler(&compiler, 0, FunType::TOPLEVEL);
+
+    advance();
+    while (!check(TokenKind::TK_EOF))
+      declaration();
+    FunctionObject* fn = finish_compiler();
+
+    return had_error_ ? nullptr : fn;
+  }
 };
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
+  Lexer lex(source_bytes);
+
+  if (gparser_ = new GlobalParser(vm, lex); gparser_ != nullptr) {
+    FunctionObject* fn = gparser_->compile();
+    delete gparser_;
+
+    return fn;
+  }
   return nullptr;
 }
 
 void GlobalCompiler::mark_compiler() {
+  if (gparser_ != nullptr)
+    gparser_->mark_parser();
 }
 
 }
