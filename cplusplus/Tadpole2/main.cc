@@ -24,8 +24,10 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "common.hh"
 #include "harness.hh"
+#include "vm.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
@@ -33,6 +35,21 @@ int main(int argc, char* argv[]) {
 #if defined(_TADPOLE_RUN_HARNESS)
   tadpole::harness::run_all_harness();
 #endif
+
+  tadpole::VM vm;
+  tadpole::str_t line;
+  for (;;) {
+    if (!vm.is_running())
+      break;
+
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line))
+      break;
+
+    if (vm.interpret(line) != tadpole::InterpretRet::OK) {
+      // TODO:
+    }
+  }
 
   return 0;
 }
