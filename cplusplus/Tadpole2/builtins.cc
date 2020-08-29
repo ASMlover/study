@@ -24,5 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "vm.hh"
 #include "builtins.hh"
+
+namespace tadpole {
+
+void register_builtins(VM& vm) {
+  // fn print(arg1: Value, arg2: Value, ...) -> nil
+  vm.define_native("print", [](sz_t argc, Value* args) -> Value {
+        for (sz_t i = 0; i < argc; ++i)
+          std::cout << args[i] << " ";
+        std::cout << std::endl;
+
+        return nullptr;
+      });
+}
+
+}

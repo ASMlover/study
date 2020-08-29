@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <algorithm>
 #include <iostream>
+#include "builtins.hh"
 #include "chunk.hh"
 #include "compiler.hh"
 #include "vm.hh"
@@ -57,7 +58,7 @@ VM::VM() noexcept {
   gcompiler_ = new GlobalCompiler();
   stack_.reserve(kDefaultCap);
 
-  // TODO: register built-in functions
+  tadpole::register_builtins(*this);
 }
 
 VM::~VM() {
