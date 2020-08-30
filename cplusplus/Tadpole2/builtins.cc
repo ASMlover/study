@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <chrono>
 #include <iostream>
 #include "vm.hh"
 #include "builtins.hh"
@@ -38,6 +39,30 @@ void register_builtins(VM& vm) {
         std::cout << std::endl;
 
         return nullptr;
+      });
+
+  // fn exit() -> nil
+  vm.define_native("exit", [&vm](sz_t, Value*) -> Value {
+        vm.terminate();
+        return nullptr;
+      });
+
+  // fn time() -> numeric
+  //
+  // @returns
+  //  timestamp: numeric -> unit is seconds
+  vm.define_native("time", [](sz_t, Value*) -> Value {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+      });
+
+  // fn clock() -> numeric
+  //
+  // @returns
+  //  clock: numeric -> unit is us
+  vm.define_native("clock", [](sz_t, Value*) -> Value {
+        return std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
       });
 }
 
