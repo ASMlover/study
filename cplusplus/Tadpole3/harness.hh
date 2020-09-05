@@ -54,6 +54,29 @@ public:
     }
     return *this;
   }
+
+#define _HARNESS_BINOP(Name, Op)\
+  template <typename X, typename Y> inline Tester& Name(const X& x, const Y& y) noexcept {\
+    if (!(x Op y)) {\
+      ss_ << " failed: " << x << (" " #Op " ") << y;\
+      ok_ = false;\
+    }\
+    return *this;\
+  }
+
+  _HARNESS_BINOP(is_eq, ==)
+  _HARNESS_BINOP(is_ne, !=)
+  _HARNESS_BINOP(is_gt, >)
+  _HARNESS_BINOP(is_ge, >=)
+  _HARNESS_BINOP(is_lt, <)
+  _HARNESS_BINOP(is_le, <=)
+#undef _HARNESS_BINOP
+
+  template <typename T> inline Tester& operator<<(const T& x) noexcept {
+    if (!ok_)
+      ss_ << " " << x;
+    return *this;
+  }
 };
 
 }
