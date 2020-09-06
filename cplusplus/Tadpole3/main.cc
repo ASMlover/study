@@ -26,9 +26,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "common.hh"
+#include "harness.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+  std::cout
+    << "[[ T A D P O L E ]] - v0.1"  << std::endl
+    << "Type `exit();` to exit." << std::endl;
+
+#if defined(_TADPOLE_RUN_HARNESS)
+  tadpole::harness::run_all_harness();
+#endif
 
   return 0;
 }
