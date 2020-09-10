@@ -47,6 +47,29 @@ TADPOLE_TEST(TadpoleToken) {
 } while (false)
 
   TEST_TK(TK::TK_LPAREN, "(");
+  TEST_TK(TK::TK_RPAREN, ")");
+  TEST_TK(TK::TK_LBRACE, "{");
+  TEST_TK(TK::TK_RBRACE, "}");
+  TEST_TK(TK::TK_COMMA, ",");
+  TEST_TK(TK::TK_MINUS, "-");
+  TEST_TK(TK::TK_PLUS, "+");
+  TEST_TK(TK::TK_SEMI, ";");
+  TEST_TK(TK::TK_SLASH, "/");
+  TEST_TK(TK::TK_STAR, "*");
+  TEST_TK(TK::TK_EQ, "=");
+
+  TEST_TK(TK::TK_IDENTIFIER, "Identifier");
+  TEST_TK(TK::TK_NUMERIC, "Numeric");
+  TEST_TK(TK::TK_STRING, "String");
+
+  TEST_TK(TK::KW_FALSE, "false");
+  TEST_TK(TK::KW_FN, "fn");
+  TEST_TK(TK::KW_NIL, "nil");
+  TEST_TK(TK::KW_TRUE, "true");
+  TEST_TK(TK::KW_VAR, "var");
+
+  TEST_TK(TK::TK_EOF, "EOF");
+  TEST_TK(TK::TK_ERR, "ERR");
 
 #undef TEST_STR
 #undef TEST_TK
