@@ -58,10 +58,6 @@ TADPOLE_TEST(TadpoleToken) {
   TEST_TK(TK::TK_STAR, "*");
   TEST_TK(TK::TK_EQ, "=");
 
-  TEST_TK(TK::TK_IDENTIFIER, "Identifier");
-  TEST_TK(TK::TK_NUMERIC, "Numeric");
-  TEST_TK(TK::TK_STRING, "String");
-
   TEST_TK(TK::KW_FALSE, "false");
   TEST_TK(TK::KW_FN, "fn");
   TEST_TK(TK::KW_NIL, "nil");
@@ -70,6 +66,34 @@ TADPOLE_TEST(TadpoleToken) {
 
   TEST_TK(TK::TK_EOF, "EOF");
   TEST_TK(TK::TK_ERR, "ERR");
+
+  {
+    // test for IDENTIFIER
+    TEST_TK(TK::TK_IDENTIFIER, "foo");
+    TEST_TK(TK::TK_IDENTIFIER, "_foo");
+    TEST_TK(TK::TK_IDENTIFIER, "__foo1");
+    TEST_TK(TK::TK_IDENTIFIER, "bar");
+    TEST_TK(TK::TK_IDENTIFIER, "_bar");
+    TEST_TK(TK::TK_IDENTIFIER, "__bar1");
+    TEST_TK(TK::TK_IDENTIFIER, "Count");
+    TEST_TK(TK::TK_IDENTIFIER, "_Count");
+    TEST_TK(TK::TK_IDENTIFIER, "Count_");
+    TEST_TK(TK::TK_IDENTIFIER, "__init__");
+    TEST_TK(TK::TK_IDENTIFIER, "__magic__");
+  }
+
+  {
+    // test for NUMERIC
+    auto t = NEWTK2(TK::TK_NUMERIC, "100");
+    TESTEQ(t.kind(), TK::TK_NUMERIC);
+    TESTEQ(t.as_numeric(), 100);
+    TESTEQ(t.lineno(), 0);
+
+    auto t2 = NEWTK2(TK::TK_NUMERIC, "3.14");
+    TESTEQ(t2.kind(), TK::TK_NUMERIC);
+    TESTEQ(t2.as_numeric(), 3.14);
+    TESTEQ(t2.lineno(), 0);
+  }
 
 #undef TEST_STR
 #undef TEST_TK
