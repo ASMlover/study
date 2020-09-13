@@ -93,6 +93,16 @@ TADPOLE_TEST(TadpoleToken) {
     TESTEQ(t2.kind(), TK::TK_NUMERIC);
     TESTEQ(t2.as_numeric(), 3.14);
     TESTEQ(t2.lineno(), 0);
+
+    auto t3 = NEWTK2(TK::TK_NUMERIC, "-45");
+    TESTEQ(t3.kind(), TK::TK_NUMERIC);
+    TESTEQ(t3.as_numeric(), -45);
+    TESTEQ(t3.lineno(), 0);
+
+    auto t4 = NEWTK2(TK::TK_NUMERIC, "-67.89");
+    TESTEQ(t4.kind(), TK::TK_NUMERIC);
+    TESTEQ(t4.as_numeric(), -67.89);
+    TESTEQ(t4.lineno(), 0);
   }
 
 #undef TEST_STR
