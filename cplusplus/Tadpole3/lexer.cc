@@ -25,3 +25,46 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "lexer.hh"
+
+namespace tadpole {
+
+Token Lexer::next_token() {
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_tail())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  // TODO:
+
+  return make_error(from_fmt("unexpected character `%c`", c));
+}
+
+void Lexer::skip_whitespace() {}
+
+Token Lexer::make_token(TokenKind kind) {
+  return Token(kind, gen_literal(begpos_, curpos_), lineno_);
+}
+
+Token Lexer::make_token(TokenKind kind, const str_t& literal) {
+  return Token(kind, literal, lineno_);
+}
+
+Token Lexer::make_error(const str_t& message) {
+  return Token(TokenKind::TK_ERR, message, lineno_);
+}
+
+Token Lexer::make_identifier() {
+  return Token();
+}
+
+Token Lexer::make_numeric() {
+  return Token();
+}
+
+Token Lexer::make_string() {
+  return Token();
+}
+
+}
