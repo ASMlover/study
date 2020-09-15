@@ -105,6 +105,14 @@ TADPOLE_TEST(TadpoleToken) {
     TESTEQ(t4.lineno(), 0);
   }
 
+  {
+    // test for STRING
+    TEST_STR("Hello", 5);
+    TEST_STR("XXX", 3);
+    TEST_STR("World", 5);
+    TEST_STR("This is String testing", 33);
+  }
+
 #undef TEST_STR
 #undef TEST_TK
 #undef TESTEQ
