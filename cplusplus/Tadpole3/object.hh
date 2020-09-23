@@ -69,4 +69,11 @@ public:
   ClosureObject* as_closure();
 };
 
+template <typename Obj, typename... Args>
+inline Obj* make_object(VM& vm, Args&&... args) noexcept {
+  Obj* o = new Obj(std::forward<Args>(args)...);
+  vm.append_object(o);
+  return o;
+}
+
 }

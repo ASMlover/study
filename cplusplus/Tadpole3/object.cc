@@ -25,12 +25,23 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "object.hh"
+#include "string_object.hh"
+#include "native_object.hh"
 
 namespace tadpole {
 
-StringObject* BaseObject::as_string() { return nullptr; }
-const char* BaseObject::as_cstring() { return nullptr; }
-NativeObject* BaseObject::as_native() { return nullptr; }
+StringObject* BaseObject::as_string() {
+  return as_down<StringObject>(this);
+}
+
+const char* BaseObject::as_cstring() {
+  return as_down<StringObject>(this)->cstr();
+}
+
+NativeObject* BaseObject::as_native() {
+  return as_down<NativeObject>(this);
+}
+
 FunctionObject* BaseObject::as_function() { return nullptr; }
 UpvalueObject* BaseObject::as_upvalue() { return nullptr; }
 ClosureObject* BaseObject::as_closure() { return nullptr; }
