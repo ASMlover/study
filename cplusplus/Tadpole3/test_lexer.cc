@@ -29,4 +29,24 @@
 #include "lexer.hh"
 
 TADPOLE_TEST(TadpoleLexer) {
+  using TK = tadpole::TokenKind;
+#define TESTEQ(k) TADPOLE_CHECK_EQ(lex.next_token().kind(), k)
+#define DUMPLEX() do {\
+    for (;;) {\
+      auto t = lex.next_token();\
+      std::fprintf(stdout, "%-24s | %-32s | %d\n",\
+          tadpole::get_kind_name(t.kind()),\
+          t.as_cstring(),\
+          t.lineno());\
+      if (t.kind() == TK::TK_EOF)\
+        break;\
+    }\
+  } while (false)
+
+  {
+    std::string s =
+      "print(\"Welcome to Tadpole !!!\");\nvar v = 34 * 45 - 56 / 23.4 + (89.1 - 67)";
+    tadpole::Lexer lex(s);
+    DUMPLEX();
+  }
 }
