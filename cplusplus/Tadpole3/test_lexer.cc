@@ -49,4 +49,15 @@ TADPOLE_TEST(TadpoleLexer) {
     tadpole::Lexer lex(s);
     DUMPLEX();
   }
+
+  {
+    std::string s = "var a = 56";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_VAR);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_EQ);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
 }
