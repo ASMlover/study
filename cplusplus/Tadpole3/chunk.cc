@@ -24,4 +24,87 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "chunk.hh"
+
+namespace tadpole {
+
+inline sz_t dis_compound(
+    Chunk* chunk, const char* msg, sz_t i, bool with_constant = false) noexcept {
+  auto c = chunk->get_code(i + 1);
+  std::fprintf(stdout, "%-16s %4d", msg, c);
+  if (with_constant)
+    std::cout << " `" << chunk->get_constant(c) << "`";
+  std::cout << std::endl;
+
+  return i + 2;
+}
+
+inline sz_t dis_simple(Chunk* chunk, const char* msg, sz_t i, int n = 0) noexcept {
+  std::cout << msg;
+  if (n > 0)
+    std::cout << "_" << n;
+  std::cout << std::endl;
+
+  return i + 1;
+}
+
+void Chunk::dis(strv_t prompt) {
+  std::cout << "========= [" << prompt << "] =========" << std::endl;
+  for (sz_t offset = 0; offset < codes_count();)
+    offset = dis_code(offset);
+}
+
+sz_t Chunk::dis_code(sz_t offset) {
+  std::fprintf(stdout, "%04d ", as_type<int>(offset));
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    std::fprintf(stdout, "   | ");
+  else
+    std::fprintf(stdout, "%04d ", lines_[offset]);
+
+#define COMPOUND(C)     return dis_compound(this, #C, offset)
+#define COMPOUND2(C, B) return dis_compound(this, #C, offset, B)
+#define SIMPLE(C)       return dis_simple(this, #C, offset)
+#define SIMPLE2(C, N)   return dis_simple(this, #C, offset, N)
+
+  switch (auto c = as_type<Code>(codes_[offset])) {
+  case Code::CONSTANT: COMPOUND2(CONSTANT, true);
+  case Code::NIL: SIMPLE(NIL);
+  case Code::FALSE: SIMPLE(FALSE);
+  case Code::TRUE: SIMPLE(TRUE);
+  case Code::POP: SIMPLE(POP);
+  case Code::DEF_GLOBAL: COMPOUND2(DEF_GLOBAL, true);
+  case Code::GET_GLOBAL: COMPOUND2(GET_GLOBAL, true);
+  case Code::SET_GLOBAL: COMPOUND2(SET_GLOBAL, true);
+  case Code::GET_LOCAL: COMPOUND(GET_LOCAL);
+  case Code::SET_LOCAL: COMPOUND(SET_LOCAL);
+  case Code::GET_UPVALUE: COMPOUND(GET_UPVALUE);
+  case Code::SET_UPVALUE: COMPOUND(SET_UPVALUE);
+  case Code::ADD: SIMPLE(ADD);
+  case Code::SUB: SIMPLE(SUB);
+  case Code::MUL: SIMPLE(MUL);
+  case Code::DIV: SIMPLE(DIV);
+  case Code::CALL_0:
+  case Code::CALL_1:
+  case Code::CALL_2:
+  case Code::CALL_3:
+  case Code::CALL_4:
+  case Code::CALL_5:
+  case Code::CALL_6:
+  case Code::CALL_7:
+  case Code::CALL_8: SIMPLE2(CALL, c - Code::CALL_0);
+  case Code::CLOSURE: COMPOUND(CLOSURE);
+  case Code::CLOSE_UPVALUE: SIMPLE(CLOSE_UPVALUE);
+  case Code::RETURN: SIMPLE(RETURN);
+  default: std::cerr << "<Invalid Code>" << std::endl; break;
+  }
+
+#undef SIMPLE2
+#undef SIMPLE
+#undef COMPOUND2
+#undef COMPOUND
+
+  return offset + 1;
+}
+
+}
