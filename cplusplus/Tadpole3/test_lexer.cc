@@ -75,4 +75,22 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_SEMI);
     TESTEQ(TK::TK_EOF);
   }
+
+  {
+    std::string s = "fn show(msg) { print(msg); }";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_FN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_LBRACE);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_RBRACE);
+    TESTEQ(TK::TK_EOF);
+  }
 }
