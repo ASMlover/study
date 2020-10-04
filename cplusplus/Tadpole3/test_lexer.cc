@@ -93,4 +93,45 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_RBRACE);
     TESTEQ(TK::TK_EOF);
   }
+
+  {
+    std::string s = "print(23 + 45 * 33.2 / 9.45 - 378.21);";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_PLUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_STAR);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_SLASH);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_MINUS);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
+
+  {
+    std::string s = "var a = nil; print(a, true, false, nil);";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_VAR);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_EQ);
+    TESTEQ(TK::KW_NIL);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_COMMA);
+    TESTEQ(TK::KW_TRUE);
+    TESTEQ(TK::TK_COMMA);
+    TESTEQ(TK::KW_FALSE);
+    TESTEQ(TK::TK_COMMA);
+    TESTEQ(TK::KW_NIL);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
 }
