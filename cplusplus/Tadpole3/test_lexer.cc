@@ -144,4 +144,7 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_ERR);
     TESTEQ(TK::TK_EOF);
   }
+
+#undef DUMPLEX
+#undef TESTEQ
 }
