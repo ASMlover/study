@@ -28,7 +28,19 @@
 #include "chunk.hh"
 
 TADPOLE_TEST(TadpoleChunk) {
+  using TC = tadpole::Code;
+
   tadpole::Chunk c;
+  int n = 0;
+
+  // 45 + 29.78
+  c.write_constant(45, n);
+  c.write_constant(29.78, n);
+  c.write(TC::ADD, n);
+  ++n;
+
+  // return
+  c.write(TC::RETURN, n);
 
   c.dis("TadpoleChunk");
 }
