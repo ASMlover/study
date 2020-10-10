@@ -26,15 +26,46 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <list>
+#include <vector>
+#include <unordered_map>
 #include "common.hh"
 #include "object.hh"
+#include "value.hh"
 
 namespace tadpole {
 
-class Value;
+enum class InterpretRet {
+  OK,
+  ECOMPILE, // compile error
+  ERUNTIME, // runtime error
+};
+
+class CallFrame;
+class GlobalCompiler;
 
 class VM final : private UnCopyable {
+  static constexpr sz_t kGCThreshold  = 1 << 10;
+  static constexpr sz_t kGCFactor     = 2;
+  static constexpr sz_t kDefaultCap   = 256;
+
+  GlobalCompiler* gcompiler_{};
+  bool is_running_{true};
+
+  std::vector<Value> stack_;
+  std::vector<CallFrame> frames_;
+
+  std::unordered_map<str_t, Value> globals_;
+  std::unordered_map<u32_t, StringObject*> interned_strings_;
+  UpvalueObject* open_upvalues_{};
+
+  sz_t gc_threshold_{kGCThreshold};
+  std::list<BaseObject*> all_objects_;
+  std::list<BaseObject*> worklist_;
 public:
+  VM() noexcept;
+  ~VM();
+
   void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
