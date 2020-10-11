@@ -62,16 +62,47 @@ class VM final : private UnCopyable {
   sz_t gc_threshold_{kGCThreshold};
   std::list<BaseObject*> all_objects_;
   std::list<BaseObject*> worklist_;
+
+  void reset();
+  void runtime_error(const char* format, ...);
+
+  void push(Value value) noexcept;
+  Value pop() noexcept;
+  const Value& peek(sz_t distance = 0) const noexcept;
+
+  bool call(ClosureObject* closure, sz_t argc);
+  bool call(const Value& callee, sz_t argc);
+  UpvalueObject* capture_upvalue(Value* local);
+  void close_upvalues(Value* last);
+
+  InterpretRet run();
+
+  void collect();
+  void reclaim_object(BaseObject* o);
 public:
   VM() noexcept;
   ~VM();
+
+  void define_native(const str_t& name, TadpoleCFun&& fn);
 
   void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
 
-  inline void set_interned(u32_t h, StringObject* s) noexcept {}
-  inline StringObject* get_interned(u32_t h) const noexcept { return nullptr; }
+  InterpretRet interpret(const str_t& source_bytes);
+
+  inline bool is_running() const noexcept { return is_running_; }
+  inline void terminate() noexcept { is_running_ = false; }
+
+  inline void set_interned(u32_t h, StringObject* s) noexcept {
+    interned_strings_[h] = s;
+  }
+
+  inline StringObject* get_interned(u32_t h) const noexcept {
+    if (auto it = interned_strings_.find(h); it != interned_strings_.end())
+      return it->second;
+    return nullptr;
+  }
 };
 
 }
