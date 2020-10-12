@@ -33,16 +33,26 @@ TADPOLE_TEST(TadpoleChunk) {
   tadpole::Chunk c;
   int n = 0;
 
-  // 45 + 29.78
+  // 29.78 + 45
   c.write_constant(45, n);
   c.write_constant(29.78, n);
   c.write(TC::ADD, n);
   ++n;
 
-  // 33.56 * 29.78
+  // 29.78 * 33.56
   c.write_constant(33.56, n);
   c.write_constant(29.78, n);
   c.write(TC::MUL, n);
+  ++n;
+
+  // (23.67 - 33.1 * 0.78) / 78.56
+  c.write_constant(78.56, n);
+  c.write_constant(0.78, n);
+  c.write_constant(33.1, n);
+  c.write(TC::MUL, n);
+  c.write_constant(23.67, n);
+  c.write(TC::SUB, n);
+  c.write(TC::DIV, n);
   ++n;
 
   // return
