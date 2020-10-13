@@ -24,12 +24,48 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
+#include <algorithm>
+#include <iostream>
+#include "chunk.hh"
 #include "vm.hh"
 
 namespace tadpole {
 
-void VM::append_object(BaseObject* o) {}
-void VM::mark_object(BaseObject* o) {}
-void VM::mark_value(const Value& v) {}
+class CallFrame final : public Copyable {
+  ClosureObject* closure_{};
+  const u8_t* ip_{};
+  sz_t stack_begpos_{};
+};
+
+VM::VM() noexcept {}
+VM::~VM() {}
+void VM::define_native(const str_t& name, TadpoleCFun&& fn) {}
+
+void VM::append_object(BaseObject* o) {
+  if (all_objects_.size() >= kGCThreshold)
+    collect();
+  all_objects_.push_back(o);
+}
+
+void VM::mark_object(BaseObject* o) {
+  if (o == nullptr || o->is_marked())
+    return;
+
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout << "[" << o << "] mark object: `" << o->stringify() << "`" << std::endl;
+#endif
+
+  o->set_marked(true);
+  worklist_.push_back(o);
+}
+
+void VM::mark_value(const Value& v) {
+  if (v.is_object())
+    mark_object(v.as_object());
+}
+
+void VM::collect() {}
+void VM::reclaim_object(BaseObject* o) {}
 
 }
