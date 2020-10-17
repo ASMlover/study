@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <iostream>
 #include "chunk.hh"
+#include "native_object.hh"
 #include "function_object.hh"
 #include "closure_object.hh"
 #include "vm.hh"
@@ -54,9 +55,30 @@ public:
   inline sz_t stack_begpos() const noexcept { return stack_begpos_; }
 };
 
-VM::VM() noexcept {}
-VM::~VM() {}
-void VM::define_native(const str_t& name, TadpoleCFun&& fn) {}
+VM::VM() noexcept {
+  // TODO: gcompiler_ = new GlobalCompiler();
+  stack_.reserve(kDefaultCap);
+
+  // TODO: register_builtins();
+}
+
+VM::~VM() {
+  // TODO: delete gcompiler_;
+
+  globals_.clear();
+  interned_strings_.clear();
+
+  while (!all_objects_.empty()) {
+    auto* o = all_objects_.back();
+    all_objects_.pop_back();
+
+    reclaim_object(o);
+  }
+}
+
+void VM::define_native(const str_t& name, TadpoleCFun&& fn) {
+  globals_[name] = NativeObject::create(*this, std::move(fn));
+}
 
 void VM::append_object(BaseObject* o) {
   if (all_objects_.size() >= kGCThreshold)
