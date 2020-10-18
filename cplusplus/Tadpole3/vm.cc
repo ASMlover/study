@@ -103,7 +103,48 @@ void VM::mark_value(const Value& v) {
     mark_object(v.as_object());
 }
 
-void VM::collect() {}
+void VM::collect() {
+  // mark root objects
+  // TODO: gcompiler_->mark_compiler();
+  for (auto& v : stack_)
+    mark_value(v);
+  for (auto& f : frames_)
+    mark_object(f.closure());
+  for (auto& g : globals_)
+    mark_value(g.second);
+  for (auto* u = open_upvalues_; u != nullptr; u = u->next())
+    mark_object(u);
+
+  // mark reference objects
+  while (!worklist_.empty()) {
+    auto* o = worklist_.back();
+    worklist_.pop_back();
+    o->gc_blacken(*this);
+  }
+
+  // delete unmarked interned string objects
+  for (auto it = interned_strings_.begin(); it != interned_strings_.end();) {
+    if (!it->second->is_marked())
+      interned_strings_.erase(it++);
+    else
+      ++it;
+  }
+
+  // sweep and reclaim unmarked objects
+  for (auto it = all_objects_.begin(); it != all_objects_.end();) {
+    if (!(*it)->is_marked()) {
+      reclaim_object(*it);
+      all_objects_.erase(it++);
+    }
+    else {
+      (*it)->set_marked(false);
+      ++it;
+    }
+  }
+
+  gc_threshold_ = std::max(kGCThreshold, all_objects_.size() * kGCFactor);
+}
+
 void VM::reclaim_object(BaseObject* o) {}
 
 }
