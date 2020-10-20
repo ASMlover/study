@@ -103,6 +103,8 @@ void VM::mark_value(const Value& v) {
     mark_object(v.as_object());
 }
 
+InterpretRet VM::interpret(const str_t& source_bytes) { return run(); }
+
 void VM::collect() {
   // mark root objects
   // TODO: gcompiler_->mark_compiler();
@@ -145,6 +147,23 @@ void VM::collect() {
   gc_threshold_ = std::max(kGCThreshold, all_objects_.size() * kGCFactor);
 }
 
-void VM::reclaim_object(BaseObject* o) {}
+void VM::reclaim_object(BaseObject* o) {
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout << "[" << o << "] reclaim object: `" << o->stringify() << "`" << std::endl;
+#endif
+
+  delete o;
+}
+
+void VM::reset() {}
+void VM::runtime_error(const char* format, ...) {}
+void VM::push(Value value) noexcept {}
+Value VM::pop() noexcept { return nullptr; }
+const Value& VM::peek(sz_t distance) const noexcept { return stack_[distance]; }
+bool VM::call(ClosureObject* closure, sz_t argc) { return false; }
+bool VM::call(const Value& callee, sz_t argc) { return false; }
+UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
+void VM::close_upvalues(Value* last) {}
+InterpretRet VM::run() { return InterpretRet::OK; }
 
 }
