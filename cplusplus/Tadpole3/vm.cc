@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <iostream>
 #include "chunk.hh"
+#include "compiler.hh"
 #include "native_object.hh"
 #include "function_object.hh"
 #include "closure_object.hh"
@@ -56,14 +57,14 @@ public:
 };
 
 VM::VM() noexcept {
-  // TODO: gcompiler_ = new GlobalCompiler();
+  gcompiler_ = new GlobalCompiler();
   stack_.reserve(kDefaultCap);
 
   // TODO: register_builtins();
 }
 
 VM::~VM() {
-  // TODO: delete gcompiler_;
+  delete gcompiler_;
 
   globals_.clear();
   interned_strings_.clear();
@@ -103,11 +104,22 @@ void VM::mark_value(const Value& v) {
     mark_object(v.as_object());
 }
 
-InterpretRet VM::interpret(const str_t& source_bytes) { return run(); }
+InterpretRet VM::interpret(const str_t& source_bytes) {
+  FunctionObject* fn = gcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::ECOMPILE;
+
+  push(fn);
+  ClosureObject* closure = ClosureObject::create(*this, fn);
+  pop();
+  call(closure, 0);
+
+  return run();
+}
 
 void VM::collect() {
   // mark root objects
-  // TODO: gcompiler_->mark_compiler();
+  gcompiler_->mark_compiler();
   for (auto& v : stack_)
     mark_value(v);
   for (auto& f : frames_)
@@ -155,11 +167,47 @@ void VM::reclaim_object(BaseObject* o) {
   delete o;
 }
 
-void VM::reset() {}
-void VM::runtime_error(const char* format, ...) {}
-void VM::push(Value value) noexcept {}
-Value VM::pop() noexcept { return nullptr; }
-const Value& VM::peek(sz_t distance) const noexcept { return stack_[distance]; }
+void VM::reset() {
+  stack_.clear();
+  frames_.clear();
+  open_upvalues_ = nullptr;
+}
+
+void VM::runtime_error(const char* format, ...) {
+  std::cerr << "Traceback (most recent call last):" << std::endl;
+  for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
+    auto& frame = *it;
+
+    sz_t i = frame.frame_chunk()->offset_with(frame.ip()) - 1;
+    std::cerr
+      << "  [LINE: " << frame.frame_chunk()->get_line(i) << "] in "
+      << "`" << frame.frame_fn()->name_asstr() << "()`"
+      << std::endl;
+  }
+
+  va_list ap;
+  va_start(ap, format);
+  std::vfprintf(stderr, format, ap);
+  va_end(ap);
+  std::fprintf(stderr, "\n");
+
+  reset();
+}
+
+void VM::push(Value value) noexcept {
+  stack_.push_back(value);
+}
+
+Value VM::pop() noexcept {
+  Value value = stack_.back();
+  stack_.pop_back();
+  return value;
+}
+
+const Value& VM::peek(sz_t distance) const noexcept {
+  return stack_[stack_.size() - 1 - distance];
+}
+
 bool VM::call(ClosureObject* closure, sz_t argc) { return false; }
 bool VM::call(const Value& callee, sz_t argc) { return false; }
 UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
