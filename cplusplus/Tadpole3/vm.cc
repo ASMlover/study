@@ -208,7 +208,18 @@ const Value& VM::peek(sz_t distance) const noexcept {
   return stack_[stack_.size() - 1 - distance];
 }
 
-bool VM::call(ClosureObject* closure, sz_t argc) { return false; }
+bool VM::call(ClosureObject* closure, sz_t argc) {
+  FunctionObject* fn = closure->fn();
+  if (fn->arity() != argc) {
+    runtime_error("%s() takes exactly %ud arguments (%ud given)",
+        fn->name_asstr(), fn->arity(), argc);
+    return false;
+  }
+
+  frames_.push_back(CallFrame(closure, fn->chunk()->codes(), stack_.size() - argc - 1));
+  return true;
+}
+
 bool VM::call(const Value& callee, sz_t argc) { return false; }
 UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
 void VM::close_upvalues(Value* last) {}
