@@ -220,7 +220,29 @@ bool VM::call(ClosureObject* closure, sz_t argc) {
   return true;
 }
 
-bool VM::call(const Value& callee, sz_t argc) { return false; }
+bool VM::call(const Value& callee, sz_t argc) {
+  if (callee.is_object()) {
+    switch (callee.objtype()) {
+    case ObjType::NATIVE:
+      {
+        Value* args = nullptr;
+        if (argc > 0 && stack_.size() > argc)
+          args = &stack_[stack_.size() - argc];
+
+        Value result = callee.as_native()->fn()(argc, args);
+        stack_.resize(stack_.size() - argc - 1);
+        push(result);
+
+        return true;
+      }
+    case ObjType::CLOSURE: return call(callee.as_closure(), argc);
+    }
+  }
+
+  runtime_error("can only call function");
+  return false;
+}
+
 UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
 void VM::close_upvalues(Value* last) {}
 InterpretRet VM::run() { return InterpretRet::OK; }
