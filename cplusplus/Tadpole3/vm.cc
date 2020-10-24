@@ -243,7 +243,29 @@ bool VM::call(const Value& callee, sz_t argc) {
   return false;
 }
 
-UpvalueObject* VM::capture_upvalue(Value* local) { return nullptr; }
+UpvalueObject* VM::capture_upvalue(Value* local) {
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(*this, local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* upvalue = open_upvalues_;
+  UpvalueObject* pre_upvalue = nullptr;
+  while (upvalue != nullptr && upvalue->value() > local) {
+    pre_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  UpvalueObject* new_upvalue = UpvalueObject::create(*this, local, upvalue);
+  if (pre_upvalue == nullptr)
+    open_upvalues_ = new_upvalue;
+  else
+    pre_upvalue->set_next(new_upvalue);
+  return new_upvalue;
+}
+
 void VM::close_upvalues(Value* last) {}
 InterpretRet VM::run() { return InterpretRet::OK; }
 
