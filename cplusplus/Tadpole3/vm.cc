@@ -266,7 +266,16 @@ UpvalueObject* VM::capture_upvalue(Value* local) {
   return new_upvalue;
 }
 
-void VM::close_upvalues(Value* last) {}
+void VM::close_upvalues(Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    UpvalueObject* upvalue = open_upvalues_;
+    upvalue->set_closed(upvalue->value_asref());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    open_upvalues_ = upvalue->next();
+  }
+}
+
 InterpretRet VM::run() { return InterpretRet::OK; }
 
 }
