@@ -276,6 +276,46 @@ void VM::close_upvalues(Value* last) {
   }
 }
 
-InterpretRet VM::run() { return InterpretRet::OK; }
+InterpretRet VM::run() {
+  CallFrame* frame = &frames_.back();
+
+#define _RDBYTE()   frame->inc_ip()
+#define _RDCONST()  frame->frame_chunk()->get_constant(_RDBYTE())
+#define _RDSTR()    _RDCONST().as_string()
+#define _RDCSTR()   _RDCONST().as_cstring()
+#define _BINOP(op)  do {\
+    if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+      runtime_error("operands must be two numerics");\
+      return InterpretRet::ERUNTIME;\
+    }\
+    double b = pop().as_numeric();\
+    double a = pop().as_numeric();\
+    push(a op b);\
+  } while (false)
+
+  for (;;) {
+#if defined(_TADPOLE_DEBUG_VM)
+    auto* frame_chunk = frame->frame_chunk();
+    std::cout << "          ";
+    for (auto& v : stack_)
+      std::cout << "[" << v << "]";
+    std::cout << std::endl;
+    frame_chunk->dis_code(frame_chunk->offset_with(frame->ip()));
+#endif
+
+    switch (Code c = as_type<Code>(_RDBYTE())) {
+    case Code::CONSTANT: push(_RDCONST()); break;
+    case Code::NIL: push(nullptr); break;
+    }
+  }
+
+#undef _BINOP
+#undef _RDCSTR
+#undef _RDSTR
+#undef _RDCONST
+#undef _RDBYTE
+
+  return InterpretRet::OK;
+}
 
 }
