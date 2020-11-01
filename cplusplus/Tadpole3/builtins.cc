@@ -40,6 +40,12 @@ void register_builtins(VM& vm) {
 
         return nullptr;
       });
+
+  // fn exit() -> nil
+  vm.define_native("exit", [&vm](sz_t, Value*) -> Value {
+        vm.terminate();
+        return nullptr;
+      });
 }
 
 }
