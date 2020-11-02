@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <algorithm>
 #include <iostream>
+#include "builtins.hh"
 #include "chunk.hh"
 #include "compiler.hh"
 #include "native_object.hh"
@@ -60,7 +61,7 @@ VM::VM() noexcept {
   gcompiler_ = new GlobalCompiler();
   stack_.reserve(kDefaultCap);
 
-  // TODO: register_builtins();
+  tadpole::register_builtins(*this);
 }
 
 VM::~VM() {
@@ -394,6 +395,36 @@ InterpretRet VM::run() {
       } break;
     case Code::CLOSURE:
       {
+        FunctionObject* fn = _RDCONST().as_function();
+        ClosureObject* closure = ClosureObject::create(*this, fn);
+        push(closure);
+
+        for (sz_t i = 0; i < fn->upvalues_count(); ++i) {
+          u8_t is_local = _RDBYTE();
+          u8_t index = _RDBYTE();
+          if (is_local)
+            closure->set_upvalue(i, capture_upvalue(&stack_[frame->stack_begpos() + index]));
+          else
+            closure->set_upvalue(i, frame->closure()->get_upvalue(index));
+        }
+      } break;
+    case Code::CLOSE_UPVALUE: close_upvalues(&stack_.back()); pop(); break;
+    case Code::RETURN:
+      {
+        Value result = pop();
+        if (frame->stack_begpos() > 0 && stack_.size() > frame->stack_begpos())
+          close_upvalues(&stack_[frame->stack_begpos()]);
+        else
+          close_upvalues(nullptr);
+
+        frames_.pop_back();
+        if (frames_.empty())
+          return InterpretRet::OK;
+
+        stack_.resize(frame->stack_begpos());
+        push(result);
+
+        frame = &frames_.back();
       } break;
     }
   }
