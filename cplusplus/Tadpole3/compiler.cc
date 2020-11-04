@@ -24,9 +24,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <functional>
+#include <iostream>
+#include <vector>
+#include "lexer.hh"
+#include "value.hh"
+#include "chunk.hh"
+#include "vm.hh"
 #include "compiler.hh"
 
 namespace tadpole {
+
+enum class Precedence {
+  NONE,
+
+  ASSIGN, // =
+  TERM,   // - +
+  FACTOR, // / *
+  CALL,   // ()
+
+  PRIMARY,
+};
+
+template <typename T> inline Precedence operator+(Precedence a, T b) noexcept {
+  return as_type<Precedence>(as_type<int>(a) + as_type<int>(b));
+}
 
 FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) { return nullptr; }
 void GlobalCompiler::mark_compiler() {}
