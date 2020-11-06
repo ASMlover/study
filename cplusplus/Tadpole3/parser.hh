@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include "common.hh"
+#include "token.hh"
 
 namespace tadpole {
 
@@ -44,5 +46,25 @@ enum class Precedence {
 template <typename T> inline Precedence operator+(Precedence a, T b) noexcept {
   return as_type<Precedence>(as_type<int>(a) + as_type<int>(b));
 }
+
+class GlobalParser;
+
+struct ParseRule {
+  using ParseFn = std::function<GlobalParser&, bool>;
+
+  ParseRule prefix;
+  ParseRule infix;
+  Precedence precedence;
+};
+
+struct LocalVar {
+  Token name;
+  int depth{};
+  bool is_upvalue{};
+
+  LocalVar(const Token& arg_name, int arg_depth = -1, bool arg_upvalue = false) noexcept
+    : name(arg_name), depth(arg_depth), is_upvalue(arg_upvalue) {
+  }
+};
 
 }
