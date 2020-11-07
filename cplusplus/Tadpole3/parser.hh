@@ -67,4 +67,23 @@ struct LocalVar {
   }
 };
 
+struct Upvalue {
+  u8_t index{};
+  bool is_local{};
+
+  Upvalue(u8_t arg_index = 0, bool arg_local = false) noexcept
+    : index(arg_index), is_local(arg_local) {
+  }
+
+  inline bool operator==(Upvalue r) const noexcept {
+    return index == r.index && is_local == r.is_local;
+  }
+
+  inline bool operator!=(Upvalue r) const noexcept { return !(*this == r); }
+
+  inline bool is_equal(u8_t arg_index, bool arg_local) const noexcept {
+    return index == arg_index && is_local == arg_local;
+  }
+};
+
 }
