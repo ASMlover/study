@@ -81,6 +81,20 @@ public:
   inline Upvalue& get_upvalue(sz_t i) noexcept { return upvalues_[i]; }
   inline const Upvalue& get_upvalue(sz_t i) const noexcept { return upvalues_[i]; }
   inline void append_upvalue(const Upvalue& u) noexcept { upvalues_.push_back(u); }
+
+  void enter_scope() noexcept { ++scope_depth_; }
+  template <typename Fn> void leave_scope(Fn&& visitor) {
+    --scope_depth_;
+    while (!locals_.empty() && peek_local().depth > scope_depth_) {
+      visitor(peek_local());
+      locals_.pop_back();
+    }
+  }
+
+  int resolve_local(const Token& name, const ErrorFn& errfn);
+  int add_upvalue(u8_t index, bool is_local);
+  int resolve_upvalue(const Token& name, const ErrorFn& errfn);
+  void declare_localvar(const Token& name, const ErrorFn& errfn);
 };
 
 }
