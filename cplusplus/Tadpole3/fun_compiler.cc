@@ -25,3 +25,22 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "fun_compiler.hh"
+
+namespace tadpole {
+
+int FunCompiler::resolve_local(const Token& name, const ErrorFn& errfn) {
+  return 0;
+}
+
+int FunCompiler::add_upvalue(u8_t index, bool is_local) {
+  return 0;
+}
+
+int FunCompiler::resolve_upvalue(const Token& name, const ErrorFn& errfn) {
+  return 0;
+}
+
+void FunCompiler::declare_localvar(const Token& name, const ErrorFn& errfn) {
+}
+
+}
