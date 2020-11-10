@@ -29,7 +29,15 @@
 namespace tadpole {
 
 int FunCompiler::resolve_local(const Token& name, const ErrorFn& errfn) {
-  return 0;
+  for (int i = locals_count() - 1; i >= 0; --i) {
+    auto& local = locals_[i];
+    if (local.name == name) {
+      if (local.depth == -1)
+        errfn(from_fmt("cannot load local variable `%s` in its own initializer", name.as_cstring()));
+      return i;
+    }
+  }
+  return -1;
 }
 
 int FunCompiler::add_upvalue(u8_t index, bool is_local) {
