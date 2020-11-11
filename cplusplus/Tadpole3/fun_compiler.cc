@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "function_object.hh"
 #include "fun_compiler.hh"
 
 namespace tadpole {
@@ -41,7 +42,13 @@ int FunCompiler::resolve_local(const Token& name, const ErrorFn& errfn) {
 }
 
 int FunCompiler::add_upvalue(u8_t index, bool is_local) {
-  return 0;
+  for (int i = 0; i < fn_->upvalues_count(); ++i) {
+    if (upvalues_[i].is_equal(index, is_local))
+      return i;
+  }
+
+  upvalues_.push_back(Upvalue(index, is_local));
+  return as_type<int>(fn_->inc_upvalues_count());
 }
 
 int FunCompiler::resolve_upvalue(const Token& name, const ErrorFn& errfn) {
