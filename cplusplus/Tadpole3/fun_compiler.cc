@@ -52,7 +52,17 @@ int FunCompiler::add_upvalue(u8_t index, bool is_local) {
 }
 
 int FunCompiler::resolve_upvalue(const Token& name, const ErrorFn& errfn) {
-  return 0;
+  if (enclosing_ == nullptr)
+    return -1;
+
+  if (int local = enclosing_->resolve_local(name, errfn); local != -1) {
+    enclosing_->locals_[local].is_upvalue = true;
+    return add_upvalue(as_type<u8_t>(local), true);
+  }
+  if (int upvalue = enclosing_->resolve_upvalue(name, errfn); upvalue != -1)
+    return add_upvalue(as_type<u8_t>(upvalue), false);
+
+  return -1;
 }
 
 void FunCompiler::declare_localvar(const Token& name, const ErrorFn& errfn) {
