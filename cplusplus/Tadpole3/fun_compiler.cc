@@ -66,6 +66,17 @@ int FunCompiler::resolve_upvalue(const Token& name, const ErrorFn& errfn) {
 }
 
 void FunCompiler::declare_localvar(const Token& name, const ErrorFn& errfn) {
+  if (scope_depth_ == 0)
+    return;
+
+  for (auto it = locals_.rbegin(); it != locals_.rend(); ++it) {
+    if (it->depth != -1 && it->depth < scope_depth_)
+      break;
+
+    if (it->name == name)
+      errfn(from_fmt("name `%s` is redefined", name.as_cstring()));
+  }
+  locals_.push_back(LocalVar(name, -1, false));
 }
 
 }
