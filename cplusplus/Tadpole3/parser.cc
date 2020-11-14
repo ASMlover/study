@@ -24,37 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include "common.hh"
-#include "token.hh"
-#include "function_object.hh"
-#include "compiler_internal.hh"
-#include "fun_compiler.hh"
+#include <iostream>
+#include "parser.hh"
 
 namespace tadpole {
 
-class VM;
-class Lexer;
-class FunCompiler;
+void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
+  if (panic_mode_)
+    return;
+  panic_mode_ = true;
 
-class GlobalParser final : private UnCopyable {
-  VM& vm_;
-  Lexer& lex_;
-  Token prev_;
-  Token curr_;
+  std::cerr
+    << "SyntaxError:" << std::endl
+    << "  [LINE: " << tok.lineno() << "] ERROR ";
+  if (tok.kind() == TokenKind::TK_EOF)
+    std::cerr << "at end ";
+  else if (tok.kind() == TokenKind::TK_ERR)
+    (void)0;
+  else
+    std::cerr << "at `" << tok.literal() << "` ";
+  std::cerr << ": " << msg << std::endl;
 
-  bool had_error_{};
-  bool panic_mode_{};
-
-  FunCompiler* curr_compiler_{};
-
-  inline void error_at_current(const str_t& msg) noexcept { error_at(curr_, msg); }
-  inline void error(const str_t& msg) noexcept { error_at(prev_, msg); }
-  inline Chunk* curr_chunk() const noexcept { return  curr_compiler_->fn()->chunk(); }
-  inline bool check(TokenKind kind) const noexcept { return curr_.kind() == kind; }
-
-  void error_at(const Token& tok, const str_t& msg) noexcept;
-};
+  had_error_ = true;
+}
 
 }
