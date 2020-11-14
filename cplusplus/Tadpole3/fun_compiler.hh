@@ -29,7 +29,7 @@
 #include <functional>
 #include <vector>
 #include "common.hh"
-#include "parser.hh"
+#include "compiler_internal.hh"
 
 namespace tadpole {
 
