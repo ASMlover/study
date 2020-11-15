@@ -172,7 +172,10 @@ void GlobalParser::leave_scope() {
       });
 }
 
-u8_t GlobalParser::identifier_constant(const Token& name) noexcept { return 0;}
+u8_t GlobalParser::identifier_constant(const Token& name) noexcept {
+  return curr_chunk()->add_constant(StringObject::create(vm_, name.as_string()));
+}
+
 u8_t GlobalParser::parse_variable(const str_t& msg) { return 0; }
 void GlobalParser::mark_initialized() {}
 void GlobalParser::define_global(u8_t global) {}
