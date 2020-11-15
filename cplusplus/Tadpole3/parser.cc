@@ -148,7 +148,20 @@ void GlobalParser::init_compiler(FunCompiler* compiler, int scope_depth, FunType
   curr_compiler_->append_local(LocalVar(Token::make(""), curr_compiler_->scope_depth(), false));
 }
 
-FunctionObject* GlobalParser::finish_compiler() { return nullptr; }
+FunctionObject* GlobalParser::finish_compiler() {
+  emit_return();
+
+  FunctionObject* fn = curr_compiler_->fn();
+
+#if defined(_TADPOLE_DEBUG_VM)
+  if (!had_error_)
+    curr_chunk()->dis(fn->name_asstr());
+#endif
+
+  curr_compiler_ = curr_compiler_->enclosing();
+  return fn;
+}
+
 void GlobalParser::enter_scope() {}
 void GlobalParser::leave_scope() {}
 u8_t GlobalParser::identifier_constant(const Token& name) noexcept { return 0;}
