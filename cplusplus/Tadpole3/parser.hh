@@ -28,6 +28,8 @@
 
 #include "common.hh"
 #include "token.hh"
+#include "chunk.hh"
+#include "value.hh"
 #include "function_object.hh"
 #include "compiler_internal.hh"
 #include "fun_compiler.hh"
@@ -54,7 +56,60 @@ class GlobalParser final : private UnCopyable {
   inline Chunk* curr_chunk() const noexcept { return  curr_compiler_->fn()->chunk(); }
   inline bool check(TokenKind kind) const noexcept { return curr_.kind() == kind; }
 
+  template <typename T> inline void emit_byte(T byte) noexcept {
+    curr_chunk()->write(byte, prev_.lineno());
+  }
+
+  template <typename T, typename U> inline void emit_bytes(T b1, U b2) noexcept {
+    emit_byte(b1);
+    emit_byte(b2);
+  }
+
+  inline void emit_return() noexcept { emit_bytes(Code::NIL, Code::RETURN); }
+
+  inline void emit_constant(const Value& v) noexcept {
+    emit_bytes(Code::CONSTANT, curr_chunk()->add_constant(v));
+  }
+
+  const ParseRule& get_rule(TokenKind kind) const noexcept;
+
   void error_at(const Token& tok, const str_t& msg) noexcept;
+  void advance();
+  void consume(TokenKind kind, const str_t& msg);
+  bool match(TokenKind kind);
+
+  void init_compiler(FunCompiler* compiler, int scope_depth, FunType fn_type);
+  FunctionObject* finish_compiler();
+  void enter_scope();
+  void leave_scope();
+  u8_t identifier_constant(const Token& name) noexcept;
+  u8_t parse_variable(const str_t& msg);
+  void mark_initialized();
+  void define_global(u8_t global);
+  u8_t arguments();
+  void named_variable(const Token& name, bool can_assign);
+  void parse_precedence(Precedence precedence);
+  void binary(bool can_assign);
+  void call(bool can_assign);
+  void grouping(bool can_assign);
+  void literal(bool can_assign);
+  void variable(bool can_assign);
+  void numeric(bool can_assign);
+  void string(bool can_assign);
+  void block();
+  void function(FunType fn_type);
+  void synchronize();
+  void expression();
+  void declaration();
+  void statement();
+  void fn_decl();
+  void var_decl();
+  void expr_stmt();
+public:
+  GlobalParser(VM& vm, Lexer& lex) noexcept;
+
+  void mark_parser();
+  FunctionObject* compile();
 };
 
 }

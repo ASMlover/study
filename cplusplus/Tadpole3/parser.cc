@@ -25,9 +25,66 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "lexer.hh"
+#include "vm.hh"
 #include "parser.hh"
 
 namespace tadpole {
+
+GlobalParser::GlobalParser(VM& vm, Lexer& lex) noexcept
+  : vm_(vm), lex_(lex) {
+}
+
+void GlobalParser::mark_parser() {
+  for (FunCompiler* c = curr_compiler_; c != nullptr; c = c->enclosing())
+    vm_.mark_object(c->fn());
+}
+
+FunctionObject* GlobalParser::compile() {
+  FunCompiler compiler;
+  init_compiler(&compiler, 0, FunType::TOPLEVEL);
+
+  advance();
+  while (!check(TokenKind::TK_EOF))
+    declaration();
+  FunctionObject* fn = finish_compiler();
+
+  return had_error_ ? nullptr : fn;
+}
+
+const ParseRule& GlobalParser::get_rule(TokenKind kind) const noexcept {
+#define _RULE(fn) [](GlobalParser& p, bool b) { p.fn(b); }
+
+  static const ParseRule _rules[] = {
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LPAREN, "(")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACE, "{")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACE, "}")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(COMMA, ",")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(MINUS, "-")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(PLUS, "+")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SEMI, ";")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SLASH, "/")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(STAR, "*")
+    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(EQ, "=")
+
+    {nullptr, nullptr, Precedence::NONE}, // TOKEN(IDENTIFIER, "Identifier")
+    {nullptr, nullptr, Precedence::NONE}, // TOKEN(NUMERIC, "Numeric")
+    {nullptr, nullptr, Precedence::NONE}, // TOKEN(STRING, "String")
+
+    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FALSE, "false")
+    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FN, "fn")
+    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(NIL, "nil")
+    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(TRUE, "true")
+    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(VAR, "var")
+
+    {nullptr, nullptr, Precedence::NONE}, // TOKEN(EOF, "Eof")
+    {nullptr, nullptr, Precedence::NONE}, // TOKEN(ERR, "Error")
+  };
+
+#undef _RULE
+  return _rules[as_type<int>(kind)];
+}
 
 void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
   if (panic_mode_)
@@ -47,5 +104,43 @@ void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
 
   had_error_ = true;
 }
+
+void GlobalParser::advance() {
+}
+
+void GlobalParser::consume(TokenKind kind, const str_t& msg) {
+}
+
+bool GlobalParser::match(TokenKind kind) {
+  return false;
+}
+
+void GlobalParser::init_compiler(FunCompiler* compiler, int scope_depth, FunType fn_type) {}
+FunctionObject* GlobalParser::finish_compiler() { return nullptr; }
+void GlobalParser::enter_scope() {}
+void GlobalParser::leave_scope() {}
+u8_t GlobalParser::identifier_constant(const Token& name) noexcept { return 0;}
+u8_t GlobalParser::parse_variable(const str_t& msg) { return 0; }
+void GlobalParser::mark_initialized() {}
+void GlobalParser::define_global(u8_t global) {}
+u8_t GlobalParser::arguments() { return 0; }
+void GlobalParser::named_variable(const Token& name, bool can_assign) {}
+void GlobalParser::parse_precedence(Precedence precedence) {}
+void GlobalParser::binary(bool can_assign) {}
+void GlobalParser::call(bool can_assign) {}
+void GlobalParser::grouping(bool can_assign) {}
+void GlobalParser::literal(bool can_assign) {}
+void GlobalParser::variable(bool can_assign) {}
+void GlobalParser::numeric(bool can_assign) {}
+void GlobalParser::string(bool can_assign) {}
+void GlobalParser::block() {}
+void GlobalParser::function(FunType fn_type) {}
+void GlobalParser::synchronize() {}
+void GlobalParser::expression() {}
+void GlobalParser::declaration() {}
+void GlobalParser::statement() {}
+void GlobalParser::fn_decl() {}
+void GlobalParser::var_decl() {}
+void GlobalParser::expr_stmt() {}
 
 }
