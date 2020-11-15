@@ -162,8 +162,16 @@ FunctionObject* GlobalParser::finish_compiler() {
   return fn;
 }
 
-void GlobalParser::enter_scope() {}
-void GlobalParser::leave_scope() {}
+void GlobalParser::enter_scope() {
+  curr_compiler_->enter_scope();
+}
+
+void GlobalParser::leave_scope() {
+  curr_compiler_->leave_scope([this](const LocalVar& var) {
+        emit_byte(var.is_upvalue ? Code::CLOSE_UPVALUE : Code::POP);
+      });
+}
+
 u8_t GlobalParser::identifier_constant(const Token& name) noexcept { return 0;}
 u8_t GlobalParser::parse_variable(const str_t& msg) { return 0; }
 void GlobalParser::mark_initialized() {}
