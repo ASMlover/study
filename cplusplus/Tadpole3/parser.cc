@@ -106,12 +106,29 @@ void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
 }
 
 void GlobalParser::advance() {
+  prev_ = curr_;
+
+  for (;;) {
+    curr_ = lex_.next_token();
+    if (!check(TokenKind::TK_ERR))
+      break;
+
+    error_at_current(curr_.as_string());
+  }
 }
 
 void GlobalParser::consume(TokenKind kind, const str_t& msg) {
+  if (check(kind))
+    advance();
+  else
+    error_at_current(msg);
 }
 
 bool GlobalParser::match(TokenKind kind) {
+  if (check(kind)) {
+    advance();
+    return true;
+  }
   return false;
 }
 
