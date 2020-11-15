@@ -27,6 +27,7 @@
 #include <iostream>
 #include "lexer.hh"
 #include "vm.hh"
+#include "string_object.hh"
 #include "parser.hh"
 
 namespace tadpole {
@@ -132,7 +133,21 @@ bool GlobalParser::match(TokenKind kind) {
   return false;
 }
 
-void GlobalParser::init_compiler(FunCompiler* compiler, int scope_depth, FunType fn_type) {}
+void GlobalParser::init_compiler(FunCompiler* compiler, int scope_depth, FunType fn_type) {
+  StringObject* func_name{};
+  if (fn_type == FunType::FUNCTION)
+    func_name = StringObject::create(vm_, prev_.as_string());
+
+  compiler->set_compiler(
+      curr_compiler_,
+      FunctionObject::create(vm_, func_name),
+      fn_type,
+      scope_depth);
+  curr_compiler_ = compiler;
+
+  curr_compiler_->append_local(LocalVar(Token::make(""), curr_compiler_->scope_depth(), false));
+}
+
 FunctionObject* GlobalParser::finish_compiler() { return nullptr; }
 void GlobalParser::enter_scope() {}
 void GlobalParser::leave_scope() {}
