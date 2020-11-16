@@ -176,9 +176,29 @@ u8_t GlobalParser::identifier_constant(const Token& name) noexcept {
   return curr_chunk()->add_constant(StringObject::create(vm_, name.as_string()));
 }
 
-u8_t GlobalParser::parse_variable(const str_t& msg) { return 0; }
-void GlobalParser::mark_initialized() {}
-void GlobalParser::define_global(u8_t global) {}
+u8_t GlobalParser::parse_variable(const str_t& msg) {
+  consume(TokenKind::TK_IDENTIFIER, msg);
+
+  curr_compiler_->declare_localvar(prev_, [this](const str_t& m) { error(m); });
+  if (curr_compiler_->scope_depth() > 0)
+    return 0;
+  return identifier_constant(prev_);
+}
+
+void GlobalParser::mark_initialized() {
+  if (curr_compiler_->scope_depth() == 0)
+    return;
+  curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
+}
+
+void GlobalParser::define_global(u8_t global) {
+  if (curr_compiler_->scope_depth() > 0) {
+    mark_initialized();
+    return;
+  }
+  emit_bytes(Code::DEF_GLOBAL, global);
+}
+
 u8_t GlobalParser::arguments() { return 0; }
 void GlobalParser::named_variable(const Token& name, bool can_assign) {}
 void GlobalParser::parse_precedence(Precedence precedence) {}
