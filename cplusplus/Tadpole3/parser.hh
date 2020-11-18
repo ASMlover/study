@@ -41,6 +41,8 @@ class Lexer;
 class FunCompiler;
 
 class GlobalParser final : private UnCopyable {
+  static constexpr int kMaxArgs = 8;
+
   VM& vm_;
   Lexer& lex_;
   Token prev_;

@@ -199,7 +199,22 @@ void GlobalParser::define_global(u8_t global) {
   emit_bytes(Code::DEF_GLOBAL, global);
 }
 
-u8_t GlobalParser::arguments() { return 0; }
+u8_t GlobalParser::arguments() {
+  u8_t argc = 0;
+  if (!check(TokenKind::TK_RPAREN)) {
+    do {
+      expression();
+      ++argc;
+
+      if (argc > kMaxArgs)
+        error(from_fmt("cannot have more than `%d` arguments", kMaxArgs));
+    } while (match(TokenKind::TK_COMMA));
+  }
+  consume(TokenKind::TK_RPAREN, "expect `;` after function arguments");
+
+  return argc;
+}
+
 void GlobalParser::named_variable(const Token& name, bool can_assign) {}
 void GlobalParser::parse_precedence(Precedence precedence) {}
 void GlobalParser::binary(bool can_assign) {}
