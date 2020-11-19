@@ -217,7 +217,19 @@ u8_t GlobalParser::arguments() {
 
 void GlobalParser::named_variable(const Token& name, bool can_assign) {}
 void GlobalParser::parse_precedence(Precedence precedence) {}
-void GlobalParser::binary(bool can_assign) {}
+
+void GlobalParser::binary(bool can_assign) {
+  TokenKind op = prev_.kind();
+
+  parse_precedence(get_rule(op).precedence + 1);
+  switch (op) {
+    case TokenKind::TK_PLUS: emit_byte(Code::ADD); break;
+    case TokenKind::TK_MINUS: emit_byte(Code::SUB); break;
+    case TokenKind::TK_STAR: emit_byte(Code::MUL); break;
+    case TokenKind::TK_SLASH: emit_byte(Code::DIV); break;
+  }
+}
+
 void GlobalParser::call(bool can_assign) {}
 void GlobalParser::grouping(bool can_assign) {}
 void GlobalParser::literal(bool can_assign) {}
