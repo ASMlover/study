@@ -230,8 +230,13 @@ void GlobalParser::binary(bool can_assign) {
   }
 }
 
-void GlobalParser::call(bool can_assign) {}
-void GlobalParser::grouping(bool can_assign) {}
+void GlobalParser::call(bool can_assign) {
+  emit_byte(Code::CALL_0 + arguments());
+}
+
+void GlobalParser::grouping(bool can_assign) {
+}
+
 void GlobalParser::literal(bool can_assign) {}
 void GlobalParser::variable(bool can_assign) {}
 void GlobalParser::numeric(bool can_assign) {}
