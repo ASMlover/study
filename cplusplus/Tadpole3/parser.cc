@@ -235,6 +235,8 @@ void GlobalParser::call(bool can_assign) {
 }
 
 void GlobalParser::grouping(bool can_assign) {
+  expression();
+  consume(TokenKind::TK_RPAREN, "expect `)` after grouping expression");
 }
 
 void GlobalParser::literal(bool can_assign) {}
