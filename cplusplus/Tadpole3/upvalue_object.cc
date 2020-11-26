@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "vm.hh"
 #include "upvalue_object.hh"
+#include "object_helper.hh"
 
 namespace tadpole {
 

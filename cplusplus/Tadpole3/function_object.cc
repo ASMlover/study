@@ -27,6 +27,7 @@
 #include "chunk.hh"
 #include "vm.hh"
 #include "function_object.hh"
+#include "object_helper.hh"
 
 namespace tadpole {
 
