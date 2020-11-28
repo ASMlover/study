@@ -51,7 +51,7 @@ TADPOLE_TEST(TadpoleLexer) {
   }
 
   {
-    std::string s = "var a = 56";
+    std::string s = "var a = 56;";
     tadpole::Lexer lex(s);
     TESTEQ(TK::KW_VAR);
     TESTEQ(TK::TK_IDENTIFIER);
@@ -107,7 +107,7 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_SLASH);
     TESTEQ(TK::TK_NUMERIC);
     TESTEQ(TK::TK_MINUS);
-    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_NUMERIC);
     TESTEQ(TK::TK_RPAREN);
     TESTEQ(TK::TK_SEMI);
     TESTEQ(TK::TK_EOF);
