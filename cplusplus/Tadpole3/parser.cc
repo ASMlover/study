@@ -243,7 +243,30 @@ void GlobalParser::named_variable(const Token& name, bool can_assign) {
   }
 }
 
-void GlobalParser::parse_precedence(Precedence precedence) {}
+void GlobalParser::parse_precedence(Precedence precedence) {
+  advance();
+  auto& prefix_fn = get_rule(prev_.kind()).prefix;
+  if (!prefix_fn) {
+    error("expect expression");
+    return;
+  }
+
+  bool can_assign = precedence <= Precedence::ASSIGN;
+  prefix_fn(*this, can_assign);
+
+  while (precedence <= get_rule(curr_.kind()).precedence) {
+    advance();
+    auto& infix_fn = get_rule(prev_.kind()).infix;
+
+    if (infix_fn)
+      infix_fn(*this, can_assign);
+  }
+
+  if (can_assign && match(TokenKind::TK_EQ)) {
+    error("invalid assignment target");
+    expression();
+  }
+}
 
 void GlobalParser::binary(bool can_assign) {
   TokenKind op = prev_.kind();
@@ -266,11 +289,32 @@ void GlobalParser::grouping(bool can_assign) {
   consume(TokenKind::TK_RPAREN, "expect `)` after grouping expression");
 }
 
-void GlobalParser::literal(bool can_assign) {}
-void GlobalParser::variable(bool can_assign) {}
-void GlobalParser::numeric(bool can_assign) {}
-void GlobalParser::string(bool can_assign) {}
-void GlobalParser::block() {}
+void GlobalParser::literal(bool can_assign) {
+  switch (prev_.kind()) {
+  case TokenKind::KW_NIL: emit_byte(Code::NIL); break;
+  case TokenKind::KW_TRUE: emit_byte(Code::TRUE); break;
+  case TokenKind::KW_FALSE: emit_byte(Code::FALSE); break;
+  }
+}
+
+void GlobalParser::variable(bool can_assign) {
+  named_variable(prev_, can_assign);
+}
+
+void GlobalParser::numeric(bool can_assign) {
+  emit_constant(prev_.as_numeric());
+}
+
+void GlobalParser::string(bool can_assign) {
+  emit_constant(StringObject::create(vm_, prev_.as_string()));
+}
+
+void GlobalParser::block() {
+  while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+    declaration();
+  consume(TokenKind::TK_RBRACE, "expect `}` after block body");
+}
+
 void GlobalParser::function(FunType fn_type) {}
 void GlobalParser::synchronize() {}
 void GlobalParser::expression() {}
