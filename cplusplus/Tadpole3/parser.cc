@@ -345,8 +345,27 @@ void GlobalParser::function(FunType fn_type) {
   }
 }
 
-void GlobalParser::synchronize() {}
-void GlobalParser::expression() {}
+void GlobalParser::synchronize() {
+  panic_mode_ = false;
+
+  while (!check(TokenKind::TK_EOF)) {
+    if (prev_.kind() == TokenKind::TK_SEMI)
+      break;
+
+    switch (curr_.kind()) {
+    case TokenKind::KW_FN:
+    case TokenKind::KW_VAR:
+      return;
+    default: break;
+    }
+    advance();
+  }
+}
+
+void GlobalParser::expression() {
+  parse_precedence(Precedence::ASSIGN);
+}
+
 void GlobalParser::declaration() {}
 void GlobalParser::statement() {}
 void GlobalParser::fn_decl() {}
