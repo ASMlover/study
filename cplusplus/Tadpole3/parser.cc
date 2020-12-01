@@ -389,8 +389,30 @@ void GlobalParser::statement() {
   }
 }
 
-void GlobalParser::fn_decl() {}
-void GlobalParser::var_decl() {}
-void GlobalParser::expr_stmt() {}
+void GlobalParser::fn_decl() {
+  u8_t fn_constant = parse_variable("expect function name");
+  mark_initialized();
+  function(FunType::FUNCTION);
+
+  define_global(fn_constant);
+}
+
+void GlobalParser::var_decl() {
+  u8_t var_constant = parse_variable("expect variable name");
+
+  if (match(TokenKind::TK_EQ))
+    expression();
+  else
+    emit_byte(Code::NIL);
+  consume(TokenKind::TK_SEMI, "expect `;` after variable declaration");
+
+  define_global(var_constant);
+}
+
+void GlobalParser::expr_stmt() {
+  expression();
+  consume(TokenKind::TK_SEMI, "expect `;` after expression");
+  emit_byte(Code::POP);
+}
 
 }
