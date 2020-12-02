@@ -24,19 +24,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <functional>
-#include <iostream>
-#include <vector>
 #include "lexer.hh"
-#include "value.hh"
-#include "chunk.hh"
 #include "vm.hh"
 #include "parser.hh"
 #include "compiler.hh"
 
 namespace tadpole {
 
-FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) { return nullptr; }
-void GlobalCompiler::mark_compiler() {}
+FunctionObject* GlobalCompiler::compile(VM& vm, const str_t& source_bytes) {
+  Lexer lex(source_bytes);
+
+  if (gparser_ = new GlobalParser(vm, lex); gparser_ != nullptr) {
+    FunctionObject* fn = gparser_->compile();
+    delete gparser_;
+    gparser_ = nullptr;
+
+    return fn;
+  }
+  return nullptr;
+}
+
+void GlobalCompiler::mark_compiler() {
+  if (gparser_ != nullptr)
+    gparser_->mark_parser();
+}
 
 }
