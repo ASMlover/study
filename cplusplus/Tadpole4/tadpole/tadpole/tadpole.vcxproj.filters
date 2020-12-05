@@ -21,6 +21,9 @@
     <ClInclude Include="harness.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kinds_def.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.ixx">
@@ -30,6 +33,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="token.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lexer.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

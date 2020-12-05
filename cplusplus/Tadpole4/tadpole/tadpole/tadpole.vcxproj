@@ -143,11 +143,14 @@
   <ItemGroup>
     <ClInclude Include="common.hh" />
     <ClInclude Include="harness.hh" />
+    <ClInclude Include="kinds_def.hh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.ixx" />
     <ClCompile Include="harness.ixx" />
+    <ClCompile Include="lexer.ixx" />
     <ClCompile Include="main.cc" />
+    <ClCompile Include="token.ixx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
