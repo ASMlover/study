@@ -16,6 +16,7 @@ tolset
 *.out
 *.conf
 logging
+.vs
 .ycm_extra_conf.py
 Makefile
 build

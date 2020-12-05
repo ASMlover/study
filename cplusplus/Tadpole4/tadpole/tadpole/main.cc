@@ -25,24 +25,16 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "common.hh"
 import common;
-
-class Point : public tadpole::Copyable {
-  int x_{};
-  int y_{};
-public:
-  Point(int x = 0, int y = 0) noexcept : x_(x), y_(y) {}
-
-  void print() noexcept {
-    std::cout << "Point::show {x:" << x_ << ", y:" << y_ << "}" << std::endl;
-  }
-};
+import harness;
 
 int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+  TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
-  Point p(34, 56);
-  p.print();
+#if defined(_TADPOLE_RUN_HARNESS)
+  tadpole::harness::run_all_harness();
+#endif
 
   return 0;
 }

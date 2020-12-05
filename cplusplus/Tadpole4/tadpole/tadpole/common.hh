@@ -5,6 +5,8 @@
 #include <string>
 #include <string_view>
 
+#define TADPOLE_UNUSED(x) ((void)x)
+
 namespace tadpole {
 
 using nil_t   = std::nullptr_t;
