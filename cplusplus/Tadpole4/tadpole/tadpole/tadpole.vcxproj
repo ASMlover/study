@@ -144,6 +144,7 @@
     <ClInclude Include="common.hh" />
     <ClInclude Include="harness.hh" />
     <ClInclude Include="kinds_def.hh" />
+    <ClInclude Include="token.hh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.ixx" />

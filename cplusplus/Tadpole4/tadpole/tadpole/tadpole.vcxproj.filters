@@ -24,6 +24,9 @@
     <ClInclude Include="kinds_def.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="token.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.ixx">

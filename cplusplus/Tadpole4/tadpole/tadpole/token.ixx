@@ -1,44 +1,12 @@
 module;
 #include <unordered_map>
 #include "common.hh"
+#include "token.hh"
 import common;
 
 export module token;
 
 export namespace tadpole {
-
-enum class TokenKind {
-#undef TOKDEF
-#define TOKDEF(k, s) k,
-#include "kinds_def.hh"
-#undef TOKDEF
-
-  NUM_KINDS,
-};
-
-inline bool operator==(TokenKind k1, TokenKind k2) noexcept {
-  return as_type<int>(k1) == as_type<int>(k2);
-}
-
-inline bool operator!=(TokenKind k1, TokenKind k2) noexcept {
-  return !(k1 == k2);
-}
-
-inline bool operator<(TokenKind k1, TokenKind k2) noexcept {
-  return as_type<int>(k1) < as_type<int>(k2);
-}
-
-inline bool operator<=(TokenKind k1, TokenKind k2) noexcept {
-  return (k1 < k2) || (k1 == k2);
-}
-
-inline bool operator>(TokenKind k1, TokenKind k2) noexcept {
-  return !(k1 <= k2);
-}
-
-inline bool operator>=(TokenKind k1, TokenKind k2) noexcept {
-  return !(k1 < k2);
-}
 
 constexpr const char* kNames[] = {
 #undef TOKDEF
@@ -50,7 +18,7 @@ constexpr const char* kNames[] = {
 };
 
 const char* get_kind_name(TokenKind kind) {
-  if (kind >= TokenKind::TK_LPARAN && kind < TokenKind::NUM_KINDS)
+  if (kind >= TokenKind::TK_LPAREN && kind < TokenKind::NUM_KINDS)
     return kNames[as_type<int>(kind)];
   return nullptr;
 }
