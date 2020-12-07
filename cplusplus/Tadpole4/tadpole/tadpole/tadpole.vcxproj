@@ -151,6 +151,7 @@
     <ClCompile Include="harness.ixx" />
     <ClCompile Include="lexer.ixx" />
     <ClCompile Include="main.cc" />
+    <ClCompile Include="test_token.ixx" />
     <ClCompile Include="token.ixx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
