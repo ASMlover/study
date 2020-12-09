@@ -36,6 +36,10 @@ TokenKind get_keyword_kind(const str_t& key) {
   return TokenKind::TK_IDENTIFIER;
 }
 
+std::ostream& operator<<(std::ostream& out, TokenKind kind) noexcept {
+  return out << get_kind_name(kind);
+}
+
 class Token final : public Copyable {
   TokenKind kind_{ TokenKind::TK_ERR };
   str_t literal_;
