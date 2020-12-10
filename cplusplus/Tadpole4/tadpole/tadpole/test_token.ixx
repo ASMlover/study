@@ -8,7 +8,7 @@ import token;
 TADPOLE_TEST(TadpoleToken) {
   using TK = tadpole::TokenKind;
 
-#define NEWTK2(k, s)    tadpole::Token(k, s)
+#define NEWTK2(k, s)    tadpole::Token(k, s, 0)
 #define NEWTK3(k, s, n) tadpole::Token(k, s, n)
 #define TESTEQ(a, b)    TADPOLE_CHECK_EQ(a, b)
 #define TESTTK(k, s) do {\
@@ -23,6 +23,18 @@ TADPOLE_TEST(TadpoleToken) {
     TESTEQ(t.literal(), s);\
     TESTEQ(t.lineno(), n);\
   } while (false)
+
+  TESTTK(TK::TK_LPAREN, "(");
+  TESTTK(TK::TK_RPAREN, ")");
+  TESTTK(TK::TK_LBRACE, "{");
+  TESTTK(TK::TK_RBRACE, "}");
+  TESTTK(TK::TK_COMMA, ",");
+  TESTTK(TK::TK_MINUS, "-");
+  TESTTK(TK::TK_PLUS, "+");
+  TESTTK(TK::TK_SEMI, ";");
+  TESTTK(TK::TK_SLASH, "/");
+  TESTTK(TK::TK_STAR, "*");
+  TESTTK(TK::TK_EQ, "=");
 
 #undef TESTSTR
 #undef TESTTK
