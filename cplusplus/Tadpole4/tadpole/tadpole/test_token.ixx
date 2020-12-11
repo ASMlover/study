@@ -36,6 +36,12 @@ TADPOLE_TEST(TadpoleToken) {
   TESTTK(TK::TK_STAR, "*");
   TESTTK(TK::TK_EQ, "=");
 
+  TESTTK(TK::KW_FALSE, "false");
+  TESTTK(TK::KW_FN, "fn");
+  TESTTK(TK::KW_NIL, "nil");
+  TESTTK(TK::KW_TRUE, "true");
+  TESTTK(TK::KW_VAR, "var");
+
 #undef TESTSTR
 #undef TESTTK
 #undef TESTEQ
