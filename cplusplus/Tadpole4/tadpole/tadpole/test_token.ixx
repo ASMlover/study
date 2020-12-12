@@ -42,6 +42,35 @@ TADPOLE_TEST(TadpoleToken) {
   TESTTK(TK::KW_TRUE, "true");
   TESTTK(TK::KW_VAR, "var");
 
+  TESTTK(TK::TK_EOF, "");
+  TESTTK(TK::TK_ERR, "");
+
+  // test for identifier
+  TESTTK(TK::TK_IDENTIFIER, "foo");
+  TESTTK(TK::TK_IDENTIFIER, "bar");
+  TESTTK(TK::TK_IDENTIFIER, "Count");
+  TESTTK(TK::TK_IDENTIFIER, "_Count");
+  TESTTK(TK::TK_IDENTIFIER, "var1");
+  TESTTK(TK::TK_IDENTIFIER, "var2");
+
+  {
+    // test for numeric
+    auto t1 = NEWTK2(TK::TK_NUMERIC, "100");
+    TESTEQ(t1.kind(), TK::TK_NUMERIC);
+    TESTEQ(t1.as_numeric(), 100);
+    TESTEQ(t1.lineno(), 0);
+
+    auto t2 = NEWTK2(TK::TK_NUMERIC, "3.14");
+    TESTEQ(t2.kind(), TK::TK_NUMERIC);
+    TESTEQ(t2.as_numeric(), 3.14);
+    TESTEQ(t2.lineno(), 0);
+  }
+
+  // test for string
+  TESTSTR("Hello", 5);
+  TESTSTR("XXX", 3);
+  TESTSTR("String for token", 16);
+
 #undef TESTSTR
 #undef TESTTK
 #undef TESTEQ
