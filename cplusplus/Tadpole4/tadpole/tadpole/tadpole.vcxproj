@@ -153,6 +153,7 @@
     <ClCompile Include="main.cc" />
     <ClCompile Include="test_token.ixx" />
     <ClCompile Include="token.ixx" />
+    <ClCompile Include="value.ixx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

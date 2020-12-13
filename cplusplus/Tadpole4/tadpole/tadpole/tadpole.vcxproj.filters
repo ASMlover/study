@@ -47,5 +47,8 @@
     <ClCompile Include="test_token.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="value.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
