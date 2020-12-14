@@ -122,6 +122,10 @@ public:
   }
 };
 
+inline std::ostream& operator<<(std::ostream& out, const Value& val) {
+  return out << val.stringify();
+}
+
 StringObject* BaseObject::as_string() { return nullptr; }
 const char* BaseObject::as_cstring() { return nullptr; }
 NativeObject* BaseObject::as_native() { return nullptr; }
