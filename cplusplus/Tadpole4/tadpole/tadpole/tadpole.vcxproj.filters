@@ -50,5 +50,8 @@
     <ClCompile Include="value.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="chunk.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

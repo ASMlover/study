@@ -147,6 +147,7 @@
     <ClInclude Include="token.hh" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="chunk.ixx" />
     <ClCompile Include="common.ixx" />
     <ClCompile Include="harness.ixx" />
     <ClCompile Include="lexer.ixx" />
