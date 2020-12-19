@@ -2,7 +2,6 @@ module;
 #include <unordered_map>
 #include "common.hh"
 #include "token.hh"
-import common;
 
 export module token;
 
