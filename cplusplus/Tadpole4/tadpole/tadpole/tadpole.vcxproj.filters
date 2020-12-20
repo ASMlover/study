@@ -27,6 +27,9 @@
     <ClInclude Include="token.hh">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="object.hh">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="common.ixx">
@@ -47,11 +50,14 @@
     <ClCompile Include="test_token.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="value.ixx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="chunk.ixx">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="object.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="value.hh">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

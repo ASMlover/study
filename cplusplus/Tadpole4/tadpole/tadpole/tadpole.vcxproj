@@ -144,6 +144,7 @@
     <ClInclude Include="common.hh" />
     <ClInclude Include="harness.hh" />
     <ClInclude Include="kinds_def.hh" />
+    <ClInclude Include="object.hh" />
     <ClInclude Include="token.hh" />
   </ItemGroup>
   <ItemGroup>
@@ -152,9 +153,10 @@
     <ClCompile Include="harness.ixx" />
     <ClCompile Include="lexer.ixx" />
     <ClCompile Include="main.cc" />
+    <ClCompile Include="object.ixx" />
     <ClCompile Include="test_token.ixx" />
     <ClCompile Include="token.ixx" />
-    <ClCompile Include="value.ixx" />
+    <ClCompile Include="value.hh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
