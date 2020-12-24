@@ -2,8 +2,7 @@ module;
 #include <iostream>
 #include <vector>
 #include "common.hh"
-import common;
-import value;
+#include "value.hh"
 
 export module chunk;
 

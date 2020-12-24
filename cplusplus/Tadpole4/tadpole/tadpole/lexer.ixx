@@ -2,7 +2,6 @@ module;
 #include <cctype>
 #include "common.hh"
 #include "token.hh"
-import common;
 import token;
 
 export module lexer;
