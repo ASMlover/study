@@ -74,4 +74,13 @@ struct rudp {
   int expired;
 };
 
+struct rudp* rudp_new(int send_delay, int expired_time) {
+  struct rudp* u = std::malloc(sizeof(*u));
+  std::memset(u, 0, sizeof(*u));
+  u->send_delay = send_delay;
+  u->expired = expired_time;
+
+  return u;
+}
+
 }
