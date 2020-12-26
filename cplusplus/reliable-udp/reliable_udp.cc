@@ -74,9 +74,19 @@ struct rudp {
   int expired;
 };
 
+static void clear_outpackage(struct rudp* u) {
+  struct rudp_package* package = u->send_package;
+  while (package) {
+    struct rudp_package* next_package = package->next;
+    free(package);
+    package = next_package;
+  }
+  u->send_package = nullptr;
+}
+
 struct rudp* rudp_new(int send_delay, int expired_time) {
-  struct rudp* u = std::malloc(sizeof(*u));
-  std::memset(u, 0, sizeof(*u));
+  struct rudp* u = malloc(sizeof(*u));
+  memset(u, 0, sizeof(*u));
   u->send_delay = send_delay;
   u->expired = expired_time;
 
