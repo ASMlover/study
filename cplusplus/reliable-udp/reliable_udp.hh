@@ -44,7 +44,7 @@ void rudp_delete(struct rudp* u);
 // return the size of new package
 // 0  -> where no new package
 // -1 -> corrupt connection
-int rudp_recv(struct rudp* u, const buffer[MAX_PACKAGE]);
+int rudp_recv(struct rudp* u, const char buffer[MAX_PACKAGE]);
 
 // send a new package out
 void rudp_send(struct rudp* u, const char* buffer, int sz);
