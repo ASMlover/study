@@ -84,6 +84,14 @@ static void clear_outpackage(struct rudp* u) {
   u->send_package = nullptr;
 }
 
+static void free_message_list(struct message* m) {
+  while (m) {
+    struct message* next_message = m->next;
+    free(m);
+    m = next_message;
+  }
+}
+
 struct rudp* rudp_new(int send_delay, int expired_time) {
   struct rudp* u = malloc(sizeof(*u));
   memset(u, 0, sizeof(*u));
