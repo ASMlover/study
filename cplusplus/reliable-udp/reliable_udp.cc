@@ -101,4 +101,14 @@ struct rudp* rudp_new(int send_delay, int expired_time) {
   return u;
 }
 
+void rudp_delete(struct rudp* u) {
+  free_message_list(u->send_queue.head);
+  free_message_list(u->recv_queue.head);
+  free_message_list(u->send_history.head);
+  free_message_list(u->free_list);
+  clear_outpackage(u);
+  free(u->send_argain.a);
+  free(u);
+}
+
 }
