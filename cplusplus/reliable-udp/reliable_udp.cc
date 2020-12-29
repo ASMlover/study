@@ -122,6 +122,16 @@ struct rudp {
   int expired;
 };
 
+static int gen_id(struct rudp* u, const uint8_t* buffer) {
+  int id = buffer[0] * 256 + buffer[1];
+  id |= u->recv_id_max & ~0xffff;
+  if (id < u->recv_id_max - 0x8000)
+    id += 0x10000;
+  else if (id > u->recv_id_max + 0x8000)
+    id -= 0x10000;
+  return id;
+}
+
 static void clear_outpackage(struct rudp* u) {
   struct rudp_package* package = u->send_package;
   while (package) {
@@ -193,6 +203,10 @@ static void clear_send_expired(struct rudp* u, int tick) {
     u->send_history.tail = nullptr;
 }
 
+static void add_request(struct rudp* u, int id) {
+  array_insert(&u->send_argain, id);
+}
+
 // rudp export methods
 struct rudp* rudp_new(int send_delay, int expired_time) {
   struct rudp* u = (struct rudp*)malloc(sizeof(*u));
@@ -221,6 +235,23 @@ void rudp_send(struct rudp* u, const char* buffer, int sz) {
   m->id = u->send_id++;
   m->tick = u->current_tick;
   queue_push(&u->send_queue, m);
+}
+
+int rudp_recv(struct rudp* u, char buffer[MAX_PACKAGE]) {
+  if (u->corrupt) {
+    u->corrupt = 0;
+    return -1;
+  }
+  struct message* m = queue_pop(&u->recv_queue, u->recv_id_min);
+  if (m == nullptr)
+    return 0;
+  ++u->recv_id_min;
+  int sz = m->sz;
+  if (sz > 0)
+    memcpy(buffer, m->buffer, sz);
+  delete_message(u, m);
+
+  return sz;
 }
 
 }
