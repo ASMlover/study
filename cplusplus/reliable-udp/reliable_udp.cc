@@ -150,6 +150,7 @@ static void free_message_list(struct message* m) {
   }
 }
 
+// region: message methods
 static struct message* new_message(struct rudp* u, const uint8_t* buffer, int sz) {
   struct message* m = u->free_list;
   if (m) {
@@ -184,6 +185,35 @@ static void delete_message(struct rudp* u, struct message* m) {
   m->next = u->free_list;
   u->free_list = m;
 }
+
+static void insert_message(struct rudp* u, int id, const uint8_t* buffer, int sz) {
+  if (id < u->recv_id_min)
+    return;
+  if (id > u->recv_id_max || u->recv_queue.head == nullptr) {
+    struct message* m = new_message(u, buffer, sz);
+    m->id = id;
+    queue_push(&u->recv_queue, m);
+    u->recv_id_max = id;
+  }
+  else {
+    struct message* m = u->recv_queue.head;
+    struct message** last = &u->recv_queue.head;
+    do {
+      if (m->id == id)
+        return;
+      if (m->id > id) {
+        struct message* temp_message = new_message(u, buffer, sz);
+        temp_message->id = id;
+        temp_message->next = m;
+        *last = temp_message;
+        return;
+      }
+      last = &m->next;
+      m = m->next;
+    } while (m);
+  }
+}
+// endregion: message methods
 
 static void clear_send_expired(struct rudp* u, int tick) {
   struct message* m = u->send_history.head;
