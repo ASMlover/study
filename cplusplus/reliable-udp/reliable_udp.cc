@@ -32,6 +32,12 @@
 
 #define GENERAL_PACKAGE (128)
 
+#define TYPE_IGNORE     (0)
+#define TYPE_CORRUPT    (1)
+#define TYPE_REQUEST    (2)
+#define TYPE_MISSING    (3)
+#define TYPE_NORMAL     (4)
+
 namespace rudp {
 
 struct message {
@@ -213,6 +219,10 @@ static void insert_message(struct rudp* u, int id, const uint8_t* buffer, int sz
     } while (m);
   }
 }
+
+static void add_missing(struct rudp* u, int id) {
+  insert_message(u, id, nullptr, -1);
+}
 // endregion: message methods
 
 static void clear_send_expired(struct rudp* u, int tick) {
@@ -237,7 +247,10 @@ static void add_request(struct rudp* u, int id) {
   array_insert(&u->send_argain, id);
 }
 
-// rudp export methods
+// region: package functions
+// endregion: package functions
+
+// region: rudp export methods
 struct rudp* rudp_new(int send_delay, int expired_time) {
   struct rudp* u = (struct rudp*)malloc(sizeof(*u));
   if (u) {
@@ -283,5 +296,6 @@ int rudp_recv(struct rudp* u, char buffer[MAX_PACKAGE]) {
 
   return sz;
 }
+// endregion: rudp export methods
 
 }
