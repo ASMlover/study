@@ -302,6 +302,29 @@ static void extrat_package(struct rudp* u, const uint8_t* buffer, int sz) {
     }
   }
 }
+
+struct temp_buffer {
+  uint8_t buf[GENERAL_PACKAGE];
+  int sz;
+  struct rudp_package* head;
+  struct rudp_package* tail;
+};
+
+static void new_package(struct rudp* u, struct temp_buffer* tmp) {
+  struct rudp_package* p = (struct rudp_package*)malloc(sizeof(*p) + tmp->sz);
+  p->next = nullptr;
+  p->buffer = (char*)(p + 1);
+  p->sz = tmp->sz;
+  memcpy(p->buffer, tmp->buf, tmp->sz);
+  if (tmp->tail == nullptr) {
+    tmp->head = tmp->tail = p;
+  }
+  else {
+    tmp->tail->next = p;
+    tmp->tail = p;
+  }
+  tmp->sz = 0;
+}
 // endregion: package functions
 
 // region: rudp export methods
