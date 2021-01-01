@@ -248,6 +248,60 @@ static void add_request(struct rudp* u, int id) {
 }
 
 // region: package functions
+static void extrat_package(struct rudp* u, const uint8_t* buffer, int sz) {
+  while (sz > 0) {
+    int len = buffer[0];
+    if (len > 127) {
+      if (sz <= 1) {
+        u->corrupt = 1;
+        return;
+      }
+      len = (len * 256 + buffer[1]) & 0x7fff;
+      buffer += 2;
+      sz -= 2;
+    }
+    else {
+      buffer += 1;
+      sz -= 1;
+    }
+
+    switch (len) {
+    case TYPE_IGNORE:
+      if (u->send_argain.n == 0)
+        array_insert(&u->send_argain, u->recv_id_min); // request next package id
+      break;
+    case TYPE_CORRUPT:
+      u->corrupt = 1;
+      return;
+    case TYPE_REQUEST:
+    case TYPE_MISSING:
+      if (sz < 2) {
+        u->corrupt = 1;
+        return;
+      }
+      if (len == TYPE_REQUEST)
+        add_request(u, gen_id(u, buffer));
+      else
+        add_missing(u, gen_id(u, buffer));
+      buffer += 2;
+      sz -= 2;
+      break;
+    default:
+      len -= TYPE_NORMAL;
+      if (sz < len + 2) {
+        u->corrupt = 1;
+        return;
+      }
+      else {
+        int id = gen_id(u, buffer);
+        insert_message(u, id, buffer + 2, len);
+      }
+      buffer += len + 2;
+      sz -= len + 2;
+      break;
+    }
+  }
+}
 // endregion: package functions
 
 // region: rudp export methods
