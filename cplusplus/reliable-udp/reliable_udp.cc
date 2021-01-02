@@ -325,6 +325,24 @@ static void new_package(struct rudp* u, struct temp_buffer* tmp) {
   }
   tmp->sz = 0;
 }
+
+static int fill_header(uint8_t* buf, int len, int id) {
+  int sz;
+  if (len < 128) {
+    buf[0] = len;
+    ++buf;
+    sz = 1;
+  }
+  else {
+    buf[0] = ((len & 0x7f00) >> 8) | 0x80;
+    buf[1] = len & 0xff;
+    buf += 2;
+    sz = 2;
+  }
+  buf[0] = (id & 0xff00) >> 8;
+  buf[1] = id & 0xff;
+  return sz + 2;
+}
 // endregion: package functions
 
 // region: rudp export methods
