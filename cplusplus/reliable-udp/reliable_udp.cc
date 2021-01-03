@@ -417,6 +417,25 @@ static void reply_request(struct rudp* u, struct temp_buffer* temp) {
   }
   u->send_argain.n = 0;
 }
+
+static void send_message(struct rudp* u, struct temp_buffer* temp) {
+  struct message* m = u->send_queue.head;
+  while (m) {
+    pack_message(u, temp, m);
+    m = m->next;
+  }
+  if (u->send_queue.head) {
+    if (u->send_history.tail == nullptr) {
+      u->send_history = u->send_queue;
+    }
+    else {
+      u->send_history.tail->next = u->send_queue.head;
+      u->send_history.tail = u->send_queue.tail;
+    }
+    u->send_queue.head = nullptr;
+    u->send_queue.tail = nullptr;
+  }
+}
 // endregion: package functions
 
 // region: rudp export methods
