@@ -381,6 +381,19 @@ static void pack_message(struct rudp* u, struct temp_buffer* temp, struct messag
   buf += len;
   memcpy(buf, m->buffer, m->sz);
 }
+
+static void request_missing(struct rudp* u, struct temp_buffer* temp) {
+  int id = u->recv_id_min;
+  struct message* m = u->recv_queue.head;
+  while (m) {
+    if (m->id > id) {
+      for (int i = id; i < m->id; ++i)
+        pack_request(u, temp, i, TYPE_REQUEST);
+    }
+    id = m->id + 1;
+    m = m->next;
+  }
+}
 // endregion: package functions
 
 // region: rudp export methods
