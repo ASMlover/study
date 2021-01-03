@@ -394,6 +394,29 @@ static void request_missing(struct rudp* u, struct temp_buffer* temp) {
     m = m->next;
   }
 }
+
+static void reply_request(struct rudp* u, struct temp_buffer* temp) {
+  struct message* history = u->send_history.head;
+  for (int i = 0; i< u->send_argain.n; ++i) {
+    int id = u->send_argain.a[i];
+    if (id < u->recv_id_min)
+      continue; // already received, ignore
+
+    for (;;) {
+      if (history == nullptr || id < history->id) {
+        // expired
+        pack_request(u, temp, id, TYPE_MISSING);
+        break;
+      }
+      else if (id == history->id) {
+        pack_message(u, temp, history);
+        break;
+      }
+      history = history->next;
+    }
+  }
+  u->send_argain.n = 0;
+}
 // endregion: package functions
 
 // region: rudp export methods
