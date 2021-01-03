@@ -343,6 +343,14 @@ static int fill_header(uint8_t* buf, int len, int id) {
   buf[1] = id & 0xff;
   return sz + 2;
 }
+
+static void pack_request(struct rudp* u, struct temp_buffer* temp, int id, int tag) {
+  int sz = GENERAL_PACKAGE - temp->sz;
+  if (sz < 3)
+    new_package(u, temp);
+  uint8_t* buffer = temp->buf + temp->sz;
+  temp->sz += fill_header(buffer, tag, id);
+}
 // endregion: package functions
 
 // region: rudp export methods
