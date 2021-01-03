@@ -436,6 +436,28 @@ static void send_message(struct rudp* u, struct temp_buffer* temp) {
     u->send_queue.tail = nullptr;
   }
 }
+
+static struct rudp_package* gen_outpackage(struct rudp* u) {
+  // [1] request missing
+  // [2] reply request
+  // [3] send message
+  // [4] send heartbeat
+
+  struct temp_buffer temp{};
+
+  request_missing(u, &temp);
+  reply_request(u, &temp);
+  send_message(u, &temp);
+
+  if (temp.head == nullptr) {
+    if (temp.sz == 0) {
+      temp.buf[0] = TYPE_IGNORE;
+      temp.sz = 1;
+    }
+    new_package(u, &temp);
+    return temp.head;
+  }
+}
 // endregion: package functions
 
 // region: rudp export methods
