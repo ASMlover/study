@@ -351,6 +351,36 @@ static void pack_request(struct rudp* u, struct temp_buffer* temp, int id, int t
   uint8_t* buffer = temp->buf + temp->sz;
   temp->sz += fill_header(buffer, tag, id);
 }
+
+static void pack_message(struct rudp* u, struct temp_buffer* temp, struct message* m) {
+  int sz = GENERAL_PACKAGE - temp->sz;
+  if (m->sz > GENERAL_PACKAGE - 4) {
+    if (temp->sz > 0)
+      new_package(u, temp);
+    sz = 4 + m->sz;
+    struct rudp_package* p = (struct rudp_package*)malloc(sizeof(*p) + sz);
+    p->next = nullptr;
+    p->buffer = (char*)(p + 1);
+    p->sz = sz;
+    fill_header((uint8_t*)p->buffer, m->sz + TYPE_NORMAL, m->id);
+    memcpy(p->buffer + 4, m->buffer, m->sz);
+    if (temp->tail == nullptr) {
+      temp->head = temp->tail = p;
+    }
+    else {
+      temp->tail->next = p;
+      temp->tail = p;
+    }
+    return;
+  }
+  if (sz < 4 + m->sz)
+    new_package(u, temp);
+  uint8_t* buf = temp->buf + temp->sz;
+  int len = fill_header(buf, m->sz + TYPE_NORMAL, m->id);
+  temp->sz += len + m->sz;
+  buf += len;
+  memcpy(buf, m->buffer, m->sz);
+}
 // endregion: package functions
 
 // region: rudp export methods
