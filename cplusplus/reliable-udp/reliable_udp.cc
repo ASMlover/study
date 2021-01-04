@@ -454,9 +454,9 @@ static struct rudp_package* gen_outpackage(struct rudp* u) {
       temp.buf[0] = TYPE_IGNORE;
       temp.sz = 1;
     }
-    new_package(u, &temp);
-    return temp.head;
   }
+  new_package(u, &temp);
+  return temp.head;
 }
 // endregion: package functions
 
@@ -505,6 +505,24 @@ int rudp_recv(struct rudp* u, char buffer[MAX_PACKAGE]) {
   delete_message(u, m);
 
   return sz;
+}
+
+struct rudp_package* rudp_update(struct rudp* u, const void* buffer, int sz, int tick) {
+  u->current_tick += tick;
+  clear_outpackage(u);
+  extrat_package(u, (const uint8_t*)buffer, sz);
+  if (u->current_tick >= u->last_expired_tick + u->expired) {
+    clear_send_expired(u, u->last_expired_tick);
+    u->last_expired_tick = u->current_tick;
+  }
+  if (u->current_tick >= u->last_send_tick + u->send_delay) {
+    u->send_package = gen_outpackage(u);
+    u->last_send_tick = u->current_tick;
+    return u->send_package;
+  }
+  else {
+    return nullptr;
+  }
 }
 // endregion: rudp export methods
 
