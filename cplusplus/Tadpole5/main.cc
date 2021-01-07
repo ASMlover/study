@@ -32,9 +32,10 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "common.hh"
 
 int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+  TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
   std::cout << "Hello, Tadpole !!!" << std::endl;
 
