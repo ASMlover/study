@@ -89,7 +89,7 @@ public:
 using ClosureFn = std::function<void ()>;
 
 bool register_harness(strv_t name, ClosureFn&& fn);
-int rull_all_harness();
+int run_all_harness();
 
 }
 
