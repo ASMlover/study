@@ -32,7 +32,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "common.hh"
+#include "common/common.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
