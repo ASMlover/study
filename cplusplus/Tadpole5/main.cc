@@ -31,13 +31,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
 #include "common/common.hh"
+#include "common/harness.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
   std::cout << "Hello, Tadpole !!!" << std::endl;
+
+#if defined(_TADPOLE_RUN_HARNESS)
+  tadpole::harness::run_all_harness();
+#endif
 
   return 0;
 }
