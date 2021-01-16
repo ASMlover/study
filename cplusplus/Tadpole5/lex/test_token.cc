@@ -73,6 +73,24 @@ TADPOLE_TEST(TadpoleToken) {
   TESTTK(TK::TK_EOF, "EOF");
   TESTTK(TK::TK_ERR, "ERR");
 
+  {
+    // test for IDENTIFIER
+    TESTTK(TK::TK_IDENTIFIER, "foo");
+    TESTTK(TK::TK_IDENTIFIER, "Foo");
+    TESTTK(TK::TK_IDENTIFIER, "_foo");
+    TESTTK(TK::TK_IDENTIFIER, "_Foo");
+    TESTTK(TK::TK_IDENTIFIER, "__foo");
+    TESTTK(TK::TK_IDENTIFIER, "__Foo");
+    TESTTK(TK::TK_IDENTIFIER, "foo_");
+    TESTTK(TK::TK_IDENTIFIER, "Foo_");
+    TESTTK(TK::TK_IDENTIFIER, "foo__");
+    TESTTK(TK::TK_IDENTIFIER, "Foo__");
+    TESTTK(TK::TK_IDENTIFIER, "__foo__");
+    TESTTK(TK::TK_IDENTIFIER, "__Foo__");
+    TESTTK(TK::TK_IDENTIFIER, "foo1");
+    TESTTK(TK::TK_IDENTIFIER, "Foo1");
+  }
+
 #undef TESTSTR
 #undef TESTTK
 #undef TESTEQ
