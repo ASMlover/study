@@ -45,6 +45,12 @@ TADPOLE_TEST(TadpoleToken) {
     TESTEQ(t.literal(), s);\
     TESTEQ(t.lineno(), 0);\
   } while (false)
+#define TESTNUM(n) do {\
+    auto t = NEWTK2(TK::TK_NUMERIC, #n);\
+    TESTEQ(t.kind(), TK::TK_NUMERIC);\
+    TESTEQ(t.as_numeric(), n);\
+    TESTEQ(t.lineno(), 0);\
+  } while (false)
 #define TESTSTR(s, n) do {\
     auto t = NEWTK3(TK::TK_STRING, s, n);\
     TESTEQ(t.kind(), TK::TK_STRING);\
@@ -91,7 +97,16 @@ TADPOLE_TEST(TadpoleToken) {
     TESTTK(TK::TK_IDENTIFIER, "Foo1");
   }
 
+  {
+    // test for NUMERIC
+    TESTNUM(100);
+    TESTNUM(3.14);
+    TESTNUM(-100);
+    TESTNUM(-3.14);
+  }
+
 #undef TESTSTR
+#undef TESTNUM
 #undef TESTTK
 #undef TESTEQ
 #undef NEWTK3
