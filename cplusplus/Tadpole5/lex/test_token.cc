@@ -105,6 +105,15 @@ TADPOLE_TEST(TadpoleToken) {
     TESTNUM(-3.14);
   }
 
+  {
+    // test for STRING
+    TESTSTR("Hello", 0);
+    TESTSTR("World", 1);
+    TESTSTR("This is String testing", 5);
+    TESTSTR("======================", 78);
+    TESTSTR("STRING testing for Token", 99);
+  }
+
 #undef TESTSTR
 #undef TESTNUM
 #undef TESTTK
