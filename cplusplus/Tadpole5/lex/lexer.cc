@@ -32,3 +32,89 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "lexer.hh"
+
+namespace tadpole {
+
+Token Lexer::next_token() {
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_tail())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (is_alpha(c))
+    return make_identifier();
+  if (is_digit(c))
+    return make_numeric();
+
+  // TODO:
+  return make_error(from_fmt("unexpected character `%c`", c));
+}
+
+void Lexer::skip_whitespace() {
+  // TODO:
+}
+
+Token Lexer::make_token(TokenKind kind) {
+  return Token(kind, gen_literal(begpos_, curpos_), lineno_);
+}
+
+Token Lexer::make_token(TokenKind kind, const str_t& literal) {
+  return Token(kind, literal, lineno_);
+}
+
+Token Lexer::make_error(const str_t& message) {
+  return Token(TokenKind::TK_ERR, message, lineno_);
+}
+
+Token Lexer::make_identifier() {
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(begpos_, curpos_);
+  return make_token(get_keyword_kind(literal), literal);
+}
+
+Token Lexer::make_numeric() {
+  // TODO:
+  return make_token(TokenKind::TK_NUMERIC);
+}
+
+Token Lexer::make_string() {
+#define _MAKE_CHAR(x, y) case x: c = y; advance(); break
+
+  str_t literal;
+  while (!is_tail() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek()) {
+      _MAKE_CHAR('"', '"');
+      _MAKE_CHAR('\\', '\\');
+      _MAKE_CHAR('%', '%');
+      _MAKE_CHAR('0', '\0');
+      _MAKE_CHAR('a', '\a');
+      _MAKE_CHAR('b', '\b');
+      _MAKE_CHAR('f', '\f');
+      _MAKE_CHAR('n', '\n');
+      _MAKE_CHAR('r', '\r');
+      _MAKE_CHAR('t', '\t');
+      _MAKE_CHAR('v', '\v');
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+#undef _MAKE_CHAR
+
+  if (is_tail())
+    return make_error("unterminated string");
+
+  advance();
+  return make_token(TokenKind::TK_STRING, literal);
+}
+
+}
