@@ -53,7 +53,23 @@ Token Lexer::next_token() {
 }
 
 void Lexer::skip_whitespace() {
-  // TODO:
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(); break;
+    case '\n': ++lineno_; advance(); break;
+    case '/':
+      if (peek(1) == '/') {
+        while (peek() != '\n')
+          advance();
+      }
+      else {
+        return;
+      }
+      break;
+    default: return;
+    }
+  }
 }
 
 Token Lexer::make_token(TokenKind kind) {
