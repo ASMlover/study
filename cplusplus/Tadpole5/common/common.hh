@@ -42,6 +42,10 @@
 # define TADPOLE_UNUSED(x) ((void)x)
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+# define TADPOLE_GNUC
+#endif
+
 namespace tadpole {
 
 using nil_t   = std::nullptr_t;
