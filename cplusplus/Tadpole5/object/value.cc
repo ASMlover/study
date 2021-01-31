@@ -35,7 +35,16 @@
 
 namespace tadpole {
 
-bool Value::is_truthy() const { return false; }
+bool Value::is_truthy() const {
+  switch (type_) {
+  case ValueType::NIL: return false;
+  case ValueType::BOOLEAN: return as_.boolean;
+  case ValueType::NUMERIC: return as_.numeric != 0;
+  case ValueType::OBJECT: return as_.object->is_truthy();
+  }
+  return false;
+}
+
 str_t Value::stringify() const { return ""; }
 
 }
