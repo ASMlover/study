@@ -100,6 +100,32 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "fn calc(msg) { print(12 + 45 * 78.23 / 89.11 - 0.67); }";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_FN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_LBRACE);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_PLUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_STAR);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_SLASH);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_MINUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_RBRACE);
+    TESTEQ(TK::TK_EOF);
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 }
