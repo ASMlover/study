@@ -74,6 +74,20 @@ TADPOLE_TEST(TadpoleChunk) {
   c.write(TC::DIV, n);
   ++n;
 
+  // 12 + 34.5 * 9.17 / 24.38 - (53.89 + 69)
+  c.write_constant(69, n);
+  c.write_constant(53.89, n);
+  c.write(TC::ADD, n);
+  c.write_constant(24.38, n);
+  c.write_constant(9.17, n);
+  c.write_constant(34.5, n);
+  c.write(TC::MUL, n);
+  c.write(TC::DIV, n);
+  c.write_constant(12, n);
+  c.write(TC::ADD, n);
+  c.write(TC::SUB, n);
+  ++n;
+
   // return
   c.write(TC::RETURN, n);
 
