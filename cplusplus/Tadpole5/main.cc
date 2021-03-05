@@ -37,7 +37,7 @@
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
-  std::cout << "Hello, Tadpole !!!" << std::endl;
+  std::cout << "Welcome to Tadpole !!!" << std::endl;
 
 #if defined(_TADPOLE_RUN_HARNESS)
   tadpole::harness::run_all_harness();
