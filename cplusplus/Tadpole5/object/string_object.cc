@@ -31,11 +31,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "../common/common.hh"
 #include "../core/vm.hh"
-#include "common/common.hh"
 #include "object_helper.hh"
 #include "string_object.hh"
+#include <cstring>
 #include <stddef.h>
+#include <stdint.h>
 
 namespace tadpole {
 
@@ -48,12 +50,56 @@ inline u32_t string_hash(const char* s, sz_t n) noexcept {
   return hash;
 }
 
-StringObject::StringObject(const char* s, sz_t n, u32_t h, bool move_owner) noexcept {}
-StringObject::~StringObject() {}
-bool StringObject::is_truthy() const override { return false; }
-str_t StringObject::stringify() const override { return data_; }
+StringObject::StringObject(const char* s, sz_t n, u32_t h, bool move_owner) noexcept
+  : BaseObject(ObjType::STRING), size_(n), hash_(h) {
+  if (move_owner) {
+    data_ = const_cast<char*>(s);
+  }
+  else {
+    data_ = new char[size_ + 1];
+    std::memcpy(data_, s, n);
+    data_[size_] = 0;
+  }
+}
 
-StringObject* StringObject::create(VM& vm, const char* s, sz_t n) { return nullptr; }
-StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) { return nullptr; }
+StringObject::~StringObject() {
+  delete [] data_;
+}
+
+bool StringObject::is_truthy() const {
+  return size_ > 0;
+}
+
+str_t StringObject::stringify() const {
+  return data_;
+}
+
+StringObject* StringObject::create(VM& vm, const char* s, sz_t n) {
+  u32_t h = string_hash(s, n);
+  if (auto* o = vm.get_interned(h); o != nullptr)
+    return o;
+
+  auto* o = make_object<StringObject>(vm, s, n, h, false);
+  vm.set_interned(h, o);
+  return o;
+}
+
+StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) {
+  sz_t n = s1->size() + s2->size();
+  char* s = new char[n + 1];
+  std::memcpy(s, s1->data(), s1->size());
+  std::memcpy(s + s1->size(), s2->data(), s2->size());
+  s[n] = 0;
+
+  u32_t h = string_hash(s, n);
+  if (auto* o = vm.get_interned(h); o != nullptr) {
+    delete [] s;
+    return o;
+  }
+
+  auto* o = make_object<StringObject>(vm, s, n, h, true);
+  vm.set_interned(h, o);
+  return o;
+}
 
 }
