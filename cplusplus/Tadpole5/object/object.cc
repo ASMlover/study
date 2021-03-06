@@ -31,12 +31,20 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "../common/common.hh"
 #include "object.hh"
+#include "string_object.hh"
 
 namespace tadpole {
 
-StringObject* BaseObject::as_string() { return nullptr; }
-const char* BaseObject::as_cstring() { return nullptr; }
+StringObject* BaseObject::as_string() {
+  return as_down<StringObject>(this);
+}
+
+const char* BaseObject::as_cstring() {
+  return as_down<StringObject>(this)->cstr();
+}
+
 NativeObject* BaseObject::as_native() { return nullptr; }
 FunctionObject* BaseObject::as_function() { return nullptr; }
 UpvalueObject* BaseObject::as_upvalue() { return nullptr; }
