@@ -45,7 +45,7 @@ enum class ObjType : u8_t {
   CLOSURE,
 };
 
-class VM;
+class GC;
 
 class StringObject;
 class NativeObject;
@@ -66,7 +66,7 @@ public:
 
   virtual bool is_truthy() const { return true; }
   virtual str_t stringify() const { return "<object>"; }
-  virtual void gc_blacken(VM& vm) {}
+  virtual void gc_blacken() {}
 
   StringObject* as_string();
   const char* as_cstring();

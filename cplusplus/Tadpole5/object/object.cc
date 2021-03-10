@@ -34,6 +34,8 @@
 #include "../common/common.hh"
 #include "object.hh"
 #include "string_object.hh"
+#include "native_object.hh"
+#include "function_object.hh"
 
 namespace tadpole {
 
@@ -45,8 +47,14 @@ const char* BaseObject::as_cstring() {
   return as_down<StringObject>(this)->cstr();
 }
 
-NativeObject* BaseObject::as_native() { return nullptr; }
-FunctionObject* BaseObject::as_function() { return nullptr; }
+NativeObject* BaseObject::as_native() {
+  return as_down<NativeObject>(this);
+}
+
+FunctionObject* BaseObject::as_function() {
+  return as_down<FunctionObject>(this);
+}
+
 UpvalueObject* BaseObject::as_upvalue() { return nullptr; }
 ClosureObject* BaseObject::as_closure() { return nullptr; }
 
