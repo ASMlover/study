@@ -31,13 +31,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../common/common.hh"
-#include "../core/vm.hh"
 #include "object_helper.hh"
 #include "string_object.hh"
-#include <cstring>
-#include <stddef.h>
-#include <stdint.h>
 
 namespace tadpole {
 
@@ -74,17 +69,17 @@ str_t StringObject::stringify() const {
   return data_;
 }
 
-StringObject* StringObject::create(VM& vm, const char* s, sz_t n) {
+StringObject* StringObject::create(const char* s, sz_t n) {
   u32_t h = string_hash(s, n);
-  if (auto* o = vm.get_interned(h); o != nullptr)
+  if (auto* o = GC::get_instance().get_interned(h); o != nullptr)
     return o;
 
-  auto* o = make_object<StringObject>(vm, s, n, h, false);
-  vm.set_interned(h, o);
+  auto* o = make_object<StringObject>(s, n, h, false);
+  GC::get_instance().set_interned(h, o);
   return o;
 }
 
-StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) {
+StringObject* StringObject::concat(StringObject* s1, StringObject* s2) {
   sz_t n = s1->size() + s2->size();
   char* s = new char[n + 1];
   std::memcpy(s, s1->data(), s1->size());
@@ -92,13 +87,13 @@ StringObject* StringObject::concat(VM& vm, StringObject* s1, StringObject* s2) {
   s[n] = 0;
 
   u32_t h = string_hash(s, n);
-  if (auto* o = vm.get_interned(h); o != nullptr) {
+  if (auto* o = GC::get_instance().get_interned(h); o != nullptr) {
     delete [] s;
     return o;
   }
 
-  auto* o = make_object<StringObject>(vm, s, n, h, true);
-  vm.set_interned(h, o);
+  auto* o = make_object<StringObject>(s, n, h, true);
+  GC::get_instance().set_interned(h, o);
   return o;
 }
 

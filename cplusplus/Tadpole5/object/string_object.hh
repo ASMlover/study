@@ -52,19 +52,19 @@ public:
   virtual bool is_truthy() const override;
   virtual str_t stringify() const override;
 
-  static StringObject* create(VM& vm, const char* s, sz_t n);
-  static StringObject* concat(VM& vm, StringObject* s1, StringObject* s2);
+  static StringObject* create(const char* s, sz_t n);
+  static StringObject* concat(StringObject* s1, StringObject* s2);
 
-  template <typename N> static StringObject* create(VM& vm, const char* s, N n) {
-    return create(vm, s, as_type<sz_t>(n));
+  template <typename N> static StringObject* create(const char* s, N n) {
+    return create(s, as_type<sz_t>(n));
   }
 
-  static StringObject* create(VM& vm, const str_t& s) {
-    return create(vm, s.data(), s.size());
+  static StringObject* create(const str_t& s) {
+    return create(s.data(), s.size());
   }
 
-  static StringObject* create(VM& vm, strv_t s) {
-    return create(vm, s.data(), s.size());
+  static StringObject* create(strv_t s) {
+    return create(s.data(), s.size());
   }
 };
 
