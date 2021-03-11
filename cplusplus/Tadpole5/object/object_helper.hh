@@ -34,14 +34,14 @@
 #pragma once
 
 #include "object.hh"
-// #include "../core/vm.hh"
+#include "../core/gc.hh"
 
 namespace tadpole {
 
 template <typename Obj, typename... Args>
-inline Obj* make_object(VM& vm, Args&&... args) noexcept {
+inline Obj* make_object(Args&&... args) noexcept {
   Obj* o = new Obj(std::forward<Args>(args)...);
-  vm.append_object(o);
+  GC::get_instance().append_object(o);
   return o;
 }
 
