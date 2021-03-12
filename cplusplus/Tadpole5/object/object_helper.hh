@@ -34,7 +34,7 @@
 #pragma once
 
 #include "object.hh"
-#include "../core/gc.hh"
+#include "../gc/gc.hh"
 
 namespace tadpole {
 
