@@ -101,7 +101,7 @@ public:
   str_t stringify() const;
 };
 
-using TadpoleCFun = std::function<void (sz_t nargs, Value* args)>;
+using TadpoleCFun = std::function<Value (sz_t nargs, Value* args)>;
 
 inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
   return out << val.stringify();
