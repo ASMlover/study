@@ -35,6 +35,9 @@
 
 #include "../common/common.hh"
 #include "../object/object.hh"
+#include "../object/function_object.hh"
+#include "../object/closure_object.hh"
+#include "chunk.hh"
 
 namespace tadpole {
 
@@ -47,6 +50,15 @@ public:
   CallFrame(ClosureObject* c, const u8_t* i, sz_t begpos = 0) noexcept
     : closure_(c), ip_(i), stack_begpos_(begpos) {
   }
+
+  inline ClosureObject* closure() const noexcept { return closure_; }
+  inline FunctionObject* frame_fn() const noexcept { return closure_->fn(); }
+  inline Chunk* frame_chunk() const noexcept { return frame_fn()->chunk(); }
+  inline const u8_t* ip() const noexcept { return ip_; }
+  inline u8_t get_ip(sz_t i) const noexcept { return ip_[i]; }
+  inline u8_t inc_ip() noexcept { return *ip_++; }
+  inline u8_t dec_ip() noexcept { return *ip_--; }
+  inline sz_t stack_begpos() const noexcept { return stack_begpos_; }
 };
 
 }
