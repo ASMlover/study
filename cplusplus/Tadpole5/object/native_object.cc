@@ -31,6 +31,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "../core/vm.hh"
-#include "object_helper.hh"
+#include "../gc/gc.hh"
 #include "native_object.hh"
+
+namespace tadpole {
+
+str_t NativeObject::stringify() const {
+  ss_t ss;
+  ss << "<native function at `" << this << "`>";
+  return ss.str();
+}
+
+NativeObject* NativeObject::create(TadpoleCFun&& fn) {
+  return make_object<NativeObject>(std::move(fn));
+}
+
+}

@@ -46,7 +46,7 @@ public:
 
   virtual str_t stringify() const override;
 
-  static NativeObject* create(VM& vm, TadpoleCFun&& fn);
+  static NativeObject* create(TadpoleCFun&& fn);
 };
 
 }
