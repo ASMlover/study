@@ -43,6 +43,7 @@ class NativeObject final : public BaseObject {
 public:
   NativeObject(TadpoleCFun&& fn) noexcept : BaseObject(ObjType::NATIVE), fn_(std::move(fn)) {}
   inline const TadpoleCFun& fn() const noexcept { return fn_; }
+  inline Value call(sz_t nargs, Value* args) noexcept { return fn_(nargs, args); }
 
   virtual str_t stringify() const override;
 
