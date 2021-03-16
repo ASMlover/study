@@ -34,9 +34,9 @@
 #pragma once
 
 #include "../common/common.hh"
-#include "../object/object.hh"
 #include "../object/function_object.hh"
 #include "../object/closure_object.hh"
+#include "../gc/gc.hh"
 #include "chunk.hh"
 
 namespace tadpole {
@@ -59,6 +59,7 @@ public:
   inline u8_t inc_ip() noexcept { return *ip_++; }
   inline u8_t dec_ip() noexcept { return *ip_--; }
   inline sz_t stack_begpos() const noexcept { return stack_begpos_; }
+  inline void mark_callframe() noexcept { GC::get_instance().mark_object(closure_); }
 };
 
 }
