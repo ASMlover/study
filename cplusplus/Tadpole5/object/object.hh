@@ -33,6 +33,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include "../common/common.hh"
 
 namespace tadpole {
@@ -47,13 +48,24 @@ enum class ObjType : u8_t {
 
 class GC;
 
+class BaseObject;
 class StringObject;
 class NativeObject;
 class FunctionObject;
 class UpvalueObject;
 class ClosureObject;
 
-class BaseObject : private UnCopyable {
+using ObjectVisitor = std::function<void (BaseObject*)>;
+
+class ObjectTraverser : private UnCopyable {
+public:
+  virtual ~ObjectTraverser() noexcept {}
+
+  virtual void iterObjects(ObjectVisitor&& visitor) {}
+  virtual void iterChildren(ObjectVisitor&& visitor) {}
+};
+
+class BaseObject : public ObjectTraverser {
   ObjType type_;
   bool marked_{};
 public:
