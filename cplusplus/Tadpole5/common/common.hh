@@ -83,6 +83,9 @@ protected:
   ~UnCopyable() noexcept = default;
 };
 
+class _Safe {};
+class _Unsafe {};
+
 template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
 }
