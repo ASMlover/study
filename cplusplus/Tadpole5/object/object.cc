@@ -36,6 +36,8 @@
 #include "string_object.hh"
 #include "native_object.hh"
 #include "function_object.hh"
+#include "upvalue_object.hh"
+#include "closure_object.hh"
 
 namespace tadpole {
 
@@ -55,7 +57,12 @@ FunctionObject* BaseObject::as_function() {
   return as_down<FunctionObject>(this);
 }
 
-UpvalueObject* BaseObject::as_upvalue() { return nullptr; }
-ClosureObject* BaseObject::as_closure() { return nullptr; }
+UpvalueObject* BaseObject::as_upvalue() {
+  return as_down<UpvalueObject>(this);
+}
+
+ClosureObject* BaseObject::as_closure() {
+  return as_down<ClosureObject>(this);
+}
 
 }
