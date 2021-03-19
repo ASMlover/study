@@ -35,14 +35,19 @@
 
 #include <functional>
 #include <unordered_map>
+#include <vector>
 #include "../object/value.hh"
+#include "../object/string_object.hh"
 
 namespace tadpole {
 
 using MarkCallback = std::function<void ()>;
 
 class BaseGC : private UnCopyable {
-  std::unordered_map<str_t, MarkCallback> custom_marks_;
+  using _Traverser      = std::pair<str_t, ObjectTraverser*>;
+  using _TraverserList  = std::vector<_Traverser>;
+protected:
+  _TraverserList roots_;
   std::unordered_map<u32_t, StringObject*> interned_strings_;
 public:
   virtual ~BaseGC() {
@@ -52,15 +57,9 @@ public:
   virtual void collect() {}
   virtual void append_object(BaseObject* o) {}
   virtual void mark_object(BaseObject* o) {}
-  virtual void mark_object(Value& v) {}
 
-  inline void reg_custom_mark(const str_t& name, MarkCallback&& mark) noexcept {
-    custom_marks_[name] = std::move(mark);
-  }
-
-  inline void unreg_custom_mark(const str_t& name) noexcept {
-    if (auto it = custom_marks_.find(name); it != custom_marks_.end())
-      custom_marks_.erase(it);
+  inline void append_roots(const str_t& name, ObjectTraverser* root) noexcept {
+    roots_.push_back({name, root});
   }
 
   inline void set_interned(u32_t h, StringObject* s) noexcept {
