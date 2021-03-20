@@ -61,8 +61,8 @@ class ObjectTraverser : private UnCopyable {
 public:
   virtual ~ObjectTraverser() noexcept {}
 
-  virtual void iterObjects(ObjectVisitor&& visitor) {}
-  virtual void iterChildren(ObjectVisitor&& visitor) {}
+  virtual void iter_objects(ObjectVisitor&& visitor) {}
+  virtual void iter_children(ObjectVisitor&& visitor) {}
 };
 
 class BaseObject : public ObjectTraverser {
