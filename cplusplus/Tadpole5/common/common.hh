@@ -104,6 +104,10 @@ inline str_t as_string(double d) noexcept {
   return ss.str();
 }
 
+inline sz_t as_align(sz_t bytes, sz_t align = 8) noexcept {
+  return (bytes + align - 1) & ~(align - 1);
+}
+
 template <typename T, typename... Args>
 inline str_t as_string(T&& x, Args&&... args) noexcept {
   ss_t ss;
