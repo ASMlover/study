@@ -59,7 +59,6 @@ public:
   inline u8_t inc_ip() noexcept { return *ip_++; }
   inline u8_t dec_ip() noexcept { return *ip_--; }
   inline sz_t stack_begpos() const noexcept { return stack_begpos_; }
-  inline void mark_callframe() noexcept { GC::get_instance().mark_object(closure_); }
 };
 
 }
