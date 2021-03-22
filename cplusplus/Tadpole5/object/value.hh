@@ -88,7 +88,8 @@ public:
   inline bool is_closure() const noexcept { return is(ObjType::CLOSURE); }
 
   inline bool as_boolean() const noexcept { return as_.boolean; }
-  inline bool as_numeric() const noexcept { return as_.numeric; }
+  inline double as_numeric() const noexcept { return as_.numeric; }
+  template <typename T> inline T as_integer() const noexcept { return as_type<T>(as_.numeric); }
   inline BaseObject* as_object() const noexcept { return as_.object; }
   inline StringObject* as_string() const noexcept { return as_.object->as_string(); }
   inline const char* as_cstring() const noexcept { return as_.object->as_cstring(); }
