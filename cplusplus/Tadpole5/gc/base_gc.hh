@@ -57,6 +57,8 @@ public:
   virtual void collect() {}
   virtual void append_object(BaseObject* o) {}
   virtual void mark_object(BaseObject* o) {}
+  virtual sz_t get_threshold() const { return 0; }
+  virtual void set_threshold(sz_t threshold) {}
 
   inline void append_roots(const str_t& name, ObjectTraverser* root) noexcept {
     roots_.push_back({name, root});
