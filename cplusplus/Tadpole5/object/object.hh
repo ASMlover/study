@@ -46,8 +46,6 @@ enum class ObjType : u8_t {
   CLOSURE,
 };
 
-class GC;
-
 class BaseObject;
 class StringObject;
 class NativeObject;
@@ -60,12 +58,16 @@ using ObjectVisitor = std::function<void (BaseObject*)>;
 class ObjectTraverser : private UnCopyable {
 public:
   virtual ~ObjectTraverser() noexcept {}
-
-  virtual void iter_objects(ObjectVisitor&& visitor) {}
-  virtual void iter_children(ObjectVisitor&& visitor) {}
+  virtual void iter_objects(ObjectVisitor&& visitor) = 0;
 };
 
-class BaseObject : public ObjectTraverser {
+class ChildrenTraverser : private UnCopyable {
+public:
+  virtual ~ChildrenTraverser() noexcept {}
+  virtual void iter_children(ObjectVisitor&& visitor) = 0;
+};
+
+class BaseObject : public ChildrenTraverser {
   ObjType type_;
   bool marked_{};
 public:
@@ -78,7 +80,7 @@ public:
 
   virtual bool is_truthy() const { return true; }
   virtual str_t stringify() const { return "<object>"; }
-  virtual void gc_blacken() {}
+  virtual void iter_children(ObjectVisitor&& visitor) override {}
 
   StringObject* as_string();
   const char* as_cstring();
