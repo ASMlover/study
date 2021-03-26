@@ -34,6 +34,7 @@
 #include <chrono>
 #include <iostream>
 #include "../core/vm.hh"
+#include "../gc/gc.hh"
 #include "builtins.hh"
 
 namespace tadpole {
@@ -46,6 +47,52 @@ void register_builtins(VM& vm) {
         std::cout << std::endl;
 
         return nullptr;
+      });
+
+  // fn exit() -> nil
+  vm.define_native("exit", [&vm](sz_t, Value*) -> Value {
+        vm.terminate();
+        return nullptr;
+      });
+
+  // fn time() -> numeric
+  //
+  // @returns
+  //  timestamp: numerics -> unit is seconds
+  vm.define_native("time", [](sz_t, Value*) -> Value {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+      });
+
+  // fn clock() -> numeric
+  //
+  // @returns
+  //  clock: numeric -> unit is us
+  vm.define_native("clock", [](sz_t, Value*) -> Value {
+        return std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+      });
+
+  // fn get_threshold() -> numeric
+  //
+  // @returns
+  //  gc_threshold: numeric -> numeric of gc threshold
+  vm.define_native("get_threshold", [](sz_t, Value*) -> Value {
+        return GC::get_instance().get_threshold();
+      });
+
+  // fn set_threshold(gc_threshold: numeric) -> boolean
+  //
+  // @args
+  //  gc_threshold: numeric -> numeric of gc threshold
+  // @returns
+  //  result: boolean -> return `true` if ok, otherwise return `false`
+  vm.define_native("set_threshold", [](sz_t nargs, Value* args) -> Value {
+        if (nargs == 1 && args != nullptr && args[0].is_numeric()) {
+          GC::get_instance().set_threshold(args[0].as_integer<sz_t>());
+          return true;
+        }
+        return false;
       });
 }
 
