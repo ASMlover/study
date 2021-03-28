@@ -33,7 +33,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cmake_minimum_required(VERSION 3.14)
-project(tadpole CXX)
+project(TadpolePROJ CXX)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -43,6 +43,7 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 option(TADPOLE_RUN_HARNESS "Enable/Disable run test harness" OFF)
 option(TADPOLE_DEBUG_GC "Enable/Disable gc debug information" OFF)
 option(TADPOLE_DEBUG_VM "Enable/Disable vm debug information" OFF)
+option(TADPOLE_BUILD_REFER "Enable/Disable build `refer`" OFF)
 
 if (TADPOLE_RUN_HARNESS)
   add_compile_options(-D_TADPOLE_RUN_HARNESS)
@@ -94,14 +95,9 @@ macro(source_group_by_dir source_files)
   endforeach()
 endmacro()
 
-file(GLOB_RECURSE TADPOLE_SOURCES *.hh *.cc)
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  source_group_by_dir(TADPOLE_SOURCES)
-endif()
-message(STATUS "Scanning `${PROJECT_NAME}`:")
-foreach(_TADPOLE_REALPATH IN LISTS TADPOLE_SOURCES)
-  file(RELATIVE_PATH _TADPOLE_FILE ${CMAKE_CURRENT_SOURCE_DIR} ${_TADPOLE_REALPATH})
-  message(STATUS "Scanning CXX File `${PROJECT_NAME}`: ${_TADPOLE_FILE}")
-endforeach()
+include_directories(${PROJECT_SOURCE_DIR})
 
-add_executable(${PROJECT_NAME} ${TADPOLE_SOURCES})
+add_subdirectory(tadpole)
+if (TADPOLE_BUILD_REFER)
+  add_subdirectory(refer)
+endif()
