@@ -31,7 +31,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fstream>
 #include "common/harness.hh"
+#include "core/vm.hh"
+
+static void eval(tadpole::VM& vm, const std::string& source_bytes) {
+  tadpole::InterpretRet r = vm.interpret(source_bytes);
+  if (r == tadpole::InterpretRet::ECOMPILE)
+    std::exit(-2);
+  if (r == tadpole::InterpretRet::ERUNTIME)
+    std::exit(-1);
+}
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
@@ -41,6 +51,34 @@ int main(int argc, char* argv[]) {
 #if defined(_TADPOLE_RUN_HARNESS)
   tadpole::harness::run_all_harness();
 #endif
+
+  tadpole::VM vm;
+  if (argc < 2) {
+    std::string line;
+    for (;;) {
+      if (!vm.is_running())
+        break;
+
+      std::cout << ">>> ";
+      if (!std::getline(std::cin, line))
+        break;
+
+      eval(vm, line);
+    }
+  }
+  else {
+    std::fstream fp(argv[1]);
+    if (fp.is_open()) {
+      std::stringstream ss;
+      ss << fp.rdbuf();
+
+      eval(vm, ss.str());
+    }
+    else {
+      std::cerr << "ERROR: LOAD `" << argv[1] << "` FAILED !!!" << std::endl;
+      std::exit(-1);
+    }
+  }
 
   return 0;
 }
