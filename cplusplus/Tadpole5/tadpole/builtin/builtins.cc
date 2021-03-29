@@ -73,26 +73,29 @@ void register_builtins(VM& vm) {
             std::chrono::steady_clock::now().time_since_epoch()).count();
       });
 
-  // fn get_threshold() -> numeric
+  // fn gc_threshold() -> numeric
   //
   // @returns
-  //  gc_threshold: numeric -> numeric of gc threshold
-  vm.define_native("get_threshold", [](sz_t, Value*) -> Value {
+  //  threshold: numeric -> current number of gc threshold
+  //
+  //
+  // fn gc_threshold(threshold: numeric) -> numeric
+  //
+  // @args
+  //  threshold: numeric -> number of gc threshold
+  //
+  // @returns
+  //  gc_threshold: numeric -> current numeric of gc threshold
+  vm.define_native("gc_threshold", [](sz_t nargs, Value* args) -> Value {
+        if (nargs == 1 && args != nullptr && args[0].as_numeric())
+          GC::get_instance().set_threshold(args[0].as_integer<sz_t>());
         return GC::get_instance().get_threshold();
       });
 
-  // fn set_threshold(gc_threshold: numeric) -> boolean
-  //
-  // @args
-  //  gc_threshold: numeric -> numeric of gc threshold
-  // @returns
-  //  result: boolean -> return `true` if ok, otherwise return `false`
-  vm.define_native("set_threshold", [](sz_t nargs, Value* args) -> Value {
-        if (nargs == 1 && args != nullptr && args[0].is_numeric()) {
-          GC::get_instance().set_threshold(args[0].as_integer<sz_t>());
-          return true;
-        }
-        return false;
+  // fn gc_collect() -> nil
+  vm.define_native("gc_collect", [](sz_t, Value*) -> Value {
+        GC::get_instance().collect();
+        return nullptr;
       });
 }
 
