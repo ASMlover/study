@@ -31,6 +31,17 @@
 
 namespace tadpole {
 
+const char* BaseObject::type_asstr() const noexcept {
+  switch (type_) {
+  case ObjType::STRING: return "<STRING>";
+  case ObjType::NATIVE: return "<NATIVE>";
+  case ObjType::FUNCTION: return "<FUNCTION>";
+  case ObjType::UPVALUE: return "<UPVALUE>";
+  case ObjType::CLOSURE: return "<CLOSURE>";
+  }
+  return "<UNKNOWN>";
+}
+
 StringObject* BaseObject::as_string() {
   return as_down<StringObject>(this);
 }

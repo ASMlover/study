@@ -158,7 +158,7 @@ void VM::collect() {
 
 void VM::reclaim_object(BaseObject* o) {
 #if defined(_TADPOLE_DEBUG_GC)
-  std::cout << "[" << o << "] reclaim object: `" << o->stringify() << "`" << std::endl;
+  std::cout << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`" << std::endl;
 #endif
 
   delete o;

@@ -76,7 +76,6 @@ class VM final : private UnCopyable {
 
   InterpretRet run();
 
-  void collect();
   void reclaim_object(BaseObject* o);
 public:
   VM() noexcept;
@@ -87,6 +86,7 @@ public:
   void append_object(BaseObject* o);
   void mark_object(BaseObject* o);
   void mark_value(const Value& v);
+  void collect();
 
   InterpretRet interpret(const str_t& source_bytes);
 
