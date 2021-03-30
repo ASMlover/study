@@ -49,18 +49,26 @@ void register_builtins(VM& vm) {
     });
 
   // fn time() -> numeric
-  //  UNIT: s
+  //
+  // @unit: s
   vm.define_native("time", [](sz_t, Value*) -> Value {
       return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
     });
 
   // fn clock() -> numeric
-  //  UNIT: us
+  //
+  // @unit: us
   vm.define_native("clock", [](sz_t, Value*) -> Value {
       return std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
     });
+
+  // fn gc_collect() -> nil
+  vm.define_native("gc_collect", [&vm](sz_t, Value*) -> Value {
+        vm.collect();
+        return nullptr;
+      });
 }
 
 }

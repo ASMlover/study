@@ -27,6 +27,8 @@
 #pragma once
 
 #include <cstdint>
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -93,7 +95,7 @@ inline T* get_rawptr(const std::shared_ptr<T>& p) noexcept {
 
 inline str_t as_string(double d) noexcept {
   ss_t ss;
-  ss << d;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
   return ss.str();
 }
 
