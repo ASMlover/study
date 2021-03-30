@@ -1,12 +1,3 @@
-```
- _____         _             _
-|_   _|_ _  __| |_ __   ___ | | ___
-  | |/ _` |/ _` | '_ \ / _ \| |/ _ \
-  | | (_| | (_| | |_) | (_) | |  __/
-  |_|\__,_|\__,_| .__/ \___/|_|\___|
-                |_|
-```
-
 ## **Syntax Grammar**
 ```
 program     -> declaration* EOF ;
@@ -28,9 +19,13 @@ primary     -> NUMERIC | STRING | IDENTIFIER | "nil" | "true" | "false" | "(" ex
 ```
 
 ## **Keywords**
-```
-false fn nil true var
-```
+| **A - Z** |
+| :-------- |
+| false     |
+| fn        |
+| nil       |
+| true      |
+| var       |
 
 ## **Operators**
 | assignment | arithmetic |
