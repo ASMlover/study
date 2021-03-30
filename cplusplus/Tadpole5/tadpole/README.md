@@ -28,7 +28,7 @@ false fn nil true var
 
 ## **Operators**
 | assignment | arithmetic |
-| ---------- | ---------- |
+| :--------: | :--------: |
 |    a = b   |   a + b    |
 |            |   a - b    |
 |            |   a * b    |
