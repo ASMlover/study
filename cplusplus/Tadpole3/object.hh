@@ -61,6 +61,7 @@ public:
   virtual str_t stringify() const { return "<object>"; }
   virtual void gc_blacken(VM& vm) {}
 
+  const char* type_asstr() const noexcept;
   StringObject* as_string();
   const char* as_cstring();
   NativeObject* as_native();
