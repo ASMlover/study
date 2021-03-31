@@ -44,10 +44,23 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 else()
   add_definitions(
-    -Wno-unused-function)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++1z -static-libgcc -static-libstdc++ -march=native")
+    -Wno-unused-function
+    -Wno-switch
+    -Wno-non-pod-varargs
+    -Wno-unused-variable)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++2a -march=native")
   set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
+
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_definitions(
+      -Wno-unused-private-field)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  else()
+    add_definitions(
+      -Wno-format-truncation)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+  endif()
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
