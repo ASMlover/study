@@ -1169,7 +1169,7 @@ void WrenVM::free_object(BaseObject* obj) {
   std::cout
     << "`" << Xt::cast<void>(obj) << "` free object"
 # if TRACE_OBJECT_DETAIL
-    << " `" << obj->stringify() << "`"
+    << " type: `" << obj->type_asstr() << "`"
 # endif
     << std::endl;
 #endif

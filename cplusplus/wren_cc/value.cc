@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cmath>
 #include <cstdarg>
 #include <sstream>
 #include "vm.hh"
@@ -58,6 +59,24 @@ inline u32_t hash_numeric(double num) {
   DoubleBits bits;
   bits.num = num;
   return hash_bits(bits.b64);
+}
+
+str_t BaseObject::type_asstr() const {
+  switch (type_) {
+  case ObjType::STRING: return "<STRING>";
+  case ObjType::LIST: return "<LIST>";
+  case ObjType::RANGE: return "<RANGE>";
+  case ObjType::MAP: return "<MAP>";
+  case ObjType::MODULE: return "<MODULE>";
+  case ObjType::FUNCTION: return "<FUNCTION>";
+  case ObjType::FOREIGN: return "<FOREIGN>";
+  case ObjType::UPVALUE: return "<UPVALUE>";
+  case ObjType::CLOSURE: return "<CLOSURE>";
+  case ObjType::FIBER: return "<FIBER>";
+  case ObjType::CLASS: return "<CLASS>";
+  case ObjType::INSTANCE: return "<INSTANCE>";
+  }
+  return "<UNKNOWN>";
 }
 
 std::ostream& operator<<(std::ostream& out, const Value& val) {

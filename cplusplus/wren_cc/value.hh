@@ -96,6 +96,8 @@ public:
   inline ClassObject* cls(void) const { return cls_; }
   inline void set_cls(ClassObject* cls) { cls_ = cls; }
 
+  str_t type_asstr() const;
+
   virtual bool is_equal(BaseObject* r) const { return false; }
   virtual str_t stringify(void) const { return "<object>"; }
   virtual void gc_blacken(WrenVM& vm) {}
