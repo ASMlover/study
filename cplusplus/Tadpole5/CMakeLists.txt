@@ -99,5 +99,5 @@ include_directories(${PROJECT_SOURCE_DIR})
 
 add_subdirectory(tadpole)
 if (TADPOLE_BUILD_REFER)
-  add_subdirectory(refer)
+  add_subdirectory(refer/mark_sweep)
 endif()
