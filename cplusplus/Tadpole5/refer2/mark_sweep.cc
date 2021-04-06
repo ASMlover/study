@@ -35,3 +35,56 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "mark_sweep.hh"
+
+namespace tadpole::gc {
+
+
+MarkSweep::MarkSweep() noexcept {
+  heapptr_ = new byte_t[kHeapSize];
+
+  freelist_ = new (heapptr_) MemoryHeader(MemoryTag::MEMORY, kHeapSize, nullptr);
+}
+
+MarkSweep::~MarkSweep() noexcept {
+  delete [] heapptr_;
+}
+
+void* MarkSweep::alloc(sz_t n) {
+  MemoryHeader* prev = freelist_;
+
+  for (auto* p = prev->next(); ; prev = p, p = p->next()) {
+    bool is_first = false;
+    if (p == nullptr) {
+      p = freelist_;
+      is_first = true;
+    }
+
+    sz_t freesize = p->size();
+    if (freesize >= n) {
+      MemoryHeader* r = p;
+      if (freesize == n || freesize - n < kHeaderSize) {
+        if (is_first)
+          p = freelist_ = freelist_->next();
+        else
+          prev->set_next(p->next());
+      }
+      else {
+        p = as_ptr<MemoryHeader>(as_ptr<byte_t>(p) + n);
+        p->set_tag(MemoryTag::MEMORY);
+        p->set_size(freesize - n);
+        p->set_next(r->next());
+
+        r->set_size(n);
+      }
+
+      return r;
+    }
+
+    if (p == nullptr)
+      break;
+  }
+
+  return nullptr;
+}
+
+}
