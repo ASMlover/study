@@ -41,19 +41,16 @@
 
 namespace tadpole::gc {
 
-class MemoryChunk final : public MemoryHeader, private UnCopyable {
-  sz_t size_{};
-public:
-  MemoryChunk(sz_t n) noexcept : MemoryHeader(MemoryTag::MEMORY), size_(n) {}
-
-  inline sz_t set_size(sz_t n) noexcept { return size_ = n, size_; }
-  inline sz_t inc_size(sz_t n) noexcept { return size_ += n, size_; }
-  inline sz_t dec_size(sz_t n) noexcept { return size_ -= n, size_; }
-
-  virtual sz_t get_size() const override { return size_; }
-};
-
 class MarkSweep final : private UnCopyable {
+  static constexpr sz_t kHeapSize = 512 << 10;
+
+  byte_t* heapptr_{};
+  MemoryHeader* freelist_;
+
+  void* alloc(sz_t n);
+public:
+  MarkSweep() noexcept;
+  ~MarkSweep() noexcept;
 };
 
 }

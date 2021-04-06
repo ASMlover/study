@@ -46,20 +46,24 @@ enum ObjType : u8_t {
   PAIR,
 };
 
-class BaseObject : public MemoryHeader, private UnCopyable {
+class BaseObject : private UnCopyable {
   ObjType type_;
-  bool marked_{};
 public:
-  BaseObject(ObjType type) noexcept
-    : MemoryHeader(MemoryTag::OBJECT), type_(type) {
+  BaseObject(ObjType type) noexcept : type_(type) {
+    as_memory(this)->set_as_object();
   }
   virtual ~BaseObject() {}
 
   inline ObjType type() const noexcept { return type_; }
-  inline bool is_marked() const noexcept { return marked_; }
-  inline void set_marked(bool marked = true) noexcept { marked_ = marked; }
+  inline bool is_marked() const noexcept { return as_memory(this)->is_marked(); }
+  inline void set_marked(bool marked = true) noexcept {
+    if (marked)
+      as_memory<BaseObject>(this)->set_marked();
+    else
+      as_memory<BaseObject>(this)->unset_marked();
+  }
 
-  virtual sz_t get_size() const override { return sizeof(*this); }
+  virtual sz_t get_size() const { return get_objsize<BaseObject>(); }
   virtual const char* get_name() const { return "<object>"; }
 
   inline const char* type_asstr() const noexcept {
@@ -81,7 +85,7 @@ public:
   inline int value() const noexcept { return value_; }
   inline void set_value(int value) noexcept { value_ = value; }
 
-  virtual sz_t get_size() const override { return sizeof(*this); }
+  virtual sz_t get_size() const override { return get_objsize<IntObject>(); }
   virtual const char* get_name() const override { return "<int>"; }
 };
 
@@ -98,7 +102,7 @@ public:
   inline BaseObject* second() const noexcept { return second_; }
   inline void set_second(BaseObject* second = nullptr) noexcept { second_ = second; }
 
-  virtual sz_t get_size() const override { return sizeof(*this); }
+  virtual sz_t get_size() const override { return get_objsize<PairObject>(); }
   virtual const char* get_name() const override { return "<pair>"; }
 };
 
