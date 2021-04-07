@@ -35,41 +35,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.14)
-project(refer2 CXX)
+set(GC_OUTPUTNAME "gc_marksweep")
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
-endif()
-message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+file(GLOB_RECURSE GC_MARKSWEEP_SOURCES *.hh *.cc)
+message(STATUS "`${GC_OUTPUTNAME}` GC_MARKSWEEP_SOURCES: ${GC_MARKSWEEP_SOURCES}")
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  add_definitions(
-    /DUNICODE
-    /D_UNICODE
-    /D_CRT_SECURE_NO_WARNINGS
-    /D_CRT_NONSTDC_NO_WARNINGS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /GF /GS /Gs /Zi /EHsc /std:c++latest /await")
-  set(CMAKE_CXX_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
-  set(CMAKE_CXX_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
-else()
-  add_definitions(
-    -Wno-switch)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -Wall -Werror -march=native")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -O0")
-  set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG -O3")
-
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_definitions(
-      -Wno-unused-private-field)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-  else()
-    add_definitions(
-      -Wno-format-truncation)
-  endif()
-endif()
-string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
-message(STATUS "`${PROJECT_NAME}` CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${BUILD_TYPE}}")
-
-add_subdirectory(mark_sweep)
-add_subdirectory(semispace)
+add_executable(${GC_OUTPUTNAME} ${GC_MARKSWEEP_SOURCES})
