@@ -56,8 +56,10 @@ void* SemispaceCopy::alloc(sz_t n) {
   if (freeptr_ + n > tospace_ + kSemispaceSize) {
     collect();
 
-    if (freeptr_ + n > tospace_ + kSemispaceSize)
-      throw std::runtime_error("[SemispaceCopy] out of memory ...");
+    if (freeptr_ + n > tospace_ + kSemispaceSize) {
+      throw std::logic_error("[SemispaceCopy.alloc] out of memory ...");
+      std::exit(-1);
+    }
   }
 
   auto* p = freeptr_;
@@ -71,16 +73,21 @@ void SemispaceCopy::flip() {
 }
 
 BaseObject* SemispaceCopy::copy(BaseObject* ref) {
-  if (ref && ref->forwarding() != nullptr) {
+  if (ref && ref->forwarding() == nullptr) {
     BaseObject* to_ref = forward(ref);
 
     for (BaseObject** o : to_ref->pointers())
       *o = copy(*o);
   }
-  return ref->forwarding();
+  return ref ? ref->forwarding() : nullptr;
 }
 
 BaseObject* SemispaceCopy::forward(BaseObject* from_ref) {
+  if (freeptr_ + from_ref->get_size() > tospace_ + kSemispaceSize) {
+    throw std::logic_error("[SemispaceCopy.forward] out of memory ...");
+    std::exit(-1);
+  }
+
   auto* p = freeptr_;
   freeptr_ += from_ref->get_size();
 

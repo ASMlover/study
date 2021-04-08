@@ -35,12 +35,15 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <cstdlib>
 #include "common.hh"
 #include "object.hh"
 #include "semispace_copy.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+  using gc = tadpole::gc::SemispaceCopy;
 
   int kCount = 1000;
   int kReleaseCount = 20;
@@ -49,19 +52,22 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < kCount; ++i) {
     for (int j = 0; j < kCreateCount; ++j) {
       if ((j + 1) % 3 == 0) {
-        auto* second = tadpole::gc::SemispaceCopy::get_instance().fetch_object();
-        auto* first = tadpole::gc::SemispaceCopy::get_instance().fetch_object();
-        tadpole::gc::SemispaceCopy::get_instance().create_object<tadpole::gc::PairObject>(first, second);
+        auto* second = gc::get_instance().fetch_object();
+        auto* first = gc::get_instance().fetch_object();
+        gc::get_instance().create_object<tadpole::gc::PairObject>(first, second);
       }
       else {
-        tadpole::gc::SemispaceCopy::get_instance().create_object<tadpole::gc::IntObject>(i * j);
+        gc::get_instance().create_object<tadpole::gc::IntObject>(i * j);
       }
     }
 
-    for (int j = 0; j < kReleaseCount - 10; ++j)
-      tadpole::gc::SemispaceCopy::get_instance().fetch_object();
+    std::srand((unsigned int)std::time(nullptr));
+    for (int j = 0; j < kReleaseCount; ++j) {
+      if (std::rand() % 2)
+        gc::get_instance().fetch_object();
+    }
   }
-  tadpole::gc::SemispaceCopy::get_instance().collect();
+  gc::get_instance().collect();
 
   return 0;
 }
