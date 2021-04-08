@@ -35,11 +35,12 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <exception>
-#include "semispace.hh"
+#include <iostream>
+#include "semispace_copy.hh"
 
 namespace tadpole::gc {
 
-Semispace::Semispace() noexcept {
+SemispaceCopy::SemispaceCopy() noexcept {
   heapptr_ = new byte_t[kSemispaceSize * 2];
 
   fromspace_ = heapptr_ + kSemispaceSize;
@@ -47,16 +48,16 @@ Semispace::Semispace() noexcept {
   freeptr_ = tospace_;
 }
 
-Semispace::~Semispace() noexcept {
+SemispaceCopy::~SemispaceCopy() noexcept {
   delete [] heapptr_;
 }
 
-void* Semispace::alloc(sz_t n) {
+void* SemispaceCopy::alloc(sz_t n) {
   if (freeptr_ + n > tospace_ + kSemispaceSize) {
     collect();
 
     if (freeptr_ + n > tospace_ + kSemispaceSize)
-      throw std::runtime_error("[Semispace] out of memory ...");
+      throw std::runtime_error("[SemispaceCopy] out of memory ...");
   }
 
   auto* p = freeptr_;
@@ -64,12 +65,52 @@ void* Semispace::alloc(sz_t n) {
   return p;
 }
 
-void Semispace::flip() {
+void SemispaceCopy::flip() {
   std::swap(fromspace_, tospace_);
   freeptr_ = tospace_;
 }
 
-void Semispace::collect() {
+BaseObject* SemispaceCopy::copy(BaseObject* ref) {
+  if (ref && ref->forwarding() != nullptr) {
+    BaseObject* to_ref = forward(ref);
+
+    for (BaseObject** o : to_ref->pointers())
+      *o = copy(*o);
+  }
+  return ref->forwarding();
+}
+
+BaseObject* SemispaceCopy::forward(BaseObject* from_ref) {
+  auto* p = freeptr_;
+  freeptr_ += from_ref->get_size();
+
+  BaseObject* to_ref{};
+  switch (from_ref->type()) {
+  case ObjType::INT:
+    to_ref = new (p) IntObject(std::move(*as_down<IntObject>(from_ref))); break;
+  case ObjType::PAIR:
+    to_ref = new (p) PairObject(std::move(*as_down<PairObject>(from_ref))); break;
+  }
+  from_ref->set_forwarding(to_ref);
+  ++objcount_;
+
+  return to_ref;
+}
+
+void SemispaceCopy::collect() {
+  sz_t old_objcount = objcount_;
+
+  std::cout << "[SemispaceCopy][BEG] start semispace copying gc ..." << std::endl;
+  flip();
+  scanptr_ = freeptr_;
+
+  objcount_ = 0;
+  for (auto& obj : roots_)
+    obj = copy(obj);
+
+  std::cout << "[SemispaceCopy][END] "
+    << old_objcount - objcount_ << " objects collected, "
+    << objcount_ << " objects remaining." << std::endl;
 }
 
 }

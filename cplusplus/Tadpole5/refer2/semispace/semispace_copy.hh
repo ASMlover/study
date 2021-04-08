@@ -41,29 +41,47 @@
 
 namespace tadpole::gc {
 
-class Semispace final : private UnCopyable {
+class SemispaceCopy final : private UnCopyable {
   static constexpr sz_t kSemispaceSize = 512 << 9;
 
   byte_t* heapptr_{};
   byte_t* freeptr_{};
+  byte_t* scanptr_{};
   byte_t* fromspace_{};
   byte_t* tospace_{};
   std::vector<BaseObject*> roots_;
+  sz_t objcount_{};
 
-  Semispace() noexcept;
-  ~Semispace() noexcept;
+  SemispaceCopy() noexcept;
+  ~SemispaceCopy() noexcept;
 
   void* alloc(sz_t n);
-
   void flip();
+  BaseObject* copy(BaseObject* ref);
+  BaseObject* forward(BaseObject* from_ref);
 public:
   void collect();
+
+  static SemispaceCopy& get_instance() noexcept {
+    static SemispaceCopy _ins;
+    return _ins;
+  }
 
   template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
     void* p = alloc(sizeof(Object));
     Object* o = new (p) Object(std::forward<Args>(args)...);
 
     roots_.push_back(o);
+    ++objcount_;
+    return o;
+  }
+
+  BaseObject* fetch_object() noexcept {
+    if (roots_.empty())
+      return nullptr;
+
+    auto* o = roots_.back();
+    roots_.pop_back();
     return o;
   }
 };
