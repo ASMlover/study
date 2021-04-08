@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include "common.hh"
 
 namespace tadpole::gc {
@@ -58,6 +59,7 @@ public:
 
   virtual sz_t get_size() const noexcept { return sizeof(BaseObject); }
   virtual const char* get_name() const noexcept { return "<object>"; }
+  virtual std::vector<BaseObject**> pointers() const noexcept { return std::vector<BaseObject**>(); }
 };
 
 class IntObject final : public BaseObject {
@@ -98,6 +100,12 @@ public:
 
   virtual sz_t get_size() const noexcept override { return sizeof(PairObject); }
   virtual const char* get_name() const noexcept override { return "<pair>"; }
+  virtual std::vector<BaseObject**> pointers() const noexcept override {
+    std::vector<BaseObject**> r;
+    r.push_back((BaseObject**)&first_);
+    r.push_back((BaseObject**)&second_);
+    return r;
+  }
 };
 
 }

@@ -37,9 +37,31 @@
 #include <iostream>
 #include "common.hh"
 #include "object.hh"
+#include "semispace_copy.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+  int kCount = 1000;
+  int kReleaseCount = 20;
+  int kCreateCount = kReleaseCount * 3;
+
+  for (int i = 0; i < kCount; ++i) {
+    for (int j = 0; j < kCreateCount; ++j) {
+      if ((j + 1) % 3 == 0) {
+        auto* second = tadpole::gc::SemispaceCopy::get_instance().fetch_object();
+        auto* first = tadpole::gc::SemispaceCopy::get_instance().fetch_object();
+        tadpole::gc::SemispaceCopy::get_instance().create_object<tadpole::gc::PairObject>(first, second);
+      }
+      else {
+        tadpole::gc::SemispaceCopy::get_instance().create_object<tadpole::gc::IntObject>(i * j);
+      }
+    }
+
+    for (int j = 0; j < kReleaseCount - 10; ++j)
+      tadpole::gc::SemispaceCopy::get_instance().fetch_object();
+  }
+  tadpole::gc::SemispaceCopy::get_instance().collect();
 
   return 0;
 }
