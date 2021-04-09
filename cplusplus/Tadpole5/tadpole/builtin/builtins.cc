@@ -73,6 +73,14 @@ void register_builtins(VM& vm) {
             std::chrono::steady_clock::now().time_since_epoch()).count();
       });
 
+  // fn gc_count() -> numeric
+  //
+  // @returns
+  //  gc_count: numeric -> number of current objects
+  vm.define_native("gc_count", [](sz_t, Value*) -> Value {
+        return GC::get_instance().get_count();
+      });
+
   // fn gc_threshold() -> numeric
   //
   // @returns
