@@ -34,13 +34,15 @@
 #include <fstream>
 #include "common/harness.hh"
 #include "core/vm.hh"
+#include "gc/gc.hh"
 
-static void eval(tadpole::VM& vm, const std::string& source_bytes) {
+static int eval(tadpole::VM& vm, const std::string& source_bytes) {
   tadpole::InterpretRet r = vm.interpret(source_bytes);
   if (r == tadpole::InterpretRet::ECOMPILE)
-    std::exit(-2);
+    return -2;
   if (r == tadpole::InterpretRet::ERUNTIME)
-    std::exit(-1);
+    return -1;
+  return 0;
 }
 
 int main(int argc, char* argv[]) {
@@ -64,6 +66,8 @@ int main(int argc, char* argv[]) {
         break;
 
       eval(vm, line);
+
+      tadpole::GC::get_instance().collect();
     }
   }
   else {
@@ -72,7 +76,8 @@ int main(int argc, char* argv[]) {
       std::stringstream ss;
       ss << fp.rdbuf();
 
-      eval(vm, ss.str());
+      if (int ec = eval(vm, ss.str()); ec != 0)
+        std::exit(ec);
     }
     else {
       std::cerr << "ERROR: LOAD `" << argv[1] << "` FAILED !!!" << std::endl;
