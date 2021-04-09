@@ -74,6 +74,10 @@ void MarkSweep::mark_object(BaseObject* o) {
   worklist_.push_back(o);
 }
 
+sz_t MarkSweep::get_count() const {
+  return objects_.size();
+}
+
 sz_t MarkSweep::get_threshold() const {
   return gc_threshold_;
 }
@@ -124,7 +128,7 @@ void MarkSweep::sweep() {
 
 void MarkSweep::reclaim_object(BaseObject* o) {
 #if defined(_TADPOLE_DEBUG_GC)
-  std::cout << "[" << o << "] reclaim object: `" << o->stringify() << "`" << std::endl;
+  std::cout << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`" << std::endl;
 #endif
 
   delete o;

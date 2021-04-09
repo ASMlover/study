@@ -60,6 +60,7 @@ public:
   virtual void collect() override;
   virtual void append_object(BaseObject* o) override;
   virtual void mark_object(BaseObject* o) override;
+  virtual sz_t get_count() const override;
   virtual sz_t get_threshold() const override;
   virtual void set_threshold(sz_t threshold) override;
 };
