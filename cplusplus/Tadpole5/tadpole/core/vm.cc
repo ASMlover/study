@@ -75,7 +75,7 @@ InterpretRet VM::interpret(const str_t& source_bytes) {
 
 void VM::iter_objects(ObjectVisitor&& visitor) {
   // traverse tadpole object roots
-  gcompiler_->iter_objects([&](BaseObject* o) { visitor(o); });
+  gcompiler_->iter_objects(std::move(visitor));
   for (auto& v : stack_)
     visitor(v.as_object(_Safe()));
   for (auto& f : frames_)
