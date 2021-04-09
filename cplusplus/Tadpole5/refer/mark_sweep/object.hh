@@ -36,7 +36,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "memory_header.hh"
+#include <vector>
+#include <tadpole/common/common.hh>
 
 namespace tadpole::gc {
 
@@ -45,19 +46,19 @@ enum class ObjType : u8_t {
   PAIR,
 };
 
-class BaseObject : public MemoryHeader {
+class BaseObject : private UnCopyable {
   ObjType type_;
   bool marked_{};
 public:
-  BaseObject(ObjType type) noexcept : MemoryHeader(MemoryTag::OBJECT), type_(type) {}
+  BaseObject(ObjType type) noexcept : type_(type) {}
   virtual ~BaseObject() {}
 
   inline ObjType type() const noexcept { return type_; }
   inline bool is_marked() const noexcept { return marked_; }
-  inline void set_marked(bool marked = true) noexcept { marked_ = marked; }
+  inline bool set_marked(bool marked = true) noexcept { return marked_ = marked, marked_; }
 
-  virtual sz_t get_size() const { return sizeof(BaseObject); }
-  virtual const char* get_name() const { return "<object>"; }
+  virtual const char* get_name() const noexcept = 0;
+  virtual std::vector<BaseObject*> pointers() const noexcept { return std::vector<BaseObject*>(); }
 };
 
 class IntObject final : public BaseObject {
@@ -68,8 +69,7 @@ public:
   inline int value() const noexcept { return value_; }
   inline void set_value(int value) noexcept { value_ = value; }
 
-  virtual sz_t get_size() const override { return sizeof(IntObject); }
-  virtual const char* get_name() const override { return "<int>"; }
+  virtual const char* get_name() const noexcept override { return "<int>"; }
 
   static IntObject* create(int value = 0) noexcept;
 };
@@ -87,8 +87,8 @@ public:
   inline BaseObject* second() const noexcept { return second_; }
   inline void set_second(BaseObject* second = nullptr) noexcept { second_ = second; }
 
-  virtual sz_t get_size() const override { return sizeof(PairObject); }
-  virtual const char* get_name() const override { return "<pair>"; }
+  virtual const char* get_name() const noexcept override { return "<pair>"; }
+  virtual std::vector<BaseObject*> pointers() const noexcept override;
 
   static PairObject* create(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept;
 };

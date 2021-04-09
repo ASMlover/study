@@ -42,11 +42,5 @@
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
-  auto* v = tadpole::gc::IntObject::create(34);
-  std::cout << sizeof(tadpole::gc::IntObject) << " " << v->get_size() << std::endl;
-
-  auto* x = tadpole::gc::PairObject::create();
-  std::cout << sizeof(tadpole::gc::PairObject) << " " << x->get_size() << std::endl;
-
   return 0;
 }

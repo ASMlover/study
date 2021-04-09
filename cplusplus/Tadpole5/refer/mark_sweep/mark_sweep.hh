@@ -38,37 +38,23 @@
 
 #include <exception>
 #include <iostream>
-#include <vector>
+#include <list>
 #include <tadpole/common/common.hh>
-#include "memory_header.hh"
 
 namespace tadpole::gc {
-
-class MemoryChunk final : public MemoryHeader {
-  sz_t size_{};
-  MemoryChunk* next_{};
-public:
-  MemoryChunk(sz_t n) noexcept : MemoryHeader(MemoryTag::MEMORY), size_(n) {}
-
-  inline sz_t size() const noexcept { return size_; }
-  inline sz_t set_size(sz_t n) noexcept { return size_ = n, size_; }
-  inline sz_t inc_size(sz_t n) noexcept { return size_ += n, size_; }
-  inline sz_t dec_size(sz_t n) noexcept { return size_ -= n, size_; }
-  inline MemoryChunk* next() const noexcept { return next_; }
-  inline void set_next(MemoryChunk* next) noexcept { next_ = next; }
-};
 
 class BaseObject;
 
 class MarkSweep final : public Singleton<MarkSweep> {
-  static constexpr sz_t kHeapSize = 512 << 10;
+  static constexpr sz_t kAlignment    = 1 << 3;
+  static constexpr sz_t kGCThreshold  = 1 << 10;
+  static constexpr sz_t kGCFactor     = 2;
 
-  byte_t* heapptr_{};
-  byte_t* freeptr_{};
-  MemoryChunk* freelist_{};
+  sz_t gc_threshold_{kGCThreshold};
+  std::list<BaseObject*> roots_;
+  std::list<BaseObject*> worklist_;
 
-  std::vector<BaseObject*> roots_;
-  std::vector<BaseObject*> worklist_;
+  void reclaim(BaseObject* o);
 
   void mark_from_roots();
   void mark();
@@ -77,27 +63,19 @@ public:
   MarkSweep() noexcept;
   ~MarkSweep() noexcept;
 
-  void* alloc(sz_t n) noexcept;
   void collect();
 
-  template <typename Obj, typename... Args> inline Obj* create_object(Args&&... args) {
-    sz_t n = sizeof(Obj);
-    void* ref = alloc(n);
-    if (ref == nullptr) {
+  template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
+    if (roots_.size() >= gc_threshold_)
       collect();
-      ref = alloc(n);
 
-      if (ref == nullptr)
-        throw std::exception("out of memory");
-    }
+    if (roots_.size() >= gc_threshold_)
+      throw std::exception("[MarkSweep] out of memory ...");
 
-    Obj* o = new (ref) Obj(std::forward<Args>(args)...);
+    Object* o = new Object(std::forward<Args>(args)...);
     roots_.push_back(o);
     return o;
   }
 };
-
-template <typename T> inline T* as_ptr(void* p) noexcept { return reinterpret_cast<T*>(p); }
-inline MemoryTag as_tag(void* p) noexcept { return as_ptr<MemoryHeader>(p)->tag(); }
 
 }

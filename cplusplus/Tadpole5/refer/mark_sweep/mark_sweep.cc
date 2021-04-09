@@ -34,41 +34,83 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "object.hh"
 #include "mark_sweep.hh"
 
 namespace tadpole::gc {
 
 MarkSweep::MarkSweep() noexcept {
-  heapptr_ = new byte_t[kHeapSize];
-  freeptr_ = heapptr_;
 }
 
 MarkSweep::~MarkSweep() noexcept {
-  delete [] heapptr_;
-}
+  while (!roots_.empty()) {
+    auto* o = roots_.back();
+    roots_.pop_back();
 
-void* MarkSweep::alloc(sz_t n) noexcept {
-  byte_t* result = heapptr_;
-  if (freeptr_ + n <= heapptr_ + kHeapSize) {
-    result = freeptr_;
-    freeptr_ += n;
-    return result;
+    reclaim(o);
   }
-
-  MemoryChunk* scan = freelist_;
-  while (scan != nullptr) {
-    if (scan->size() >= n) {
-      result = as_ptr<byte_t>(scan);
-    }
-    else {
-    }
-  }
-
-  return nullptr;
 }
 
 void MarkSweep::collect() {
+  sz_t objects_count = roots_.size();
+
+  mark_from_roots();
+  sweep();
+
+  sz_t remaining_count = roots_.size();
+  gc_threshold_ = as_align(roots_.empty() ? kGCThreshold : remaining_count * kGCFactor, kAlignment);
+
+  std::cout
+    << "[MarkSweep.coolect] Collected " << objects_count - remaining_count << ", "
+    << remaining_count << " remaining ..."
+    << std::endl;
+}
+
+void MarkSweep::reclaim(BaseObject* o) {
+  std::cout << "[" << o << "] reclaim object: `" << o->get_name() << "`" << std::endl;
+
+  delete o;
+}
+
+void MarkSweep::mark_from_roots() {
+  worklist_.clear();
+
+  for (auto* ref : roots_) {
+    if (ref != nullptr && !ref->is_marked()) {
+      ref->set_marked(true);
+      worklist_.push_back(ref);
+      mark();
+    }
+  }
+}
+
+void MarkSweep::mark() {
+  while (!worklist_.empty()) {
+    auto* ref = worklist_.back();
+    worklist_.pop_back();
+
+    for (auto* child : ref->pointers()) {
+      if (child != nullptr && !child->is_marked()) {
+        child->set_marked(true);
+        worklist_.push_back(child);
+      }
+    }
+  }
+}
+
+void MarkSweep::sweep() {
+  auto scan = roots_.begin();
+  while (scan != roots_.end()) {
+    if ((*scan)->is_marked()) {
+      (*scan)->set_marked(false);
+      ++scan;
+    }
+    else {
+      reclaim(*scan);
+      roots_.erase(scan++);
+    }
+  }
 }
 
 }
