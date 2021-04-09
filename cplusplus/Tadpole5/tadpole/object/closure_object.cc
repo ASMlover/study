@@ -57,6 +57,7 @@ str_t ClosureObject::stringify() const {
 }
 
 void ClosureObject::iter_children(ObjectVisitor&& visitor) {
+  visitor(fn_);
   for (sz_t i = 0; i < upvalues_count(); ++i)
     visitor(upvalues_[i]);
 }

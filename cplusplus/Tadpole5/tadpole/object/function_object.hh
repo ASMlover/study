@@ -51,6 +51,7 @@ public:
 
   inline StringObject* name() const noexcept { return name_; }
   inline const char* name_asstr() const noexcept { return name_ ? name_->cstr() : "<tadpole>"; }
+  inline void set_name(StringObject* name) noexcept { name_ = name; }
   inline sz_t arity() const noexcept { return arity_; }
   inline sz_t inc_arity() noexcept { return arity_++; }
   inline sz_t upvalues_count() const noexcept { return upvalues_count_; }

@@ -57,13 +57,11 @@ using ObjectVisitor = std::function<void (BaseObject*)>;
 
 class ObjectTraverser : private UnCopyable {
 public:
-  virtual ~ObjectTraverser() noexcept {}
   virtual void iter_objects(ObjectVisitor&& visitor) = 0;
 };
 
 class ChildrenTraverser : private UnCopyable {
 public:
-  virtual ~ChildrenTraverser() noexcept {}
   virtual void iter_children(ObjectVisitor&& visitor) = 0;
 };
 
@@ -82,6 +80,7 @@ public:
   virtual str_t stringify() const { return "<object>"; }
   virtual void iter_children(ObjectVisitor&& visitor) override {}
 
+  const char* type_asstr() const noexcept;
   StringObject* as_string();
   const char* as_cstring();
   NativeObject* as_native();
