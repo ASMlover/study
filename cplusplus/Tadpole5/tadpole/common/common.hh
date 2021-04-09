@@ -33,6 +33,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -83,6 +85,14 @@ protected:
   ~UnCopyable() noexcept = default;
 };
 
+template <typename Object> class Singleton : private UnCopyable {
+public:
+  static Object& get_instance() noexcept {
+    static Object _ins;
+    return _ins;
+  }
+};
+
 class _Safe {};
 class _Unsafe {};
 
@@ -100,7 +110,7 @@ template <typename T, typename PTR> inline T* get_rawptr(const PTR& p) noexcept 
 
 inline str_t as_string(double d) noexcept {
   ss_t ss;
-  ss << d;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
   return ss.str();
 }
 
