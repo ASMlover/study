@@ -44,31 +44,31 @@ MarkSweep::MarkSweep() noexcept {
 }
 
 MarkSweep::~MarkSweep() noexcept {
-  while (!roots_.empty()) {
-    auto* o = roots_.back();
-    roots_.pop_back();
+  while (!objects_.empty()) {
+    auto* o = objects_.back();
+    objects_.pop_back();
 
     reclaim(o);
   }
 }
 
 void MarkSweep::collect() {
-  sz_t objects_count = roots_.size();
+  sz_t old_objcount = objects_.size();
 
   mark_from_roots();
   sweep();
 
-  sz_t remaining_count = roots_.size();
-  gc_threshold_ = as_align(roots_.empty() ? kGCThreshold : remaining_count * kGCFactor, kAlignment);
+  sz_t remaining_objcount = objects_.size();
+  gc_threshold_ = as_align(objects_.empty() ? kGCThreshold : remaining_objcount * kGCFactor, kAlignment);
 
   std::cout
-    << "[MarkSweep.coolect] Collected " << objects_count - remaining_count << ", "
-    << remaining_count << " remaining ..."
+    << "[MarkSweep.coolect] Collected " << old_objcount - remaining_objcount << ", "
+    << remaining_objcount << " remaining ..."
     << std::endl;
 }
 
 void MarkSweep::reclaim(BaseObject* o) {
-  std::cout << "[" << o << "] reclaim object: `" << o->get_name() << "`" << std::endl;
+  // std::cout << "[" << o << "] reclaim object: `" << o->get_name() << "`" << std::endl;
 
   delete o;
 }
@@ -100,15 +100,15 @@ void MarkSweep::mark() {
 }
 
 void MarkSweep::sweep() {
-  auto scan = roots_.begin();
-  while (scan != roots_.end()) {
+  auto scan = objects_.begin();
+  while (scan != objects_.end()) {
     if ((*scan)->is_marked()) {
       (*scan)->set_marked(false);
       ++scan;
     }
     else {
       reclaim(*scan);
-      roots_.erase(scan++);
+      objects_.erase(scan++);
     }
   }
 }

@@ -43,8 +43,8 @@ IntObject* IntObject::create(int value) noexcept {
   return MarkSweep::get_instance().create_object<IntObject>(value);
 }
 
-std::vector<BaseObject*> PairObject::pointers() const noexcept {
-  std::vector<BaseObject*> r;
+std::vector<ObjectRef> PairObject::pointers() const noexcept {
+  std::vector<ObjectRef> r;
   r.push_back(first_);
   r.push_back(second_);
   return r;

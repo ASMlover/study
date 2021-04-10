@@ -36,60 +36,20 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <exception>
-#include <iostream>
-#include <list>
-#include <vector>
 #include <tadpole/common/common.hh>
 
 namespace tadpole::gc {
 
 class BaseObject;
 
-class MarkSweep final : public Singleton<MarkSweep> {
-  static constexpr sz_t kAlignment    = 1 << 3;
-  // static constexpr sz_t kGCThreshold  = 1 << 10;
-  static constexpr sz_t kGCThreshold  = 1 << 3;
-  static constexpr sz_t kGCFactor     = 2;
-
-  sz_t gc_threshold_{kGCThreshold};
-  std::vector<BaseObject*> roots_;
-  std::list<BaseObject*> objects_;
-  std::list<BaseObject*> worklist_;
-
-  void reclaim(BaseObject* o);
-
-  void mark_from_roots();
-  void mark();
-  void sweep();
+class VM final : private UnCopyable {
 public:
-  MarkSweep() noexcept;
-  ~MarkSweep() noexcept;
+  VM() noexcept;
+  ~VM() noexcept;
 
-  void collect();
-
-  template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
-    if (objects_.size() >= gc_threshold_) {
-      collect();
-
-      if (objects_.size() >= gc_threshold_)
-        throw std::logic_error("[MarkSweep] FAIL: out of memory ...");
-    }
-
-    Object* o = new Object(std::forward<Args>(args)...);
-    roots_.push_back(o);
-    objects_.push_back(o);
-    return o;
-  }
-
-  inline BaseObject* fetch_out() noexcept {
-    if (!roots_.empty()) {
-      BaseObject* o = roots_.back();
-      roots_.pop_back();
-      return o;
-    }
-    return nullptr;
-  }
+  void put_in(int ival);
+  void put_in(BaseObject* first = nullptr, BaseObject* second = nullptr);
+  BaseObject* fetch_out();
 };
 
 }

@@ -46,6 +46,9 @@ enum class ObjType : u8_t {
   PAIR,
 };
 
+class BaseObject;
+using ObjectRef = BaseObject*;
+
 class BaseObject : private UnCopyable {
   ObjType type_;
   bool marked_{};
@@ -58,7 +61,7 @@ public:
   inline bool set_marked(bool marked = true) noexcept { return marked_ = marked, marked_; }
 
   virtual const char* get_name() const noexcept = 0;
-  virtual std::vector<BaseObject*> pointers() const noexcept { return std::vector<BaseObject*>(); }
+  virtual std::vector<ObjectRef> pointers() const noexcept { return std::vector<ObjectRef>(); }
 };
 
 class IntObject final : public BaseObject {
@@ -88,7 +91,7 @@ public:
   inline void set_second(BaseObject* second = nullptr) noexcept { second_ = second; }
 
   virtual const char* get_name() const noexcept override { return "<pair>"; }
-  virtual std::vector<BaseObject*> pointers() const noexcept override;
+  virtual std::vector<ObjectRef> pointers() const noexcept override;
 
   static PairObject* create(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept;
 };

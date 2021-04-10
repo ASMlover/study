@@ -34,13 +34,31 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
-#include <tadpole/common/common.hh>
-#include "object.hh"
-#include "mark_sweep.hh"
+#include "vm.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+  static constexpr int kTestCount = 100;
+  static constexpr int kLoopCount = 10000;
+  tadpole::gc::VM vm;
+
+  std::srand((unsigned int)std::time(nullptr));
+  for (int i = 0; i < kTestCount; ++i) {
+    for (int j = 0; j < kLoopCount; ++j) {
+      int flag = std::rand() % 100;
+
+      if (flag < 50)
+        vm.put_in(i * j);
+      else if (flag < 60)
+        vm.put_in();
+      else
+        vm.fetch_out();
+    }
+  }
 
   return 0;
 }

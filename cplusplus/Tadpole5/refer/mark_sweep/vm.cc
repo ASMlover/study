@@ -34,62 +34,33 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <exception>
-#include <iostream>
-#include <list>
-#include <vector>
-#include <tadpole/common/common.hh>
+#include "object.hh"
+#include "mark_sweep.hh"
+#include "vm.hh"
 
 namespace tadpole::gc {
 
-class BaseObject;
+VM::VM() noexcept {
+}
 
-class MarkSweep final : public Singleton<MarkSweep> {
-  static constexpr sz_t kAlignment    = 1 << 3;
-  // static constexpr sz_t kGCThreshold  = 1 << 10;
-  static constexpr sz_t kGCThreshold  = 1 << 3;
-  static constexpr sz_t kGCFactor     = 2;
+VM::~VM() noexcept {
+  MarkSweep::get_instance().collect();
+}
 
-  sz_t gc_threshold_{kGCThreshold};
-  std::vector<BaseObject*> roots_;
-  std::list<BaseObject*> objects_;
-  std::list<BaseObject*> worklist_;
+void VM::put_in(int ival) {
+  MarkSweep::get_instance().create_object<IntObject>(ival);
+}
 
-  void reclaim(BaseObject* o);
-
-  void mark_from_roots();
-  void mark();
-  void sweep();
-public:
-  MarkSweep() noexcept;
-  ~MarkSweep() noexcept;
-
-  void collect();
-
-  template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
-    if (objects_.size() >= gc_threshold_) {
-      collect();
-
-      if (objects_.size() >= gc_threshold_)
-        throw std::logic_error("[MarkSweep] FAIL: out of memory ...");
-    }
-
-    Object* o = new Object(std::forward<Args>(args)...);
-    roots_.push_back(o);
-    objects_.push_back(o);
-    return o;
+void VM::put_in(BaseObject* first, BaseObject* second) {
+  if (first == nullptr && second == nullptr) {
+    second = MarkSweep::get_instance().fetch_out();
+    first = MarkSweep::get_instance().fetch_out();
   }
+  MarkSweep::get_instance().create_object<PairObject>(first, second);
+}
 
-  inline BaseObject* fetch_out() noexcept {
-    if (!roots_.empty()) {
-      BaseObject* o = roots_.back();
-      roots_.pop_back();
-      return o;
-    }
-    return nullptr;
-  }
-};
+BaseObject* VM::fetch_out() {
+  return MarkSweep::get_instance().fetch_out();
+}
 
 }
