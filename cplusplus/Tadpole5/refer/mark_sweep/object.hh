@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include <vector>
 #include <tadpole/common/common.hh>
 
@@ -58,7 +59,7 @@ public:
 
   inline ObjType type() const noexcept { return type_; }
   inline bool is_marked() const noexcept { return marked_; }
-  inline bool set_marked(bool marked = true) noexcept { return marked_ = marked, marked_; }
+  inline void set_marked(bool marked = true) noexcept { marked_ = marked; }
 
   virtual const char* get_name() const noexcept = 0;
   virtual std::vector<ObjectRef> pointers() const noexcept { return std::vector<ObjectRef>(); }

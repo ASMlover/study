@@ -48,19 +48,21 @@ VM::~VM() noexcept {
 }
 
 void VM::put_in(int ival) {
-  MarkSweep::get_instance().create_object<IntObject>(ival);
+  auto* o = IntObject::create(ival);
+  MarkSweep::get_instance().push_object(o);
 }
 
 void VM::put_in(BaseObject* first, BaseObject* second) {
   if (first == nullptr && second == nullptr) {
-    second = MarkSweep::get_instance().fetch_out();
-    first = MarkSweep::get_instance().fetch_out();
+    second = MarkSweep::get_instance().peek_object(0);
+    first = MarkSweep::get_instance().peek_object(1);
   }
-  MarkSweep::get_instance().create_object<PairObject>(first, second);
+  auto* o = PairObject::create(first, second);
+  MarkSweep::get_instance().push_object(o);
 }
 
 BaseObject* VM::fetch_out() {
-  return MarkSweep::get_instance().fetch_out();
+  return MarkSweep::get_instance().pop_object();
 }
 
 }

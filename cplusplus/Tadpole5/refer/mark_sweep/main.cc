@@ -36,7 +36,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
 #include <ctime>
-#include <iostream>
 #include "vm.hh"
 
 int main(int argc, char* argv[]) {
@@ -51,9 +50,9 @@ int main(int argc, char* argv[]) {
     for (int j = 0; j < kLoopCount; ++j) {
       int flag = std::rand() % 100;
 
-      if (flag < 50)
+      if (flag < 40)
         vm.put_in(i * j);
-      else if (flag < 60)
+      else if (flag < 50)
         vm.put_in();
       else
         vm.fetch_out();
