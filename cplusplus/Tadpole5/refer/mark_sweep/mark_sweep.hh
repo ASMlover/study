@@ -68,6 +68,10 @@ public:
 
   void collect();
 
+  void push_object(BaseObject* o) noexcept;
+  BaseObject* pop_object() noexcept;
+  BaseObject* peek_object(int distance = 0) const noexcept;
+
   template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
     if (objects_.size() >= gc_threshold_) {
       collect();
@@ -79,24 +83,6 @@ public:
     Object* o = new Object(std::forward<Args>(args)...);
     objects_.push_back(o);
     return o;
-  }
-
-  inline void push_object(BaseObject* o) noexcept {
-    roots_.push_back(o);
-  }
-
-  inline BaseObject* pop_object() noexcept {
-    if (!roots_.empty()) {
-      BaseObject* o = roots_.back();
-      roots_.pop_back();
-      return o;
-    }
-    return nullptr;
-  }
-
-  inline BaseObject* peek_object(int distance = 0) const noexcept {
-    int i = as_type<int>(roots_.size()) - distance - 1;
-    return i < 0 ? nullptr : roots_[i];
   }
 };
 

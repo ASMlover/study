@@ -67,6 +67,24 @@ void MarkSweep::collect() {
     << std::endl;
 }
 
+void MarkSweep::push_object(BaseObject* o) noexcept {
+  roots_.push_back(o);
+}
+
+BaseObject* MarkSweep::pop_object() noexcept {
+  if (!roots_.empty()) {
+    BaseObject* o = roots_.back();
+    roots_.pop_back();
+    return o;
+  }
+  return nullptr;
+}
+
+BaseObject* MarkSweep::peek_object(int distance) const noexcept {
+  int i = as_type<int>(roots_.size()) - distance - 1;
+  return i < 0 ? nullptr : roots_[i];
+}
+
 void MarkSweep::reclaim(BaseObject* o) {
   // std::cout << "[" << o << "] reclaim object: `" << o->get_name() << "`" << std::endl;
 
