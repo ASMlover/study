@@ -68,6 +68,24 @@ void SemispaceCopy::collect() {
     << std::endl;
 }
 
+void SemispaceCopy::push_object(BaseObject* o) noexcept {
+  roots_.push_back(o);
+}
+
+BaseObject* SemispaceCopy::pop_object() noexcept {
+  if (!roots_.empty()) {
+    BaseObject* o = roots_.back();
+    roots_.pop_back();
+    return o;
+  }
+  return nullptr;
+}
+
+BaseObject* SemispaceCopy::peek_object(int distance) const noexcept {
+  int i = as_type<int>(roots_.size()) - distance - 1;
+  return i < 0 ? nullptr : roots_[i];
+}
+
 void SemispaceCopy::alloc_fail() {
   std::cerr << "[SemispaceCopy] FAIL: out of memory ..." << std::endl;
   throw std::logic_error("[SemispaceCopy] FAIL: out of memory ...");

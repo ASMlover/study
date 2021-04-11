@@ -62,6 +62,10 @@ public:
 
   void collect();
 
+  void push_object(BaseObject* o) noexcept;
+  BaseObject* pop_object() noexcept;
+  BaseObject* peek_object(int distance = 0) const noexcept;
+
   template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
     void* p = alloc(sizeof(Object));
     Object* o = new (p) Object(std::forward<Args>(args)...);
