@@ -55,8 +55,7 @@ class SemispaceCopy final : public Singleton<SemispaceCopy> {
   void alloc_fail();
   void* alloc(sz_t n);
   void flip();
-  BaseObject* copy(BaseObject* ref);
-  BaseObject* forward(BaseObject* from_ref);
+  BaseObject* copy(BaseObject* from_ref);
 public:
   SemispaceCopy() noexcept;
   ~SemispaceCopy() noexcept;
@@ -67,7 +66,6 @@ public:
     void* p = alloc(sizeof(Object));
     Object* o = new (p) Object(std::forward<Args>(args)...);
 
-    roots_.push_back(o);
     ++objcount_;
     return o;
   }

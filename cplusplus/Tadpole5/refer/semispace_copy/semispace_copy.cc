@@ -34,35 +34,79 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <exception>
+#include <iostream>
 #include "semispace_copy.hh"
 
 namespace tadpole::gc {
 
 SemispaceCopy::SemispaceCopy() noexcept {
+  heapptr_ = new byte_t[kSmispaceSize * 2];
+
+  fromspace_ = heapptr_ + kSmispaceSize;
+  tospace_ = heapptr_;
+  freeptr_ = tospace_;
 }
 
 SemispaceCopy::~SemispaceCopy() noexcept {
+  delete [] heapptr_;
 }
 
 void SemispaceCopy::collect() {
+  sz_t old_objcount = objcount_;
+
+  flip();
+  scanptr_ = freeptr_;
+
+  objcount_ = 0;
+  for (auto& ref : roots_)
+    ref = copy(ref);
+
+  std::cout
+    << "[SemispaceCopy.collect] Collected " << old_objcount - objcount_ << ", "
+    << objcount_ << " remaining ..."
+    << std::endl;
 }
 
 void SemispaceCopy::alloc_fail() {
+  std::cerr << "[SemispaceCopy] FAIL: out of memory ..." << std::endl;
+  throw std::logic_error("[SemispaceCopy] FAIL: out of memory ...");
 }
 
 void* SemispaceCopy::alloc(sz_t n) {
-  return nullptr;
+  if (freeptr_ + n > tospace_ + kSmispaceSize) {
+    collect();
+
+    if (freeptr_ + n > tospace_ + kSmispaceSize)
+      alloc_fail();
+  }
+
+  auto* p = freeptr_;
+  freeptr_ += n;
+  return p;
 }
 
 void SemispaceCopy::flip() {
+  std::swap(fromspace_, tospace_);
+  freeptr_ = tospace_;
 }
 
-BaseObject* SemispaceCopy::copy(BaseObject* ref) {
-  return nullptr;
-}
+BaseObject* SemispaceCopy::copy(BaseObject* from_ref) {
+  if (from_ref != nullptr && from_ref->forwarding() == nullptr) {
+    auto* p = freeptr_;
+    if (freeptr_ + from_ref->get_size() > tospace_ + kSmispaceSize)
+      alloc_fail();
 
-BaseObject* SemispaceCopy::forward(BaseObject* from_ref) {
-  return nullptr;
+    freeptr_ += from_ref->get_size();
+
+    BaseObject* to_ref = from_ref->move_to(p);
+    from_ref->set_forwarding(to_ref);
+    ++objcount_;
+
+    for (ObjectRef* op : to_ref->pointers())
+      *op = copy(*op);
+  }
+  return from_ref ? from_ref->forwarding() : nullptr;
 }
 
 }

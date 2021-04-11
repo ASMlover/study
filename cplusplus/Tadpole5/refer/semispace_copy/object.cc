@@ -34,12 +34,13 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "semispace_copy.hh"
 #include "object.hh"
 
 namespace tadpole::gc {
 
 IntObject* IntObject::create(int value) noexcept {
-  return nullptr;
+  return SemispaceCopy::get_instance().create_object<IntObject>(value);
 }
 
 std::vector<ObjectRef*> PairObject::pointers() noexcept {
@@ -50,7 +51,7 @@ std::vector<ObjectRef*> PairObject::pointers() noexcept {
 }
 
 PairObject* PairObject::create(BaseObject* first, BaseObject* second) noexcept {
-  return nullptr;
+  return SemispaceCopy::get_instance().create_object<PairObject>(first, second);
 }
 
 }
