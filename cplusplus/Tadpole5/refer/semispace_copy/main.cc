@@ -34,10 +34,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <tadpole/common/common.hh>
+#include "../gc_test/gc_test.hh"
+#include "vm.hh"
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+  tadpole::gc::VM vm;
+  tadpole::gc::gc_test(vm);
 
   return 0;
 }
