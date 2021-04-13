@@ -62,7 +62,7 @@ public:
   inline void set_marked(bool marked = true) noexcept { marked_ = marked; }
 
   virtual const char* get_name() const noexcept = 0;
-  virtual std::vector<ObjectRef> pointers() const noexcept { return std::vector<ObjectRef>(); }
+  virtual std::vector<ObjectRef*> pointers() const noexcept { return std::vector<ObjectRef*>(); }
 };
 
 class IntObject final : public BaseObject {
@@ -92,7 +92,7 @@ public:
   inline void set_second(BaseObject* second = nullptr) noexcept { second_ = second; }
 
   virtual const char* get_name() const noexcept override { return "<pair>"; }
-  virtual std::vector<ObjectRef> pointers() const noexcept override;
+  virtual std::vector<ObjectRef*> pointers() const noexcept override;
 
   static PairObject* create(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept;
 };

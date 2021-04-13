@@ -108,10 +108,10 @@ void MarkSweep::mark() {
     auto* ref = worklist_.back();
     worklist_.pop_back();
 
-    for (auto* child : ref->pointers()) {
-      if (child != nullptr && !child->is_marked()) {
-        child->set_marked(true);
-        worklist_.push_back(child);
+    for (ObjectRef* child : ref->pointers()) {
+      if (*child != nullptr && !(*child)->is_marked()) {
+        (*child)->set_marked(true);
+        worklist_.push_back(*child);
       }
     }
   }
