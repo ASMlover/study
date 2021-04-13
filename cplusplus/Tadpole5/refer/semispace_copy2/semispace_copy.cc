@@ -56,11 +56,15 @@ void SemispaceCopy::collect() {
   sz_t old_objcount = objcount_;
 
   flip();
-  scanptr_ = freeptr_;
+  worklist_init();
 
   objcount_ = 0;
-  for (auto& ref : roots_)
-    ref = copy(ref);
+  for (auto* ref : roots_)
+    process(&ref);
+  while (!worklist_empty()) {
+    auto* ref = worklist_remove();
+    scan(ref);
+  }
 
   std::cout
     << "[SemispaceCopy.collect] Collected " << old_objcount - objcount_ << ", "
@@ -104,27 +108,59 @@ void* SemispaceCopy::alloc(sz_t n) {
   return p;
 }
 
+void SemispaceCopy::worklist_init() {
+  scanptr_ = freeptr_;
+}
+
+bool SemispaceCopy::worklist_empty() const {
+  return scanptr_ == freeptr_;
+}
+
+void SemispaceCopy::worklist_append(BaseObject* o) {
+}
+
+BaseObject* SemispaceCopy::worklist_remove() {
+  BaseObject* ref = reinterpret_cast<BaseObject*>(scanptr_);
+  scanptr_ += ref->get_size();
+  return ref;
+}
+
 void SemispaceCopy::flip() {
   std::swap(fromspace_, tospace_);
   freeptr_ = tospace_;
 }
 
+void SemispaceCopy::scan(BaseObject* ref) {
+  for (ObjectRef* field : ref->pointers())
+    process(field);
+}
+
+void SemispaceCopy::process(ObjectRef* field) {
+  auto* from_ref = *field;
+  if (from_ref != nullptr)
+    *field = forward(from_ref);
+}
+
+BaseObject* SemispaceCopy::forward(BaseObject* from_ref) {
+  auto* to_ref = from_ref->forwarding();
+  if (to_ref == nullptr)
+    to_ref = copy(from_ref);
+  return to_ref;
+}
+
 BaseObject* SemispaceCopy::copy(BaseObject* from_ref) {
-  if (from_ref != nullptr && from_ref->forwarding() == nullptr) {
-    auto* p = freeptr_;
-    if (freeptr_ + from_ref->get_size() > tospace_ + kSmispaceSize)
-      alloc_fail();
+  auto* p = freeptr_;
+  if (freeptr_ + from_ref->get_size() > tospace_ + kSmispaceSize)
+    alloc_fail();
 
-    freeptr_ += from_ref->get_size();
+  freeptr_ += from_ref->get_size();
 
-    BaseObject* to_ref = from_ref->move_to(p);
-    from_ref->set_forwarding(to_ref);
-    ++objcount_;
+  BaseObject* to_ref = from_ref->move_to(p);
+  from_ref->set_forwarding(to_ref);
+  ++objcount_;
 
-    for (ObjectRef* op : to_ref->pointers())
-      *op = copy(*op);
-  }
-  return from_ref ? from_ref->forwarding() : nullptr;
+  worklist_append(to_ref);
+  return to_ref;
 }
 
 }

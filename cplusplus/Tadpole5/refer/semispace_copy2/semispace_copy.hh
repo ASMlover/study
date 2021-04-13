@@ -54,7 +54,16 @@ class SemispaceCopy final : public Singleton<SemispaceCopy> {
 
   void alloc_fail();
   void* alloc(sz_t n);
+
+  void worklist_init();
+  bool worklist_empty() const;
+  void worklist_append(BaseObject* o);
+  BaseObject* worklist_remove();
+
   void flip();
+  void scan(BaseObject* ref);
+  void process(ObjectRef* field);
+  BaseObject* forward(BaseObject* from_ref);
   BaseObject* copy(BaseObject* from_ref);
 public:
   SemispaceCopy() noexcept;
