@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <tadpole/common/common.hh>
 
@@ -51,32 +52,54 @@ using ObjectRef = BaseObject*;
 
 class BaseObject : private UnCopyable {
   ObjType type_;
-  BaseObject* forwarding_{};
+  u32_t rc_{};
 public:
   BaseObject(ObjType type) noexcept : type_(type) {}
   virtual ~BaseObject() {}
 
   inline ObjType type() const noexcept { return type_; }
-  inline BaseObject* forwarding() const noexcept { return forwarding_; }
-  inline void set_forwarding(BaseObject* forwarding) noexcept { forwarding_ = forwarding; }
+  inline u32_t rc() const noexcept { return rc_; }
+  inline u32_t inc_ref() noexcept { return ++rc_; }
+  inline u32_t dec_ref() noexcept { return --rc_; }
 
   virtual sz_t get_size() const noexcept = 0;
   virtual const char* get_name() const noexcept = 0;
-  virtual BaseObject* move_to(void* p) = 0;
   virtual std::vector<ObjectRef*> pointers() noexcept { return std::vector<ObjectRef*>(); }
 };
+
+inline void object_incref(BaseObject* o) noexcept {
+  if (o != nullptr)
+    o->inc_ref();
+}
+
+inline void object_decref(BaseObject* o) noexcept {
+  if (o != nullptr && o->dec_ref() == 0) {
+    for (ObjectRef* field : o->pointers())
+      object_decref(*field);
+
+    delete o;
+  }
+}
+
+inline void object_write(ObjectRef* target, BaseObject* source) noexcept {
+  object_incref(source);
+  object_decref(*target);
+  *target = source;
+}
 
 class IntObject final : public BaseObject {
   int value_{};
 public:
   IntObject(int value = 0) noexcept : BaseObject(ObjType::INT), value_(value) {}
+  virtual ~IntObject() {
+    std::cout << "[" << this << "] reclaim object: `" << get_name() << "`" << std::endl;
+  }
 
   inline int value() const noexcept { return value_; }
   inline void set_value(int value = 0) noexcept { value_ = value; }
 
   virtual sz_t get_size() const noexcept override { return sizeof(IntObject); }
   virtual const char* get_name() const noexcept override { return "<int>"; }
-  virtual BaseObject* move_to(void* p) override { return new (p) IntObject(value_); }
 
   static IntObject* create(int value = 0) noexcept;
 };
@@ -87,16 +110,24 @@ class PairObject final : public BaseObject {
 public:
   PairObject(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept
     : BaseObject(ObjType::PAIR), first_(first), second_(second) {
+    object_incref(first_);
+    object_incref(second_);
+  }
+  virtual ~PairObject() {
+    std::cout << "[" << this << "] reclaim object: `" << get_name() << "`" << std::endl;
   }
 
   inline BaseObject* first() const noexcept { return first_; }
-  inline void set_first(BaseObject* first = nullptr) noexcept { first_ = first; }
+  inline void set_first(BaseObject* first = nullptr) noexcept {
+    object_write(&first_, first);
+  }
   inline BaseObject* second() const noexcept { return second_; }
-  inline void set_second(BaseObject* second = nullptr) noexcept { second_ = second; }
+  inline void set_second(BaseObject* second = nullptr) noexcept {
+    object_write(&second_, second);
+  }
 
   virtual sz_t get_size() const noexcept override { return sizeof(PairObject); }
   virtual const char* get_name() const noexcept override { return "<pair>"; }
-  virtual BaseObject* move_to(void* p) override { return new (p) PairObject(first_, second_); }
 
   virtual std::vector<ObjectRef*> pointers() noexcept override;
 

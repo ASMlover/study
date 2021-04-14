@@ -34,8 +34,6 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <exception>
-#include <iostream>
 #include "reference_count.hh"
 
 namespace tadpole::gc {
@@ -44,20 +42,28 @@ ReferenceCount::ReferenceCount() noexcept {
 }
 
 ReferenceCount::~ReferenceCount() noexcept {
-}
-
-void ReferenceCount::collect() {
+  while (!roots_.empty())
+    pop_object();
 }
 
 void ReferenceCount::push_object(BaseObject* o) noexcept {
+  object_incref(o);
+  roots_.push_back(o);
 }
 
 BaseObject* ReferenceCount::pop_object() noexcept {
+  if (!roots_.empty()) {
+    BaseObject* o = roots_.back();
+    roots_.pop_back();
+    object_decref(o);
+    return o;
+  }
   return nullptr;
 }
 
 BaseObject* ReferenceCount::peek_object(int distance) const noexcept {
-  return nullptr;
+  int i = as_type<int>(roots_.size()) - distance - 1;
+  return i < 0 ? nullptr : roots_[i];
 }
 
 }
