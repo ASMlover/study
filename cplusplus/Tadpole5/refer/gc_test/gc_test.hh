@@ -42,7 +42,7 @@
 namespace tadpole::gc {
 
 static constexpr int kTestCount = 100;
-static constexpr int kLoopCount = 10000;
+static constexpr int kLoopCount = 1000;
 
 template <typename VM> void gc_test(VM& vm) {
   std::srand((unsigned int)std::time(nullptr));
