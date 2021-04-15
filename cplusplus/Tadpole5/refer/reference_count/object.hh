@@ -62,7 +62,6 @@ public:
   inline u32_t inc_ref() noexcept { return ++rc_; }
   inline u32_t dec_ref() noexcept { return --rc_; }
 
-  virtual sz_t get_size() const noexcept = 0;
   virtual const char* get_name() const noexcept = 0;
   virtual std::vector<ObjectRef*> pointers() noexcept { return std::vector<ObjectRef*>(); }
 };
@@ -98,7 +97,6 @@ public:
   inline int value() const noexcept { return value_; }
   inline void set_value(int value = 0) noexcept { value_ = value; }
 
-  virtual sz_t get_size() const noexcept override { return sizeof(IntObject); }
   virtual const char* get_name() const noexcept override { return "<int>"; }
 
   static IntObject* create(int value = 0) noexcept;
@@ -126,9 +124,7 @@ public:
     object_write(&second_, second);
   }
 
-  virtual sz_t get_size() const noexcept override { return sizeof(PairObject); }
   virtual const char* get_name() const noexcept override { return "<pair>"; }
-
   virtual std::vector<ObjectRef*> pointers() noexcept override;
 
   static PairObject* create(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept;
