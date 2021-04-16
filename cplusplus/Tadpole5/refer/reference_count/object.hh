@@ -59,8 +59,8 @@ public:
 
   inline ObjType type() const noexcept { return type_; }
   inline u32_t rc() const noexcept { return rc_; }
-  inline u32_t inc_ref() noexcept { return ++rc_; }
-  inline u32_t dec_ref() noexcept { return --rc_; }
+  inline u32_t inc_rc() noexcept { return ++rc_; }
+  inline u32_t dec_rc() noexcept { return --rc_; }
 
   virtual const char* get_name() const noexcept = 0;
   virtual std::vector<ObjectRef*> pointers() noexcept { return std::vector<ObjectRef*>(); }
@@ -68,11 +68,11 @@ public:
 
 inline void object_incref(BaseObject* o) noexcept {
   if (o != nullptr)
-    o->inc_ref();
+    o->inc_rc();
 }
 
 inline void object_decref(BaseObject* o) noexcept {
-  if (o != nullptr && o->dec_ref() == 0) {
+  if (o != nullptr && o->dec_rc() == 0) {
     for (ObjectRef* field : o->pointers())
       object_decref(*field);
 
@@ -107,22 +107,18 @@ class PairObject final : public BaseObject {
   BaseObject* second_{};
 public:
   PairObject(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept
-    : BaseObject(ObjType::PAIR), first_(first), second_(second) {
-    object_incref(first_);
-    object_incref(second_);
+    : BaseObject(ObjType::PAIR) {
+    object_write(&first_, first);
+    object_write(&second_, second);
   }
   virtual ~PairObject() {
     std::cout << "[" << this << "] reclaim object: `" << get_name() << "`" << std::endl;
   }
 
   inline BaseObject* first() const noexcept { return first_; }
-  inline void set_first(BaseObject* first = nullptr) noexcept {
-    object_write(&first_, first);
-  }
+  inline void set_first(BaseObject* first = nullptr) noexcept { object_write(&first_, first); }
   inline BaseObject* second() const noexcept { return second_; }
-  inline void set_second(BaseObject* second = nullptr) noexcept {
-    object_write(&second_, second);
-  }
+  inline void set_second(BaseObject* second = nullptr) noexcept { object_write(&second_, second); }
 
   virtual const char* get_name() const noexcept override { return "<pair>"; }
   virtual std::vector<ObjectRef*> pointers() noexcept override;
