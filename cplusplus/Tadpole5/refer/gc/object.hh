@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include <tadpole/common/common.hh>
 
 namespace tadpole::gc {
@@ -44,6 +45,9 @@ enum class ObjType : u8_t {
   INT,
   PAIR,
 };
+
+class BaseObject;
+using ObjectRef = BaseObject*;
 
 class BaseObject : private UnCopyable {
   ObjType type_;
@@ -55,6 +59,31 @@ public:
 
   virtual sz_t get_size() const noexcept = 0;
   virtual const char* get_name() const noexcept = 0;
+  virtual std::vector<ObjectRef*> pointers() noexcept { return std::vector<ObjectRef*>(); }
+};
+
+class IntObject final : public BaseObject {
+  int value_{};
+public:
+  IntObject(int value = 0) noexcept : BaseObject(ObjType::INT), value_(value) {}
+  virtual ~IntObject() noexcept {}
+
+  inline int value() const noexcept { return value_; }
+  inline void set_value(int value = 0) noexcept { value_ = value; }
+
+  virtual sz_t get_size() const noexcept override { return sizeof(IntObject); }
+  virtual const char* get_name() const noexcept override { return "<int>"; }
+
+  static IntObject* create(int value = 0);
+};
+
+class PairObject final : public BaseObject {
+  BaseObject* first_{};
+  BaseObject* second_{};
+public:
+  PairObject(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept
+    : BaseObject(ObjType::PAIR), first_(first), second_(second) {
+  }
 };
 
 }
