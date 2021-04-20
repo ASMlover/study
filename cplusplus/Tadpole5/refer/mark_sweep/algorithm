@@ -1,0 +1,22 @@
+COLLECT()
+  MARK-FROM-ROOTS()
+  SWEEP(HeapStart, HeapEnd)
+
+MARK-FROM-ROOTS()
+  for ref <- Roots
+    MARK(*ref)
+
+MARK(obj)
+  if obj != NIL && !IS-MARKED(obj)
+    SET-MARKED(obj)
+    for fld <- POINTERS(obj)
+      MARK(*fld)
+
+SWEEP(start, end)
+  scan <- start
+  while scan < end
+    if IS-MARKED(scan)
+      UNSET-MARKED(scan)
+    else
+      RECLAIM(scan)
+    scan <- NEXT-OBJECT(scan)

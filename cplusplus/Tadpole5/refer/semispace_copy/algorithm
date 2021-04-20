@@ -1,0 +1,28 @@
+CREATE-SEMISPACE()
+  Fromspace <- (HeapEnd - HeapStart) / 2
+  Tospace <- HeapStart
+  Free <- Tospace
+
+COLLECT()
+  FLIP()
+  scan <- Free
+
+  for ref <- Roots
+    *ref <- COPY(*ref)
+
+FLIP()
+  Fromspace, Tospace <- Tospace, Fromspace
+  Free <- Tospace
+
+COPY(fromRef)
+  if ref != nil && FORWARDING-ADDRESS(fromRef) = nil
+    toRef <- Free
+    Free <- Free + SIZE(fromRef)
+
+    MOVE(fromRef, toRef)
+    SET-FORWARDING-ADDRESS(fromRef, toRef)
+
+    for fld <- POINTERS(toRef)
+      *fld <- COPY(*fld)
+
+    return toRef
