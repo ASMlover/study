@@ -40,6 +40,7 @@
 namespace tadpole::gc {
 
 class BaseObject;
+using ObjectRef = BaseObject*;
 
 class BaseGC : private UnCopyable {
 protected:
@@ -62,6 +63,8 @@ public:
     int i = as_type<int>(roots_.size()) - distance - 1;
     return i < 0 ? nullptr : roots_[i];
   }
+
+  virtual void set_object(ObjectRef* target, BaseObject* source) noexcept { *target = source; }
 };
 
 }
