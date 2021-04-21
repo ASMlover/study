@@ -1,3 +1,12 @@
+NEW()
+  ref <- ALLOCATE()
+  if ref = nil
+    COLLECT()
+    ref <- ALLOCATE()
+    if ref = nil
+      ERROR("out of memory")
+  return ref
+
 COLLECT()
   MARK-FROM-ROOTS()
   SWEEP(HeapStart, HeapEnd)
