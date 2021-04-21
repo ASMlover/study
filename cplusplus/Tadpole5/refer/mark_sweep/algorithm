@@ -1,8 +1,8 @@
 NEW()
-  ref <- ALLOCATE()
+  ref <- ALLOCATE(size)
   if ref = nil
     COLLECT()
-    ref <- ALLOCATE()
+    ref <- ALLOCATE(size)
     if ref = nil
       ERROR("out of memory")
   return ref
