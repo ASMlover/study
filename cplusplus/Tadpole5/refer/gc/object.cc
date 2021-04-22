@@ -35,3 +35,15 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "object.hh"
+
+namespace tadpole::gc {
+
+IntObject* IntObject::create(int value) {
+  return nullptr;
+}
+
+PairObject* PairObject::create(BaseObject* first, BaseObject* second) {
+  return nullptr;
+}
+
+}

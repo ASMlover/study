@@ -94,6 +94,8 @@ public:
   virtual sz_t get_size() const noexcept override { return sizeof(PairObject); }
   virtual const char* get_name() const noexcept override { return "<pair>"; }
   virtual std::vector<ObjectRef*> pointers() noexcept override { return {&first_, &second_}; }
+
+  static PairObject* create(BaseObject* first = nullptr, BaseObject* second = nullptr);
 };
 
 }
