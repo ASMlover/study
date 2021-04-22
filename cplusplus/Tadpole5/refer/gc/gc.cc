@@ -35,3 +35,10 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "gc.hh"
+
+namespace tadpole::gc {
+
+void GlobalGC::switch_gc(const str_t& gc_name) noexcept {
+}
+
+}
