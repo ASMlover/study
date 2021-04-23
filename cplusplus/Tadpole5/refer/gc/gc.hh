@@ -76,16 +76,16 @@ class GlobalGC final : public Singleton<GlobalGC> {
   std::shared_ptr<BaseGC> gc_{};
 public:
   inline bool can_usable() const noexcept { return gc_ != nullptr; }
-  inline BaseGC& get_gc() noexcept  { return *gc_; }
-  inline const BaseGC& get_gc() const noexcept { return *gc_; }
+  inline BaseGC& acquire_gc() noexcept  { return *gc_; }
+  inline const BaseGC& acquire_gc() const noexcept { return *gc_; }
 
   void switch_gc(const str_t& gc_name) noexcept;
 
-  template <typename Object, typename... Args> inline Object* create_object(Args&&... args) noexcept {
+  template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
     if (!can_usable())
       return nullptr;
 
-    auto& gc = get_gc();
+    auto& gc = acquire_gc();
     void* p = gc.allocate(sizeof(Object));
     if (p == nullptr) {
       gc.collect();
@@ -104,8 +104,10 @@ public:
       return;
 
     o->~Object();
-    get_gc().deallocate(o);
+    acquire_gc().deallocate(o);
   }
 };
+
+inline BaseGC& global_gc() noexcept { return GlobalGC::get_instance().acquire_gc(); }
 
 }

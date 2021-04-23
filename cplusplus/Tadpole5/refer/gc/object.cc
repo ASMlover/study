@@ -39,11 +39,11 @@
 namespace tadpole::gc {
 
 IntObject* IntObject::create(int value) {
-  return nullptr;
+  return GlobalGC::get_instance().create_object<IntObject>(value);
 }
 
 PairObject* PairObject::create(BaseObject* first, BaseObject* second) {
-  return nullptr;
+  return GlobalGC::get_instance().create_object<PairObject>(first, second);
 }
 
 }

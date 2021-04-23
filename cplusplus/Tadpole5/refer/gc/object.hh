@@ -38,6 +38,7 @@
 
 #include <vector>
 #include <tadpole/common/common.hh>
+#include "gc.hh"
 
 namespace tadpole::gc {
 
@@ -82,14 +83,21 @@ class PairObject final : public BaseObject {
   BaseObject* second_{};
 public:
   PairObject(BaseObject* first = nullptr, BaseObject* second = nullptr) noexcept
-    : BaseObject(ObjType::PAIR), first_(first), second_(second) {
+    : BaseObject(ObjType::PAIR) {
+    global_gc().set_object(&first_, first);
+    global_gc().set_object(&second_, second);
   }
   virtual ~PairObject() noexcept {}
 
   inline BaseObject* first() const noexcept { return first_; }
-  inline void set_first(BaseObject* first = nullptr) noexcept { first_ = first; }
+  inline void set_first(BaseObject* first = nullptr) noexcept {
+    global_gc().set_object(&first_, first);
+  }
+
   inline BaseObject* second() const noexcept { return second_; }
-  inline void set_second(BaseObject* second = nullptr) noexcept { second_ = second; }
+  inline void set_second(BaseObject* second = nullptr) noexcept {
+    global_gc().set_object(&second_, second);
+  }
 
   virtual sz_t get_size() const noexcept override { return sizeof(PairObject); }
   virtual const char* get_name() const noexcept override { return "<pair>"; }
