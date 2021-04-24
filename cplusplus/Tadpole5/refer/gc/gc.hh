@@ -34,12 +34,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <memory>
 #include <vector>
 #include <tadpole/common/common.hh>
 
 namespace tadpole::gc {
 
 class BaseObject;
+using ObjectRef = BaseObject*;
 
 class BaseGC : private UnCopyable {
 protected:
@@ -62,6 +64,50 @@ public:
     int i = as_type<int>(roots_.size()) - distance - 1;
     return i < 0 ? nullptr : roots_[i];
   }
+
+  virtual void* allocate(sz_t size) noexcept { return std::malloc(size); }
+  virtual void deallocate(void* p) noexcept { std::free(p); }
+  virtual void set_object(ObjectRef* target, BaseObject* source) noexcept { *target = source; }
+
+  virtual void collect() {}
 };
+
+class GlobalGC final : public Singleton<GlobalGC> {
+  std::shared_ptr<BaseGC> gc_{};
+public:
+  inline bool can_usable() const noexcept { return gc_ != nullptr; }
+  inline BaseGC& acquire_gc() noexcept  { return *gc_; }
+  inline const BaseGC& acquire_gc() const noexcept { return *gc_; }
+
+  void switch_gc(const str_t& gc_name) noexcept;
+
+  template <typename Object, typename... Args> inline Object* create_object(Args&&... args) {
+    if (!can_usable())
+      return nullptr;
+
+    auto& gc = acquire_gc();
+    void* p = gc.allocate(sizeof(Object));
+    if (p == nullptr) {
+      gc.collect();
+
+      p = gc.allocate(sizeof(Object));
+      if (p == nullptr)
+        throw std::logic_error("GlobalGC: Out of Memory ...");
+    }
+
+    Object* o = new (p) Object(std::forward<Args>(args)...);
+    return o;
+  }
+
+  template <typename Object> void reclaim(Object* o) noexcept {
+    if (!can_usable())
+      return;
+
+    o->~Object();
+    acquire_gc().deallocate(o);
+  }
+};
+
+inline BaseGC& global_gc() noexcept { return GlobalGC::get_instance().acquire_gc(); }
 
 }

@@ -34,11 +34,16 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "gc.hh"
+#include "object.hh"
 
 namespace tadpole::gc {
 
-void GlobalGC::switch_gc(const str_t& gc_name) noexcept {
+IntObject* IntObject::create(int value) {
+  return GlobalGC::get_instance().create_object<IntObject>(value);
+}
+
+PairObject* PairObject::create(BaseObject* first, BaseObject* second) {
+  return GlobalGC::get_instance().create_object<PairObject>(first, second);
 }
 
 }

@@ -1,0 +1,25 @@
+NEW()
+  ref <- ALLOCATE(size)
+  if ref = nil
+    ERROR("out of memory")
+
+  SET-RC(ref, 0)
+  return ref
+
+ADD-REFERENCE(ref)
+  if ref != nil
+    SET-RC(ref, GET-RC(ref) + 1)
+
+DEL-REFERENCE(ref)
+  if ref != nil
+    SET-RC(ref, GET-RC(ref) - 1)
+    if GET-RC(ref) = 0
+      for fld <- POINTERS(ref)
+        DEL-REFERENCE(*fld)
+
+      RECLAIM(ref)
+
+WRITE(ref, obj)
+  ADD-REFERENCE(obj)
+  DEL-REFERENCE(*ref)
+  *ref <- obj

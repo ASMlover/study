@@ -1,7 +1,15 @@
 CREATE-SEMISPACE()
-  Fromspace <- (HeapEnd - HeapStart) / 2
+  Fromspace <- HeapStart + HeapSize / 2
   Tospace <- HeapStart
   Free <- Tospace
+
+ALLOCATE(size)
+  if Free + size > Tospace + HeapSize / 2
+    return nil
+
+  ref <- Free
+  Free <- Free + size
+  return ref
 
 COLLECT()
   FLIP()
