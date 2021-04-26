@@ -50,20 +50,30 @@
 
 namespace tadpole {
 
-using nil_t   = std::nullptr_t;
-using byte_t  = std::uint8_t;
-using i8_t    = std::int8_t;
-using u8_t    = std::uint8_t;
-using i16_t   = std::int16_t;
-using u16_t   = std::uint16_t;
-using i32_t   = std::int32_t;
-using u32_t   = std::uint32_t;
-using i64_t   = std::int64_t;
-using u64_t   = std::uint64_t;
-using sz_t    = std::size_t;
-using str_t   = std::string;
-using strv_t  = std::string_view;
-using ss_t    = std::stringstream;
+class _Safe {};
+class _Unsafe {};
+
+using nil_t     = std::nullptr_t;
+using byte_t    = std::uint8_t;
+using i8_t      = std::int8_t;
+using u8_t      = std::uint8_t;
+using i16_t     = std::int16_t;
+using u16_t     = std::uint16_t;
+using i32_t     = std::int32_t;
+using u32_t     = std::uint32_t;
+using i64_t     = std::int64_t;
+using u64_t     = std::uint64_t;
+using sz_t      = std::size_t;
+#if defined(TADPOLE_GNUC)
+  using ssz_t   = ssize_t;
+#else
+  using ssz_t   = std::int64_t;
+#endif
+using str_t     = std::string;
+using strv_t    = std::string_view;
+using ss_t      = std::stringstream;
+using safe_t    = _Safe;
+using unsafe_t  = _Unsafe;
 
 class Copyable {
 protected:
@@ -92,9 +102,6 @@ public:
     return _ins;
   }
 };
-
-class _Safe {};
-class _Unsafe {};
 
 template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
