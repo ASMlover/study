@@ -98,7 +98,7 @@ public:
   inline UpvalueObject* as_upvalue() const noexcept { return as_.object->as_upvalue(); }
   inline ClosureObject* as_closure() const noexcept { return as_.object->as_closure(); }
 
-  inline BaseObject* as_object(_Safe) const noexcept { return is_object() ? as_.object : nullptr; }
+  inline BaseObject* as_object(safe_t) const noexcept { return is_object() ? as_.object : nullptr; }
 
   bool is_truthy() const;
   str_t stringify() const;

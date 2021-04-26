@@ -52,8 +52,8 @@ str_t FunctionObject::stringify() const {
   return ss.str();
 }
 
-void FunctionObject::iter_children(ObjectVisitor&& visitor) {
-  visitor(name_);
+ObjectRefList FunctionObject::children() const {
+  return {name_};
 }
 
 FunctionObject* FunctionObject::create(StringObject* name) {

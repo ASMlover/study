@@ -58,7 +58,7 @@ public:
   inline sz_t inc_upvalues_count() noexcept { return upvalues_count_++; }
   inline Chunk* chunk() const noexcept { return chunk_; }
 
-  virtual void iter_children(ObjectVisitor&& visitor) override;
+  virtual ObjectRefList children() const override;
   virtual str_t stringify() const override;
 
   static FunctionObject* create(StringObject* name = nullptr);

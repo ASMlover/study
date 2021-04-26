@@ -34,6 +34,7 @@
 #pragma once
 
 #include <functional>
+#include <vector>
 #include "../common/common.hh"
 
 namespace tadpole {
@@ -53,6 +54,8 @@ class FunctionObject;
 class UpvalueObject;
 class ClosureObject;
 
+using ObjectRef     = BaseObject*;
+using ObjectRefList = std::vector<ObjectRef>;
 using ObjectVisitor = std::function<void (BaseObject*)>;
 
 class ObjectTraverser : private UnCopyable {
@@ -60,12 +63,7 @@ public:
   virtual void iter_objects(ObjectVisitor&& visitor) = 0;
 };
 
-class ChildrenTraverser : private UnCopyable {
-public:
-  virtual void iter_children(ObjectVisitor&& visitor) = 0;
-};
-
-class BaseObject : public ChildrenTraverser {
+class BaseObject : private UnCopyable {
   ObjType type_;
   bool marked_{};
 public:
@@ -78,7 +76,7 @@ public:
 
   virtual bool is_truthy() const { return true; }
   virtual str_t stringify() const { return "<object>"; }
-  virtual void iter_children(ObjectVisitor&& visitor) override {}
+  virtual ObjectRefList children() const { return {}; }
 
   const char* type_asstr() const noexcept;
   StringObject* as_string();
