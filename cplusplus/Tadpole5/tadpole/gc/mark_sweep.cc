@@ -103,6 +103,11 @@ void MarkSweep::mark_from_roots() {
           mark();
         });
   }
+
+  for (auto& s : interned_strings_) {
+    mark_object(s.second);
+    mark();
+  }
 }
 
 void MarkSweep::sweep() {
