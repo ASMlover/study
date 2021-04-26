@@ -77,11 +77,11 @@ void VM::iter_objects(ObjectVisitor&& visitor) {
   // traverse tadpole object roots
   gcompiler_->iter_objects(std::move(visitor));
   for (auto& v : stack_)
-    visitor(v.as_object(_Safe()));
+    visitor(v.as_object(safe_t()));
   for (auto& f : frames_)
     visitor(f.closure());
   for (auto& g : globals_)
-    visitor(g.second.as_object(_Safe()));
+    visitor(g.second.as_object(safe_t()));
   for (auto* u = open_upvalues_; u != nullptr; u = u->next())
     visitor(u);
 }

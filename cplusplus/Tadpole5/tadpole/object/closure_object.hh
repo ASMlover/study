@@ -51,7 +51,7 @@ public:
   inline UpvalueObject* get_upvalue(sz_t i) const noexcept { return upvalues_[i]; }
   inline void set_upvalue(sz_t i, UpvalueObject* u) noexcept { upvalues_[i] = u; }
 
-  virtual void iter_children(ObjectVisitor&& visitor) override;
+  virtual ObjectRefList children() const override;
   virtual str_t stringify() const override;
 
   static ClosureObject* create(FunctionObject* fn);

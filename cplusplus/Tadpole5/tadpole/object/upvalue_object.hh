@@ -60,7 +60,7 @@ public:
   inline UpvalueObject* next() const noexcept { return next_; }
   inline void set_next(UpvalueObject* next) noexcept { next_ = next; }
 
-  virtual void iter_children(ObjectVisitor&& visitor) override;
+  virtual ObjectRefList children() const override;
   virtual str_t stringify() const override;
 
   static UpvalueObject* create(Value* value, UpvalueObject* next = nullptr);

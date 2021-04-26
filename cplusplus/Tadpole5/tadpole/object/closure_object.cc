@@ -56,10 +56,11 @@ str_t ClosureObject::stringify() const {
   return ss.str();
 }
 
-void ClosureObject::iter_children(ObjectVisitor&& visitor) {
-  visitor(fn_);
+ObjectRefList ClosureObject::children() const {
+  ObjectRefList r{fn_};
   for (sz_t i = 0; i < upvalues_count(); ++i)
-    visitor(upvalues_[i]);
+    r.push_back(upvalues_[i]);
+  return r;
 }
 
 ClosureObject* ClosureObject::create(FunctionObject* fn) {

@@ -42,8 +42,8 @@ str_t UpvalueObject::stringify() const {
   return ss.str();
 }
 
-void UpvalueObject::iter_children(ObjectVisitor&& visitor) {
-  visitor(closed_.as_object(_Safe()));
+ObjectRefList UpvalueObject::children() const {
+  return {closed_.as_object(safe_t())};
 }
 
 UpvalueObject* UpvalueObject::create(Value* value, UpvalueObject* next) {
