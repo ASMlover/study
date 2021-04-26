@@ -91,7 +91,8 @@ void MarkSweep::mark() {
     auto* o = worklist_.back();
     worklist_.pop_back();
 
-    o->iter_children([this](BaseObject* child) { mark_object(child); });
+    for (BaseObject* child : o->children())
+      mark_object(child);
   }
 }
 
