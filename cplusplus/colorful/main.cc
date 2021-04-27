@@ -30,7 +30,8 @@
 # define USE_POSIX
 # include <unistd.h>
 #else
-# include <Windows.h>
+# include <io.h>
+# include <windows.h>
 #endif
 
 namespace internal {
@@ -90,11 +91,11 @@ inline std::ostream& gray(std::ostream& out) noexcept { return out << "\033[90m"
 #else
 namespace internal {
 
-inline void win_change_attributes(std::ostream& stream, int foreground, int background = -1) {
+inline std::ostream& win_change_attributes(std::ostream& stream, int foreground, int background = -1) {
   static WORD wDefaultAttributes = 0;
 
   if (!is_atty(stream))
-    return;
+    return stream;
 
   HANDLE hTerminal = INVALID_HANDLE_VALUE;
   if (&stream == &std::cout)
@@ -105,17 +106,17 @@ inline void win_change_attributes(std::ostream& stream, int foreground, int back
   if (!wDefaultAttributes) {
     CONSOLE_SCREEN_BUFFER_INFO info;
     if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
-      return;
+      return stream;
     wDefaultAttributes = info.wAttributes;
   }
   if (foreground == -1 && background == -1) {
     ::SetConsoleTextAttribute(hTerminal, wDefaultAttributes);
-    return;
+    return stream;
   }
 
   CONSOLE_SCREEN_BUFFER_INFO info;
   if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
-    return;
+    return stream;
 
   if (foreground != -1) {
     info.wAttributes &= ~(info.wAttributes & 0x0f);
@@ -127,37 +128,59 @@ inline void win_change_attributes(std::ostream& stream, int foreground, int back
   }
 
   ::SetConsoleTextAttribute(hTerminal, info.wAttributes);
-}
-
-inline std::ostream& reset(std::ostream& stream) noexcept {
-  internal::win_change_attributes(stream, -1, -1);
   return stream;
 }
 
-inline std::ostream& red(std::ostream& stream) noexcept {
-  internal::win_change_attributes(stream, FOREGROUND_RED);
-  return stream;
 }
 
-inline std::ostream& green(std::ostream& stream) noexcept {
-  internal::win_change_attributes(stream, FOREGROUND_GREEN);
-  return stream;
+inline std::ostream& reset(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, -1, -1);
 }
 
+inline std::ostream& red(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_RED);
+}
+
+inline std::ostream& green(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_GREEN);
+}
+
+inline std::ostream& yellow(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_RED | FOREGROUND_GREEN);
+}
+
+inline std::ostream& blue(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_BLUE);
+}
+
+inline std::ostream& magenta(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_RED | FOREGROUND_BLUE);
+}
+
+inline std::ostream& cyan(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_GREEN | FOREGROUND_BLUE);
+}
+
+inline std::ostream& white(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+}
+
+inline std::ostream& gray(std::ostream& out) noexcept {
+  return internal::win_change_attributes(out, FOREGROUND_INTENSITY);
 }
 #endif
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  std::cout << FOREGROUND_RED("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_GREEN("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_YELLOW("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_BLUE("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_MAGENTA("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_CYAN("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_WHITE("Hello, world!!!") << std::endl;
-  std::cout << FOREGROUND_GRAY("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_RED("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_GREEN("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_YELLOW("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_BLUE("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_MAGENTA("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_CYAN("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_WHITE("Hello, world!!!") << std::endl;
+  //std::cout << FOREGROUND_GRAY("Hello, world!!!") << std::endl;
 
   std::cout << red << "Hello, colorful world !!!" << std::endl;
   std::cout << green << "Hello, colorful world !!!" << std::endl;
