@@ -34,110 +34,33 @@
 #pragma once
 
 #include "common.hh"
-#if defined(TADPOLE_GNUC)
-# include <unistd.h>
-#else
-# include <io.h>
-# include <windows.h>
-#endif
 
 namespace tadpole::colorful {
 
-inline FILE* get_standard_stream(const std::ostream& stream) noexcept {
-  if (&stream == &std::cout)
-    return stdout;
-  else if ((&stream == &std::cerr) || (&stream == &std::clog))
-    return stderr;
-  return nullptr;
-}
+#define SET_COLORFUL(c) set_colorful(stream, Colorful::c)
 
-inline bool is_atty(std::ostream& stream) noexcept {
-  FILE* std_stream = get_standard_stream(stream);
-  if (!std_stream)
-    return false;
+enum class Colorful : u8_t {
+  RESET,
+  FG_RED,
+  FG_GREEN,
+  FG_YELLOW,
+  FG_BLUE,
+  FG_MAGENTA,
+  FG_CYAN,
+  FG_WHITE,
+  FG_GRAY,
+};
 
-#if defined(TADPOLE_GNUC)
-  return ::isatty(::fileno(std_stream));
-#else
-  return ::_isatty(::_fileno(std_stream));
-#endif
-}
+std::ostream& set_colorful(std::ostream& stream, Colorful c) noexcept;
 
-#if defined(TADPOLE_GNUC)
-# define COLORFUL_RESET               "\033[00m"
-# define COLORFUL_FOREGROUND_RED      "\033[31m"
-# define COLORFUL_FOREGROUND_GREEN    "\033[32m"
-# define COLORFUL_FOREGROUND_YELLOW   "\033[33m"
-# define COLORFUL_FOREGROUND_BLUE     "\033[34m"
-# define COLORFUL_FOREGROUND_MAGENTA  "\033[35m"
-# define COLORFUL_FOREGROUND_CYAN     "\033[36m"
-# define COLORFUL_FOREGROUND_WHITE    "\033[37m"
-# define COLORFUL_FOREGROUND_GRAY     "\033[90m"
-
-# define SET_COLOR(c)                 (stream) << (c)
-#else
-# define COLORFUL_RESET               -1
-# define COLORFUL_FOREGROUND_RED      FOREGOUND_RED
-# define COLORFUL_FOREGROUND_GREEN    FOREGROUND_GREEN
-# define COLORFUL_FOREGROUND_YELLOW   FOREGOUND_RED | FOREGROUND_GREEN
-# define COLORFUL_FOREGROUND_BLUE     FOREGROUND_BLUE
-# define COLORFUL_FOREGROUND_MAGENTA  FOREGOUND_RED | FOREGROUND_BLUE
-# define COLORFUL_FOREGROUND_CYAN     FOREGROUND_GREEN | FOREGROUND_BLUE
-# define COLORFUL_FOREGROUND_WHITE    FOREGOUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
-# define COLORFUL_FOREGROUND_GRAY     FOREGROUND_INTENSITY
-
-# define SET_COLOR(c)                 set_color((stream), (c))
-
-inline std::ostream& set_color(
-    std::ostream& stream, int foreground = -1, int background = -1) noexcept {
-  static WORD wDefaultAttributes = 0;
-
-  if (!is_atty(stream))
-    return stream;
-
-  HANDLE hTerminal = INVALID_HANDLE_VALUE;
-  if (&stream == &std::cout)
-    hTerminal = ::GetStdHandle(STD_OUTPUT_HANDLE);
-  else if (&stream == &std::cerr)
-    hTerminal = ::GetStdHandle(STD_ERROR_HANDLE);
-
-  if (!wDefaultAttributes) {
-    CONSOLE_SCREEN_BUFFER_INFO info;
-    if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
-      return stream;
-    wDefaultAttributes = info.wAttributes;
-  }
-  if (foreground == -1 && background == -1) {
-    ::SetConsoleTextAttribute(hTerminal, wDefaultAttributes);
-    return stream;
-  }
-
-  CONSOLE_SCREEN_BUFFER_INFO info;
-  if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
-    return stream;
-
-  if (foreground != -1) {
-    info.wAttributes &= ~(info.wAttributes & 0x0F);
-    info.wAttributes |= as_type<WORD>(foreground);
-  }
-  if (background != -1) {
-    info.wAttributes &= ~(info.wAttributes & 0xF0);
-    info.wAttributes |= as_type<WORD>(background);
-  }
-
-  ::SetConsoleTextAttribute(hTerminal, info.wAttributes);
-  return stream;
-}
-#endif
-
-inline std::ostream& reset(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_RESET); }
-inline std::ostream& red(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_RED); }
-inline std::ostream& green(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_GREEN); }
-inline std::ostream& yellow(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_YELLOW); }
-inline std::ostream& blue(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_BLUE); }
-inline std::ostream& magenta(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_MAGENTA); }
-inline std::ostream& cyan(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_CYAN); }
-inline std::ostream& white(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_WHITE); }
-inline std::ostream& gray(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_GRAY); }
+inline std::ostream& reset(std::ostream& stream) noexcept { return SET_COLORFUL(RESET); }
+inline std::ostream& red(std::ostream& stream) noexcept { return SET_COLORFUL(FG_RED); }
+inline std::ostream& green(std::ostream& stream) noexcept { return SET_COLORFUL(FG_GREEN); }
+inline std::ostream& yellow(std::ostream& stream) noexcept { return SET_COLORFUL(FG_YELLOW); }
+inline std::ostream& blue(std::ostream& stream) noexcept { return SET_COLORFUL(FG_BLUE); }
+inline std::ostream& magenta(std::ostream& stream) noexcept { return SET_COLORFUL(FG_MAGENTA); }
+inline std::ostream& cyan(std::ostream& stream) noexcept { return SET_COLORFUL(FG_CYAN); }
+inline std::ostream& white(std::ostream& stream) noexcept { return SET_COLORFUL(FG_WHITE); }
+inline std::ostream& gray(std::ostream& stream) noexcept { return SET_COLORFUL(FG_GRAY); }
 
 }
