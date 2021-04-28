@@ -36,6 +36,7 @@
 #include <functional>
 #include <iostream>
 #include "common.hh"
+#include "colorful.hh"
 
 namespace tadpole::harness {
 
@@ -49,7 +50,8 @@ public:
 
   ~Tester() noexcept {
     if (!ok_) {
-      std::cerr << fname_ << "(" << lineno_ << "): " << ss_.str() << std::endl;
+      std::cerr
+        << colorful::red << fname_ << "(" << lineno_ << "): " << ss_.str() << colorful::reset << std::endl;
       std::exit(-1);
     }
   }
