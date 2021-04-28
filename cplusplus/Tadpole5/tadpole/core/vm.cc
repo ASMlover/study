@@ -36,6 +36,7 @@
 #include "chunk.hh"
 #include "callframe.hh"
 #include "compiler.hh"
+#include "../common/colorful.hh"
 #include "../gc/gc.hh"
 #include "../object/native_object.hh"
 #include "../builtin/builtins.hh"
@@ -93,7 +94,7 @@ void VM::reset() {
 }
 
 void VM::runtime_error(const char* format, ...) {
-  std::cerr << "Traceback (most recent call last):" << std::endl;
+  std::cerr << colorful::red << "Traceback (most recent call last):" << std::endl;
   for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
     auto& frame = *it;
 
@@ -108,7 +109,7 @@ void VM::runtime_error(const char* format, ...) {
   va_start(ap, format);
   std::vfprintf(stderr, format, ap);
   va_end(ap);
-  std::fprintf(stderr, "\n");
+  std::cerr << colorful::reset << std::endl;
 
   reset();
 }
