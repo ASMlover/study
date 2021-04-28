@@ -138,6 +138,6 @@ inline std::ostream& blue(std::ostream& stream) noexcept { return SET_COLOR(COLO
 inline std::ostream& magenta(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_MAGENTA); }
 inline std::ostream& cyan(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_CYAN); }
 inline std::ostream& white(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_WHITE); }
-inline std::ostream& gray(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_WHITE); }
+inline std::ostream& gray(std::ostream& stream) noexcept { return SET_COLOR(COLORFUL_FOREGROUND_GRAY); }
 
 }
