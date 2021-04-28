@@ -32,6 +32,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "../common/colorful.hh"
 #include "mark_sweep.hh"
 
 namespace tadpole {
@@ -67,7 +68,9 @@ void MarkSweep::mark_object(BaseObject* o) {
     return;
 
 #if defined(_TADPOLE_DEBUG_GC)
-  std::cout << "[" << o << "] mark object: `" << o->stringify() << "`" << std::endl;
+  std::cout
+    << colorful::cyan << "[" << o << "] mark object: `" << o->stringify() << "`"
+    << colorful::reset << std::endl;
 #endif
 
   o->set_marked(true);
@@ -134,7 +137,9 @@ void MarkSweep::sweep() {
 
 void MarkSweep::reclaim_object(BaseObject* o) {
 #if defined(_TADPOLE_DEBUG_GC)
-  std::cout << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`" << std::endl;
+  std::cout
+    << colorful::gray << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`"
+    << colorful::reset << std::endl;
 #endif
 
   delete o;
