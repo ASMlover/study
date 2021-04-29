@@ -33,6 +33,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "harness.hh"
 
-TADPOLE_TEST(Dummy) {
+TADPOLE_TEST(TadpoleDummy) {
   std::cout << "Dummy Harness for Tadpole !!!"  << std::endl;
 }
