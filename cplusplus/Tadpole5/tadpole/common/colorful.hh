@@ -41,6 +41,7 @@ namespace tadpole::colorful {
 
 enum class Colorful : u8_t {
   RESET,
+
   FG_RED,
   FG_GREEN,
   FG_YELLOW,
@@ -49,6 +50,14 @@ enum class Colorful : u8_t {
   FG_CYAN,
   FG_WHITE,
   FG_GRAY,
+
+  FG_LIGHTRED,
+  FG_LIGHTGREEN,
+  FG_LIGHTYELLOW,
+  FG_LIGHTBLUE,
+  FG_LIGHTMAGENTA,
+  FG_LIGHTCYAN,
+  FG_LIGHTWHITE,
 };
 
 std::ostream& set_colorful(std::ostream& stream, Colorful c) noexcept;
@@ -62,5 +71,12 @@ inline std::ostream& magenta(std::ostream& stream) noexcept { return SET_COLORFU
 inline std::ostream& cyan(std::ostream& stream) noexcept { return SET_COLORFUL(FG_CYAN); }
 inline std::ostream& white(std::ostream& stream) noexcept { return SET_COLORFUL(FG_WHITE); }
 inline std::ostream& gray(std::ostream& stream) noexcept { return SET_COLORFUL(FG_GRAY); }
+inline std::ostream& lightred(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTRED); }
+inline std::ostream& lightgreen(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTGREEN); }
+inline std::ostream& lightyellow(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTYELLOW); }
+inline std::ostream& lightblue(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTBLUE); }
+inline std::ostream& lightmagenta(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTMAGENTA); }
+inline std::ostream& lightcyan(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTCYAN); }
+inline std::ostream& lightwhite(std::ostream& stream) noexcept { return SET_COLORFUL(FG_LIGHTWHITE); }
 
 }

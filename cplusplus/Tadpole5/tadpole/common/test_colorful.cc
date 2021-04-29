@@ -45,5 +45,12 @@ TADPOLE_TEST(TadpoleColorful) {
   std::cout << colorful::cyan << "Hello, Tadpole Colorful !!!" << std::endl;
   std::cout << colorful::white << "Hello, Tadpole Colorful !!!" << std::endl;
   std::cout << colorful::gray << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightred << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightgreen << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightyellow << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightblue << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightmagenta << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightcyan << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::lightwhite << "Hello, Tadpole Colorful !!!" << std::endl;
   std::cout << colorful::reset;
 }

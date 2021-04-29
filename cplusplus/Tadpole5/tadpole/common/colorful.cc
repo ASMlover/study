@@ -74,6 +74,13 @@ inline const char* get_colorful(Colorful c) noexcept {
   case Colorful::FG_CYAN: return "\033[36m";
   case Colorful::FG_WHITE: return "\033[37m";
   case Colorful::FG_GRAY: return "\033[90m";
+  case Colorful::FG_LIGHTRED: return "\033[91m";
+  case Colorful::FG_LIGHTGREEN: return "\033[92m";
+  case Colorful::FG_LIGHTYELLOW: return "\033[93m";
+  case Colorful::FG_LIGHTBLUE: return "\033[94m";
+  case Colorful::FG_LIGHTMAGENTA: return "\033[95m";
+  case Colorful::FG_LIGHTCYAN: return "\033[96m";
+  case Colorful::FG_LIGHTWHITE: return "\033[97m";
   }
   return "\033[00m";
 }
@@ -89,6 +96,13 @@ inline int get_colorful(Colorful c) noexcept {
   case Colorful::FG_CYAN: return FOREGROUND_GREEN | FOREGROUND_BLUE;
   case Colorful::FG_WHITE: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
   case Colorful::FG_GRAY: return FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTRED: return FOREGROUND_RED | FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTGREEN: return FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTYELLOW: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTBLUE: return FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTMAGENTA: return FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTCYAN: return FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+  case Colorful::FG_LIGHTWHITE: return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
   }
   return -1;
 }
