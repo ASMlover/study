@@ -33,6 +33,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <iostream>
+#include "../common/colorful.hh"
 #include "../core/vm.hh"
 #include "../gc/gc.hh"
 #include "builtins.hh"
@@ -40,6 +41,24 @@
 namespace tadpole {
 
 void register_builtins(VM& vm) {
+  // fn help() -> nil
+  vm.define_native("help", [](sz_t, Value*) -> Value {
+        std::cout
+          << colorful::green << "Welcome to Tadpole! This is the help utility."
+          << colorful::reset << std::endl << std::endl;
+
+        std::cout << "print(...)      Prints the values to stdout stream" << std::endl;
+        std::cout << "exit()          Exit the Tadpole terminal" << std::endl;
+        std::cout << "time()          Returns the current time in seconds since the Epoch" << std::endl;
+        std::cout << "clock()         Returns the CPU time since the start of the process" << std::endl;
+        std::cout << "gc_count()      Returns number of objects tracked by GC" << std::endl;
+        std::cout << "gc_threshold()  Returns the current collection thresholds" << std::endl;
+        std::cout << "gc_threshold(n) Sets the collection thresholds" << std::endl;
+        std::cout << "gc_collect()    Run a full collection" << std::endl;
+
+        return nullptr;
+      });
+
   // fn print(arg1: Value, arg2: Value, ...) -> nil
   vm.define_native("print", [](sz_t nargs, Value* args) -> Value {
         for (sz_t i = 0; i < nargs; ++i)
