@@ -49,9 +49,9 @@ int FunCompiler::resolve_local(const Token& name, const ErrorFn& errfn) {
 }
 
 int FunCompiler::add_upvalue(u8_t index, bool is_local) {
-  for (int i = 0; i < fn_->upvalues_count(); ++i) {
+  for (sz_t i = 0; i < fn_->upvalues_count(); ++i) {
     if (upvalues_[i].is_equal(index, is_local))
-      return i;
+      return as_type<int>(i);
   }
 
   upvalues_.push_back({index, is_local});
