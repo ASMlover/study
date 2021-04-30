@@ -32,6 +32,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
+#include "common/colorful.hh"
 #include "common/harness.hh"
 #include "core/vm.hh"
 #include "gc/gc.hh"
@@ -48,14 +49,17 @@ static int eval(tadpole::VM& vm, const std::string& source_bytes) {
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
-  std::cout << "Welcome to Tadpole !!!" << std::endl;
-
 #if defined(_TADPOLE_RUN_HARNESS)
   tadpole::harness::run_all_harness();
 #endif
 
   tadpole::VM vm;
   if (argc < 2) {
+    std::cout
+      << tadpole::colorful::lightgreen
+      << "W E L C O M E   T O   T A D P O L E !!!"
+      << tadpole::colorful::reset << std::endl;
+
     std::string line;
     for (;;) {
       if (!vm.is_running())

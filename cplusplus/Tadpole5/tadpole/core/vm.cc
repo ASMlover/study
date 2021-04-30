@@ -131,7 +131,7 @@ const Value& VM::peek(sz_t distance) const noexcept {
 bool VM::call(ClosureObject* closure, sz_t nargs) {
   FunctionObject* fn = closure->fn();
   if (fn->arity() != nargs) {
-    runtime_error("%() takes exactly %ud arguments (%ud given)",
+    runtime_error("%s() takes exactly %u arguments (%u given)",
         fn->name_asstr(), fn->arity(), nargs);
     return false;
   }
