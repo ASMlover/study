@@ -37,6 +37,7 @@
 #pragma once
 
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -49,6 +50,8 @@
 
 #if defined(__GNUC__) || defined(__clang__)
 # define TADPOLE_GNUC
+#else
+# define TADPOLE_MSVC
 #endif
 
 namespace tadpole {
