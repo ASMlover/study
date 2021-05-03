@@ -51,7 +51,9 @@ public:
   ~Tester() noexcept {
     if (!ok_) {
       std::cerr
-        << colorful::red << fname_ << "(" << lineno_ << "): " << ss_.str() << colorful::reset << std::endl;
+        << colorful::fg::red
+        << fname_ << "(" << lineno_ << "): " << ss_.str()
+        << colorful::reset << std::endl;
       std::exit(-1);
     }
   }

@@ -37,20 +37,39 @@
 TADPOLE_TEST(TadpoleColorful) {
   using namespace tadpole;
 
-  std::cout << colorful::red << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::green << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::yellow << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::blue << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::magenta << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::cyan << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::white << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::gray << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightred << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightgreen << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightyellow << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightblue << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightmagenta << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightcyan << "Hello, Tadpole Colorful !!!" << std::endl;
-  std::cout << colorful::lightwhite << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::black << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::red << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::green << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::yellow << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::blue << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::magenta << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::cyan << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::white << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::gray << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightred << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightgreen << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightyellow << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightblue << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightmagenta << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightcyan << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::fg::lightwhite << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::reset;
+
+  std::cout << colorful::bg::black << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::red << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::green << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::yellow << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::blue << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::magenta << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::cyan << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::white << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::gray << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightred << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightgreen << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightyellow << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightblue << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightmagenta << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightcyan << "Hello, Tadpole Colorful !!!" << std::endl;
+  std::cout << colorful::bg::lightwhite << "Hello, Tadpole Colorful !!!" << std::endl;
   std::cout << colorful::reset;
 }

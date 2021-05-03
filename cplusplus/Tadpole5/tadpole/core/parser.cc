@@ -32,6 +32,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "../common/colorful.hh"
 #include "../lex/lexer.hh"
 #include "../object/string_object.hh"
 #include "vm.hh"
@@ -100,6 +101,7 @@ void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
   panic_mode_ = true;
 
   std::cerr
+    << colorful::fg::red
     << "SyntaxError:" << std::endl
     << "  [LINE: " << tok.lineno() << "] ERROR ";
   if (tok.kind() == TokenKind::TK_EOF)
@@ -108,7 +110,7 @@ void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
     TADPOLE_UNUSED(0);
   else
     std::cerr << "at `" << tok.literal() << "` ";
-  std::cerr << ": " << msg << std::endl;
+  std::cerr << ": " << msg << colorful::reset << std::endl;
 }
 
 void GlobalParser::advance() {

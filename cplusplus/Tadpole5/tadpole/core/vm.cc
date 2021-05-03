@@ -94,7 +94,7 @@ void VM::reset() {
 }
 
 void VM::runtime_error(const char* format, ...) {
-  std::cerr << colorful::red << "Traceback (most recent call last):" << std::endl;
+  std::cerr << colorful::fg::red << "Traceback (most recent call last):" << std::endl;
   for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
     auto& frame = *it;
 
@@ -218,7 +218,7 @@ InterpretRet VM::run() {
     auto* frame_chunk = frame->frame_chunk();
     std::cout << "          ";
     for (auto& v : stack_)
-      std::cout << "[" << colorful::magenta << v << colorful::reset << "]";
+      std::cout << "[" << colorful::fg::magenta << v << colorful::reset << "]";
     std::cout << std::endl;
     frame_chunk->dis_code(frame_chunk->offset_with(frame->ip()));
 #endif

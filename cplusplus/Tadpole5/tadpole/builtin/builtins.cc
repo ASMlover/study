@@ -44,7 +44,7 @@ void register_builtins(VM& vm) {
   // fn help() -> nil
   vm.define_native("help", [](sz_t, Value*) -> Value {
         std::cout
-          << colorful::green << "Welcome to Tadpole! This is the help utility."
+          << colorful::fg::green << "Welcome to Tadpole! This is the help utility."
           << colorful::reset << std::endl << std::endl;
 
         std::cout << "print(...)      Prints the values to stdout stream" << std::endl;

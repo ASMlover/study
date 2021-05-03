@@ -63,7 +63,7 @@ int run_all_harness() {
       ++passed_tests;
 
       std::cout
-        << colorful::green
+        << colorful::fg::green
         << "********* [" << hc_name << "] test harness PASSED "
         << "(" << passed_tests << "/" << total_tests << ") "
         << "*********"
@@ -72,7 +72,7 @@ int run_all_harness() {
   }
 
   std::cout
-    << colorful::lightgreen
+    << colorful::fg::lightgreen
     << "========= PASSED "
     << "(" << passed_tests << "/" << total_tests << ") "
     << "test harness ========="
