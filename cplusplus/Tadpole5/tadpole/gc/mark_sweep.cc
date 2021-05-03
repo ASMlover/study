@@ -69,7 +69,7 @@ void MarkSweep::mark_object(BaseObject* o) {
 
 #if defined(_TADPOLE_DEBUG_GC)
   std::cout
-    << colorful::lightcyan << "[" << o << "] mark object: `" << o->stringify() << "`"
+    << colorful::fg::lightcyan << "[" << o << "] mark object: `" << o->stringify() << "`"
     << colorful::reset << std::endl;
 #endif
 
@@ -138,7 +138,7 @@ void MarkSweep::sweep() {
 void MarkSweep::reclaim_object(BaseObject* o) {
 #if defined(_TADPOLE_DEBUG_GC)
   std::cout
-    << colorful::gray << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`"
+    << colorful::fg::gray << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`"
     << colorful::reset << std::endl;
 #endif
 

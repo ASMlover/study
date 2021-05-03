@@ -101,7 +101,7 @@ void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
   panic_mode_ = true;
 
   std::cerr
-    << colorful::red
+    << colorful::fg::red
     << "SyntaxError:" << std::endl
     << "  [LINE: " << tok.lineno() << "] ERROR ";
   if (tok.kind() == TokenKind::TK_EOF)

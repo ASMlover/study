@@ -84,23 +84,6 @@ std::ostream& set_foreground_colorful(std::ostream& stream, Colorful c) noexcept
 std::ostream& set_background_colorful(std::ostream& stream, Colorful c) noexcept;
 
 inline std::ostream& reset(std::ostream& stream) noexcept { return SET_COLORFUL(RESET); }
-inline std::ostream& black(std::ostream& stream) noexcept { return SET_FG(BLACK); }
-inline std::ostream& red(std::ostream& stream) noexcept { return SET_FG(RED); }
-inline std::ostream& green(std::ostream& stream) noexcept { return SET_FG(GREEN); }
-inline std::ostream& yellow(std::ostream& stream) noexcept { return SET_FG(YELLOW); }
-inline std::ostream& blue(std::ostream& stream) noexcept { return SET_FG(BLUE); }
-inline std::ostream& magenta(std::ostream& stream) noexcept { return SET_FG(MAGENTA); }
-inline std::ostream& cyan(std::ostream& stream) noexcept { return SET_FG(CYAN); }
-inline std::ostream& white(std::ostream& stream) noexcept { return SET_FG(WHITE); }
-inline std::ostream& gray(std::ostream& stream) noexcept { return SET_FG(GRAY); }
-inline std::ostream& lightred(std::ostream& stream) noexcept { return SET_FG(LIGHTRED); }
-inline std::ostream& lightgreen(std::ostream& stream) noexcept { return SET_FG(LIGHTGREEN); }
-inline std::ostream& lightyellow(std::ostream& stream) noexcept { return SET_FG(LIGHTYELLOW); }
-inline std::ostream& lightblue(std::ostream& stream) noexcept { return SET_FG(LIGHTBLUE); }
-inline std::ostream& lightmagenta(std::ostream& stream) noexcept { return SET_FG(LIGHTMAGENTA); }
-inline std::ostream& lightcyan(std::ostream& stream) noexcept { return SET_FG(LIGHTCYAN); }
-inline std::ostream& lightwhite(std::ostream& stream) noexcept { return SET_FG(LIGHTWHITE); }
-
 namespace fg {
   inline std::ostream& black(std::ostream& stream) noexcept { return SET_FG(BLACK); }
   inline std::ostream& red(std::ostream& stream) noexcept { return SET_FG(RED); }

@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
   tadpole::VM vm;
   if (argc < 2) {
     std::cout
-      << tadpole::colorful::lightgreen
+      << tadpole::colorful::fg::lightgreen
       << "W E L C O M E   T O   T A D P O L E !!!"
       << tadpole::colorful::reset << std::endl;
 
