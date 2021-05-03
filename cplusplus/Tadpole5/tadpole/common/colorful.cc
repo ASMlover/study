@@ -66,6 +66,7 @@ inline bool is_atty(std::ostream& stream) noexcept {
 inline const char* get_colorful(Colorful c) noexcept {
   switch (c) {
   case Colorful::RESET: return "\033[00m";
+  case Colorful::FG_BLACK: return "\033[30m";
   case Colorful::FG_RED: return "\033[31m";
   case Colorful::FG_GREEN: return "\033[32m";
   case Colorful::FG_YELLOW: return "\033[33m";
@@ -81,6 +82,22 @@ inline const char* get_colorful(Colorful c) noexcept {
   case Colorful::FG_LIGHTMAGENTA: return "\033[95m";
   case Colorful::FG_LIGHTCYAN: return "\033[96m";
   case Colorful::FG_LIGHTWHITE: return "\033[97m";
+  case Colorful::BG_BLACK: return "\033[40m";
+  case Colorful::BG_RED: return "\033[41m";
+  case Colorful::BG_GREEN: return "\033[42m";
+  case Colorful::BG_YELLOW: return "\033[43m";
+  case Colorful::BG_BLUE: return "\033[44m";
+  case Colorful::BG_MAGENTA: return "\033[45m";
+  case Colorful::BG_CYAN: return "\033[46m";
+  case Colorful::BG_WHITE: return "\033[47m";
+  case Colorful::BG_GRAY: return "\033[100m";
+  case Colorful::BG_LIGHTRED: return "\033[101m";
+  case Colorful::BG_LIGHTGREEN: return "\033[102m";
+  case Colorful::BG_LIGHTYELLOW: return "\033[103m";
+  case Colorful::BG_LIGHTBLUE: return "\033[104m";
+  case Colorful::BG_LIGHTMAGENTA: return "\033[105m";
+  case Colorful::BG_LIGHTCYAN: return "\033[106m";
+  case Colorful::BG_LIGHTWHITE: return "\033[107m";
   }
   return "\033[00m";
 }
@@ -88,6 +105,7 @@ inline const char* get_colorful(Colorful c) noexcept {
 inline int get_colorful(Colorful c) noexcept {
   switch (c) {
   case Colorful::RESET: return -1;
+  case Colorful::FG_BLACK: return FOREGROUND_RED & FOREGROUND_GREEN & FOREGROUND_BLUE;
   case Colorful::FG_RED: return FOREGROUND_RED;
   case Colorful::FG_GREEN: return FOREGROUND_GREEN;
   case Colorful::FG_YELLOW: return FOREGROUND_RED | FOREGROUND_GREEN;
@@ -149,11 +167,19 @@ inline std::ostream& set_colorful(
 }
 #endif
 
-std::ostream& set_colorful(std::ostream& stream, Colorful c) noexcept {
+std::ostream& set_foreground_colorful(std::ostream& stream, Colorful c) noexcept {
 #if defined(TADPOLE_GNUC)
   return stream << get_colorful(c);
 #else
   return set_colorful(stream, get_colorful(c));
+#endif
+}
+
+std::ostream& set_background_colorful(std::ostream& stream, Colorful c) noexcept {
+#if defined(TADPOLE_GNUC)
+  return stream << get_colorful(c);
+#else
+  return set_colorful(stream, -1, get_colorful(c));
 #endif
 }
 
