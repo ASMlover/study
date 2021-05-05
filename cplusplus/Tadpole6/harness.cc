@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <tuple>
 #include <vector>
+#include "colorful.hh"
 #include "harness.hh"
 
 namespace tadpole::harness {
@@ -66,15 +67,17 @@ int run_all_harness() {
       ++passed_tests;
 
       std::cout
+        << colorful::fg::green
         << "********* [" << hc_name << "] test harness PASSED "
         << "(" << passed_tests << "/" << total_tests << ") *********"
-        << std::endl;
+        << colorful::reset << std::endl;
     }
   }
 
   std::cout
+    << colorful::fg::lightgreen
     << "========= PASSED " << "(" << passed_tests << "/" << total_tests << ") test harness ========="
-    << std::endl;
+    << colorful::reset << std::endl;
 
   return 0;
 }
