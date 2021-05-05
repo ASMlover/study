@@ -41,7 +41,6 @@
 namespace tadpole::colorful {
 
 enum class Colorful : u8_t {
-  COLORFUL_INVALID,
   COLORFUL_RESET,
 
   COLORFUL_FOREGROUND_BLACK,
@@ -53,7 +52,6 @@ enum class Colorful : u8_t {
   COLORFUL_FOREGROUND_CYAN,
   COLORFUL_FOREGROUND_WHITE,
   COLORFUL_FOREGROUND_GRAY,
-
   COLORFUL_FOREGROUND_LIGHTRED,
   COLORFUL_FOREGROUND_LIGHTGREEN,
   COLORFUL_FOREGROUND_LIGHTYELLOW,
@@ -71,7 +69,6 @@ enum class Colorful : u8_t {
   COLORFUL_BACKGROUND_CYAN,
   COLORFUL_BACKGROUND_WHITE,
   COLORFUL_BACKGROUND_GRAY,
-
   COLORFUL_BACKGROUND_LIGHTRED,
   COLORFUL_BACKGROUND_LIGHTGREEN,
   COLORFUL_BACKGROUND_LIGHTYELLOW,
@@ -81,12 +78,14 @@ enum class Colorful : u8_t {
   COLORFUL_BACKGROUND_LIGHTWHITE,
 };
 
-std::ostream& set_colorful(std::ostream& stream, Colorful fc, Colorful bc = Colorful::COLORFUL_INVALID) noexcept;
+std::ostream& set_colorful(std::ostream& stream, Colorful color) noexcept;
+std::ostream& set_foreground_colorful(std::ostream& stream, Colorful color) noexcept;
+std::ostream& set_background_colorful(std::ostream& stream, Colorful color) noexcept;
 
 inline std::ostream& reset(std::ostream& stream) noexcept { return set_colorful(stream, Colorful::COLORFUL_RESET); }
 
 namespace fg {
-#define SETCOLOR(c) set_colorful(stream, Colorful::COLORFUL_FOREGROUND_##c)
+#define SETCOLOR(c) set_foreground_colorful(stream, Colorful::COLORFUL_FOREGROUND_##c)
 
 inline std::ostream& black(std::ostream& stream) noexcept { return SETCOLOR(BLACK); }
 inline std::ostream& red(std::ostream& stream) noexcept { return SETCOLOR(RED); }
@@ -109,7 +108,7 @@ inline std::ostream& lightwhite(std::ostream& stream) noexcept { return SETCOLOR
 }
 
 namespace bg {
-#define SETCOLOR(c) set_colorful(stream, Colorful::COLORFUL_INVALID, Colorful::COLORFUL_BACKGROUND_##c)
+#define SETCOLOR(c) set_background_colorful(stream, Colorful::COLORFUL_BACKGROUND_##c)
 
 inline std::ostream& black(std::ostream& stream) noexcept { return SETCOLOR(BLACK); }
 inline std::ostream& red(std::ostream& stream) noexcept { return SETCOLOR(RED); }

@@ -68,7 +68,6 @@ inline bool is_atty(std::ostream& stream) noexcept {
 #if defined(TADPOLE_MSVC)
 inline int get_colorful(Colorful c) noexcept {
   switch (c) {
-  case Colorful::COLORFUL_INVALID: return -1;
   case Colorful::COLORFUL_RESET: return -1;
   case Colorful::COLORFUL_FOREGROUND_BLACK: return FOREGROUND_RED & FOREGROUND_GREEN & FOREGROUND_BLUE;
   case Colorful::COLORFUL_FOREGROUND_RED: return FOREGROUND_RED;
@@ -125,31 +124,33 @@ inline std::ostream& set_colorful(
       return stream;
     wDefaultAttributes = info.wAttributes;
   }
+
+  WORD wAttributes;
   if (foreground == -1 && background == -1) {
-    ::SetConsoleTextAttribute(hTerminal, wDefaultAttributes);
-    return stream;
+    wAttributes = wDefaultAttributes;
+  }
+  else {
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
+      return stream;
+
+    wAttributes = info.wAttributes;
+    if (foreground != -1) {
+      wAttributes &= ~(info.wAttributes & 0x0F);
+      wAttributes |= as_type<WORD>(foreground);
+    }
+    if (background != -1) {
+      wAttributes &= ~(info.wAttributes & 0xF0);
+      wAttributes |= as_type<WORD>(background);
+    }
   }
 
-  CONSOLE_SCREEN_BUFFER_INFO info;
-  if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
-    return stream;
-
-  if (foreground != -1) {
-    info.wAttributes &= ~(info.wAttributes & 0x0F);
-    info.wAttributes |= as_type<WORD>(foreground);
-  }
-  if (background != -1) {
-    info.wAttributes &= ~(info.wAttributes & 0xF0);
-    info.wAttributes |= as_type<WORD>(background);
-  }
-
-  ::SetConsoleTextAttribute(hTerminal, info.wAttributes);
+  ::SetConsoleTextAttribute(hTerminal, wAttributes);
   return stream;
 }
 #else
 inline const char* get_colorful(Colorful c) noexcept {
   switch (c) {
-  case Colorful::COLORFUL_INVALID: return "";
   case Colorful::COLORFUL_RESET: return "\033[00m";
   case Colorful::COLORFUL_FOREGROUND_BLACK: return "\033[30m";
   case Colorful::COLORFUL_FOREGROUND_RED: return "\033[31m";
@@ -184,15 +185,27 @@ inline const char* get_colorful(Colorful c) noexcept {
   case Colorful::COLORFUL_BACKGROUND_LIGHTCYAN: return "\033[106m";
   case Colorful::COLORFUL_BACKGROUND_LIGHTWHITE: return "\033[107m";
   }
-  return "";
+  return "\033[00m";
 }
 #endif
 
-std::ostream& set_colorful(std::ostream& stream, Colorful fc, Colorful bc) noexcept {
+std::ostream& set_colorful(std::ostream& stream, Colorful color) noexcept {
 #if defined(TADPOLE_MSVC)
-  return set_colorful(stream, get_colorful(fc), get_colorful(bc));
+  return set_colorful(stream, get_colorful(color));
 #else
-  return stream << get_colorful(fc) << get_colorful(bc);
+  return stream << get_colorful(color);
+#endif
+}
+
+std::ostream& set_foreground_colorful(std::ostream& stream, Colorful color) noexcept {
+  return set_colorful(stream, color);
+}
+
+std::ostream& set_background_colorful(std::ostream& stream, Colorful color) noexcept {
+#if defined(TADPOLE_MSVC)
+  return set_colorful(stream, -1, get_colorful(color));
+#else
+  return stream << get_colorful(color);
 #endif
 }
 
