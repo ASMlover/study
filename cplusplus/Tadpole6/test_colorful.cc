@@ -40,6 +40,24 @@
 TADPOLE_TEST(TadpoleColorful) {
   using namespace tadpole::colorful;
 
+#define COLORF(c)\
+  std::cout << c << bg::black << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::red << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::green << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::yellow << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::blue << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::magenta << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::cyan << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::white << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::gray << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightred << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightgreen << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightyellow << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightblue << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightmagenta << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightcyan << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl;\
+  std::cout << c << bg::lightwhite << "Hello, Tadpole Colorful - with foreground `" #c "` !!!" << std::endl
+
   std::cout << fg::black << "Hello, Tadpole Colorful !!!" << std::endl;
   std::cout << fg::red << "Hello, Tadpole Colorful !!!" << std::endl;
   std::cout << fg::green << "Hello, Tadpole Colorful !!!" << std::endl;
@@ -74,4 +92,22 @@ TADPOLE_TEST(TadpoleColorful) {
   std::cout << bg::lightmagenta << "Hello, Tadpole Colorful !!!" << reset << std::endl;
   std::cout << bg::lightcyan << "Hello, Tadpole Colorful !!!" << reset << std::endl;
   std::cout << bg::lightwhite << "Hello, Tadpole Colorful !!!" << reset << std::endl;
+
+  COLORF(fg::black);
+  COLORF(fg::red);
+  COLORF(fg::green);
+  COLORF(fg::yellow);
+  COLORF(fg::blue);
+  COLORF(fg::magenta);
+  COLORF(fg::cyan);
+  COLORF(fg::white);
+  COLORF(fg::gray);
+  COLORF(fg::lightred);
+  COLORF(fg::lightgreen);
+  COLORF(fg::lightyellow);
+  COLORF(fg::lightblue);
+  COLORF(fg::lightmagenta);
+  COLORF(fg::lightcyan);
+  COLORF(fg::lightwhite);
+  std::cout << reset;
 }
