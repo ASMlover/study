@@ -48,6 +48,7 @@ TADPOLE_TEST(TadpoleToken) {
   TESTEQ(t.literal(), s);\
   TESTEQ(t.lineno(), 0);\
 } while (false)
+#define TESTID(id)      TESTTK(TK::TK_IDENTIFIER, id)
 #define TESTNUM(n)      do {\
   auto t = NEWTK2(TK::TK_NUMERIC, #n);\
   TESTEQ(t.kind(), TK::TK_NUMERIC);\
@@ -81,6 +82,35 @@ TADPOLE_TEST(TadpoleToken) {
 
   TESTTK(TK::TK_EOF, "EOF");
   TESTTK(TK::TK_ERR, "ERR");
+
+  {
+    // test for IDENTIFIER
+    TESTID("foo");
+    TESTID("Foo");
+    TESTID("_foo");
+    TESTID("_Foo");
+    TESTID("__foo");
+    TESTID("__Foo");
+    TESTID("foo_");
+    TESTID("Foo_");
+    TESTID("foo__");
+    TESTID("Foo__");
+    TESTID("__foo__");
+    TESTID("__Foo__");
+    TESTID("foo1");
+    TESTID("Foo1");
+    TESTID("_foo1");
+    TESTID("_Foo1");
+    TESTID("__foo1");
+    TESTID("__Foo1");
+    TESTID("foo_1");
+    TESTID("Foo_1");
+    TESTID("foo__1");
+    TESTID("Foo__1");
+    TESTID("_foo_1");
+    TESTID("_Foo_1");
+    TESTID("__foo__1__Foo__1");
+  }
 
 #undef TESTSTR
 #undef TESTNUM
