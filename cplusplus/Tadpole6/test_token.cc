@@ -122,6 +122,17 @@ TADPOLE_TEST(TadpoleToken) {
     TESTNUM(-100.0);
   }
 
+  {
+    // test for STRING
+    TESTSTR("111", 0);
+    TESTSTR("Hello", 34);
+    TESTSTR("COME BACK", 56);
+    TESTSTR("============================", 89);
+    TESTSTR("****************************", 91);
+    TESTSTR("THIS IS A DUMMY STRING", 101);
+    TESTSTR("TEST FOR TADPOLE TOKEN STRING", 137);
+  }
+
 #undef TESTSTR
 #undef TESTNUM
 #undef TESTTK
