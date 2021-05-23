@@ -51,7 +51,22 @@ Token Lexer::next_token() {
   if (is_digit(c))
     return make_numeric();
 
-  // TODO:
+#define _MKTOKEN(c, k) case c: return make_token(TokenKind::TK_##k)
+  switch (c) {
+  _MKTOKEN('(', LPAREN);
+  _MKTOKEN(')', RPAREN);
+  _MKTOKEN('{', LBRACE);
+  _MKTOKEN('}', RBRACE);
+  _MKTOKEN(',', COMMA);
+  _MKTOKEN('-', MINUS);
+  _MKTOKEN('+', PLUS);
+  _MKTOKEN(';', SEMI);
+  _MKTOKEN('/', SLASH);
+  _MKTOKEN('*', STAR);
+  _MKTOKEN('=', EQ);
+  case '"': return make_string();
+  }
+#undef _MKTOKEN
 
   return make_error(from_fmt("unexpected character `%c`", c));
 }
