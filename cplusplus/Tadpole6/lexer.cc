@@ -123,10 +123,37 @@ Token Lexer::make_numeric() {
 }
 
 Token Lexer::make_string() {
+#define _MKCHAR(x, y) case x: c = y; advance(); break
   str_t literal;
+  while (!is_tail() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek()) {
+      _MKCHAR('"', '"');
+      _MKCHAR('\\', '\\');
+      _MKCHAR('%', '%');
+      _MKCHAR('0', '\0');
+      _MKCHAR('a', '\a');
+      _MKCHAR('b', '\b');
+      _MKCHAR('f', '\f');
+      _MKCHAR('n', '\n');
+      _MKCHAR('r', '\r');
+      _MKCHAR('t', '\t');
+      _MKCHAR('v', '\v');
+      }
+      break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+#undef _MKCHAR
 
-  // TODO:
+  if (is_tail())
+    return make_error("unterminated string");
 
+  advance();
   return make_token(TokenKind::TK_STRING, literal);
 }
 
