@@ -53,6 +53,24 @@ TADPOLE_TEST(TadpoleLexer) {
   }\
 } while (false)
 
+  {
+    std::string s =
+      "print(\"Welcome to TADPOLE !!!\");\nvar v = 34 * 67 / 33.56 + (89 - 23.7) / 2.34;";
+    tadpole::Lexer lex(s);
+    DUMPLEX();
+  }
+
+  {
+    std::string s = "var a = 56.78;";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_VAR);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_EQ);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 }
