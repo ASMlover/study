@@ -54,6 +54,10 @@
 # define TADPOLE_MSVC
 #endif
 
+#if !defined(interface)
+# define interface struct
+#endif
+
 namespace tadpole {
 
 class _Safe {};
