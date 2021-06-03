@@ -71,6 +71,68 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "print(\"34 + 89.7 =\", 34 + 89.7);";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_STRING);
+    TESTEQ(TK::TK_COMMA);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_PLUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
+
+  {
+    std::string s = "fn show_message(msg) { print(msg); }";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_FN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_LBRACE);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_RBRACE);
+    TESTEQ(TK::TK_EOF);
+  }
+
+  {
+    std::string s = "fn do_calc() { print(23 + 45.2 * 8.78 / 0.89 - (23 + 67.9)); }";
+    tadpole::Lexer lex(s);
+    TESTEQ(TK::KW_FN);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_LBRACE);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_PLUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_STAR);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_SLASH);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_MINUS);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_PLUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_RBRACE);
+    TESTEQ(TK::TK_EOF);
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 }
