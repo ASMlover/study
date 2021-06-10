@@ -66,6 +66,43 @@ void Chunk::dis(strv_t prompt) noexcept {
 }
 
 sz_t Chunk::dis_code(sz_t offset) noexcept {
+  std::fprintf(stdout, "%04d ", as_type<int>(offset));
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    std::fprintf(stdout, "    | ");
+  else
+    std::fprintf(stdout, "%04d ", lines_[offset]);
+
+#define COMPOUND(x)     return dis_compound(this, #x, offset)
+#define COMPOUND2(x, b) return dis_compound(this, #x, offset, (b))
+#define SIMPLE(x)       return dis_simple(this, #x, offset)
+#define SIMPLE2(x, n)   return dis_simple(this, #x, offset, (n))
+
+  switch (auto c = as_type<Code>(codes_[offset])) {
+  case Code::CONSTANT: COMPOUND2(CONSTANT, true);
+  case Code::NIL: SIMPLE(NIL);
+  case Code::FALSE: SIMPLE(FALSE);
+  case Code::TRUE: SIMPLE(TRUE);
+  case Code::POP: SIMPLE(POP);
+  case Code::DEF_GLOBAL: COMPOUND2(DEF_GLOBAL, true);
+  case Code::GET_GLOBAL: COMPOUND2(GET_GLOBAL, true);
+  case Code::SET_GLOBAL: COMPOUND2(SET_GLOBAL, true);
+  case Code::GET_LOCAL: COMPOUND(GET_LOCAL);
+  case Code::SET_LOCAL: COMPOUND(SET_LOCAL);
+  case Code::GET_UPVALUE: COMPOUND(GET_UPVALUE);
+  case Code::SET_UPVALUE: COMPOUND(SET_UPVALUE);
+  case Code::ADD: SIMPLE(ADD);
+  case Code::SUB: SIMPLE(SUB);
+  case Code::MUL: SIMPLE(MUL);
+  case Code::DIV: SIMPLE(DIV);
+
+  default: std::cerr << "<Invalidd Code>" << std::endl; break;
+  }
+
+#undef SIMPLE2
+#undef SIMPLE
+#undef COMPOUND2
+#undef COMPOUND
+
   return offset + 1;
 }
 
