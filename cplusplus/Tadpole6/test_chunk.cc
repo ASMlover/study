@@ -41,11 +41,22 @@ TADPOLE_TEST(TadpoleChunk) {
   using TC = tadpole::Code;
 
   tadpole::Chunk c;
-  int n = 0;
+  int n = 1;
 
   // 34.89 + 56
   c.write_constant(56, n);
   c.write_constant(34.89, n);
   c.write(TC::ADD, n);
   ++n;
+
+  // 78 - 90.34
+  c.write_constant(90.34, n);
+  c.write_constant(78, n);
+  c.write(TC::SUB, n);
+  ++n;
+
+  // return
+  c.write(TC::RETURN, n);
+
+  c.dis("TadpoleChunk");
 }
