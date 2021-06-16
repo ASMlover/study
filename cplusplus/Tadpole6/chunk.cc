@@ -68,7 +68,7 @@ void Chunk::dis(strv_t prompt) noexcept {
 sz_t Chunk::dis_code(sz_t offset) noexcept {
   std::fprintf(stdout, "%04d ", as_type<int>(offset));
   if (offset > 0 && lines_[offset] == lines_[offset - 1])
-    std::fprintf(stdout, "    | ");
+    std::fprintf(stdout, "   | ");
   else
     std::fprintf(stdout, "%04d ", lines_[offset]);
 
