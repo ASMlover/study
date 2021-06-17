@@ -55,6 +55,12 @@ TADPOLE_TEST(TadpoleChunk) {
   c.write(TC::SUB, n);
   ++n;
 
+  // 77.23 * 90.81
+  c.write_constant(90.81, n);
+  c.write_constant(77.23, n);
+  c.write(TC::MUL, n);
+  ++n;
+
   // return
   c.write(TC::RETURN, n);
 
