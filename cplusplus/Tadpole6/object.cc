@@ -35,6 +35,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "object.hh"
+#include "string_object.hh"
+#include "native_object.hh"
+#include "function_object.hh"
 
 namespace tadpole {
 
@@ -51,19 +54,19 @@ const char* BaseObject::type_asstr() const noexcept {
 }
 
 StringObject* BaseObject::as_string() {
-  return nullptr;
+  return as_down<StringObject>(this);
 }
 
 const char* BaseObject::as_cstring() {
-  return nullptr;
+  return as_down<StringObject>(this)->cstr();
 }
 
 NativeObject* BaseObject::as_native() {
-  return nullptr;
+  return as_down<NativeObject>(this);
 }
 
 FunctionObject* BaseObject::as_function() {
-  return nullptr;
+  return as_down<FunctionObject>(this);
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
