@@ -52,7 +52,7 @@ public:
   FunctionObject(StringObject* name = nullptr) noexcept;
   virtual ~FunctionObject();
 
-  inline FunctionObject* name() const noexcept { return name_; }
+  inline StringObject* name() const noexcept { return name_; }
   inline const char* name_asstr() const noexcept { return name_ ? name_->cstr() : "<tadpole>"; }
   inline void set_name(StringObject* name) noexcept { name_ = name; }
   inline sz_t arity() const noexcept { return arity_; }
