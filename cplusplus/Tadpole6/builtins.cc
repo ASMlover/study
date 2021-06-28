@@ -44,7 +44,25 @@
 namespace tadpole {
 
 void register_builtins(TadpoleVM& vm) noexcept {
-  // fn print(arg1: Value, arg2: Value, ...) -> nil
+  // fn help() -> Nil
+  vm.define_native("help", [](sz_t, Value*) -> Value {
+        std::cout
+          << colorful::fg::green << "Welcome To Tadpole! This is the help utility."
+          << colorful::reset << std::endl << std::endl;
+
+          std::cout << "print(...)      Prints the values to stdout stream" << std::endl;
+          std::cout << "exit()          Exit the Tadpole terminal" << std::endl;
+          std::cout << "time()          Return the current time in seconds since the Epoch" << std::endl;
+          std::cout << "clock()         Return the CPU time since the start of the process" << std::endl;
+          std::cout << "get_count()     Return number of objects tracked by GC" << std::endl;
+          std::cout << "gc_threshold()  Return the current collection threshold" << std::endl;
+          std::cout << "gc_threshold(n) Sets the collection threshold" << std::endl;
+          std::cout << "gc_collect()    Run a full collection" << std::endl;
+
+          return nullptr;
+      });
+
+  // fn print(arg1: Value, arg2: Value, ...) -> Nil
   vm.define_native("print", [](sz_t nargs, Value* args) -> Value {
         for (sz_t i = 0; i < nargs; ++i)
           std::cout << args[i] << " ";
@@ -53,28 +71,61 @@ void register_builtins(TadpoleVM& vm) noexcept {
         return nullptr;
       });
 
-  // fn exit() -> nil
+  // fn exit() -> Nil
   vm.define_native("exit", [&vm](sz_t, Value*) -> Value {
         vm.terminate();
         return nullptr;
       });
 
-  // fn time() -> numeric
+  // fn time() -> Numeric
   //
   // @returns
-  //  timestamp: numeric -> unit is seconds
+  //    Return the current time in seconds since the Epoch.
   vm.define_native("time", [](sz_t, Value*) -> Value {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
       });
 
-  // fn clock() -> numeric
+  // fn clock() -> Numeric
   //
   // @returns
-  //  clock: numeric -> Unit is us
+  //    Return the current processor time as a Numeric  expressed in microseconds.
   vm.define_native("clock", [](sz_t, Value*) -> Value {
         return std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
+      });
+
+  // fn gc_count() -> Numeric
+  //
+  // @returns
+  //    Return the current collection counts.
+  vm.define_native("gc_count", [](sz_t, Value*) -> Value {
+        return GC::get_instance().get_count();
+      });
+
+  // fn gc_threshold() -> Numeric
+  //
+  // @returns
+  //    Return the current collection threshold.
+  //
+  //
+  // fn gc_threshold(threshold: Numeric) -> Numeric
+  //
+  // @args
+  //    threshold: Numeric -> Number of collection threshold will be setted.
+  //
+  // @returns
+  //    Return the current collection threshold.
+  vm.define_native("gc_threshold", [](sz_t nargs, Value* args) -> Value {
+        if (nargs == 1 && args != nullptr && args[0].as_numeric())
+          GC::get_instance().set_threshold(args[0].as_integer<sz_t>());
+        return GC::get_instance().get_threshold();
+      });
+
+  // fn gc_collect() -> Nil
+  vm.define_native("gc_collect", [](sz_t, Value*) -> Value {
+        GC::get_instance().collect();
+        return nullptr;
       });
 }
 
