@@ -61,12 +61,31 @@ int FnCompiler::add_upvalue(u8_t index, bool is_local) {
 }
 
 int FnCompiler::resolve_upvalue(const Token& name, const ErrorFn& errfn) {
-  // TODO:
+  if (enclosing_ == nullptr)
+    return -1;
+
+  if (int local = enclosing_->resolve_local(name, errfn); local != -1) {
+    enclosing_->locals_[local].is_upvalue = true;
+    return add_upvalue(as_type<u8_t>(local), true);
+  }
+  if (int upvalue = enclosing_->resolve_upvalue(name, errfn); upvalue != -1)
+    return add_upvalue(as_type<u8_t>(upvalue), false);
+
   return -1;
 }
 
 void FnCompiler::declare_localvar(const Token& name, const ErrorFn& errfn) {
-  // TODO:
+  if (scope_depth_ == 0)
+    return;
+
+  for (auto it = locals_.rbegin(); it != locals_.rend(); ++it) {
+    if (it->depth != -1 && it->depth < scope_depth_)
+      break;
+
+    if (it->name == name)
+      errfn(from_fmt("name `%s` is redefined", name.as_cstring()));
+  }
+  locals_.push_back({name, -1, false});
 }
 
 }
