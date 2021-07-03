@@ -41,8 +41,168 @@
 #include "chunk.hh"
 #include "gc.hh"
 #include "native_object.hh"
+#include "callframe.hh"
+#include "compiler.hh"
 #include "builtins.hh"
 #include "vm.hh"
 
 namespace tadpole {
+
+TadpoleVM::TadpoleVM() noexcept {
+  gcompiler_ = new GlobalCompiler();
+  stack_.reserve(kDefaultCap);
+
+  register_builtins(*this);
+  GC::get_instance().append_roots("TadpoleVM", this);
+}
+
+TadpoleVM::~TadpoleVM() {
+  delete gcompiler_;
+  globals_.clear();
+}
+
+void TadpoleVM::define_native(const str_t& name, TadpoleCFun&& fn) {
+  globals_[name] = NativeObject::create(std::move(fn));
+}
+
+InterpretRet TadpoleVM::interpret(const str_t& source_bytes) {
+  FunctionObject* fn = gcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::ECOMPILE;
+
+  push(fn);
+  ClosureObject* closure = ClosureObject::create(fn);
+  pop();
+  call(closure, 0);
+
+  return run();
+}
+
+void TadpoleVM::iter_objects(ObjectVisitor&& visitor) {
+  // iterate tadpole objects roots
+  gcompiler_->iter_objects(std::move(visitor));
+  for (auto& v : stack_)
+    visitor(v.as_object(safe_t()));
+  for (auto& f : frames_)
+    visitor(f.closure());
+  for (auto& g : globals_)
+    visitor(g.second.as_object(safe_t()));
+  for (auto* u = open_upvalues_; u != nullptr; u = u->next())
+    visitor(u);
+}
+
+void TadpoleVM::reset() {
+  stack_.clear();
+  frames_.clear();
+  open_upvalues_ = nullptr;
+}
+
+void TadpoleVM::runtime_error(const char* format, ...) {
+  std::cerr << colorful::fg::red << "Traceback (most recent call last):" << std::endl;
+  for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
+    auto& frame = *it;
+
+    sz_t i = frame.frame_chunk()->offset_with(frame.ip()) - 1;
+    std::cerr
+      << "  [LINE: " << frame.frame_chunk()->get_line(i) << "] in "
+      << "`" << frame.frame_fn()->name_asstr() << "()`"
+      << std::endl;
+  }
+
+  va_list ap;
+  va_start(ap, format);
+  std::vfprintf(stderr, format, ap);
+  va_end(ap);
+  std::cerr << colorful::reset << std::endl;
+
+  reset();
+}
+
+void TadpoleVM::push(const Value& value) noexcept {
+  stack_.push_back(value);
+}
+
+Value TadpoleVM::pop() noexcept {
+  Value value = stack_.back();
+  stack_.pop_back();
+  return value;
+}
+
+const Value& TadpoleVM::peek(sz_t distance) const noexcept {
+  return stack_[stack_.size() - 1 - distance];
+}
+
+bool TadpoleVM::call(ClosureObject* closure, sz_t nargs) {
+  FunctionObject* fn = closure->fn();
+  if (fn->arity() != nargs) {
+    runtime_error("%s() takes exactly %u arguments (%u given)",
+        fn->name_asstr(), fn->arity(), nargs);
+    return false;
+  }
+
+  frames_.push_back({closure, fn->chunk()->codes(), stack_.size() - nargs - 1});
+  return true;
+}
+
+bool TadpoleVM::call(const Value& callee, sz_t nargs) {
+  if (callee.is_object()) {
+    switch (callee.objtype()) {
+    case ObjType::NATIVE:
+      {
+        Value* args{};
+        if (nargs > 0 && stack_.size() > nargs)
+          args = &stack_[stack_.size() - nargs];
+
+        Value result = callee.as_native()->call(nargs, args);
+        stack_.resize(stack_.size() - nargs - 1);
+        push(result);
+
+        return true;
+      }
+    case ObjType::CLOSURE: return call(callee.as_closure(), nargs);
+    }
+  }
+
+  runtime_error("can only call function");
+  return false;
+}
+
+UpvalueObject* TadpoleVM::capture_upvalue(Value* local) {
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = UpvalueObject::create(local);
+    return open_upvalues_;
+  }
+
+  UpvalueObject* upvalue = open_upvalues_;
+  UpvalueObject* prev_upvalue = nullptr;
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  UpvalueObject* new_upvalue = UpvalueObject::create(local, upvalue);
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = new_upvalue;
+  else
+    prev_upvalue->set_next(new_upvalue);
+  return new_upvalue;
+}
+
+void TadpoleVM::close_upvalues(Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    UpvalueObject* upvalue = open_upvalues_;
+    upvalue->set_closed(upvalue->value_asref());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    open_upvalues_ = upvalue->next();
+  }
+}
+
+InterpretRet TadpoleVM::run() {
+  // TODO:
+  return InterpretRet::OK;
+}
+
 }
