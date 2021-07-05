@@ -36,22 +36,32 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "lexer.hh"
 #include "vm.hh"
+#include "parser.hh"
 #include "compiler.hh"
 
 namespace tadpole {
 
 GlobalCompiler::~GlobalCompiler() {
+  if (gparser_ != nullptr)
+    delete gparser_;
 }
 
 FunctionObject* GlobalCompiler::compile(TadpoleVM& vm, const str_t& source_bytes) {
   Lexer lex(source_bytes);
 
-  // TODO:
+  if (gparser_ = new GlobalParser(vm, lex); gparser_ != nullptr) {
+    FunctionObject* fn = gparser_->compile();
+    delete gparser_;
+    gparser_ = nullptr;
+
+    return fn;
+  }
   return nullptr;
 }
 
 void GlobalCompiler::iter_objects(ObjectVisitor&& visitor) {
-  // TODO:
+  if (gparser_ != nullptr)
+    gparser_->iter_objects(std::move(visitor));
 }
 
 }
