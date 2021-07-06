@@ -97,16 +97,93 @@ const ParseRule& GlobalParser::get_rule(TokenKind kind) const noexcept {
   return _rules[as_type<int>(kind)];
 }
 
-void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {}
-void GlobalParser::advance() {}
-void GlobalParser::consume(TokenKind kind, const str_t& msg) {}
-bool GlobalParser::match(TokenKind kind) { return false; }
+void GlobalParser::error_at(const Token& tok, const str_t& msg) noexcept {
+  if (panic_mode_)
+    return;
+  panic_mode_ = true;
 
-void GlobalParser::init_compiler(FnCompiler* compiler, int scope_depth, FnType fn_type) {}
-FunctionObject* GlobalParser::finish_compiler() { return nullptr; }
-void GlobalParser::enter_scope() {}
-void GlobalParser::leave_scope() {}
-u8_t GlobalParser::identifier_constant(const Token& name) noexcept { return 0; }
+  std::cerr
+    << colorful::fg::red
+    << "SyntaxError:" << std::endl
+    << "  [LINE: " << tok.lineno() << "] ERROR ";
+  if (tok.kind() == TokenKind::TK_EOF)
+    std::cerr << "at end ";
+  else if (tok.kind() == TokenKind::TK_ERR)
+    TADPOLE_UNUSED(0);
+  else
+    std::cerr << "at `" << tok.literal() << "` ";
+  std::cerr << ": " << msg << colorful::reset << std::endl;
+}
+
+void GlobalParser::advance() {
+  prev_ = curr_;
+
+  for (;;) {
+    curr_ = lex_.next_token();
+    if (!check(TokenKind::TK_ERR))
+      break;
+
+    error_at_current(curr_.as_string());
+  }
+}
+
+void GlobalParser::consume(TokenKind kind, const str_t& msg) {
+  if (check(kind))
+    advance();
+  else
+    error_at_current(msg);
+}
+
+bool GlobalParser::match(TokenKind kind) {
+  if (check(kind)) {
+    advance();
+    return true;
+  }
+  return false;
+}
+
+void GlobalParser::init_compiler(FnCompiler* compiler, int scope_depth, FnType fn_type) {
+  StringObject* fn_name{};
+  if (fn_type == FnType::FUNCTION)
+    fn_name = StringObject::create(prev_.as_string());
+
+  compiler->set_compiler(
+      curr_compiler_,
+      FunctionObject::create(fn_name),
+      fn_type,
+      scope_depth);
+  curr_compiler_ = compiler;
+
+  curr_compiler_->append_local({Token::make(""), curr_compiler_->scope_depth(), false});
+}
+
+FunctionObject* GlobalParser::finish_compiler() {
+  emit_return();
+
+  FunctionObject* fn =  curr_compiler_->fn();
+#if defined(_TADPOLE_DEBUG_VM)
+  if (!had_error_)
+    curr_chunk()->dis(fn->name_asstr());
+#endif
+
+  curr_compiler_ = curr_compiler_->enclosing();
+  return fn;
+}
+
+void GlobalParser::enter_scope() {
+  curr_compiler_->enter_scope();
+}
+
+void GlobalParser::leave_scope() {
+  curr_compiler_->leave_scope([this](const LocalVar& var) {
+        emit_byte(var.is_upvalue ? Code::CLOSE_UPVALUE : Code::POP);
+      });
+}
+
+u8_t GlobalParser::identifier_constant(const Token& name) noexcept {
+  return curr_chunk()->add_constant(StringObject::create(name.as_string()));
+}
+
 u8_t GlobalParser::parse_variable(const str_t& msg) { return 0; }
 void GlobalParser::mark_initialized() {}
 void GlobalParser::define_global(u8_t global) {}
@@ -122,7 +199,24 @@ void GlobalParser::numeric(bool can_assign) {}
 void GlobalParser::string(bool can_assign) {}
 void GlobalParser::block() {}
 void GlobalParser::function(FnType fn_type) {}
-void GlobalParser::synchronize() {}
+
+void GlobalParser::synchronize() {
+  panic_mode_ = false;
+
+  while (!check(TokenKind::TK_EOF)) {
+    if (prev_.kind() == TokenKind::TK_SEMI)
+      break;
+
+    switch (curr_.kind()) {
+    case TokenKind::KW_FN:
+    case TokenKind::KW_VAR:
+      return;
+    default: break;
+    }
+    advance();
+  }
+}
+
 void GlobalParser::expression() {}
 void GlobalParser::declaration() {}
 void GlobalParser::statement() {}
