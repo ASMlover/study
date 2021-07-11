@@ -207,8 +207,50 @@ void GlobalParser::define_global(u8_t global) {
   emit_bytes(Code::DEF_GLOBAL, global);
 }
 
-u8_t GlobalParser::arguments() { return 0; }
-void GlobalParser::named_variable(const Token& name, bool can_assign) {}
+u8_t GlobalParser::arguments() {
+  u8_t nargs = 0;
+  if (!check(TokenKind::TK_RPAREN)) {
+    do {
+      expression();
+      ++nargs;
+
+      if (nargs > kMaxArgs)
+        error(from_fmt("cannot have more than `%d` arguments", kMaxArgs));
+    } while (match(TokenKind::TK_COMMA));
+  }
+  consume(TokenKind::TK_RPAREN, "expect `)` after function arguments");
+
+  return nargs;
+}
+
+void GlobalParser::named_variable(const Token& name, bool can_assign) {
+  auto errfn = [this](const str_t& msg) { error(msg); };
+
+  Code getop, setop;
+  int arg = curr_compiler_->resolve_local(name, errfn);
+  if (arg != -1) {
+    getop = Code::GET_LOCAL;
+    setop = Code::SET_LOCAL;
+  }
+  else if (arg = curr_compiler_->resolve_upvalue(name, errfn); arg != -1) {
+    getop = Code::GET_UPVALUE;
+    setop = Code::SET_UPVALUE;
+  }
+  else {
+    arg = identifier_constant(name);
+    getop = Code::GET_GLOBAL;
+    setop = Code::SET_GLOBAL;
+  }
+
+  if (can_assign && match(TokenKind::TK_EQ)) {
+    expression();
+    emit_bytes(setop, arg);
+  }
+  else {
+    emit_bytes(getop, arg);
+  }
+}
+
 void GlobalParser::parse_precedence(Precedence precedence) {}
 void GlobalParser::binary(bool can_assign) {}
 void GlobalParser::call(bool can_assign) {}
