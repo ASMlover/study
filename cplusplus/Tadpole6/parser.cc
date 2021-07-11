@@ -251,7 +251,31 @@ void GlobalParser::named_variable(const Token& name, bool can_assign) {
   }
 }
 
-void GlobalParser::parse_precedence(Precedence precedence) {}
+void GlobalParser::parse_precedence(Precedence precedence) {
+  advance();
+  auto& prefix_fn = get_rule(prev_.kind()).prefix;
+  if (!prefix_fn) {
+    error("expect expression");
+    return;
+  }
+
+  bool can_assign = precedence <= Precedence::ASSIGN;
+  prefix_fn(*this, can_assign);
+
+  while (precedence <= get_rule(curr_.kind()).precedence) {
+    advance();
+    auto& infix_fn = get_rule(prev_.kind()).infix;
+
+    if (infix_fn)
+      infix_fn(*this, can_assign);
+  }
+
+  if (can_assign && match(TokenKind::TK_EQ)) {
+    error("invalid assignment target");
+    expression();
+  }
+}
+
 void GlobalParser::binary(bool can_assign) {}
 void GlobalParser::call(bool can_assign) {}
 void GlobalParser::grouping(bool can_assign) {}
