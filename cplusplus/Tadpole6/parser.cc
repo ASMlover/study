@@ -276,15 +276,84 @@ void GlobalParser::parse_precedence(Precedence precedence) {
   }
 }
 
-void GlobalParser::binary(bool can_assign) {}
-void GlobalParser::call(bool can_assign) {}
-void GlobalParser::grouping(bool can_assign) {}
-void GlobalParser::literal(bool can_assign) {}
-void GlobalParser::variable(bool can_assign) {}
-void GlobalParser::numeric(bool can_assign) {}
-void GlobalParser::string(bool can_assign) {}
-void GlobalParser::block() {}
-void GlobalParser::function(FnType fn_type) {}
+void GlobalParser::binary(bool can_assign) {
+  TokenKind op = prev_.kind();
+
+  parse_precedence(get_rule(op).precedence + 1);
+  switch (op) {
+  case TokenKind::TK_PLUS: emit_byte(Code::ADD); break;
+  case TokenKind::TK_MINUS: emit_byte(Code::SUB); break;
+  case TokenKind::TK_STAR: emit_byte(Code::MUL); break;
+  case TokenKind::TK_SLASH: emit_byte(Code::DIV); break;
+  default: break;
+  }
+}
+
+void GlobalParser::call(bool can_assign) {
+  emit_byte(Code::CALL_0 + arguments());
+}
+
+void GlobalParser::grouping(bool can_assign) {
+  expression();
+  consume( TokenKind::TK_RPAREN, "expect `)` after grouping expression");
+}
+
+void GlobalParser::literal(bool can_assign) {
+  switch (prev_.kind()) {
+  case TokenKind::KW_NIL: emit_byte(Code::NIL); break;
+  case TokenKind::KW_FALSE: emit_byte(Code::FALSE); break;
+  case TokenKind::KW_TRUE: emit_byte(Code::TRUE); break;
+  default: break;
+  }
+}
+
+void GlobalParser::variable(bool can_assign) {
+  named_variable(prev_, can_assign);
+}
+
+void GlobalParser::numeric(bool can_assign) {
+  emit_constant(prev_.as_numeric());
+}
+
+void GlobalParser::string(bool can_assign) {
+  emit_constant(StringObject::create(prev_.as_string()));
+}
+
+void GlobalParser::block() {
+  while (!check(TokenKind::TK_EOF) && !check(TokenKind::TK_RBRACE))
+    declaration();
+  consume(TokenKind::TK_RBRACE, "expect `}` after block body");
+}
+
+void GlobalParser::function(FnType fn_type) {
+  FnCompiler fn_compiler;
+  init_compiler(&fn_compiler, 1, fn_type);
+
+  consume(TokenKind::TK_LPAREN, "expect `(` after function name");
+  if (!check(TokenKind::TK_RPAREN)) {
+    do {
+      u8_t param_constant = parse_variable("expect function parameters' name");
+      define_global(param_constant);
+
+      curr_compiler_->fn()->inc_arity();
+      if (curr_compiler_->fn()->arity() > kMaxArgs)
+        error(from_fmt("cannot have more than `%d` parameters", kMaxArgs));
+    } while (match(TokenKind::TK_COMMA));
+  }
+  consume(TokenKind::TK_RPAREN, "expect `)` after function parameters");
+
+  consume(TokenKind::TK_LBRACE, "expect `{` before function body");
+  block();
+
+  leave_scope();
+  FunctionObject* fn = finish_compiler();
+
+  emit_bytes(Code::CLOSURE, curr_chunk()->add_constant(fn));
+  for (sz_t i = 0; i < fn->upvalues_count(); ++i) {
+    auto& upvalue = fn_compiler.get_upvalue(i);
+    emit_bytes(upvalue.is_local ? 1 : 0, upvalue.index);
+  }
+}
 
 void GlobalParser::synchronize() {
   panic_mode_ = false;
