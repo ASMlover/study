@@ -232,6 +232,39 @@ InterpretRet TadpoleVM::run() {
     case Code::FALSE: push(false); break;
     case Code::TRUE: push(true); break;
     case Code::POP: pop(); break;
+    case Code::DEF_GLOBAL:
+      {
+        const char* name = _RDCSTR();
+        if (auto it = globals_.find(name); it != globals_.end()) {
+          runtime_error("name `%s` is redefined", name);
+          return InterpretRet::ERUNTIME;
+        }
+        else {
+          globals_[name] = pop();
+        }
+      } break;
+    case Code::GET_GLOBAL:
+      {
+        const char* name = _RDCSTR();
+        if (auto it = globals_.find(name); it != globals_.end()) {
+          push(it->second);
+        }
+        else {
+          runtime_error("name `%s` is not defined", name);
+          return InterpretRet::ERUNTIME;
+        }
+      } break;
+    case Code::SET_GLOBAL:
+      {
+        const char* name = _RDCSTR();
+        if (auto it = globals_.find(name); it != globals_.end()) {
+          it->second = peek();
+        }
+        else {
+          runtime_error("name `%s` is not defined", name);
+          return InterpretRet::ERUNTIME;
+        }
+      } break;
     }
   }
 
