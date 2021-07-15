@@ -388,7 +388,17 @@ void GlobalParser::declaration() {
     synchronize();
 }
 
-void GlobalParser::statement() {}
+void GlobalParser::statement() {
+  if (match(TokenKind::TK_LPAREN)) {
+    enter_scope();
+    block();
+    leave_scope();
+  }
+  else {
+    expr_stmt();
+  }
+}
+
 void GlobalParser::fn_decl() {}
 void GlobalParser::var_decl() {}
 void GlobalParser::expr_stmt() {}
