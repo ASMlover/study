@@ -399,7 +399,14 @@ void GlobalParser::statement() {
   }
 }
 
-void GlobalParser::fn_decl() {}
+void GlobalParser::fn_decl() {
+  u8_t fn_constant = parse_variable("expect function name");
+  mark_initialized();
+  function(FnType::FUNCTION);
+
+  define_global(fn_constant);
+}
+
 void GlobalParser::var_decl() {}
 void GlobalParser::expr_stmt() {}
 
