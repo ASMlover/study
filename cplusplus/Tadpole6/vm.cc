@@ -265,6 +265,8 @@ InterpretRet TadpoleVM::run() {
           return InterpretRet::ERUNTIME;
         }
       } break;
+    case Code::GET_LOCAL: push(stack_[frame->stack_begpos() + _RDBYTE()]); break;
+    case Code::SET_LOCAL: stack_[frame->stack_begpos() + _RDBYTE()] = peek(); break;
     }
   }
 
