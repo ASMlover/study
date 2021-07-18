@@ -419,6 +419,10 @@ void GlobalParser::var_decl() {
   define_global(var_constant);
 }
 
-void GlobalParser::expr_stmt() {}
+void GlobalParser::expr_stmt() {
+  expression();
+  consume(TokenKind::TK_SEMI, "expect `;` after expression");
+  emit_byte(Code::POP);
+}
 
 }
