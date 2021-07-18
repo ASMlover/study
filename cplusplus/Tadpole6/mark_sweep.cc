@@ -123,7 +123,16 @@ void MarkSweep::sweep() {
       ++it;
   }
 
-  // TODO:
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!(*it)->is_marked()) {
+      reclaim_object(*it);
+      objects_.erase(it++);
+    }
+    else {
+      (*it)->set_marked(true);
+      ++it;
+    }
+  }
 }
 
 void MarkSweep::reclaim_object(BaseObject* o) {
