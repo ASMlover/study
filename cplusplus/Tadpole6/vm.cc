@@ -267,6 +267,88 @@ InterpretRet TadpoleVM::run() {
       } break;
     case Code::GET_LOCAL: push(stack_[frame->stack_begpos() + _RDBYTE()]); break;
     case Code::SET_LOCAL: stack_[frame->stack_begpos() + _RDBYTE()] = peek(); break;
+    case Code::GET_UPVALUE:
+      {
+        u8_t slot = _RDBYTE();
+        push(frame->closure()->get_upvalue(slot)->value_asref());
+      } break;
+    case Code::SET_UPVALUE:
+      {
+        u8_t slot = _RDBYTE();
+        frame->closure()->get_upvalue(slot)->set_value(peek());
+      } break;
+    case Code::ADD:
+      {
+        if (peek(0).is_string() && peek(1).is_string()) {
+          StringObject* b = peek(0).as_string();
+          StringObject* a = peek(1).as_string();
+          StringObject* s = StringObject::concat(a, b);
+          pop();
+          pop();
+          push(s);
+        }
+        else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+          double b = pop().as_numeric();
+          double a = pop().as_numeric();
+          push(a + b);
+        }
+        else {
+          runtime_error("operands must be two strings or two numerics");
+          return InterpretRet::ERUNTIME;
+        }
+      } break;
+    case Code::SUB: _BINOP(-); break;
+    case Code::MUL: _BINOP(*); break;
+    case Code::DIV: _BINOP(/); break;
+    case Code::CALL_0:
+    case Code::CALL_1:
+    case Code::CALL_2:
+    case Code::CALL_3:
+    case Code::CALL_4:
+    case Code::CALL_5:
+    case Code::CALL_6:
+    case Code::CALL_7:
+    case Code::CALL_8:
+      {
+        sz_t nargs = c - Code::CALL_0;
+        if (!call(peek(nargs), nargs))
+          return InterpretRet::ERUNTIME;
+        frame = &frames_.back();
+      } break;
+    case Code::CLOSURE:
+      {
+        FunctionObject* fn = _RDCONST().as_function();
+        ClosureObject* closure = ClosureObject::create(fn);
+        push(closure);
+
+        for (sz_t i = 0; i < fn->upvalues_count(); ++i) {
+          u8_t is_local = _RDBYTE();
+          u8_t index = _RDBYTE();
+          if (is_local)
+            closure->set_upvalue(i, capture_upvalue(&stack_[frame->stack_begpos() + index]));
+          else
+            closure->set_upvalue(i, frame->closure()->get_upvalue(index));
+        }
+      } break;
+    case Code::CLOSE_UPVALUE: close_upvalues(&stack_.back()); pop(); break;
+    case Code::RETURN:
+      {
+        Value result = pop();
+        if (frame->stack_begpos() > 0 && stack_.size() > frame->stack_begpos())
+          close_upvalues(&stack_[frame->stack_begpos()]);
+        else
+          close_upvalues(nullptr);
+
+        frames_.pop_back();
+        if (frames_.empty())
+          return InterpretRet::OK;
+
+        stack_.resize(frame->stack_begpos());
+        push(result);
+
+        frame = &frames_.back();
+      } break;
+    default: break;
     }
   }
 
