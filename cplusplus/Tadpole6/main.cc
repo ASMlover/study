@@ -35,13 +35,26 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "common.hh"
+#include "colorful.hh"
 #include "harness.hh"
+#include "vm.hh"
+
+namespace tp = tadpole;
+
+static int eval(tp::TadpoleVM& vm, const tp::str_t& source_bytes) {
+  tp::InterpretRet r = vm.interpret(source_bytes);
+  if (r == tp::InterpretRet::ERUNTIME)
+    return -1;
+  else if (r == tp::InterpretRet::ECOMPILE)
+    return -2;
+  return 0;
+}
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
 #if defined(_TADPOLE_RUN_HARNESS)
-  tadpole::harness::run_all_harness();
+  tp::harness::run_all_harness();
 #endif
 
   return 0;
