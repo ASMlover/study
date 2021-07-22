@@ -34,10 +34,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fstream>
 #include "common.hh"
 #include "colorful.hh"
 #include "harness.hh"
 #include "vm.hh"
+#include "gc.hh"
 
 namespace tp = tadpole;
 
@@ -56,6 +58,29 @@ int main(int argc, char* argv[]) {
 #if defined(_TADPOLE_RUN_HARNESS)
   tp::harness::run_all_harness();
 #endif
+
+  tp::TadpoleVM vm;
+  if (argc < 2) {
+    std::cout
+      << tp::colorful::fg::lightgreen
+      << "W E L C O M E   T O   T A D P O L E !!!"
+      << tp::colorful::reset << std::endl;
+
+    tp::str_t line;
+    for (;;) {
+      if (!vm.is_running())
+        break;
+
+      std::cout << ">>> ";
+      if (!std::getline(std::cin, line))
+        break;
+
+      eval(vm, line);
+      tp::GC::get_instance().collect();
+    }
+  }
+  else {
+  }
 
   return 0;
 }
