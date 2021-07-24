@@ -80,6 +80,18 @@ int main(int argc, char* argv[]) {
     }
   }
   else {
+    std::fstream fp(argv[1]);
+    if (fp.is_open()) {
+      std::stringstream ss;
+      ss << fp.rdbuf();
+
+      if (int ec = eval(vm, ss.str()); ec != 0)
+        std::exit(ec);
+    }
+    else {
+      std::cerr << "ERROR: LOAD `" << argv[1] << "` FAILED !!!" << std::endl;
+      std::exit(-1);
+    }
   }
 
   return 0;
