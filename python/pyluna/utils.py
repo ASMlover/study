@@ -30,28 +30,29 @@
 
 import functools
 import traceback
+from typing import Any, Callable
 
 
-def noexcept(func):
+def noexcept(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
-    def _noexcept_caller(*args, **kwds):
+    def _noexcept_caller(*args, **kwds) -> Any:
         try:
             return func(*args, **kwds)
         except Exception:
             traceback.print_exc()
     return _noexcept_caller
 
-def noexecute(func):
+def noexecute(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
-    def _noexecute_caller(*args, **kwds):
+    def _noexecute_caller(*args, **kwds) -> Any:
         f_code = func.__code__
         print(f"{f_code.co_filename}:{f_code.co_firstlineno}: warning: `{f_code.co_name}(...)` is not execute")
     return _noexecute_caller
 
-def deprecated(reason='has been explicitly marked deprecated'):
-    def _deprecated(func):
+def deprecated(reason: str ='has been explicitly marked deprecated') -> Callable[..., Any]:
+    def _deprecated(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
-        def _deprecated_caller(*args, **kwds):
+        def _deprecated_caller(*args, **kwds) -> Any:
             f_code = func.__code__
             print(f"{f_code.co_filename}:{f_code.co_firstlineno}: warning: `{f_code.co_name}(...)` is deprecated: {reason}")
             return func(*args, **kwds)
