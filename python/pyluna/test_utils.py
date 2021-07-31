@@ -43,7 +43,15 @@ def test_noexecute_fun():
 def test_deprecated_fun():
     print("This is deprecated function testing ...")
 
-if __name__ == '__main__':
+@utils.deprecated("Just for DEPRECATED testing")
+def test_deprecated_fun2():
+    print("This is deprecated function2 testing ...")
+
+def main():
     test_noexcept_fun()
     test_noexecute_fun()
     test_deprecated_fun()
+    test_deprecated_fun2()
+
+if __name__ == '__main__':
+    main()
