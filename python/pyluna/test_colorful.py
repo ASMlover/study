@@ -28,30 +28,25 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import utils
+import colorful as _C
 
+def main():
+    _C.xprint(_C.Foreground.BLUE, f"Colorful.Foreground.BLUE")
+    _C.xprint(_C.Foreground.GREEN, f"Colorful.Foreground.GREEN")
+    _C.xprint(_C.Foreground.CYAN, f"Colorful.Foreground.CYAN")
+    _C.xprint(_C.Foreground.RED, f"Colorful.Foreground.RED")
+    _C.xprint(_C.Foreground.MAGENTA, f"Colorful.Foreground.MAGENTA")
+    _C.xprint(_C.Foreground.YELLOW, f"Colorful.Foreground.YELLOW")
+    _C.xprint(_C.Foreground.WHITE, f"Colorful.Foreground.WHITE")
+    _C.xprint(_C.Foreground.GRAY, f"Colorful.Foreground.GRAY")
 
-@utils.noexcept
-def test_noexcept_fun() -> None:
-    raise Exception("This is noexcept function testing ...")
-
-@utils.noexecute
-def test_noexecute_fun() -> None:
-    print("This is noexecute function testing ...")
-
-@utils.deprecated()
-def test_deprecated_fun() -> None:
-    print("This is deprecated function testing ...")
-
-@utils.deprecated("Just for DEPRECATED testing")
-def test_deprecated_fun2() -> None:
-    print("This is deprecated function2 testing ...")
-
-def main() -> None:
-    test_noexcept_fun()
-    test_noexecute_fun()
-    test_deprecated_fun()
-    test_deprecated_fun2()
+    _C.xprint(_C.Foreground.LIGHTBLUE, f"Colorful.Foreground.LIGHTBLUE")
+    _C.xprint(_C.Foreground.LIGHTGREEN, f"Colorful.Foreground.LIGHTGRAY")
+    _C.xprint(_C.Foreground.LIGHTCYAN, f"Colorful.Foreground.LIGHTCYAN")
+    _C.xprint(_C.Foreground.LIGHTRED, f"Colorful.Foreground.LIGHTRED")
+    _C.xprint(_C.Foreground.LIGHTMAGENTA, f"Colorful.Foreground.LIGHTMAGENTA")
+    _C.xprint(_C.Foreground.LIGHTYELLOW, f"Colorful.Foreground.LIGHTYELLOW")
+    _C.xprint(_C.Foreground.LIGHTWHITE, f"Colorful.Foreground.LIGHTWHITE")
 
 if __name__ == '__main__':
     main()
