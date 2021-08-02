@@ -28,17 +28,23 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import ctypes
 import enum
 import platform
 import sys
 from typing import IO, Union
 
-if platform.system() == 'Windows':
-    PYLUNA_WINDOWS = True
-else:
-    PYLUNA_WINDOWS = False
-
+PYLUNA_WINDOWS = platform.system() == 'Windows'
 if PYLUNA_WINDOWS:
+    PYLUNA_STD_INPUT = -10
+    PYLUNA_STD_OUTPUT = -11
+    PYLUNA_STD_ERROR = -12
+
+    pyluna_stdout: int = ctypes.windll.kernel32.GetStdHandle(PYLUNA_STD_OUTPUT)
+    pyluna_stderr: int = ctypes.windll.kernel32.GetStdHandle(PYLUNA_STD_ERROR)
+    def pyluna_set_terminal_color(h: int, c: int) -> int:
+        return ctypes.windll.kernel32.SetConsoleTextAttribute(h, c)
+
     class Foreground(enum.IntEnum):
         BLACK = 0x00
         BLUE = 0x01
@@ -50,6 +56,8 @@ if PYLUNA_WINDOWS:
         WHITE = BLUE | GREEN | RED
         GRAY = 0x08
 
+        RESET = WHITE
+
         LIGHTBLUE = 0x09
         LIGHTGREEN = 0x0a
         LIGHTCYAN = LIGHTBLUE | LIGHTGREEN
@@ -58,6 +66,10 @@ if PYLUNA_WINDOWS:
         LIGHTYELLOW = LIGHTGREEN | LIGHTRED
         LIGHTWHITE = LIGHTBLUE | LIGHTGREEN | LIGHTRED
 else:
+    pyluna_stdout, pyluna_stderr = sys.stdout, sys.stderr
+    def pyluna_set_terminal_color(h: IO, c: str) -> None:
+        h.write(c)
+
     class Foreground(object):
         RESET = "\033[00m"
 
@@ -79,38 +91,17 @@ else:
         LIGHTYELLOW = "\033[93m"
         LIGHTWHITE = "\033[97m"
 
-if PYLUNA_WINDOWS:
-    import ctypes
-    PYLUNA_STD_INPUT = -10
-    PYLUNA_STD_OUTPUT = -11
-    PYLUNA_STD_ERROR = -12
+class TerminalColorful(object):
+    def __init__(self, c: Union[int, str], h: Union[int, IO] = pyluna_stdout) -> None:
+        super(TerminalColorful, self).__init__()
+        self.color = c
+        self.handle = h
 
-    pyluna_stdout: int = ctypes.windll.kernel32.GetStdHandle(PYLUNA_STD_OUTPUT)
+    def __enter__(self) -> Union[int, None]:
+        return pyluna_set_terminal_color(self.handle, self.color)
 
-    def pyluna_set_color(color: int, handle: int = pyluna_stdout) -> int:
-        return ctypes.windll.kernel32.SetConsoleTextAttribute(handle, color)
-
-    def pyluna_reset_color(handle: int = pyluna_stdout) -> int:
-        return pyluna_set_color(Foreground.WHITE, handle)
-
-    class TerminalColorful(object):
-        def __init__(self, color: int) -> None:
-            super(TerminalColorful, self).__init__()
-            self.color = color
-
-        def __enter__(self) -> int:
-            return pyluna_set_color(self.color)
-
-        def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-            pyluna_reset_color()
-else:
-    pyluna_stdout = sys.stdout
-
-    def pyluna_set_color(color: str, handle: IO = pyluna_stdout) -> None:
-        handle.write(color)
-
-    def pyluna_reset_color(handle: IO = pyluna_stdout) -> None:
-        handle.write(Foreground.RESET)
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        pyluna_set_terminal_color(self.handle, Foreground.RESET)
 
 def xprint(color: Union[int, str], *args, **kwds) -> None:
     with TerminalColorful(color):
