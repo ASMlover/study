@@ -32,6 +32,8 @@ import functools
 import traceback
 from typing import Any, Callable
 
+from colorful import xprint, Foreground
+
 
 def noexcept(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
@@ -46,7 +48,7 @@ def noexecute(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
     def _noexecute_caller(*args, **kwds) -> Any:
         f_code = func.__code__
-        print(f"{f_code.co_filename}:{f_code.co_firstlineno}: warning: `{f_code.co_name}(...)` is not execute")
+        xprint(Foreground.LIGHTYELLOW, f"{f_code.co_filename}:{f_code.co_firstlineno}: warning: `{f_code.co_name}(...)` cannot be executed")
     return _noexecute_caller
 
 def deprecated(reason: str ='has been explicitly marked deprecated') -> Callable[..., Any]:
@@ -54,7 +56,7 @@ def deprecated(reason: str ='has been explicitly marked deprecated') -> Callable
         @functools.wraps(func)
         def _deprecated_caller(*args, **kwds) -> Any:
             f_code = func.__code__
-            print(f"{f_code.co_filename}:{f_code.co_firstlineno}: warning: `{f_code.co_name}(...)` is deprecated: {reason}")
+            xprint(Foreground.LIGHTYELLOW, f"{f_code.co_filename}:{f_code.co_firstlineno}: warning: `{f_code.co_name}(...)` is deprecated: {reason}")
             return func(*args, **kwds)
         return _deprecated_caller
     return _deprecated
