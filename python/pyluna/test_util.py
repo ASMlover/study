@@ -28,22 +28,22 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import utils
+import util
 
 
-@utils.noexcept
+@util.noexcept
 def test_noexcept_fun() -> None:
     raise Exception("This is noexcept function testing ...")
 
-@utils.noexecute
+@util.noexecute
 def test_noexecute_fun() -> None:
     print("This is noexecute function testing ...")
 
-@utils.deprecated()
+@util.deprecated()
 def test_deprecated_fun() -> None:
     print("This is deprecated function testing ...")
 
-@utils.deprecated("Just for DEPRECATED testing")
+@util.deprecated("Just for DEPRECATED testing")
 def test_deprecated_fun2() -> None:
     print("This is deprecated function2 testing ...")
 

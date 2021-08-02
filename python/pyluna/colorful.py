@@ -34,6 +34,7 @@ import platform
 import sys
 from typing import IO, Union
 
+
 PYLUNA_WINDOWS = platform.system() == 'Windows'
 if PYLUNA_WINDOWS:
     PYLUNA_STD_INPUT = -10
