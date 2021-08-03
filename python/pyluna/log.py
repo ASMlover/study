@@ -39,6 +39,9 @@ class Logger(object):
         super(Logger, self).__init__()
         self.name = name
 
+    def __repr__(self):
+        return f"Logger(id:{id(self)}, name:{self.name})"
+
     def format_string(self, fmt: str, *args) -> str:
         return '[%s] - %s - %s' % (time.strftime('%Y-%m-%d %Y:%M:%S', time.localtime()), self.name, fmt % args)
 
