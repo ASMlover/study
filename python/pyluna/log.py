@@ -29,7 +29,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import time
+from typing import Union
 
+from colorful import PYLUNA_WINDOWS
 from colorful import Foreground as _fg
 from colorful import xprint as _xprint
 
@@ -42,20 +44,26 @@ class Logger(object):
     def __repr__(self):
         return f"Logger(id:{id(self)}, name:{self.name})"
 
-    def format_string(self, fmt: str, *args) -> str:
-        return '[%s] - %s - %s' % (time.strftime('%Y-%m-%d %Y:%M:%S', time.localtime()), self.name, fmt % args)
+    def _print_logger(self, color: Union[int, str], level: str, fmt: str, *args) -> str:
+        msgstr = fmt % args
+        if color != _fg.RESET:
+            _xprint(color, '[%s] - %s - %s - %s' % (
+                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()), self.name, level, msgstr))
+        else:
+            print('[%s] - %s - %s - %s' % (
+                time.strftime('%Y-%m-%d %Y:%M:%S', time.localtime()), self.name, level, msgstr))
 
     def debug(self, *args) -> None:
-        _xprint(_fg.LIGHTGREEN, self.format_string(*args))
+        self._print_logger(_fg.LIGHTGREEN, 'DEBUG', *args)
 
     def info(self, *args) -> None:
-        _xprint(_fg.LIGHTWHITE, self.format_string(*args))
+        self._print_logger(_fg.LIGHTWHITE, 'INFO', *args)
 
     def warn(self, *args) -> None:
-        _xprint(_fg.LIGHTYELLOW, self.format_string(*args))
+        self._print_logger(_fg.LIGHTYELLOW, 'WARN', *args)
 
     def error(self, *args) -> None:
-        _xprint(_fg.LIGHTRED, self.format_string(*args))
+        self._print_logger(_fg.LIGHTRED if PYLUNA_WINDOWS else _fg.RED, 'ERROR', *args)
 
 
 pyluna_loggers = {}
