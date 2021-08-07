@@ -36,9 +36,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <iostream>
+#include "Common/Common.hh"
 
 int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+  TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
   return 0;
 }
