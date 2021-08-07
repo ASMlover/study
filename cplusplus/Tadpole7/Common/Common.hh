@@ -41,7 +41,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
-#include "Types.hh"
+#include <Common/Types.hh>
 
 namespace Tadpole::Common {
 
@@ -53,6 +53,16 @@ protected:
   Copyable(Copyable&&) noexcept = default;
   Copyable& operator=(const Copyable&) noexcept = default;
   Copyable& operator=(Copyable&&) noexcept = default;
+};
+
+class UnCopyable {
+  UnCopyable(const UnCopyable&) noexcept = delete;
+  UnCopyable(UnCopyable&&) noexcept = delete;
+  UnCopyable& operator=(const UnCopyable&) noexcept = delete;
+  UnCopyable& operator=(UnCopyable&&) noexcept = delete;
+protected:
+  UnCopyable() noexcept = default;
+  ~UnCopyable() noexcept = default;
 };
 
 }
