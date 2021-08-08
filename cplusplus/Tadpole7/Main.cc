@@ -36,7 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <iostream>
-#include "Common/Common.hh"
+#include <Common/Common.hh>
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
