@@ -40,8 +40,8 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <sstream>
 #include <Common/Types.hh>
+#include <Common/Consts.hh>
 
 namespace Tadpole::Common {
 
@@ -75,6 +75,44 @@ public:
 
 template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
+}
+
+template <typename T, typename S> inline T* as_down(S* x) noexcept {
+  return dynamic_cast<T*>(x);
+}
+
+template <typename T> inline T* as_ptr(void* p) noexcept {
+  return reinterpret_cast<T*>(p);
+}
+
+template <typename T, typename PTR> inline T* get_rawptr(const PTR& p) noexcept {
+  return p.get();
+}
+
+inline str_t as_string(double d) noexcept {
+  ss_t ss;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
+  return ss.str();
+}
+
+inline sz_t as_align(sz_t bytes, sz_t align = kALIGNMENT) noexcept {
+  return (bytes + align - 1) & ~(align - 1);
+}
+
+template <typename T, typename... Args> inline str_t as_string(T&& x, Args&&... args) noexcept {
+  ss_t ss;
+
+  ss << std::forward<T>(x);
+  ((ss << std::forward<Args>(args)), ...);
+
+  return ss.str();
+}
+
+template <typename... Args> inline str_t from_fmt(strv_t fmt, const Args&... args) noexcept {
+  int sz = std::snprintf(nullptr, 0, fmt.data(), args...);
+  std::unique_ptr<char []> buf{new char[sz + 1]};
+  std::snprintf(buf.get(), sz, fmt.data(), args...);
+  return str_t(buf.get(), buf.get() + sz);
 }
 
 }
