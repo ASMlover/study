@@ -38,6 +38,7 @@
 
 #include <string>
 #include <string_view>
+#include <sstream>
 #include <Common/Macros.hh>
 
 namespace Tadpole {
