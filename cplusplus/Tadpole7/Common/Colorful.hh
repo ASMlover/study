@@ -40,10 +40,94 @@
 
 namespace Tadpole::Common::Colorful {
 
-enum class Colorful : u8_t {
-  RESET,
+enum class Color : u8_t {
+  kReset,
 
-  FOREGROUND_BLACK,
+  kForegroundBlack,
+  kForegroundRed,
+  kForegroundGreen,
+  kForegroundYellow,
+  kForegroundBlue,
+  kForegroundMagenta,
+  kForegroundCyan,
+  kForegroundWhite,
+  kForegroundGray,
+  kForegroundLightRed,
+  kForegroundLightGreen,
+  kForegroundLightYellow,
+  kForegroundLightBlue,
+  kForegroundLightMagenta,
+  kForegroundLightCyan,
+  kForegroundLightWhite,
+
+  kBackgroundBlack,
+  kBackgroundRed,
+  kBackgroundGreen,
+  kBackgroundYellow,
+  kBackgroundBlue,
+  kBackgroundMagenta,
+  kBackgroundCyan,
+  kBackgroundWhite,
+  kBackgroundGray,
+  kBackgroundLightRed,
+  kBackgroundLightGreen,
+  kBackgroundLightYellow,
+  kBackgroundLightBlue,
+  kBackgroundLightMagenta,
+  kBackgroundLightCyan,
+  kBackgroundLightWhite,
+};
+
+std::ostream& set_colorful(std::ostream& stream, Color color) noexcept;
+std::ostream& set_foreground_colorful(std::ostream& stream, Color color) noexcept;
+std::ostream& set_background_colorful(std::ostream& stream, Color color) noexcept;
+
+inline std::ostream& reset(std::ostream& stream) noexcept { return set_colorful(stream, Color::kReset); }
+
+namespace fg {
+#define FGCOLOR(c) set_foreground_colorful(stream, Color::kForeground##c)
+
+  inline std::ostream& black(std::ostream& stream) noexcept { return FGCOLOR(Black); }
+  inline std::ostream& red(std::ostream& stream) noexcept { return FGCOLOR(Red); }
+  inline std::ostream& green(std::ostream& stream) noexcept { return FGCOLOR(Green); }
+  inline std::ostream& yellow(std::ostream& stream) noexcept { return FGCOLOR(Yellow); }
+  inline std::ostream& blue(std::ostream& stream) noexcept { return FGCOLOR(Blue); }
+  inline std::ostream& magenta(std::ostream& stream) noexcept { return FGCOLOR(Magenta); }
+  inline std::ostream& cyan(std::ostream& stream) noexcept { return FGCOLOR(Cyan); }
+  inline std::ostream& white(std::ostream& stream) noexcept { return FGCOLOR(White); }
+  inline std::ostream& gray(std::ostream& stream) noexcept { return FGCOLOR(Gray); }
+  inline std::ostream& lightred(std::ostream& stream) noexcept { return FGCOLOR(LightRed); }
+  inline std::ostream& lightgreen(std::ostream& stream) noexcept { return FGCOLOR(LightGreen); }
+  inline std::ostream& lightyellow(std::ostream& stream) noexcept { return FGCOLOR(LightYellow); }
+  inline std::ostream& lightblue(std::ostream& stream) noexcept { return FGCOLOR(LightBlue); }
+  inline std::ostream& lightmagenta(std::ostream& stream) noexcept { return FGCOLOR(LightMagenta); }
+  inline std::ostream& lightcyan(std::ostream& stream) noexcept { return FGCOLOR(LightCyan); }
+  inline std::ostream& lightwhite(std::ostream& stream) noexcept { return FGCOLOR(LightWhite); }
+
+#undef FGCOLOR
+}
+
+namespace bg {
+#define BGCOLOR(c) set_background_colorful(stream, Color::kBackground##c)
+
+  inline std::ostream& black(std::ostream& stream) noexcept { return BGCOLOR(Black); }
+  inline std::ostream& red(std::ostream& stream) noexcept { return BGCOLOR(Red); }
+  inline std::ostream& green(std::ostream& stream) noexcept { return BGCOLOR(Green); }
+  inline std::ostream& yellow(std::ostream& stream) noexcept { return BGCOLOR(Yellow); }
+  inline std::ostream& blue(std::ostream& stream) noexcept { return BGCOLOR(Blue); }
+  inline std::ostream& magenta(std::ostream& stream) noexcept { return BGCOLOR(Magenta); }
+  inline std::ostream& cyan(std::ostream& stream) noexcept { return BGCOLOR(Cyan); }
+  inline std::ostream& white(std::ostream& stream) noexcept { return BGCOLOR(White); }
+  inline std::ostream& gray(std::ostream& stream) noexcept { return BGCOLOR(Gray); }
+  inline std::ostream& lightred(std::ostream& stream) noexcept { return BGCOLOR(LightRed); }
+  inline std::ostream& lightgreen(std::ostream& stream) noexcept { return BGCOLOR(LightGreen); }
+  inline std::ostream& lightyellow(std::ostream& stream) noexcept { return BGCOLOR(LightYellow); }
+  inline std::ostream& lightblue(std::ostream& stream) noexcept { return BGCOLOR(LightBlue); }
+  inline std::ostream& lightmagenta(std::ostream& stream) noexcept { return BGCOLOR(LightMagenta); }
+  inline std::ostream& lightcyan(std::ostream& stream) noexcept { return BGCOLOR(LightCyan); }
+  inline std::ostream& lightwhite(std::ostream& stream) noexcept { return BGCOLOR(LightWhite); }
+
+#undef BGCOLOR
 }
 
 }
