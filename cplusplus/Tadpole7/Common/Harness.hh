@@ -84,6 +84,25 @@ public:
   HARNESS_BINOP(is_lt, <)
   HARNESS_BINOP(is_le, <=)
 #undef HARNESS_BINOP
+
+  template <typename T> inline Tester& operator<<(const T& x) noexcept {
+    if (!is_success_)
+      ss_ << " " << x;
+    return *this;
+  }
 };
 
+using ClosureFn = std::function<void ()>;
+
+bool register_harness(strv_t name, ClosureFn&& fn);
+int run_all_harness();
+
 }
+
+#define TADPOLE_CHECK_TRUE(c)   Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_true((c), #c)
+#define TADPOLE_CHECK_EQ(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_eq((a), (b))
+#define TADPOLE_CHECK_NE(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_ne((a), (b))
+#define TADPOLE_CHECK_GT(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_gt((a), (b))
+#define TADPOLE_CHECK_GE(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_ge((a), (b))
+#define TADPOLE_CHECK_LT(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_lt((a), (b))
+#define TADPOLE_CHECK_LE(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_le((a), (b))
