@@ -106,3 +106,22 @@ int run_all_harness();
 #define TADPOLE_CHECK_GE(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_ge((a), (b))
 #define TADPOLE_CHECK_LT(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_lt((a), (b))
 #define TADPOLE_CHECK_LE(a, b)  Tadpole::Common::Harness::Tester(__FILE__, __LINE__).is_le((a), (b))
+
+#if defined(_TADPOLE_RUN_HARNESS)
+# define _TADPOLE_IGNORED_REG(Name, Fn)\
+  bool _Ignored_TadpoleCommonHarness_##Name = Tadpole::Common::Harness::register_harness(#Name, Fn);
+#else
+# define _TADPOLE_IGNORED_REG(Name, Fn)
+#endif
+
+#define TADPOLE_TEST(Name)\
+class TadpoleCommonHarness_##Name final : private Tadpole::Common::UnCopyable {\
+  void _run();\
+public:\
+  static void run_harness() {\
+    static TadpoleCommonHarness_##Name ins;\
+    ins._run();\
+  }\
+};\
+_TADPOLE_IGNORED_REG(Name, &TadpoleCommonHarness_##Name::run_harness)\
+void TadpoleCommonHarness_##Name::_run()
