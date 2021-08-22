@@ -34,4 +34,52 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <tuple>
+#include <vector>
+#include <Common/Colorful.hh>
 #include <Common/Harness.hh>
+
+namespace Tadpole::Common::Harness {
+
+using Context     = std::tuple<strv_t, ClosureFn>;
+using ContextList = std::vector<Context>;
+
+ContextList* g_harness{};
+
+bool register_harness(strv_t name, ClosureFn&& fn) {
+  if (!g_harness)
+    g_harness = new ContextList;
+
+  g_harness->push_back({name, std::move(fn)});
+  return true;
+}
+
+int run_all_harness() {
+  sz_t total_tests{};
+  sz_t passed_tests{};
+
+  if (g_harness && !g_harness->empty()) {
+    total_tests = g_harness->size();
+
+    for (auto& hc : *g_harness) {
+      auto [hc_name, hc_fn] = hc;
+      hc_fn();
+      ++passed_tests;
+
+      std::cout
+        << Colorful::fg::green
+        << "********* [" << hc_name << "] test Harness PASSED "
+        << "(" << passed_tests << "/" << total_tests << ") *********"
+        << Colorful::reset << std::endl;
+    }
+  }
+
+  std::cout
+    << Colorful::fg::green
+    << "========= PASSED " << "(" << passed_tests << "/" << total_tests << ") test Harness ========="
+    << Colorful::reset << std::endl;
+
+  return 0;
+}
+
+}
