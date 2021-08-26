@@ -77,11 +77,31 @@ public:
     : kind_(std::move(r.kind_)), literal_(std::move(r.literal_)), lineno_(std::move(r.lineno_)) {
   }
 
-  inline Token& operator=(const Token& r) noexcept;
-  inline Token& operator=(Token&& r) noexcept;
+  inline Token& operator=(const Token& r) noexcept {
+    if (this != &r) {
+      kind_ = r.kind_;
+      literal_ = r.literal_;
+      lineno_ = r.lineno_;
+    }
+    return *this;
+  }
 
-  inline bool operator==(const Token& r) const noexcept;
-  inline bool operator==(Token&& r) const noexcept;
+  inline Token& operator=(Token&& r) noexcept {
+    if (this != &r) {
+      kind_ = std::move(r.kind_);
+      literal_ = std::move(r.literal_);
+      lineno_ = std::move(r.lineno_);
+    }
+    return *this;
+  }
+
+  inline bool operator==(const Token& r) const noexcept {
+    return this == &r ? true : literal_ == r.literal_;
+  }
+
+  inline bool operator!=(const Token& r) const noexcept {
+    return !(*this == r);
+  }
 
   inline TokenKind kind() const noexcept { return kind_; }
   inline const str_t& literal() const noexcept { return literal_; }
