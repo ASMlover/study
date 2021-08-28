@@ -37,9 +37,14 @@
 #include <fstream>
 #include <iostream>
 #include <Common/Common.hh>
+#include <Common/Harness.hh>
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+#if defined(_TADPOLE_RUN_HARNESS)
+  Tadpole::Common::Harness::run_all_harness();
+#endif
 
   return 0;
 }
