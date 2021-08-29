@@ -56,10 +56,14 @@ static const std::unordered_map<str_t, TokenKind> kKWs = {
 };
 
 const char* get_kind_name(TokenKind kind) noexcept {
+  if (kind > TokenKind::KINDS_BEG && kind < TokenKind::KINDS_END)
+    return kNames[Common::as_type<int>(kind)];
   return nullptr;
 }
 
 TokenKind get_keyword_kind(const str_t& key) noexcept {
+  if (auto it = kKWs.find(key); it != kKWs.end())
+    return it->second;
   return TokenKind::TK_IDENTIFIER;
 }
 
