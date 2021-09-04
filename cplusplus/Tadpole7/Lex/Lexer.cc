@@ -38,4 +38,43 @@
 
 namespace Tadpole::Lex {
 
+Token Lexer::next_token() {
+  // TODO:
+  return make_error("unexpected character");
+}
+
+void Lexer::skip_whitespace() {}
+
+Token Lexer::make_token(TokenKind kind) {
+  return  Token{kind, gen_literal(begpos_, curpos_), lineno_};
+}
+
+Token Lexer::make_token(TokenKind kind, const str_t& literal) {
+  return Token{kind, literal, lineno_};
+}
+
+Token Lexer::make_error(const str_t& message) {
+  return Token{TokenKind::TK_ERR, message, lineno_};
+}
+
+Token Lexer::make_identifier() {
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(begpos_, curpos_);
+  return make_token(get_keyword_kind(literal), literal);
+}
+
+Token Lexer::make_numeric() {
+  // TODO:
+  return make_token(TokenKind::TK_NUMERIC);
+}
+
+Token Lexer::make_string() {
+  str_t literal;
+
+  // TODO:
+  return make_token(TokenKind::TK_STRING, literal);
+}
+
 }
