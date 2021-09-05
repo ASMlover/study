@@ -39,4 +39,34 @@
 
 TADPOLE_TEST(TadpoleToken) {
   using TK = Tadpole::Lex::TokenKind;
+#define NEWTK2(k, s)    Tadpole::Lex::Token(k, s, 0)
+#define NEWTK3(k, s, l) Tadpole::Lex::Token(k, s, l)
+#define TESTEQ(a, b)    TADPOLE_CHECK_EQ(a, b)
+#define TESTTK(k, s)    do {\
+  auto t = NEWTK2(k, s);\
+  TESTEQ(t.kind(), k);\
+  TESTEQ(t.literal(), s);\
+  TESTEQ(t.lineno(),  0);\
+} while (false)
+#define TESTID(id)      TESTTK(TK::TK_IDENTIFIER, id)
+#define TESTNUM(n)      do {\
+  auto t = NEWTK2(TK::TK_NUMERIC, #n);\
+  TESTEQ(t.kind(), TK::TK_NUMERIC);\
+  TESTEQ(t.as_numeric(), n);\
+  TESTEQ(t.lineno(), 0);\
+} while (false)
+#define TESTSTR(s, l)   do {\
+  auto t = NEWTK3(TK::TK_STRING, s, l);\
+  TESTEQ(t.kind(), TK::TK_STRING);\
+  TESTEQ(t.as_string(), s);\
+  TESTEQ(a.lineno(), l);\
+} while (false)
+
+#undef TESTSTR
+#undef TESTNUM
+#undef TESTID
+#undef TESTTK
+#undef TESTEQ
+#undef NEWTK3
+#undef NEWTK2
 }
