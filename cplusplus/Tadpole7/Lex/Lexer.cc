@@ -43,7 +43,26 @@ Token Lexer::next_token() {
   return make_error("unexpected character");
 }
 
-void Lexer::skip_whitespace() {}
+void Lexer::skip_whitespace() {
+  for (;;) {
+    char c = peek();
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(); break;
+    case '\n': ++lineno_; advance(); break;
+    case '/':
+      {
+        if (peek(1) == '/') {
+          while (peek() != '\n')
+            advance();
+        }
+        else {
+          return;
+        }
+      } break;
+    default: return;
+    }
+  }
+}
 
 Token Lexer::make_token(TokenKind kind) {
   return  Token{kind, gen_literal(begpos_, curpos_), lineno_};
