@@ -66,7 +66,13 @@ Token Lexer::make_identifier() {
 }
 
 Token Lexer::make_numeric() {
-  // TODO:
+  while (is_digit(peek()))
+    advance();
+  if (peek() == '.' && is_digit(peek(1))) {
+    advance();
+    while (is_digit(peek()))
+      advance();
+  }
   return make_token(TokenKind::TK_NUMERIC);
 }
 
