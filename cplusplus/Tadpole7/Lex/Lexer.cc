@@ -39,7 +39,35 @@
 namespace Tadpole::Lex {
 
 Token Lexer::next_token() {
-  // TODO:
+  skip_whitespace();
+
+  begpos_ = curpos_;
+  if (is_tail())
+    return make_token(TokenKind::TK_EOF);
+
+  char c = advance();
+  if (is_alpha(c))
+    return make_identifier();
+  if (is_digit(c))
+    return make_numeric();
+
+#define _MKTK(c, k) case c: return make_token(TokenKind::TK_##k)
+  switch (c) {
+  _MKTK('(', LPAREN);
+  _MKTK(')', RPAREN);
+  _MKTK('{', LBRACE);
+  _MKTK('}', RBRACE);
+  _MKTK(',', COMMA);
+  _MKTK('-', MINUS);
+  _MKTK('+', PLUS);
+  _MKTK(';', SEMI);
+  _MKTK('/', SLASH);
+  _MKTK('*', STAR);
+  _MKTK('=', EQ);
+  case '"': return make_string();
+  }
+#undef _MKTK
+
   return make_error("unexpected character");
 }
 
