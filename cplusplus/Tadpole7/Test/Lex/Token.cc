@@ -62,6 +62,27 @@ TADPOLE_TEST(TadpoleToken) {
   TESTEQ(a.lineno(), l);\
 } while (false)
 
+  TESTTK(TK::TK_LPAREN, "(");
+  TESTTK(TK::TK_RPAREN, ")");
+  TESTTK(TK::TK_LBRACE, "{");
+  TESTTK(TK::TK_RBRACE, "}");
+  TESTTK(TK::TK_COMMA, ",");
+  TESTTK(TK::TK_MINUS, "-");
+  TESTTK(TK::TK_PLUS, "+");
+  TESTTK(TK::TK_SEMI, ";");
+  TESTTK(TK::TK_SLASH, "/");
+  TESTTK(TK::TK_STAR, "*");
+  TESTTK(TK::TK_EQ, "=");
+
+  TESTTK(TK::KW_FALSE, "false");
+  TESTTK(TK::KW_FN, "fn");
+  TESTTK(TK::KW_NIL, "nil");
+  TESTTK(TK::KW_TRUE, "true");
+  TESTTK(TK::KW_VAR, "var");
+
+  TESTTK(TK::TK_EOF, "EOF");
+  TESTTK(TK::TK_ERR, "ERR");
+
 #undef TESTSTR
 #undef TESTNUM
 #undef TESTID
