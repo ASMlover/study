@@ -45,3 +45,7 @@
 #else
 # define TADPOLE_MSVC
 #endif
+
+#if !defined(interface)
+# define interface struct
+#endif
