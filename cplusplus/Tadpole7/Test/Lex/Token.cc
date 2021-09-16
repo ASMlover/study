@@ -165,6 +165,19 @@ TADPOLE_TEST(TadpoleToken) {
     TESTID("__1__");
   }
 
+  {
+    // test for NUMERIC
+    TESTNUM(100);
+    TESTNUM(-100);
+    TESTNUM(+100);
+    TESTNUM(1.2345);
+    TESTNUM(-1.2345);
+    TESTNUM(+1.2345);
+    TESTNUM(100.0);
+    TESTNUM(-100.0);
+    TESTNUM(+100.0);
+  }
+
 #undef TESTSTR
 #undef TESTNUM
 #undef TESTID
