@@ -38,4 +38,22 @@
 #include <Lex/Lexer.hh>
 
 TADPOLE_TEST(TadpoleLexer) {
+  using TK = Tadpole::Lex::TokenKind;
+
+#define TESTEQ(k) TADPOLE_CHECK_EQ(lex.next_token().kind(), k)
+#define DUMPLEX() do {\
+  for (;;) {\
+    auto t = lex.next_token();\
+    std::fprintf(stdout, "%-24s | %-32s | %d\n",\
+        Tadpole::Lex::get_kind_name(t.kind()),\
+        t.as_cstring(),\
+        t.lineno());\
+    if (t.kind() == TK::TK_EOF)\
+      break;\
+  }\
+} while (false)
+
+#undef DUMPLEX
+#undef TESTEQ
+
 }
