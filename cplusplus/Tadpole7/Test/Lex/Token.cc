@@ -59,7 +59,7 @@ TADPOLE_TEST(TadpoleToken) {
   auto t = NEWTK3(TK::TK_STRING, s, l);\
   TESTEQ(t.kind(), TK::TK_STRING);\
   TESTEQ(t.as_string(), s);\
-  TESTEQ(a.lineno(), l);\
+  TESTEQ(t.lineno(), l);\
 } while (false)
 
   TESTTK(TK::TK_LPAREN, "(");
@@ -176,6 +176,17 @@ TADPOLE_TEST(TadpoleToken) {
     TESTNUM(100.0);
     TESTNUM(-100.0);
     TESTNUM(+100.0);
+  }
+
+  {
+    // test for STRING
+    TESTSTR("111", 0);
+    TESTSTR("Hello", 22);
+    TESTSTR("This is string test", 33);
+    TESTSTR("--------------------", 89);
+    TESTSTR("********************", 99);
+    TESTSTR("UPPER STRING UPPER STRING", 101);
+    TESTSTR("string variable test for tadpole", 222);
   }
 
 #undef TESTSTR
