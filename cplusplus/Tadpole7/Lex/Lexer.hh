@@ -51,7 +51,7 @@ class Lexer final : private Common::UnCopyable {
   inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
   inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
   inline bool is_tail() const noexcept { return curpos_ >= source_bytes_.size(); }
-  inline bool advance() noexcept { return source_bytes_[curpos_++]; }
+  inline char advance() noexcept { return source_bytes_[curpos_++]; }
 
   inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
     return source_bytes_.substr(begpos, endpos - begpos);
