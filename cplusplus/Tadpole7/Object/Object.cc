@@ -49,4 +49,34 @@ const char* BaseObject::type_asstr() const noexcept {
   return "<unknown>";
 }
 
+StringObject* BaseObject::as_string() {
+  // TODO:
+  return nullptr;
+}
+
+const char* BaseObject::as_cstring() {
+  // TODO:
+  return nullptr;
+}
+
+NativeObject* BaseObject::as_native() {
+  // TODO:
+  return nullptr;
+}
+
+FunctionObject* BaseObject::as_function() {
+  // TODO:
+  return nullptr;
+}
+
+UpvalueObject* BaseObject::as_upvalue() {
+  // TODO:
+  return nullptr;
+}
+
+ClosureObject* BaseObject::as_closure() {
+  // TODO:
+  return nullptr;
+}
+
 }
