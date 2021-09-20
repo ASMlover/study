@@ -53,6 +53,13 @@ TADPOLE_TEST(TadpoleLexer) {
   }\
 } while (false)
 
+  {
+    std::string s =
+      "print(\"Hello, world !\")";
+    Tadpole::Lex::Lexer lex(s);
+    DUMPLEX();
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 
