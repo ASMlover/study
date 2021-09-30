@@ -60,6 +60,17 @@ TADPOLE_TEST(TadpoleLexer) {
     DUMPLEX();
   }
 
+  {
+    std::string s = "var a = 1.234;";
+    Tadpole::Lex::Lexer lex(s);
+    TESTEQ(TK::KW_VAR);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_EQ);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 
