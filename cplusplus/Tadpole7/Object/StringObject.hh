@@ -40,7 +40,7 @@
 
 namespace Tadpole::Object {
 
-class StringObject final : private BaseObject {
+class StringObject final : public BaseObject {
   sz_t size_{};
   char* data_{};
   u32_t hash_{};
