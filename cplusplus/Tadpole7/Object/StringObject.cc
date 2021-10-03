@@ -73,7 +73,17 @@ str_t StringObject::stringify() const {
   return data_;
 }
 
-StringObject* StringObject::create(const char* s, sz_t n) { return nullptr; }
+StringObject* StringObject::create(const char* s, sz_t n) {
+  u32_t h = string_hash(s, n);
+  if (auto* o = GC::GC::get_instance().get_interned(h); o != nullptr)
+    return o;
+
+  auto* o  = GC::make_object<StringObject>(s, n, h, false);
+  GC::GC::get_instance().set_interned(h, o);
+
+  return o;
+}
+
 StringObject* StringObject::concat(StringObject* s1, StringObject* s2) { return nullptr; }
 
 }
