@@ -34,6 +34,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <Object/Object.hh>
+#include <Object/StringObject.hh>
 
 namespace Tadpole::Object {
 
@@ -50,13 +51,11 @@ const char* BaseObject::type_asstr() const noexcept {
 }
 
 StringObject* BaseObject::as_string() {
-  // TODO:
-  return nullptr;
+  return Common::as_down<StringObject>(this);
 }
 
 const char* BaseObject::as_cstring() {
-  // TODO:
-  return nullptr;
+  return Common::as_down<StringObject>(this)->cstr();
 }
 
 NativeObject* BaseObject::as_native() {
