@@ -88,4 +88,16 @@ template <typename N> inline Code operator+(Code a, N b) noexcept {
   return Common::as_type<Code>(Common::as_type<int>(a) + Common::as_type<int>(b));
 }
 
+class Chunk final : private Common::UnCopyable {
+  std::vector<u8_t> codes_;
+  std::vector<int> lines_;
+  std::vector<Value::Value> constants_;
+public:
+  template <typename T> inline u8_t write(T c, int lineno) noexcept {
+    codes_.push_back(Common::as_type<u8_t>(c));
+    lines_.push_back(lineno);
+    return Common::as_type<u8_t>(codes_.size() - 1);
+  }
+};
+
 }
