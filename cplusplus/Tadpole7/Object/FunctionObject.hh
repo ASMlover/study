@@ -34,49 +34,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#pragma once
+
 #include <Object/Object.hh>
 #include <Object/StringObject.hh>
-#include <Object/NativeObject.hh>
 
 namespace Tadpole::Object {
-
-const char* BaseObject::type_asstr() const noexcept {
-  switch (type_) {
-  case ObjType::STRING: return "<string>";
-  case ObjType::NATIVE: return "<native>";
-  case ObjType::FUNCTION: return "<function>";
-  case ObjType::UPVALUE: return "<upvalue>";
-  case ObjType::CLOSURE: return "<closure>";
-  default: break;
-  }
-  return "<unknown>";
-}
-
-StringObject* BaseObject::as_string() {
-  return Common::as_down<StringObject>(this);
-}
-
-const char* BaseObject::as_cstring() {
-  return Common::as_down<StringObject>(this)->cstr();
-}
-
-NativeObject* BaseObject::as_native() {
-  return Common::as_down<NativeObject>(this);
-}
-
-FunctionObject* BaseObject::as_function() {
-  // TODO:
-  return nullptr;
-}
-
-UpvalueObject* BaseObject::as_upvalue() {
-  // TODO:
-  return nullptr;
-}
-
-ClosureObject* BaseObject::as_closure() {
-  // TODO:
-  return nullptr;
-}
 
 }
