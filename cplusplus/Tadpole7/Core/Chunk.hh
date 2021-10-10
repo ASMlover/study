@@ -98,6 +98,32 @@ public:
     lines_.push_back(lineno);
     return Common::as_type<u8_t>(codes_.size() - 1);
   }
+
+  inline u8_t add_constant(Value::Value value) noexcept {
+    constants_.push_back(value);
+    return Common::as_type<u8_t>(constants_.size() - 1);
+  }
+
+  inline void write_constant(Value::Value value, int lineno) noexcept {
+    write(Code::CONSTANT, lineno);
+    write(add_constant(value), lineno);
+  }
+
+  inline sz_t codes_count() const noexcept { return codes_.size(); }
+  inline const u8_t* codes() const noexcept { return codes_.data(); }
+  inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
+  template <typename T> inline void set_code(sz_t i, T c) noexcept { codes_[i] = Common::as_type<u8_t>(c); }
+  inline int get_line(sz_t i) const noexcept { return lines_[i]; }
+  inline const Value::Value& get_constant(sz_t i) const noexcept { return constants_[i]; }
+  inline sz_t offset_with(const u8_t* ip) const noexcept { return Common::as_type<sz_t>(ip - codes()); }
+
+  template <typename Fn> inline void iter_constants(Fn&& fn) {
+    for (auto& c : constants_)
+      fn(c);
+  }
+
+  void dis(strv_t prompt) noexcept;
+  sz_t dis_code(sz_t offset) noexcept;
 };
 
 }
