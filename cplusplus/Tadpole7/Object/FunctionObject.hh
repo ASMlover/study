@@ -39,6 +39,36 @@
 #include <Object/Object.hh>
 #include <Object/StringObject.hh>
 
+namespace Tadpole::Core {
+
+class Chunk;
+
+}
+
 namespace Tadpole::Object {
+
+class FunctionObject final : public BaseObject {
+  StringObject* name_{};
+  sz_t arity_{};
+  sz_t upvalues_count_{};
+  Core::Chunk* chunk_{};
+public:
+  FunctionObject(StringObject* name = nullptr) noexcept;
+  virtual ~FunctionObject();
+
+  inline StringObject* name() const noexcept { return name_; }
+  inline const char* name_asstr() const noexcept { return name_ ? name_->cstr() : "<tadpole>"; }
+  inline void set_name(StringObject* name) noexcept { name_ = name; }
+  inline sz_t arity() const noexcept { return arity_; }
+  inline sz_t inc_arity() noexcept { return arity_++; }
+  inline sz_t upvalues_count() const noexcept { return upvalues_count_; }
+  inline sz_t inc_upvalues_count() noexcept { return upvalues_count_++; }
+  inline Core::Chunk* chunk() const noexcept { return chunk_; }
+
+  virtual str_t stringify() const override;
+  virtual void iter_children(ObjectVisitor&& visitor) override;
+
+  static FunctionObject* create(StringObject* name = nullptr);
+};
 
 }
