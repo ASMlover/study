@@ -50,6 +50,15 @@ inline sz_t dis_compound(
   return i + 2;
 }
 
+inline sz_t dis_simple(Chunk* chunk, const char* prompt, sz_t i, int n = 0) noexcept {
+  std::cout << prompt;
+  if (n > 0)
+    std::cout << "_" << n;
+  std::cout << std::endl;
+
+  return i + 1;
+}
+
 void Chunk::dis(strv_t prompt) noexcept {
 }
 
