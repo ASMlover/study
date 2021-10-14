@@ -37,6 +37,7 @@
 #include <Object/Object.hh>
 #include <Object/StringObject.hh>
 #include <Object/NativeObject.hh>
+#include <Object/FunctionObject.hh>
 
 namespace Tadpole::Object {
 
@@ -65,8 +66,7 @@ NativeObject* BaseObject::as_native() {
 }
 
 FunctionObject* BaseObject::as_function() {
-  // TODO:
-  return nullptr;
+  return Common::as_down<FunctionObject>(this);
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
