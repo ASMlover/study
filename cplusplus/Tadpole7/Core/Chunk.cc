@@ -60,6 +60,9 @@ inline sz_t dis_simple(Chunk* chunk, const char* prompt, sz_t i, int n = 0) noex
 }
 
 void Chunk::dis(strv_t prompt) noexcept {
+  std::cout << "========= [" << prompt << "] =========" << std::endl;
+  for (sz_t offset = 0; offset < codes_count();)
+    offset = dis_code(offset);
 }
 
 sz_t Chunk::dis_code(sz_t offset) noexcept {
