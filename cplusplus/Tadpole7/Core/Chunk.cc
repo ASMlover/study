@@ -66,6 +66,26 @@ void Chunk::dis(strv_t prompt) noexcept {
 }
 
 sz_t Chunk::dis_code(sz_t offset) noexcept {
+  std::fprintf(stdout, "%04d ", Common::as_type<int>(offset));
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    std::fprintf(stdout, "   | ");
+  else
+    std::fprintf(stdout, "%04d ", lines_[offset]);
+
+#define COMPOUND(x)     return dis_compound(this, #x, offset)
+#define COMPOUND2(x, b) return dis_compound(this, #x, offset, (b))
+#define SIMPLE(x)       return dis_simple(this, #x, offset)
+#define SIMPLE2(x, n)   return dis_simple(this, #x, offset, (n))
+
+  switch (auto c = Common::as_type<Code>(codes_[offset])) {
+  case Code::CONSTANT: COMPOUND2(CONSTANT, true);
+  }
+
+#undef SIMPLE2
+#undef SIMPLE
+#undef COMPOUND2
+#undef COMPOUND
+
   return offset + 1;
 }
 
