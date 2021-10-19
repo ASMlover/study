@@ -79,6 +79,34 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
 
   switch (auto c = Common::as_type<Code>(codes_[offset])) {
   case Code::CONSTANT: COMPOUND2(CONSTANT, true);
+  case Code::NIL: SIMPLE(NIL);
+  case Code::FALSE: SIMPLE(FALSE);
+  case Code::TRUE: SIMPLE(TRUE);
+  case Code::POP: SIMPLE(POP);
+  case Code::DEF_GLOBAL: COMPOUND2(DEF_GLOBAL, true);
+  case Code::GET_GLOBAL: COMPOUND2(GET_GLOBAL, true);
+  case Code::SET_GLOBAL: COMPOUND2(SET_GLOBAL, true);
+  case Code::GET_LOCAL: COMPOUND(GET_LOCAL);
+  case Code::SET_LOCAL: COMPOUND(SET_LOCAL);
+  case Code::GET_UPVALUE: COMPOUND(GET_UPVALUE);
+  case Code::SET_UPVALUE: COMPOUND(SET_UPVALUE);
+  case Code::ADD: SIMPLE(ADD);
+  case Code::SUB: SIMPLE(SUB);
+  case Code::MUL: SIMPLE(MUL);
+  case Code::DIV: SIMPLE(DIV);
+  case Code::CALL_0:
+  case Code::CALL_1:
+  case Code::CALL_2:
+  case Code::CALL_3:
+  case Code::CALL_4:
+  case Code::CALL_5:
+  case Code::CALL_6:
+  case Code::CALL_7:
+  case Code::CALL_8: SIMPLE2(CALL, c - Code::CALL_0);
+  case Code::CLOSURE: COMPOUND(CLOSURE);
+  case Code::CLOSE_UPVALUE: SIMPLE(CLOSE_UPVALUE);
+  case Code::RETURN: SIMPLE(RETURN);
+  default: std::cerr << "<invalid `Code`>" << std::endl;
   }
 
 #undef SIMPLE2
