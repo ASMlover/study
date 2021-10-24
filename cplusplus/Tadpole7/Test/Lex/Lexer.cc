@@ -71,6 +71,21 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "print(\"33 + 56.7 =\", 33 + 56.7);";
+    Tadpole::Lex::Lexer lex(s);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_LPAREN);
+    TESTEQ(TK::TK_STRING);
+    TESTEQ(TK::TK_COMMA);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_PLUS);
+    TESTEQ(TK::TK_NUMERIC);
+    TESTEQ(TK::TK_RPAREN);
+    TESTEQ(TK::TK_SEMI);
+    TESTEQ(TK::TK_EOF);
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 
