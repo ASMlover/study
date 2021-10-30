@@ -155,6 +155,16 @@ TADPOLE_TEST(TadpoleLexer) {
     TESTEQ(TK::TK_EOF);
   }
 
+  {
+    std::string s = "var s =\"ERROR LEXER";
+    Tadpole::Lex::Lexer lex(s);
+    TESTEQ(TK::KW_VAR);
+    TESTEQ(TK::TK_IDENTIFIER);
+    TESTEQ(TK::TK_EQ);
+    TESTEQ(TK::TK_ERR);
+    TESTEQ(TK::TK_EOF);
+  }
+
 #undef DUMPLEX
 #undef TESTEQ
 
