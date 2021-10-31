@@ -38,6 +38,8 @@
 #include <Object/StringObject.hh>
 #include <Object/NativeObject.hh>
 #include <Object/FunctionObject.hh>
+#include <Object/UpvalueObject.hh>
+#include <Object/ClosureObject.hh>
 
 namespace Tadpole::Object {
 
@@ -70,13 +72,11 @@ FunctionObject* BaseObject::as_function() {
 }
 
 UpvalueObject* BaseObject::as_upvalue() {
-  // TODO:
-  return nullptr;
+  return Common::as_down<UpvalueObject>(this);
 }
 
 ClosureObject* BaseObject::as_closure() {
-  // TODO:
-  return nullptr;
+  return Common::as_down<ClosureObject>(this);
 }
 
 }
