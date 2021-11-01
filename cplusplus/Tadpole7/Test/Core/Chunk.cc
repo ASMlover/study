@@ -38,4 +38,27 @@
 #include <Core/Chunk.hh>
 
 TADPOLE_TEST(TadpoleChunk) {
+  using TC = Tadpole::Core::Code;
+
+#define EXPV(value) c.write_constant((value), n)
+#define EXPC(code)  c.write((code), n)
+#define EXPC2(code) c.write((code), n++)
+
+  Tadpole::Core::Chunk c;
+  int n = 1;
+
+  // 22.56 + 34
+  EXPV(34); EXPV(22.56); EXPC2(TC::ADD);
+
+  // 10.56 - 89.92
+  EXPV(89.92); EXPV(10.56); EXPC2(TC::SUB);
+
+  // return
+  c.write(TC::RETURN, n);
+
+  c.dis("TadpoleChunk");
+
+#undef EXPC2
+#undef EXPC
+#undef EXPV
 }
