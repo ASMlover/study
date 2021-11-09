@@ -40,8 +40,12 @@
 namespace Tadpole::Compiler {
 
 int FunctionCompiler::resolve_local(const Lex::Token& name, const ErrorFn& errfn) {
-  // TODO:
-  return 0;
+  for (int i = locals_count() - 1; i >= 0; --i) {
+    const LocalVar& local = locals_[i];
+    if (local.name == name && local.depth == -1)
+      errfn(Common::from_fmt("cannot load local variable `%s` in its own initializer", name.as_cstring()));
+  }
+  return -1;
 }
 
 int FunctionCompiler::add_upvalue(u8_t index, bool is_local) {
