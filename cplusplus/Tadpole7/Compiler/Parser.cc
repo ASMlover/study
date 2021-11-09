@@ -132,4 +132,19 @@ bool GlobalParser::match(Lex::TokenKind kind) {
   return false;
 }
 
+void GlobalParser::init_compiler(FunctionCompiler* compiler, int scope_depth, FunctionType fn_type) {
+  Object::StringObject* fn_name{};
+  if (fn_type == FunctionType::FUNCTION)
+    fn_name = Object::StringObject::create(prev_.as_string());
+
+  compiler->set_compiler(
+      curr_compiler_,
+      Object::FunctionObject::create(fn_name),
+      fn_type,
+      scope_depth);
+  curr_compiler_ = compiler;
+
+  curr_compiler_->append_local({Lex::Token::make(""), curr_compiler_->scope_depth(), false});
+}
+
 }
