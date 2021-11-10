@@ -59,6 +59,9 @@ TADPOLE_TEST(TadpoleChunk) {
   // 99.03 / 712.37
   EXPV(712.37); EXPV(99.03); EXPC2(TC::DIV);
 
+  // (92.33 - 1.65 + 38.07) / 59.79
+  EXPV(59.79); EXPV(38.07); EXPV(1.65); EXPV(92.79); EXPC(TC::SUB); EXPC(TC::ADD); EXPC2(TC::DIV);
+
   // return
   c.write(TC::RETURN, n);
 
