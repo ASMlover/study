@@ -74,7 +74,57 @@ InterpretRet TadpoleVM::interpret(const str_t& source_bytes) {
 }
 
 void TadpoleVM::iter_objects(Object::ObjectVisitor&& visitor) {
-  // TODO:
+  // iterate Tadpole objects roots
+  gcompiler_->iter_objects(std::move(visitor));
+  for (auto& v : stack_)
+    visitor(v.as_object(safe_t()));
+  for (auto& f : frames_)
+    visitor(f.closure());
+  for (auto& g : globals_)
+    visitor(g.second.as_object(safe_t()));
+  for (auto* u = open_upvalues_; u != nullptr; u = u->next())
+    visitor(u);
+}
+
+void TadpoleVM::reset() {
+  stack_.clear();
+  frames_.clear();
+  open_upvalues_ = nullptr;
+}
+
+void TadpoleVM::runtime_error(const char* format, ...) {
+  std::cerr << Common::Colorful::fg::red << "Traceback (most recent call last):" << std::endl;
+  for (auto it = frames_.rbegin(); it != frames_.rend(); ++it) {
+    auto& frame = *it;
+
+    sz_t i = frame.frame_chunk()->offset_with(frame.ip()) - 1;
+    std::cerr
+      << "  [LINE: " << frame.frame_chunk()->get_line(i) << "] in "
+      << "`" << frame.frame_fn()->name_asstr() << "()`"
+      << std::endl;
+  }
+
+  va_list ap;
+  va_start(ap, format);
+  std::vfprintf(stderr, format, ap);
+  va_end(ap);
+  std::cerr << Common::Colorful::reset << std::endl;
+
+  reset();
+}
+
+void TadpoleVM::push(const Value::Value& value) noexcept {
+  stack_.push_back(value);
+}
+
+Value::Value TadpoleVM::pop() noexcept {
+  Value::Value value = stack_.back();
+  stack_.pop_back();
+  return value;
+}
+
+const Value::Value& TadpoleVM::peek(sz_t distance) const noexcept {
+  return stack_[stack_.size() - 1 - distance];
 }
 
 }
