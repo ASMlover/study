@@ -34,7 +34,47 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
+#include <iostream>
+#include <Common/Colorful.hh>
+#include <Core/Chunk.hh>
+#include <GC/GC.hh>
+#include <Object/NativeObject.hh>
+#include <Core/CallFrame.hh>
+#include <Compiler/Compiler.hh>
+#include <Builtin/Builtins.hh>
 #include <Core/TadpoleVM.hh>
 
 namespace Tadpole::Core {
+
+TadpoleVM::TadpoleVM() noexcept {
+  gcompiler_ = new Compiler::GlobalCompiler();
+  stack_.reserve(kDefaultCap);
+
+  Builtin::register_builtins(*this);
+  GC::GC::get_instance().append_roots("TadpoleVM", this);
+}
+
+TadpoleVM::~TadpoleVM() {
+  delete gcompiler_;
+  globals_.clear();
+}
+
+void TadpoleVM::define_native(const str_t& name, Value::TadpoleCFun&& fn) {
+  globals_[name] = Object::NativeObject::create(std::move(fn));
+}
+
+InterpretRet TadpoleVM::interpret(const str_t& source_bytes) {
+  Object::FunctionObject* fn = gcompiler_->compile(*this, source_bytes);
+  if (fn == nullptr)
+    return InterpretRet::ECOMPILE;
+
+  // TODO:
+  return InterpretRet::OK;
+}
+
+void TadpoleVM::iter_objects(Object::ObjectVisitor&& visitor) {
+  // TODO:
+}
+
 }

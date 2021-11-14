@@ -41,6 +41,8 @@
 #include <Common/Common.hh>
 #include <Object/Value.hh>
 
+namespace Compiler { class GlobalCompiler; }
+
 namespace Tadpole::Core {
 
 enum class InterpretRet : u8_t {
@@ -50,12 +52,11 @@ enum class InterpretRet : u8_t {
 };
 
 class CallFrame;
-class GlobalCompiler;
 
 class TadpoleVM final : public Object::IObjectIterator {
   static constexpr sz_t kDefaultCap = 256;
 
-  GlobalCompiler* gcompiler_{};
+  Compiler::GlobalCompiler* gcompiler_{};
   bool is_running_{true};
 
   std::vector<Value::Value> stack_;
