@@ -49,13 +49,27 @@ int FunctionCompiler::resolve_local(const Lex::Token& name, const ErrorFn& errfn
 }
 
 int FunctionCompiler::add_upvalue(u8_t index, bool is_local) {
-  // TODO:
-  return 0;
+  for (sz_t i = 0; i < fn_->upvalues_count(); ++i) {
+    if (upvalues_[i].is_equal(index, is_local))
+      return Common::as_type<int>(i);
+  }
+
+  upvalues_.push_back({index, is_local});
+  return Common::as_type<int>(fn_->inc_upvalues_count());
 }
 
 int FunctionCompiler::resolve_upvalue(const Lex::Token& name, const ErrorFn& errfn) {
-  // TODO:
-  return 0;
+  if (enclosing_ == nullptr)
+    return -1;
+
+  if (int local = enclosing_->resolve_local(name, errfn); local != -1) {
+    enclosing_->locals_[local].is_upvalue = true;
+    return add_upvalue(Common::as_type<u8_t>(local), true);
+  }
+  if (int upvalue = enclosing_->resolve_upvalue(name, errfn); upvalue != -1)
+    return add_upvalue(Common::as_type<u8_t>(upvalue), false);
+
+  return -1;
 }
 
 void FunctionCompiler::declare_localvar(const Lex::Token& name, const ErrorFn& errfn) {
