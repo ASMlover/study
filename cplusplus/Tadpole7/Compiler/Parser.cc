@@ -147,4 +147,17 @@ void GlobalParser::init_compiler(FunctionCompiler* compiler, int scope_depth, Fu
   curr_compiler_->append_local({Lex::Token::make(""), curr_compiler_->scope_depth(), false});
 }
 
+Object::FunctionObject* GlobalParser::finish_compiler() {
+  emit_return();
+
+  Object::FunctionObject* fn = curr_compiler_->fn();
+#if defined(_TADPOLE_DEBUG_VM)
+  if (!had_error_)
+    curr_chunk()->dis(fn->name_asstr());
+#endif
+
+  curr_compiler_ = curr_compiler_->enclosing();
+  return fn;
+}
+
 }
