@@ -127,4 +127,23 @@ const Value::Value& TadpoleVM::peek(sz_t distance) const noexcept {
   return stack_[stack_.size() - 1 - distance];
 }
 
+bool TadpoleVM::call(Object::ClosureObject* closure, sz_t nargs) {
+  Object::FunctionObject* fn = closure->fn();
+  if (fn->arity() != nargs) {
+    runtime_error("%s() takes exactly %u arguments (%u given)",
+        fn->name_asstr(), fn->arity(), nargs);
+    return false;
+  }
+
+  frames_.push_back({closure, fn->chunk()->codes(), stack_.size() - nargs - 1});
+  return true;
+}
+
+bool TadpoleVM::call(const Value::Value& callee, sz_t nargs) {
+  // TODO:
+
+  runtime_error("can only call function");
+  return false;
+}
+
 }
