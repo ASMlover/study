@@ -73,7 +73,17 @@ int FunctionCompiler::resolve_upvalue(const Lex::Token& name, const ErrorFn& err
 }
 
 void FunctionCompiler::declare_localvar(const Lex::Token& name, const ErrorFn& errfn) {
-  // TODO:
+  if (scope_depth_ == 0)
+    return;
+
+  for (auto it = locals_.rbegin(); it != locals_.rend(); ++it) {
+    if (it->depth != -1 && it->depth < scope_depth_)
+      break;
+
+    if (it->name == name)
+      errfn(Common::from_fmt("name `%s` is redefined", name.as_cstring()));
+  }
+  locals_.push_back({name, -1, false});
 }
 
 }
