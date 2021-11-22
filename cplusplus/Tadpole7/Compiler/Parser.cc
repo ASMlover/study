@@ -160,4 +160,11 @@ Object::FunctionObject* GlobalParser::finish_compiler() {
   return fn;
 }
 
+void GlobalParser::enter_scope() {
+  curr_compiler_->enter_scope();
+}
+
+void GlobalParser::leave_scope() {
+}
+
 }
