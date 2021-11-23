@@ -64,6 +64,12 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
 
         return nullptr;
       });
+
+  // fn exit() -> Nil
+  vm.define_native("exit", [&vm](sz_t, Value::Value*) -> Value::Value {
+        vm.terminate();
+        return nullptr;
+      });
 }
 
 }
