@@ -70,6 +70,15 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
         vm.terminate();
         return nullptr;
       });
+
+  // fn time() -> Numeric
+  //
+  // @returns
+  //    Returns the current time in seconds since the Epoch.
+  vm.define_native("time", [](sz_t, Value::Value*) -> Value::Value {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+      });
 }
 
 }
