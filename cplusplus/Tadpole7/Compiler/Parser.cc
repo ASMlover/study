@@ -165,6 +165,9 @@ void GlobalParser::enter_scope() {
 }
 
 void GlobalParser::leave_scope() {
+  curr_compiler_->leave_scope([this](const LocalVar& var) {
+        emit_byte(var.is_upvalue ? Core::Code::CLOSE_UPVALUE : Core::Code::POP);
+      });
 }
 
 }
