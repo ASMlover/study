@@ -140,7 +140,23 @@ bool TadpoleVM::call(Object::ClosureObject* closure, sz_t nargs) {
 }
 
 bool TadpoleVM::call(const Value::Value& callee, sz_t nargs) {
-  // TODO:
+  if (callee.is_object()) {
+    switch (callee.objtype()) {
+    case Object::ObjType::NATIVE:
+      {
+        Value::Value* args{};
+        if (nargs > 0 && stack_.size() > nargs)
+          args = &stack_[stack_.size() - nargs];
+
+        Value::Value result = callee.as_native()->call(nargs, args);
+        stack_.resize(stack_.size() - nargs - 1);
+        push(result);
+
+        return true;
+      }
+    case Object::ObjType::CLOSURE: return call(callee.as_closure(), nargs);
+    }
+  }
 
   runtime_error("can only call function");
   return false;
