@@ -79,6 +79,15 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
         return std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
       });
+
+  // fn clock() -> Numeric
+  //
+  // @returns
+  //    Return the current processor time as a Numeric expressed in microseconds.
+  vm.define_native("clock", [](sz_t, Value::Value*) -> Value::Value {
+        return std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+      });
 }
 
 }
