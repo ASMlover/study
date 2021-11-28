@@ -170,4 +170,13 @@ void GlobalParser::leave_scope() {
       });
 }
 
+u8_t GlobalParser::identifier_constant(const Lex::Token& name) noexcept {
+  return curr_chunk()->add_constant(Object::StringObject::create(name.as_string()));
+}
+
+u8_t GlobalParser::parse_variable(const str_t& msg) {
+  // TODO:
+  return identifier_constant(prev_);
+}
+
 }
