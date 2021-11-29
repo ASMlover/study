@@ -88,6 +88,14 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
         return std::chrono::duration_cast<std::chrono::microseconds>(
             std::chrono::steady_clock::now().time_since_epoch()).count();
       });
+
+  // fn gc_count() -> Numeric
+  //
+  // @returns
+  //    Return the current collection counts.
+  vm.define_native("gc_count", [](sz_t, Value::Value*) -> Value::Value {
+        return GC::GC::get_instance().get_count();
+      });
 }
 
 }
