@@ -96,6 +96,25 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   vm.define_native("gc_count", [](sz_t, Value::Value*) -> Value::Value {
         return GC::GC::get_instance().get_count();
       });
+
+  // fn gc_threshold() -> Numeric
+  //
+  // @returns
+  //    Returns the current collection threshold.
+  //
+  //
+  // fn gc_threshold(threshold: Numeric) -> Numeric
+  //
+  // @args
+  //    threshold: Numeric -> Number of collection threshold will be setted.
+  //
+  // @returns
+  //    Returns the current collection threshold.
+  vm.define_native("gc_threshold", [](sz_t nargs, Value::Value* args) -> Value::Value {
+        if (nargs == 1 && args != nullptr && args[0].as_numeric())
+          GC::GC::get_instance().set_threshold(args[0].as_integer<sz_t>());
+        return GC::GC::get_instance().get_threshold();
+      });
 }
 
 }
