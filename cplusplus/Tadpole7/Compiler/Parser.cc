@@ -175,7 +175,11 @@ u8_t GlobalParser::identifier_constant(const Lex::Token& name) noexcept {
 }
 
 u8_t GlobalParser::parse_variable(const str_t& msg) {
-  // TODO:
+  consume(Lex::TokenKind::TK_IDENTIFIER, msg);
+
+  curr_compiler_->declare_localvar(prev_, [this](const str_t& m) { error(m); });
+  if (curr_compiler_->scope_depth() > 0)
+    return 0;
   return identifier_constant(prev_);
 }
 
