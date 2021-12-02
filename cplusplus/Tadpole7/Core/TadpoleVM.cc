@@ -162,4 +162,31 @@ bool TadpoleVM::call(const Value::Value& callee, sz_t nargs) {
   return false;
 }
 
+Object::UpvalueObject* TadpoleVM::capture_upvalue(Value::Value* local) {
+  if (open_upvalues_ == nullptr) {
+    open_upvalues_ = Object::UpvalueObject::create(local);
+    return open_upvalues_;
+  }
+
+  Object::UpvalueObject* upvalue = open_upvalues_;
+  Object::UpvalueObject* prev_upvalue = nullptr;
+  while (upvalue != nullptr && upvalue->value() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+  if (upvalue != nullptr && upvalue->value() == local)
+    return upvalue;
+
+  Object::UpvalueObject* new_upvate = Object::UpvalueObject::create(local, upvalue);
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = new_upvate;
+  else
+    prev_upvalue->set_next(new_upvate);
+  return new_upvate;
+}
+
+void TadpoleVM::close_upvalues(Value::Value* last) {
+  // TODO:
+}
+
 }
