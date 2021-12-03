@@ -115,6 +115,12 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           GC::GC::get_instance().set_threshold(args[0].as_integer<sz_t>());
         return GC::GC::get_instance().get_threshold();
       });
+
+  // fn gc_collect() -> Nil
+  vm.define_native("gc_collect", [](sz_t, Value::Value*) -> Value::Value {
+        GC::GC::get_instance().collect();
+        return nullptr;
+      });
 }
 
 }
