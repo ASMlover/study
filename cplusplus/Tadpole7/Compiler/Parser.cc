@@ -183,4 +183,10 @@ u8_t GlobalParser::parse_variable(const str_t& msg) {
   return identifier_constant(prev_);
 }
 
+void GlobalParser::mark_initialized() {
+  if (curr_compiler_->scope_depth() == 0)
+    return;
+  curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
+}
+
 }
