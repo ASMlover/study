@@ -189,4 +189,26 @@ void GlobalParser::mark_initialized() {
   curr_compiler_->peek_local().depth = curr_compiler_->scope_depth();
 }
 
+void GlobalParser::define_global(u8_t global) {
+  if (curr_compiler_->scope_depth() > 0) {
+    mark_initialized();
+    return;
+  }
+  emit_bytes(Core::Code::DEF_GLOBAL, global);
+}
+
+u8_t GlobalParser::arguments() {
+  u8_t nargs = 0;
+  // TODO:
+  return nargs;
+}
+
+void GlobalParser::named_variable(const Lex::Token& name, bool can_assign) {
+  // TODO:
+}
+
+void GlobalParser::parse_precedence(Precedence precedence) {
+  // TODO:
+}
+
 }
