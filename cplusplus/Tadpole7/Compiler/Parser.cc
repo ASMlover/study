@@ -214,7 +214,31 @@ u8_t GlobalParser::arguments() {
 }
 
 void GlobalParser::named_variable(const Lex::Token& name, bool can_assign) {
-  // TODO:
+  auto errfn = [this](const str_t& msg) { error(msg); };
+
+  Core::Code getop, setop;
+  int arg = curr_compiler_->resolve_local(name, errfn);
+  if (arg != -1) {
+    getop = Core::Code::GET_LOCAL;
+    setop = Core::Code::SET_LOCAL;
+  }
+  else if (arg = curr_compiler_->resolve_upvalue(name, errfn); arg != -1) {
+    getop = Core::Code::GET_UPVALUE;
+    setop = Core::Code::SET_UPVALUE;
+  }
+  else {
+    arg = identifier_constant(name);
+    getop = Core::Code::GET_GLOBAL;
+    setop = Core::Code::SET_GLOBAL;
+  }
+
+  if (can_assign && match(Lex::TokenKind::TK_EQ)) {
+    expression();
+    emit_bytes(setop, arg);
+  }
+  else {
+    emit_bytes(getop, arg);
+  }
 }
 
 void GlobalParser::parse_precedence(Precedence precedence) {
