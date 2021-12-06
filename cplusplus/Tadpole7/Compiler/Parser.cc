@@ -199,7 +199,17 @@ void GlobalParser::define_global(u8_t global) {
 
 u8_t GlobalParser::arguments() {
   u8_t nargs = 0;
-  // TODO:
+  if (!check(Lex::TokenKind::TK_RPAREN)) {
+    do {
+      expression();
+      ++nargs;
+
+      if (nargs > kMaxArgs)
+        error(Common::from_fmt("cannot have more than `%d` arguments", kMaxArgs));
+    } while (match(Lex::TokenKind::TK_COMMA));
+  }
+  consume(Lex::TokenKind::TK_RPAREN, "expect `)` after function arguments");
+
   return nargs;
 }
 
@@ -210,5 +220,23 @@ void GlobalParser::named_variable(const Lex::Token& name, bool can_assign) {
 void GlobalParser::parse_precedence(Precedence precedence) {
   // TODO:
 }
+
+void GlobalParser::binary(bool can_assign) {}
+void GlobalParser::call(bool can_assign) {}
+void GlobalParser::grouping(bool can_assign) {}
+void GlobalParser::literal(bool can_assign) {}
+void GlobalParser::variable(bool can_assign) {}
+void GlobalParser::numeric(bool can_assign) {}
+void GlobalParser::string(bool can_assign) {}
+
+void GlobalParser::block() {}
+void GlobalParser::function(FunctionType fn_type) {}
+void GlobalParser::synchronize() {}
+void GlobalParser::expression() {}
+void GlobalParser::declaration() {}
+void GlobalParser::statement() {}
+void GlobalParser::fn_decl() {}
+void GlobalParser::var_decl() {}
+void GlobalParser::expr_stmt() {}
 
 }
