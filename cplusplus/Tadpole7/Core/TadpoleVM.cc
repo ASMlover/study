@@ -186,7 +186,19 @@ Object::UpvalueObject* TadpoleVM::capture_upvalue(Value::Value* local) {
 }
 
 void TadpoleVM::close_upvalues(Value::Value* last) {
+  while (open_upvalues_ != nullptr && open_upvalues_->value() >= last) {
+    Object::UpvalueObject* upvalue = open_upvalues_;
+    upvalue->set_closed(upvalue->value_asref());
+    upvalue->set_value(upvalue->closed_asptr());
+
+    open_upvalues_ = upvalue->next();
+  }
+}
+
+InterpretRet TadpoleVM::run() {
   // TODO:
+
+  return InterpretRet::OK;
 }
 
 }
