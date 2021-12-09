@@ -266,7 +266,19 @@ void GlobalParser::parse_precedence(Precedence precedence) {
   }
 }
 
-void GlobalParser::binary(bool can_assign) {}
+void GlobalParser::binary(bool can_assign) {
+  Lex::TokenKind op = prev_.kind();
+
+  parse_precedence(get_rule(op).precedence + 1);
+  switch (op) {
+  case Lex::TokenKind::TK_PLUS: emit_byte(Core::Code::ADD); break;
+  case Lex::TokenKind::TK_MINUS: emit_byte(Core::Code::SUB); break;
+  case Lex::TokenKind::TK_STAR: emit_byte(Core::Code::MUL); break;
+  case Lex::TokenKind::TK_SLASH: emit_byte(Core::Code::DIV); break;
+  default: break;
+  }
+}
+
 void GlobalParser::call(bool can_assign) {}
 void GlobalParser::grouping(bool can_assign) {}
 void GlobalParser::literal(bool can_assign) {}
