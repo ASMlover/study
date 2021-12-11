@@ -196,7 +196,27 @@ void TadpoleVM::close_upvalues(Value::Value* last) {
 }
 
 InterpretRet TadpoleVM::run() {
-  // TODO:
+  CallFrame* frame =  &frames_.back();
+
+#define _RDBYTE()   frame->inc_ip()
+#define _RDCONST()  frame->frame_chunk()->get_constant(_RDBYTE())
+#define _RDSTR()    _RDCONST().as_string()
+#define _RDCSTR()   _RDCONST().as_cstring()
+#define _BINOP(op)  do {\
+    if (!peek(0).is_numeric() || !peek(1).is_numeric()) {\
+      runtime_error("operands must be two numerics");\
+      return InterpretRet::ERUNTIME;\
+    }\
+    double b = pop().as_numeric();\
+    double a = pop().as_numeric();\
+    push(a op b);\
+  } while (false)
+
+#undef _BINOP
+#undef _RDCSTR
+#undef _RDSTR
+#undef _RDCONST
+#undef _RDBYTE
 
   return InterpretRet::OK;
 }
