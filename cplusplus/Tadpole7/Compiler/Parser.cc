@@ -57,6 +57,7 @@ Object::FunctionObject* GlobalParser::compile() {
 }
 
 const ParseRule& GlobalParser::get_rule(Lex::TokenKind kind) const noexcept {
+#define _RULE(fn) [](GlobalParser& p, bool b) { p.fn(b); }
   static const ParseRule _rules[] = {
     {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LPAREN, "(")
     {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
@@ -83,6 +84,7 @@ const ParseRule& GlobalParser::get_rule(Lex::TokenKind kind) const noexcept {
     {nullptr, nullptr, Precedence::NONE}, // TOKEN(EOF, "Eof")
     {nullptr, nullptr, Precedence::NONE}, // TOKEN(ERR, "Error")
   };
+#undef _RULE
 
   return _rules[Common::as_type<int>(kind)];
 }
@@ -283,7 +285,11 @@ void GlobalParser::call(bool can_assign) {
   emit_byte(Core::Code::CALL_0 + arguments());
 }
 
-void GlobalParser::grouping(bool can_assign) {}
+void GlobalParser::grouping(bool can_assign) {
+  expression();
+  consume(Lex::TokenKind::TK_RPAREN, "expect `)` after grouping expression");
+}
+
 void GlobalParser::literal(bool can_assign) {}
 void GlobalParser::variable(bool can_assign) {}
 void GlobalParser::numeric(bool can_assign) {}
