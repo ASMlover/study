@@ -290,7 +290,15 @@ void GlobalParser::grouping(bool can_assign) {
   consume(Lex::TokenKind::TK_RPAREN, "expect `)` after grouping expression");
 }
 
-void GlobalParser::literal(bool can_assign) {}
+void GlobalParser::literal(bool can_assign) {
+  switch (prev_.kind()) {
+  case Lex::TokenKind::KW_NIL: emit_byte(Core::Code::NIL); break;
+  case Lex::TokenKind::KW_FALSE: emit_byte(Core::Code::FALSE); break;
+  case Lex::TokenKind::KW_TRUE: emit_byte(Core::Code::TRUE); break;
+  default: break;
+  }
+}
+
 void GlobalParser::variable(bool can_assign) {}
 void GlobalParser::numeric(bool can_assign) {}
 void GlobalParser::string(bool can_assign) {}
