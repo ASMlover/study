@@ -299,9 +299,17 @@ void GlobalParser::literal(bool can_assign) {
   }
 }
 
-void GlobalParser::variable(bool can_assign) {}
-void GlobalParser::numeric(bool can_assign) {}
-void GlobalParser::string(bool can_assign) {}
+void GlobalParser::variable(bool can_assign) {
+  named_variable(prev_, can_assign);
+}
+
+void GlobalParser::numeric(bool can_assign) {
+  emit_constant(prev_.as_numeric());
+}
+
+void GlobalParser::string(bool can_assign) {
+  emit_constant(Object::StringObject::create(prev_.as_string()));
+}
 
 void GlobalParser::block() {}
 void GlobalParser::function(FunctionType fn_type) {}
