@@ -311,7 +311,12 @@ void GlobalParser::string(bool can_assign) {
   emit_constant(Object::StringObject::create(prev_.as_string()));
 }
 
-void GlobalParser::block() {}
+void GlobalParser::block() {
+  while (!check(Lex::TokenKind::TK_EOF) && !check(Lex::TokenKind::TK_RBRACE))
+    declaration();
+  consume(Lex::TokenKind::TK_RBRACE, "expect `}` after block body");
+}
+
 void GlobalParser::function(FunctionType fn_type) {}
 void GlobalParser::synchronize() {}
 void GlobalParser::expression() {}
