@@ -59,30 +59,30 @@ Object::FunctionObject* GlobalParser::compile() {
 const ParseRule& GlobalParser::get_rule(Lex::TokenKind kind) const noexcept {
 #define _RULE(fn) [](GlobalParser& p, bool b) { p.fn(b); }
   static const ParseRule _rules[] = {
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LPAREN, "(")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RPAREN, ")")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(LBRACE, "{")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(RBRACE, "}")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(COMMA, ",")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(MINUS, "-")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(PLUS, "+")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SEMI, ";")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(SLASH, "/")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(STAR, "*")
-    {nullptr, nullptr, Precedence::NONE}, // PUNCTUATOR(EQ, "=")
+    {_RULE(grouping), _RULE(call), Precedence::CALL}, // PUNCTUATOR(LPAREN, "(")
+    {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(RPAREN, ")")
+    {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(LBRACE, "{")
+    {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(RBRACE, "}")
+    {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(COMMA, ",")
+    {nullptr, _RULE(binary), Precedence::TERM},       // PUNCTUATOR(MINUS, "-")
+    {nullptr, _RULE(binary), Precedence::TERM},       // PUNCTUATOR(PLUS, "+")
+    {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(SEMI, ";")
+    {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(SLASH, "/")
+    {nullptr, _RULE(binary), Precedence::FACTOR},     // PUNCTUATOR(STAR, "*")
+    {nullptr, nullptr, Precedence::NONE},             // PUNCTUATOR(EQ, "=")
 
-    {nullptr, nullptr, Precedence::NONE}, // TOKEN(IDENTIFIER, "Identifier")
-    {nullptr, nullptr, Precedence::NONE}, // TOKEN(NUMERIC, "Numeric")
-    {nullptr, nullptr, Precedence::NONE}, // TOKEN(STRING, "String")
+    {_RULE(variable), nullptr, Precedence::NONE},     // TOKEN(IDENTIFIER, "Identifier")
+    {_RULE(numeric), nullptr, Precedence::NONE},      // TOKEN(NUMERIC, "Numeric")
+    {_RULE(string), nullptr, Precedence::NONE},       // TOKEN(STRING, "String")
 
-    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FALSE, "false")
-    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(FN, "fn")
-    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(NIL, "nil")
-    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(TRUE, "true")
-    {nullptr, nullptr, Precedence::NONE}, // KEYWORD(VAR, "var")
+    {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(FALSE, "false")
+    {nullptr, nullptr, Precedence::NONE},             // KEYWORD(FN, "fn")
+    {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(NIL, "nil")
+    {_RULE(literal), nullptr, Precedence::NONE},      // KEYWORD(TRUE, "true")
+    {nullptr, nullptr, Precedence::NONE},             // KEYWORD(VAR, "var")
 
-    {nullptr, nullptr, Precedence::NONE}, // TOKEN(EOF, "Eof")
-    {nullptr, nullptr, Precedence::NONE}, // TOKEN(ERR, "Error")
+    {nullptr, nullptr, Precedence::NONE},             // TOKEN(EOF, "Eof")
+    {nullptr, nullptr, Precedence::NONE},             // TOKEN(ERR, "Error")
   };
 #undef _RULE
 
