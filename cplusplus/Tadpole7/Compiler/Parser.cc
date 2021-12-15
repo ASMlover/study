@@ -48,7 +48,8 @@ GlobalParser::GlobalParser(Core::TadpoleVM& vm, Lex::Lexer& lex) noexcept
 }
 
 void GlobalParser::iter_objects(Object::ObjectVisitor&& visitor) {
-  // TODO:
+  for (FunctionCompiler* c = curr_compiler_; c != nullptr; c = c->enclosing())
+    visitor(c->fn());
 }
 
 Object::FunctionObject* GlobalParser::compile() {
