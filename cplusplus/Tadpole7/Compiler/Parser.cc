@@ -53,8 +53,15 @@ void GlobalParser::iter_objects(Object::ObjectVisitor&& visitor) {
 }
 
 Object::FunctionObject* GlobalParser::compile() {
-  // TODO:
-  return nullptr;
+  FunctionCompiler* compiler;
+  init_compiler(&compiler, 0, FunctionType::TOPLEVEL);
+
+  advance();
+  while (!check(Lex::TokenKind::TK_EOF))
+    declaration();
+  Object::FunctionObject* fn = finish_compiler();
+
+  return had_error_ ? nullptr : fn;
 }
 
 const ParseRule& GlobalParser::get_rule(Lex::TokenKind kind) const noexcept {
