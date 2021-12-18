@@ -355,7 +355,23 @@ void GlobalParser::function(FunctionType fn_type) {
   }
 }
 
-void GlobalParser::synchronize() {}
+void GlobalParser::synchronize() {
+  panic_mode_ = false;
+
+  while (!check(Lex::TokenKind::TK_EOF)) {
+    if (prev_.kind() == Lex::TokenKind::TK_SEMI)
+      break;
+
+    switch (curr_.kind()) {
+    case Lex::TokenKind::KW_FN:
+    case Lex::TokenKind::KW_VAR:
+      return;
+    default: break;
+    }
+    advance();
+  }
+}
+
 void GlobalParser::expression() {}
 void GlobalParser::declaration() {}
 void GlobalParser::statement() {}
