@@ -372,8 +372,22 @@ void GlobalParser::synchronize() {
   }
 }
 
-void GlobalParser::expression() {}
-void GlobalParser::declaration() {}
+void GlobalParser::expression() {
+  parse_precedence(Precedence::ASSIGN);
+}
+
+void GlobalParser::declaration() {
+  if (match(Lex::TokenKind::KW_FN))
+    fn_decl();
+  else if (match(Lex::TokenKind::KW_VAR))
+    var_decl();
+  else
+    statement();
+
+  if (panic_mode_)
+    synchronize();
+}
+
 void GlobalParser::statement() {}
 void GlobalParser::fn_decl() {}
 void GlobalParser::var_decl() {}
