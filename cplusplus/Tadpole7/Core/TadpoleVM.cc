@@ -212,6 +212,22 @@ InterpretRet TadpoleVM::run() {
     push(a op b);\
   } while (false)
 
+  for (;;) {
+#if defined(_TADPOLE_DEBUG_VM)
+    auto* frame_chunk = frame->frame_chunk();
+    std::cout << "          ";
+    for (auto& v : stack_)
+      std::cout << "[" << Common::Colorful::fg::magenta << v << Common::Colorful::reset << "]";
+    std::cout << std::endl;
+    frame_chunk->dis_code(frame_chunk->offset_with(frame->ip()));
+#endif
+
+    switch (Code c = Common::as_type<Code>(_RDBYTE())) {
+    case Code::CONSTANT: push(_RDCONST()); break;
+    default: break;
+    }
+  }
+
 #undef _BINOP
 #undef _RDCSTR
 #undef _RDSTR
