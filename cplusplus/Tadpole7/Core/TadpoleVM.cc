@@ -224,6 +224,10 @@ InterpretRet TadpoleVM::run() {
 
     switch (Code c = Common::as_type<Code>(_RDBYTE())) {
     case Code::CONSTANT: push(_RDCONST()); break;
+    case Code::NIL: push(nullptr); break;
+    case Code::FALSE: push(false); break;
+    case Code::TRUE: push(true); break;
+    case Code::POP: pop(); break;
     default: break;
     }
   }
