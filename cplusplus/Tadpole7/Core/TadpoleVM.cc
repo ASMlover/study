@@ -263,6 +263,16 @@ InterpretRet TadpoleVM::run() {
       } break;
     case Code::GET_LOCAL: push(stack_[frame->stack_begpos() + _RDBYTE()]); break;
     case Code::SET_LOCAL: stack_[frame->stack_begpos() + _RDBYTE()] = peek(); break;
+    case Code::GET_UPVALUE:
+      {
+        u8_t slot = _RDBYTE();
+        push(frame->closure()->get_upvalue(slot)->value_asref());
+      } break;
+    case Code::SET_UPVALUE:
+      {
+        u8_t slot = _RDBYTE();
+        frame->closure()->get_upvalue(slot)->set_value(peek());
+      } break;
     default: break;
     }
   }
