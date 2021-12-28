@@ -273,6 +273,26 @@ InterpretRet TadpoleVM::run() {
         u8_t slot = _RDBYTE();
         frame->closure()->get_upvalue(slot)->set_value(peek());
       } break;
+    case Code::ADD:
+      {
+        if (peek(0).is_string() && peek(1).is_string()) {
+          Object::StringObject* b = peek(0).as_string();
+          Object::StringObject* a = peek(1).as_string();
+          Object::StringObject* s = Object::StringObject::concat(a, b);
+          pop(); // pop b
+          pop(); // pop a
+          push(s);
+        }
+        else if (peek(0).is_numeric() && peek(1).is_numeric()) {
+          double b = pop().as_numeric();
+          double a = pop().as_numeric();
+          push(a + b);
+        }
+        else {
+          runtime_error("operands must be two strings or two numerics");
+          return InterpretRet::ERUNTIME;
+        }
+      } break;
     default: break;
     }
   }
