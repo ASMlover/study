@@ -293,6 +293,9 @@ InterpretRet TadpoleVM::run() {
           return InterpretRet::ERUNTIME;
         }
       } break;
+    case Code::SUB: _BINOP(-); break;
+    case Code::MUL: _BINOP(*); break;
+    case Code::DIV: _BINOP(/); break;
     default: break;
     }
   }
