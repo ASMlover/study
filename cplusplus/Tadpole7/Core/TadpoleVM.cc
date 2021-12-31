@@ -311,6 +311,22 @@ InterpretRet TadpoleVM::run() {
           return InterpretRet::ERUNTIME;
         frame = &frames_.back();
       } break;
+    case Code::CLOSURE:
+      {
+        Object::FunctionObject* fn = _RDCONST().as_function();
+        Object::ClosureObject* closure = Object::ClosureObject::create(fn);
+        push(closure);
+
+        sz_t upvalues_count = fn->upvalues_count();
+        for (sz_t i = 0; i < upvalues_count; ++i) {
+          u8_t is_local = _RDBYTE();
+          u8_t index = _RDBYTE();
+          if (is_local)
+            closure->set_upvalue(i, capture_upvalue(&stack_[frame->stack_begpos() + index]));
+          else
+            closure->set_upvalue(i, frame->closure()->get_upvalue(index));
+        }
+      } break;
     default: break;
     }
   }
