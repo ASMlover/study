@@ -327,6 +327,7 @@ InterpretRet TadpoleVM::run() {
             closure->set_upvalue(i, frame->closure()->get_upvalue(index));
         }
       } break;
+    case Code::CLOSE_UPVALUE: close_upvalues(&stack_.back()); pop(); break;
     default: break;
     }
   }
