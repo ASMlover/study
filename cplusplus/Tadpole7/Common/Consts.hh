@@ -36,8 +36,11 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <Common/Types.hh>
+
 namespace Tadpole {
 
 static constexpr sz_t kALIGNMENT = 8;
+static constexpr safe_t kSafePlaceholder{};
 
 }
