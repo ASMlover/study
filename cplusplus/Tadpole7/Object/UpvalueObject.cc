@@ -46,7 +46,7 @@ str_t UpvalueObject::stringify() const {
 }
 
 void UpvalueObject::iter_children(ObjectVisitor&& visitor) {
-  visitor(closed_.as_object(safe_t()));
+  visitor(closed_.as_object(kSafePlaceholder));
 }
 
 UpvalueObject* UpvalueObject::create(Value::Value* value, UpvalueObject* next) {
