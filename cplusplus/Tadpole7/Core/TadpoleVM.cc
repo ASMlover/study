@@ -69,19 +69,23 @@ InterpretRet TadpoleVM::interpret(const str_t& source_bytes) {
   if (fn == nullptr)
     return InterpretRet::ECOMPILE;
 
-  // TODO:
-  return InterpretRet::OK;
+  push(fn);
+  Object::ClosureObject* closure = Object::ClosureObject::create(fn);
+  pop();
+  call(closure, 0);
+
+  return run();
 }
 
 void TadpoleVM::iter_objects(Object::ObjectVisitor&& visitor) {
   // iterate Tadpole objects roots
   gcompiler_->iter_objects(std::move(visitor));
   for (auto& v : stack_)
-    visitor(v.as_object(safe_t()));
+    visitor(v.as_object(kSafePlaceholder));
   for (auto& f : frames_)
     visitor(f.closure());
   for (auto& g : globals_)
-    visitor(g.second.as_object(safe_t()));
+    visitor(g.second.as_object(kSafePlaceholder));
   for (auto* u = open_upvalues_; u != nullptr; u = u->next())
     visitor(u);
 }
