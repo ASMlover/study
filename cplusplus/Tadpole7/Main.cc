@@ -37,14 +37,68 @@
 #include <fstream>
 #include <iostream>
 #include <Common/Common.hh>
+#include <Common/Colorful.hh>
 #include <Common/Harness.hh>
+#include <Core/TadpoleVM.hh>
+#include <GC/GC.hh>
+
+namespace Tp = Tadpole;
+
+static int eval(Tp::Core::TadpoleVM& vm, const Tp::str_t& source_bytes) {
+  Tp::Core::InterpretRet r = vm.interpret(source_bytes);
+  if (r == Tp::Core::InterpretRet::ERUNTIME)
+    return -1;
+  else if (r == Tp::Core::InterpretRet::ECOMPILE)
+    return -2;
+  return 0;
+}
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
 #if defined(_TADPOLE_RUN_HARNESS)
-  Tadpole::Common::Harness::run_all_harness();
+  Tp::Common::Harness::run_all_harness();
 #endif
+
+  Tp::Core::TadpoleVM vm;
+  if (argc < 2) {
+    std::cout
+      << Tp::Common::Colorful::fg::lightgreen
+      << "W E L C O M E   T O   T A D P O L E !!!"
+      << Tp::Common::Colorful::reset
+      << std::endl;
+
+    Tp::str_t line;
+    for (;;) {
+      if (!vm.is_running())
+        break;
+
+      std::cout << ">>> ";
+      if (!std::getline(std::cin, line))
+        break;
+
+      eval(vm, line);
+      Tp::GC::GC::get_instance().collect();
+    }
+  }
+  else {
+    std::fstream fp(argv[1]);
+    if (fp.is_open()) {
+      std::stringstream ss;
+      ss << fp.rdbuf();
+
+      if (int ec = eval(vm, ss.str()); ec != 0)
+        std::exit(ec);
+    }
+    else {
+      std::cerr
+        << Tp::Common::Colorful::fg::red
+        << "ERROR LOAD `" << argv[1] << "` FAILED !!!"
+        << Tp::Common::Colorful::reset
+        << std::endl;
+      std::exit(-1);
+    }
+  }
 
   return 0;
 }
