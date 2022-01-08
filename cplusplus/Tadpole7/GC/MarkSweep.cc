@@ -52,7 +52,14 @@ MarkSweep::~MarkSweep() {
   }
 }
 
-void MarkSweep::collect() {}
+void MarkSweep::collect() {
+  mark_from_roots();
+  sweep();
+
+  gc_threshold_ = std::max(std::min(gc_threshold_, kGCThresholdMin), objects_.size() * kGCFactor);
+  gc_threshold_ = Common::as_align(gc_threshold_, kGCAlign);
+}
+
 void MarkSweep::append_object(Object::BaseObject* o) {}
 void MarkSweep::mark_object(Object::BaseObject* o) {}
 sz_t MarkSweep::get_count() const { return 0; }
