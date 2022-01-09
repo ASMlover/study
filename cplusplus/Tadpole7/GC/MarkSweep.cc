@@ -60,7 +60,12 @@ void MarkSweep::collect() {
   gc_threshold_ = Common::as_align(gc_threshold_, kGCAlign);
 }
 
-void MarkSweep::append_object(Object::BaseObject* o) {}
+void MarkSweep::append_object(Object::BaseObject* o) {
+  if (objects_.size() >= gc_threshold_)
+    collect();
+  objects_.push_back(o);
+}
+
 void MarkSweep::mark_object(Object::BaseObject* o) {}
 sz_t MarkSweep::get_count() const { return 0; }
 sz_t MarkSweep::get_threshold() const { return 0; }
