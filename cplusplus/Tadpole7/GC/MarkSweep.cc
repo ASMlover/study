@@ -66,7 +66,22 @@ void MarkSweep::append_object(Object::BaseObject* o) {
   objects_.push_back(o);
 }
 
-void MarkSweep::mark_object(Object::BaseObject* o) {}
+void MarkSweep::mark_object(Object::BaseObject* o) {
+  if (o == nullptr || o->is_marked())
+    return;
+
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout
+    << Common::Colorful::fg::lightcyan
+    << "[" << o << "] mark object: `" << o->stringify() << "`"
+    << Common::Colorful::reset
+    << std::endl;
+#endif
+
+  o->set_marked(true);
+  worklist_.push_back(o);
+}
+
 sz_t MarkSweep::get_count() const { return 0; }
 sz_t MarkSweep::get_threshold() const { return 0; }
 void MarkSweep::set_threshold(sz_t threshold) {}
