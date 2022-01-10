@@ -82,9 +82,17 @@ void MarkSweep::mark_object(Object::BaseObject* o) {
   worklist_.push_back(o);
 }
 
-sz_t MarkSweep::get_count() const { return 0; }
-sz_t MarkSweep::get_threshold() const { return 0; }
-void MarkSweep::set_threshold(sz_t threshold) {}
+sz_t MarkSweep::get_count() const {
+  return objects_.size();
+}
+
+sz_t MarkSweep::get_threshold() const {
+  return gc_threshold_;
+}
+
+void MarkSweep::set_threshold(sz_t threshold) {
+  gc_threshold_ = Common::as_align(threshold, kGCAlign);
+}
 
 void MarkSweep::mark() {}
 void MarkSweep::mark_from_roots() {}
