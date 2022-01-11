@@ -103,7 +103,20 @@ void MarkSweep::mark() {
   }
 }
 
-void MarkSweep::mark_from_roots() {}
+void MarkSweep::mark_from_roots() {
+  for (auto& r : roots_) {
+    r.second->iter_objects([this](Object::BaseObject* o) {
+          mark_object(o);
+          mark();
+        });
+  }
+
+  for (auto& s : interned_strings_) {
+    mark_object(s.second);
+    mark();
+  }
+}
+
 void MarkSweep::sweep() {}
 void MarkSweep::reclaim_object(Object::BaseObject* o) {}
 
