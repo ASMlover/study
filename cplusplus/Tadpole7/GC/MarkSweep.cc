@@ -94,7 +94,15 @@ void MarkSweep::set_threshold(sz_t threshold) {
   gc_threshold_ = Common::as_align(threshold, kGCAlign);
 }
 
-void MarkSweep::mark() {}
+void MarkSweep::mark() {
+  while (!worklist_.empty()) {
+    Object::BaseObject* o = worklist_.back();
+    worklist_.pop_back();
+
+    o->iter_children([this](Object::BaseObject* child) { mark_object(child); });
+  }
+}
+
 void MarkSweep::mark_from_roots() {}
 void MarkSweep::sweep() {}
 void MarkSweep::reclaim_object(Object::BaseObject* o) {}
