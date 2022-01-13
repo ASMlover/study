@@ -117,7 +117,26 @@ void MarkSweep::mark_from_roots() {
   }
 }
 
-void MarkSweep::sweep() {}
+void MarkSweep::sweep() {
+  for (auto it = interned_strings_.begin(); it != interned_strings_.end();) {
+    if (!it->second->is_marked())
+      interned_strings_.erase(it++);
+    else
+      ++it;
+  }
+
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    if (!(*it)->is_marked()) {
+      reclaim_object(*it);
+      objects_.erase(it++);
+    }
+    else {
+      (*it)->set_marked(true);
+      ++it;
+    }
+  }
+}
+
 void MarkSweep::reclaim_object(Object::BaseObject* o) {}
 
 }
