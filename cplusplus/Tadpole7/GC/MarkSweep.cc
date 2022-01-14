@@ -137,6 +137,16 @@ void MarkSweep::sweep() {
   }
 }
 
-void MarkSweep::reclaim_object(Object::BaseObject* o) {}
+void MarkSweep::reclaim_object(Object::BaseObject* o) {
+#if defined(_TADPOLE_DEBUG_GC)
+  std::cout
+    << Common::Colorful::fg::gray
+    << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`"
+    << Common::Colorful::reset
+    << std::endl;
+#endif
+
+  delete o;
+}
 
 }
