@@ -52,6 +52,12 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
 
           std::cout << "print(...)      Prints the values to stdout stream" << std::endl;
           std::cout << "exit()          Exit the Tadpole terminal" << std::endl;
+          std::cout << "time()          Return the current time in seconds since the Epoch" << std::endl;
+          std::cout << "clock()         Return the CPU time since the start of the process" << std::endl;
+          std::cout << "get_count()     Return number of objects tracked by GC" << std::endl;
+          std::cout << "gc_threshold()  Return the current collection threshold" << std::endl;
+          std::cout << "gc_threshold(n) Sets the collection threshold" << std::endl;
+          std::cout << "gc_collect()    Run a full collection" << std::endl;
 
           return nullptr;
       });
