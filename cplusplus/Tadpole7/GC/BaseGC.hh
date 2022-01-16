@@ -59,6 +59,9 @@ public:
   virtual sz_t get_count() const { return 0; }
   virtual sz_t get_threshold() const { return 0; }
   virtual void set_threshold(sz_t threshold) {}
+  virtual bool is_enabled() const { return true; }
+  virtual void enable() {}
+  virtual void disable() {}
 
   inline void append_roots(const str_t& name, Object::IObjectIterator* root_iterator) noexcept {
     roots_.push_back({name, root_iterator});
