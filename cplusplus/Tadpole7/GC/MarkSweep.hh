@@ -66,6 +66,9 @@ public:
   virtual sz_t get_count() const override;
   virtual sz_t get_threshold() const override;
   virtual void set_threshold(sz_t threshold) override;
+  virtual bool is_enabled() const override;
+  virtual void enable() override;
+  virtual void disable() override;
 };
 
 }
