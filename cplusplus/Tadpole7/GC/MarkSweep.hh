@@ -51,6 +51,7 @@ class MarkSweep final : public BaseGC {
   sz_t gc_threshold_{kGCThresholdDef};
   std::list<Object::BaseObject*> objects_;
   std::list<Object::BaseObject*> worklist_;
+  bool is_enabled_{};
 
   void mark();
   void mark_from_roots();
