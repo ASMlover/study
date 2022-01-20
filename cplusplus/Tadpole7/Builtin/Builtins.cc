@@ -127,6 +127,30 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
         GC::GC::get_instance().collect();
         return nullptr;
       });
+
+  // fn gc_isenabled() -> Boolean
+  //
+  // @returns
+  //    Returns `true` if automatic collection is enabled.
+  vm.define_native("gc_isenabled", [](sz_t, Value::Value*) -> Value::Value {
+        return GC::GC::get_instance().is_enabled();
+      });
+
+  // fn gc_enable() -> Nil
+  //
+  // Enable automatic garbage collection.
+  vm.define_native("gc_enable", [](sz_t, Value::Value*) -> Value::Value {
+        GC::GC::get_instance().enable();
+        return nullptr;
+      });
+
+  // fn gc_disable() -> Nil
+  //
+  // Disable automatic garbage collection.
+  vm.define_native("gc_disable", [](sz_t, Value::Value*) -> Value::Value {
+        GC::GC::get_instance().disable();
+        return nullptr;
+      });
 }
 
 }
