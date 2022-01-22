@@ -58,6 +58,9 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           std::cout << "gc_threshold()  Return the current collection threshold" << std::endl;
           std::cout << "gc_threshold(n) Sets the collection threshold" << std::endl;
           std::cout << "gc_collect()    Run a full collection" << std::endl;
+          std::cout << "gc_isenabled()  Return true if automatic collection is enabled" << std::endl;
+          std::cout << "gc_enable()     Enable automatic garbage collection" << std::endl;
+          std::cout << "gc_disable()    Disable automatic garbage collection" << std::endl;
 
           return nullptr;
       });
