@@ -64,6 +64,8 @@ public:
   virtual void collect() override;
   virtual void append_object(Object::BaseObject* o) override;
   virtual void mark_object(Object::BaseObject* o) override;
+
+  virtual str_t get_name() const override;
   virtual sz_t get_count() const override;
   virtual sz_t get_threshold() const override;
   virtual void set_threshold(sz_t threshold) override;
