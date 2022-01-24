@@ -53,6 +53,9 @@ MarkSweep::~MarkSweep() {
 }
 
 void MarkSweep::collect() {
+  if (!is_enabled_)
+    return;
+
   mark_from_roots();
   sweep();
 
@@ -80,6 +83,10 @@ void MarkSweep::mark_object(Object::BaseObject* o) {
 
   o->set_marked(true);
   worklist_.push_back(o);
+}
+
+str_t MarkSweep::get_name() const {
+  return "MarkSweep";
 }
 
 sz_t MarkSweep::get_count() const {
