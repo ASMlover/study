@@ -61,6 +61,7 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           std::cout << "gc_isenabled()  Return true if automatic collection is enabled" << std::endl;
           std::cout << "gc_enable()     Enable automatic garbage collection" << std::endl;
           std::cout << "gc_disable()    Disable automatic garbage collection" << std::endl;
+          std::cout << "test(...)       Enable or Disable unit test harness" << std::endl;
 
           return nullptr;
       });
