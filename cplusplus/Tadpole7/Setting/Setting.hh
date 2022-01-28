@@ -36,5 +36,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <Common/Common.hh>
+
 namespace Tadpole::Setting {
+
+class Setting : public Common::Singleton<Setting> {
+  bool enabled_run_harness_{};
+public:
+  inline bool enabled_run_harness() const noexcept { return enabled_run_harness_; }
+  inline void enable_run_harness() noexcept { enabled_run_harness_ = true; }
+  inline void disable_run_harness() noexcept { enabled_run_harness_ = false; }
+};
+
 }
