@@ -37,6 +37,7 @@
 #include <fstream>
 #include <iostream>
 #include <Common/Common.hh>
+#include <Setting/Setting.hh>
 #include <Common/Colorful.hh>
 #include <Common/Harness.hh>
 #include <Core/TadpoleVM.hh>
@@ -56,9 +57,8 @@ static int eval(Tp::Core::TadpoleVM& vm, const Tp::str_t& source_bytes) {
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
-#if defined(_TADPOLE_RUN_HARNESS)
-  Tp::Common::Harness::run_all_harness();
-#endif
+  if (Tp::Setting::Setting::get_instance().enabled_run_harness())
+    Tp::Common::Harness::run_all_harness();
 
   Tp::Core::TadpoleVM vm;
   if (argc < 2) {
