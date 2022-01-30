@@ -45,6 +45,10 @@
 
 namespace Tp = Tadpole;
 
+static void init_setting() noexcept {
+  // TODO:
+}
+
 static int eval(Tp::Core::TadpoleVM& vm, const Tp::str_t& source_bytes) {
   Tp::Core::InterpretRet r = vm.interpret(source_bytes);
   if (r == Tp::Core::InterpretRet::ERUNTIME)
@@ -56,6 +60,8 @@ static int eval(Tp::Core::TadpoleVM& vm, const Tp::str_t& source_bytes) {
 
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
+
+  init_setting();
 
   if (Tp::Setting::Setting::get_instance().enabled_run_harness())
     Tp::Common::Harness::run_all_harness();
