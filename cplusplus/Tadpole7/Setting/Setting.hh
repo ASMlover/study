@@ -42,10 +42,20 @@ namespace Tadpole::Setting {
 
 class Setting : public Common::Singleton<Setting> {
   bool enabled_run_harness_{};
+  bool enabled_debug_gc_{};
+  bool enabled_debug_vm_{};
 public:
   inline bool enabled_run_harness() const noexcept { return enabled_run_harness_; }
   inline void enable_run_harness() noexcept { enabled_run_harness_ = true; }
   inline void disable_run_harness() noexcept { enabled_run_harness_ = false; }
+
+  inline bool enabled_debug_gc() const noexcept { return enabled_debug_gc_; }
+  inline void enable_debug_gc() noexcept { enabled_debug_gc_ = true; }
+  inline void disable_debug_gc() noexcept { enabled_debug_gc_ = false; }
+
+  inline bool enabled_debug_vm() const noexcept { return enabled_debug_vm_; }
+  inline void enable_debug_vm() noexcept { enabled_debug_vm_ = true; }
+  inline void disable_debug_vm() noexcept { enabled_debug_vm_ = false; }
 };
 
 }
