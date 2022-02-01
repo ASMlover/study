@@ -45,8 +45,24 @@
 
 namespace Tp = Tadpole;
 
-static void init_setting() noexcept {
-  // TODO:
+static void init_default_setting() noexcept {
+#if defined(_TADPOLE_RUN_HARNESS)
+  Tp::Setting::Setting::get_instance().enable_run_harness();
+#else
+  Tp::Setting::Setting::get_instance().disable_run_harness();
+#endif
+
+#if defined(_TADPOLE_DEBUG_GC)
+  Tp::Setting::Setting::get_instance().enable_debug_gc();
+#else
+  Tp::Setting::Setting::get_instance().disable_debug_gc();
+#endif
+
+#if defined(_TADPOLE_DEBUG_VM)
+  Tp::Setting::Setting::get_instance().enable_debug_vm();
+#else
+  Tp::Setting::Setting::get_instance().disable_debug_vm();
+#endif
 }
 
 static int eval(Tp::Core::TadpoleVM& vm, const Tp::str_t& source_bytes) {
@@ -61,7 +77,7 @@ static int eval(Tp::Core::TadpoleVM& vm, const Tp::str_t& source_bytes) {
 int main(int argc, char* argv[]) {
   TADPOLE_UNUSED(argc), TADPOLE_UNUSED(argv);
 
-  init_setting();
+  init_default_setting();
 
   if (Tp::Setting::Setting::get_instance().enabled_run_harness())
     Tp::Common::Harness::run_all_harness();
