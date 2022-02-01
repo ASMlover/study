@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <Common/Colorful.hh>
+#include <Setting/Setting.hh>
 #include <GC/MarkSweep.hh>
 
 namespace Tadpole::GC {
@@ -73,13 +74,13 @@ void MarkSweep::mark_object(Object::BaseObject* o) {
   if (o == nullptr || o->is_marked())
     return;
 
-#if defined(_TADPOLE_DEBUG_GC)
-  std::cout
-    << Common::Colorful::fg::lightcyan
-    << "[" << o << "] mark object: `" << o->stringify() << "`"
-    << Common::Colorful::reset
-    << std::endl;
-#endif
+  if (Setting::Setting::get_instance().enabled_debug_gc()) {
+    std::cout
+      << Common::Colorful::fg::lightcyan
+      << "[" << o << "] mark object: `" << o->stringify() << "`"
+      << Common::Colorful::reset
+      << std::endl;
+  }
 
   o->set_marked(true);
   worklist_.push_back(o);
@@ -157,13 +158,13 @@ void MarkSweep::sweep() {
 }
 
 void MarkSweep::reclaim_object(Object::BaseObject* o) {
-#if defined(_TADPOLE_DEBUG_GC)
-  std::cout
-    << Common::Colorful::fg::gray
-    << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`"
-    << Common::Colorful::reset
-    << std::endl;
-#endif
+  if (Setting::Setting::get_instance().enabled_debug_gc()) {
+    std::cout
+      << Common::Colorful::fg::gray
+      << "[" << o << "] reclaim object type: `" << o->type_asstr() << "`"
+      << Common::Colorful::reset
+      << std::endl;
+  }
 
   delete o;
 }
