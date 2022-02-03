@@ -37,6 +37,7 @@
 #include <cstdarg>
 #include <iostream>
 #include <Common/Colorful.hh>
+#include <Setting/Setting.hh>
 #include <Core/Chunk.hh>
 #include <GC/GC.hh>
 #include <Object/NativeObject.hh>
@@ -217,14 +218,14 @@ InterpretRet TadpoleVM::run() {
   } while (false)
 
   for (;;) {
-#if defined(_TADPOLE_DEBUG_VM)
-    auto* frame_chunk = frame->frame_chunk();
-    std::cout << "          ";
-    for (auto& v : stack_)
-      std::cout << "[" << Common::Colorful::fg::magenta << v << Common::Colorful::reset << "]";
-    std::cout << std::endl;
-    frame_chunk->dis_code(frame_chunk->offset_with(frame->ip()));
-#endif
+    if (Setting::Setting::get_instance().enabled_debug_vm()) {
+      auto* frame_chunk = frame->frame_chunk();
+      std::cout << "          ";
+      for (auto& v : stack_)
+        std::cout << "[" << Common::Colorful::fg::magenta << v << Common::Colorful::reset << "]";
+      std::cout << std::endl;
+      frame_chunk->dis_code(frame_chunk->offset_with(frame->ip()));
+    }
 
     switch (Code c = Common::as_type<Code>(_RDBYTE())) {
     case Code::CONSTANT: push(_RDCONST()); break;
