@@ -37,6 +37,7 @@
 #include <chrono>
 #include <iostream>
 #include <Common/Colorful.hh>
+#include <Setting/Setting.hh>
 #include <Core/TadpoleVM.hh>
 #include <GC/GC.hh>
 #include <Builtin/Builtins.hh>
@@ -153,6 +154,11 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   // Disable automatic garbage collection.
   vm.define_native("gc_disable", [](sz_t, Value::Value*) -> Value::Value {
         GC::GC::get_instance().disable();
+        return nullptr;
+      });
+
+  vm.define_native("test", [](sz_t, Value::Value*) -> Value::Value {
+        // TODO:
         return nullptr;
       });
 }
