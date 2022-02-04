@@ -51,18 +51,20 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           << Common::Colorful::fg::green << "Welcome To Tadpole! This is the help utility."
           << Common::Colorful::reset << std::endl << std::endl;
 
-          std::cout << "print(...)      Prints the values to stdout stream" << std::endl;
-          std::cout << "exit()          Exit the Tadpole terminal" << std::endl;
-          std::cout << "time()          Return the current time in seconds since the Epoch" << std::endl;
-          std::cout << "clock()         Return the CPU time since the start of the process" << std::endl;
-          std::cout << "get_count()     Return number of objects tracked by GC" << std::endl;
-          std::cout << "gc_threshold()  Return the current collection threshold" << std::endl;
-          std::cout << "gc_threshold(n) Sets the collection threshold" << std::endl;
-          std::cout << "gc_collect()    Run a full collection" << std::endl;
-          std::cout << "gc_isenabled()  Return true if automatic collection is enabled" << std::endl;
-          std::cout << "gc_enable()     Enable automatic garbage collection" << std::endl;
-          std::cout << "gc_disable()    Disable automatic garbage collection" << std::endl;
-          std::cout << "test(...)       Enable or Disable unit test harness" << std::endl;
+          std::cout << "print(...)        Prints the values to stdout stream" << std::endl;
+          std::cout << "exit()            Exit the Tadpole terminal" << std::endl;
+          std::cout << "time()            Return the current time in seconds since the Epoch" << std::endl;
+          std::cout << "clock()           Return the CPU time since the start of the process" << std::endl;
+          std::cout << "get_count()       Return number of objects tracked by GC" << std::endl;
+          std::cout << "gc_threshold()    Return the current collection threshold" << std::endl;
+          std::cout << "gc_threshold(n)   Sets the collection threshold" << std::endl;
+          std::cout << "gc_collect()      Run a full collection" << std::endl;
+          std::cout << "gc_isenabled()    Return true if automatic collection is enabled" << std::endl;
+          std::cout << "gc_enable()       Enable automatic garbage collection" << std::endl;
+          std::cout << "gc_disable()      Disable automatic garbage collection" << std::endl;
+          std::cout << "test_isenabled()  Return true if `Unit-Test` is enabled" << std::endl;
+          std::cout << "test_enable()     Enable `Unit-Test`" << std::endl;
+          std::cout << "test_disable()    Disable `Unit-Test`" << std::endl;
 
           return nullptr;
       });
@@ -157,9 +159,12 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
         return nullptr;
       });
 
-  vm.define_native("test", [](sz_t, Value::Value*) -> Value::Value {
-        // TODO:
-        return nullptr;
+  // fn test_isenabled() -> Boolean
+  //
+  // @returns
+  //    Returns `true` if `Unit-Test` is enabled.
+  vm.define_native("test_isenabled", [](sz_t, Value::Value*) -> Value::Value {
+        return Setting::Setting::get_instance().enabled_run_harness();
       });
 }
 
