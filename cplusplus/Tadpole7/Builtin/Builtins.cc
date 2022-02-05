@@ -48,14 +48,14 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   // fn help() -> Nil
   vm.define_native("help", [](sz_t, Value::Value*) -> Value::Value {
         std::cout
-          << Common::Colorful::fg::green << "Welcome To Tadpole! This is the help utility."
+          << Common::Colorful::fg::lightcyan << "Welcome To Tadpole! This is the help utility."
           << Common::Colorful::reset << std::endl << std::endl;
 
           std::cout << "print(...)        Prints the values to stdout stream" << std::endl;
           std::cout << "exit()            Exit the Tadpole terminal" << std::endl;
           std::cout << "time()            Return the current time in seconds since the Epoch" << std::endl;
           std::cout << "clock()           Return the CPU time since the start of the process" << std::endl;
-          std::cout << "get_count()       Return number of objects tracked by GC" << std::endl;
+          std::cout << "gc_count()        Return number of objects tracked by GC" << std::endl;
           std::cout << "gc_threshold()    Return the current collection threshold" << std::endl;
           std::cout << "gc_threshold(n)   Sets the collection threshold" << std::endl;
           std::cout << "gc_collect()      Run a full collection" << std::endl;
@@ -165,6 +165,14 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   //    Returns `true` if `Unit-Test` is enabled.
   vm.define_native("test_isenabled", [](sz_t, Value::Value*) -> Value::Value {
         return Setting::Setting::get_instance().enabled_run_harness();
+      });
+
+  // fn test_enable() -> Nil
+  //
+  // Enable run `Unit-Test`.
+  vm.define_native("test_enable", [](sz_t, Value::Value*) -> Value::Value {
+        Setting::Setting::get_instance().enable_run_harness();
+        return nullptr;
       });
 }
 
