@@ -65,6 +65,7 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           std::cout << "test_isenabled()  Return true if `Unit-Test` is enabled" << std::endl;
           std::cout << "test_enable()     Enable `Unit-Test`" << std::endl;
           std::cout << "test_disable()    Disable `Unit-Test`" << std::endl;
+          std::cout << "test_run_all()    Run all `Unit-Test`" << std::endl;
 
           return nullptr;
       });
@@ -172,6 +173,14 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   // Enable run `Unit-Test`.
   vm.define_native("test_enable", [](sz_t, Value::Value*) -> Value::Value {
         Setting::Setting::get_instance().enable_run_harness();
+        return nullptr;
+      });
+
+  // fn test_disable() -> Nil
+  //
+  // Disable run `Unit-Test`.
+  vm.define_native("test_disable", [](sz_t, Value::Value*) -> Value::Value {
+        Setting::Setting::get_instance().disable_run_harness();
         return nullptr;
       });
 }
