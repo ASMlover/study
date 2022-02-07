@@ -37,6 +37,7 @@
 #include <chrono>
 #include <iostream>
 #include <Common/Colorful.hh>
+#include <Common/Harness.hh>
 #include <Setting/Setting.hh>
 #include <Core/TadpoleVM.hh>
 #include <GC/GC.hh>
@@ -181,6 +182,14 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   // Disable run `Unit-Test`.
   vm.define_native("test_disable", [](sz_t, Value::Value*) -> Value::Value {
         Setting::Setting::get_instance().disable_run_harness();
+        return nullptr;
+      });
+
+  // fn test_run_all() -> Nil
+  //
+  // Run all `Unit-Test` cases for Tadpole.
+  vm.define_native("test_run_all", [](sz_t, Value::Value*) -> Value::Value {
+        Common::Harness::run_all_harness();
         return nullptr;
       });
 }
