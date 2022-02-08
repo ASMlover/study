@@ -96,6 +96,7 @@ using ClosureFn = std::function<void ()>;
 
 bool register_harness(strv_t name, ClosureFn&& fn);
 int run_all_harness();
+int run_harness_with(strv_t name);
 
 }
 
