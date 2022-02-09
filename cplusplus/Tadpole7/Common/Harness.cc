@@ -36,6 +36,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <tuple>
 #include <vector>
+#include <unordered_map>
 #include <Common/Colorful.hh>
 #include <Common/Harness.hh>
 
@@ -45,12 +46,15 @@ using Context     = std::tuple<strv_t, ClosureFn>;
 using ContextList = std::vector<Context>;
 
 ContextList* g_harness{};
+std::unordered_map<strv_t, sz_t> g_harness_indexes;
 
 bool register_harness(strv_t name, ClosureFn&& fn) {
   if (!g_harness)
     g_harness = new ContextList;
 
   g_harness->push_back({name, std::move(fn)});
+  g_harness_indexes.insert({name, g_harness->size() - 1});
+
   return true;
 }
 
@@ -79,6 +83,24 @@ int run_all_harness() {
     << "========= PASSED " << "(" << passed_tests << "/" << total_tests << ") test Harness ========="
     << Colorful::reset << std::endl;
 
+  return 0;
+}
+
+int run_harness_with(strv_t name) {
+  if (!g_harness || g_harness->empty())
+    return 0;
+
+  if (auto it = g_harness_indexes.find(name); it != g_harness_indexes.end()) {
+    auto& hc = g_harness->at(it->second);
+    auto [_, hc_fn] = hc;
+    hc_fn();
+
+    std::cout
+      << Colorful::fg::green
+      << "********* Run [" << name << "] Test Harness PASSED *********"
+      << Colorful::reset
+      << std::endl;
+  }
   return 0;
 }
 
