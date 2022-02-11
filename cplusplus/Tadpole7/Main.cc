@@ -79,9 +79,6 @@ int main(int argc, char* argv[]) {
 
   init_default_setting();
 
-  if (Tp::Setting::Setting::get_instance().enabled_run_harness())
-    Tp::Common::Harness::run_all_harness();
-
   Tp::Core::TadpoleVM vm;
   if (argc < 2) {
     std::cout
