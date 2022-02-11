@@ -63,10 +63,11 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           std::cout << "gc_isenabled()    Return true if automatic collection is enabled" << std::endl;
           std::cout << "gc_enable()       Enable automatic garbage collection" << std::endl;
           std::cout << "gc_disable()      Disable automatic garbage collection" << std::endl;
-          std::cout << "test_isenabled()  Return true if `Unit-Test` is enabled" << std::endl;
-          std::cout << "test_enable()     Enable `Unit-Test`" << std::endl;
-          std::cout << "test_disable()    Disable `Unit-Test`" << std::endl;
-          std::cout << "test_run_all()    Run all `Unit-Test`" << std::endl;
+          std::cout << "test_isenabled()  Return true if running test cases is enabled" << std::endl;
+          std::cout << "test_enable()     Enable running test cases" << std::endl;
+          std::cout << "test_disable()    Disable running test cases" << std::endl;
+          std::cout << "test_run(name)    Run the test case with specified name" << std::endl;
+          std::cout << "test_run_all()    Run all test cases" << std::endl;
 
           return nullptr;
       });
@@ -164,14 +165,14 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
   // fn test_isenabled() -> Boolean
   //
   // @returns
-  //    Returns `true` if `Unit-Test` is enabled.
+  //    Returns `true` if running test cases is enabled.
   vm.define_native("test_isenabled", [](sz_t, Value::Value*) -> Value::Value {
         return Setting::Setting::get_instance().enabled_run_harness();
       });
 
   // fn test_enable() -> Nil
   //
-  // Enable run `Unit-Test`.
+  // Enable running test cases.
   vm.define_native("test_enable", [](sz_t, Value::Value*) -> Value::Value {
         Setting::Setting::get_instance().enable_run_harness();
         return nullptr;
@@ -179,15 +180,27 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
 
   // fn test_disable() -> Nil
   //
-  // Disable run `Unit-Test`.
+  // Disable running test cases.
   vm.define_native("test_disable", [](sz_t, Value::Value*) -> Value::Value {
         Setting::Setting::get_instance().disable_run_harness();
         return nullptr;
       });
 
+  // fn test_run(name: String) -> Nil
+  //
+  // Run test case with specified name.
+  //
+  // @args
+  //    name: String -> Name of tese case.
+  vm.define_native("test_run", [](sz_t nargs, Value::Value* args) -> Value::Value {
+        if (nargs == 1 && args != nullptr && args[0].is_string())
+          Common::Harness::run_harness_with(args[0].as_cstring());
+        return nullptr;
+      });
+
   // fn test_run_all() -> Nil
   //
-  // Run all `Unit-Test` cases for Tadpole.
+  // Run all test cases for Tadpole.
   vm.define_native("test_run_all", [](sz_t, Value::Value*) -> Value::Value {
         Common::Harness::run_all_harness();
         return nullptr;
