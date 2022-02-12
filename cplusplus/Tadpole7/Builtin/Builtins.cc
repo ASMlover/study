@@ -52,22 +52,23 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           << Common::Colorful::fg::lightcyan << "Welcome To Tadpole! This is the help utility."
           << Common::Colorful::reset << std::endl << std::endl;
 
-          std::cout << "print(...)        Prints the values to stdout stream" << std::endl;
-          std::cout << "exit()            Exit the Tadpole terminal" << std::endl;
-          std::cout << "time()            Return the current time in seconds since the Epoch" << std::endl;
-          std::cout << "clock()           Return the CPU time since the start of the process" << std::endl;
-          std::cout << "gc_count()        Return number of objects tracked by GC" << std::endl;
-          std::cout << "gc_threshold()    Return the current collection threshold" << std::endl;
-          std::cout << "gc_threshold(n)   Sets the collection threshold" << std::endl;
-          std::cout << "gc_collect()      Run a full collection" << std::endl;
-          std::cout << "gc_isenabled()    Return true if automatic collection is enabled" << std::endl;
-          std::cout << "gc_enable()       Enable automatic garbage collection" << std::endl;
-          std::cout << "gc_disable()      Disable automatic garbage collection" << std::endl;
-          std::cout << "test_isenabled()  Return true if running test cases is enabled" << std::endl;
-          std::cout << "test_enable()     Enable running test cases" << std::endl;
-          std::cout << "test_disable()    Disable running test cases" << std::endl;
-          std::cout << "test_run(name)    Run the test case with specified name" << std::endl;
-          std::cout << "test_run_all()    Run all test cases" << std::endl;
+          std::cout << "print(...)          Prints the values to stdout stream" << std::endl;
+          std::cout << "exit()              Exit the Tadpole terminal" << std::endl;
+          std::cout << "time()              Return the current time in seconds since the Epoch" << std::endl;
+          std::cout << "clock()             Return the CPU time since the start of the process" << std::endl;
+          std::cout << "gc_count()          Return number of objects tracked by GC" << std::endl;
+          std::cout << "gc_threshold()      Return the current collection threshold" << std::endl;
+          std::cout << "gc_threshold(n)     Sets the collection threshold" << std::endl;
+          std::cout << "gc_collect()        Run a full collection" << std::endl;
+          std::cout << "gc_isenabled()      Return true if automatic collection is enabled" << std::endl;
+          std::cout << "gc_enable()         Enable automatic garbage collection" << std::endl;
+          std::cout << "gc_disable()        Disable automatic garbage collection" << std::endl;
+          std::cout << "test_isenabled()    Return true if running test cases is enabled" << std::endl;
+          std::cout << "test_enable()       Enable running test cases" << std::endl;
+          std::cout << "test_disable()      Disable running test cases" << std::endl;
+          std::cout << "test_run(name)      Run the test case with specified name" << std::endl;
+          std::cout << "test_run_all()      Run all test cases" << std::endl;
+          std::cout << "debug_isenabled(n)  Return true if debug mode of <n> is enabled" << std::endl;
 
           return nullptr;
       });
