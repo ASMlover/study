@@ -206,6 +206,12 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
         Common::Harness::run_all_harness();
         return nullptr;
       });
+
+  // fn debug_isenabled(name: String) -> Boolean
+  vm.define_native("debug_isenabled", [](sz_t nargs, Value::Value* args) -> Value::Value {
+        // TODO:
+        return false;
+      });
 }
 
 }
