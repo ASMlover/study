@@ -52,6 +52,11 @@ public:
   inline const char* data() const noexcept { return data_; }
   inline const char* cstr() const noexcept { return data_; }
 
+  inline bool is_equal(StringObject* s) const noexcept { return this == s || is_equal(s->data_); }
+  inline bool is_equal(const str_t& s) const noexcept { return s.compare(data_) == 0; }
+  inline bool is_equal(strv_t s) const noexcept { return s.compare(data_) == 0; }
+  inline bool is_equal(const char* s) const noexcept { return std::memcmp(data_, s, size_) == 0; }
+
   virtual bool is_truthy() const override;
   virtual str_t stringify() const override;
 
