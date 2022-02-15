@@ -102,6 +102,11 @@ public:
   inline Object::UpvalueObject* as_upvalue() const noexcept { return as_.object->as_upvalue(); }
   inline Object::ClosureObject* as_closure() const noexcept { return as_.object->as_closure(); }
 
+  bool is_equal_as_string(Object::StringObject* s) const noexcept;
+  bool is_equal_as_string(const str_t& s) const noexcept;
+  bool is_equal_as_string(strv_t s) const noexcept;
+  bool is_equal_as_string(const char* s) const noexcept;
+
   bool is_truthy() const;
   str_t stringify() const;
 };
