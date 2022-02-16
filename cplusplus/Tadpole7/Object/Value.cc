@@ -34,9 +34,26 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <Object/StringObject.hh>
 #include <Object/Value.hh>
 
 namespace Tadpole::Value {
+
+bool Value::is_equal_as_string(Object::StringObject* s) const noexcept {
+  return as_string()->is_equal(s);
+}
+
+bool Value::is_equal_as_string(const str_t& s) const noexcept {
+  return as_string()->is_equal(s);
+}
+
+bool Value::is_equal_as_string(strv_t s) const noexcept {
+  return as_string()->is_equal(s);
+}
+
+bool Value::is_equal_as_string(const char* s) const noexcept {
+  return as_string()->is_equal(s);
+}
 
 bool Value::is_truthy() const {
   switch (type_) {
