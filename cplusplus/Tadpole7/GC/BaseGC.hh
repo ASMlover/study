@@ -47,6 +47,8 @@ namespace Tadpole::GC {
 class BaseGC : private Common::UnCopyable {
   using _Iterator     = std::pair<str_t, Object::IObjectIterator*>;
   using _IteratorList = std::vector<_Iterator>;
+
+  bool is_enabled_{true};
 protected:
   _IteratorList roots_;
   std::unordered_map<u32_t, Object::StringObject*> interned_strings_;
@@ -61,9 +63,10 @@ public:
   virtual sz_t get_count() const { return 0; }
   virtual sz_t get_threshold() const { return 0; }
   virtual void set_threshold(sz_t threshold) {}
-  virtual bool is_enabled() const { return true; }
-  virtual void enable() {}
-  virtual void disable() {}
+
+  inline bool is_enabled() const noexcept { return is_enabled_; }
+  inline void enable() noexcept { is_enabled_ = true; }
+  inline void disable() noexcept { is_enabled_ = false; }
 
   inline void append_roots(const str_t& name, Object::IObjectIterator* root_iterator) noexcept {
     roots_.push_back({name, root_iterator});
