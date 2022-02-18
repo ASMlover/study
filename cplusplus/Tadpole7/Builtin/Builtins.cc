@@ -40,6 +40,7 @@
 #include <Common/Harness.hh>
 #include <Setting/Setting.hh>
 #include <Core/TadpoleVM.hh>
+#include <Object/StringObject.hh>
 #include <GC/GC.hh>
 #include <Builtin/Builtins.hh>
 
@@ -69,6 +70,8 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
           std::cout << "test_run(name)      Run the test case with specified name" << std::endl;
           std::cout << "test_run_all()      Run all test cases" << std::endl;
           std::cout << "debug_isenabled(n)  Return true if debug mode of <n> is enabled" << std::endl;
+          std::cout << "debug_enable(n)     Enable debug mode of <n>" << std::endl;
+          std::cout << "debug_disable(n)    Disable debug mode of <n>" << std::endl;
 
           return nullptr;
       });
@@ -208,8 +211,20 @@ void register_builtins(Core::TadpoleVM& vm) noexcept {
       });
 
   // fn debug_isenabled(name: String) -> Boolean
+  //
+  // @args
+  //    name: String -> Name of debug mode (select in [gc, vm]).
+  //
+  // @returns
+  //    Returns `true` if debug mode which is named by `name` is enabled.
   vm.define_native("debug_isenabled", [](sz_t nargs, Value::Value* args) -> Value::Value {
-        // TODO:
+        if (nargs == 1 && args != nullptr && args[0].is_string()) {
+          const Value::Value& debug_name = args[0];
+          if (debug_name.is_equal_as_string("gc"))
+            return Setting::Setting::get_instance().enabled_debug_gc();
+          else if (debug_name.is_equal_as_string("vm"))
+            return Setting::Setting::get_instance().enabled_debug_vm();
+        }
         return false;
       });
 }
