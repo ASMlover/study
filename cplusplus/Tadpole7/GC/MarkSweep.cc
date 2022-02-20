@@ -54,7 +54,7 @@ MarkSweep::~MarkSweep() {
 }
 
 void MarkSweep::collect() {
-  if (!is_enabled_)
+  if (!is_enabled())
     return;
 
   mark_from_roots();
@@ -100,18 +100,6 @@ sz_t MarkSweep::get_threshold() const {
 
 void MarkSweep::set_threshold(sz_t threshold) {
   gc_threshold_ = Common::as_align(threshold, kGCAlign);
-}
-
-bool MarkSweep::is_enabled() const {
-  return is_enabled_;
-}
-
-void MarkSweep::enable() {
-  is_enabled_ = true;
-}
-
-void MarkSweep::disable() {
-  is_enabled_ = false;
 }
 
 void MarkSweep::mark() {
