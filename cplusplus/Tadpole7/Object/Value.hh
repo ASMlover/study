@@ -80,6 +80,44 @@ public:
 
   inline Object::ObjType objtype() const noexcept { return as_.object->type(); }
 
+  Value(const Value& r) noexcept
+    : type_(r.type_) {
+    if (type_ == ValueType::OBJECT)
+      as_.object = r.as_.object;
+    else
+      as_.numeric = r.as_.numeric;
+  }
+
+  Value(Value&& r) noexcept
+    : type_(std::move(r.type_)) {
+    if (type_ == ValueType::OBJECT)
+      as_.object = std::move(r.as_.object);
+    else
+      as_.numeric = std::move(r.as_.numeric);
+  }
+
+  inline Value& operator=(const Value& r) noexcept {
+    if (this != &r) {
+      type_ = r.type_;
+      if (type_ == ValueType::OBJECT)
+        as_.object = r.as_.object;
+      else
+        as_.numeric = r.as_.numeric;
+    }
+    return *this;
+  }
+
+  inline Value& operator=(Value&& r) noexcept {
+    if (this != &r) {
+      type_ = std::move(r.type_);
+      if (type_ == ValueType::OBJECT)
+        as_.object = std::move(r.as_.object);
+      else
+        as_.numeric = std::move(r.as_.numeric);
+    }
+    return *this;
+  }
+
   inline bool is_nil() const noexcept { return type_ == ValueType::NIL; }
   inline bool is_boolean() const noexcept { return type_ == ValueType::BOOLEAN; }
   inline bool is_numeric() const noexcept { return type_ == ValueType::NUMERIC; }
@@ -106,6 +144,9 @@ public:
   bool is_equal_as_string(const str_t& s) const noexcept;
   bool is_equal_as_string(strv_t s) const noexcept;
   bool is_equal_as_string(const char* s) const noexcept;
+
+  bool operator==(const Value& r) const noexcept;
+  bool operator!=(const Value& r) const noexcept;
 
   bool is_truthy() const;
   str_t stringify() const;
