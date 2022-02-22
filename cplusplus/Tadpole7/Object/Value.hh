@@ -118,6 +118,9 @@ public:
     return *this;
   }
 
+  inline bool operator>(const Value& r) const noexcept { return as_.numeric > r.as_.numeric; }
+  inline bool operator>=(const Value& r) const noexcept { return as_.numeric >= r.as_.numeric; }
+
   inline bool is_nil() const noexcept { return type_ == ValueType::NIL; }
   inline bool is_boolean() const noexcept { return type_ == ValueType::BOOLEAN; }
   inline bool is_numeric() const noexcept { return type_ == ValueType::NUMERIC; }
