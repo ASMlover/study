@@ -55,6 +55,9 @@ bool Value::is_equal_as_string(const char* s) const noexcept {
   return as_string()->is_equal(s);
 }
 
+bool Value::operator==(const Value& r) const noexcept { return false; }
+bool Value::operator!=(const Value& r) const noexcept { return false; }
+
 bool Value::is_truthy() const {
   switch (type_) {
   case ValueType::NIL: return false;
