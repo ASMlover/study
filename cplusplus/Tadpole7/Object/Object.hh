@@ -79,6 +79,7 @@ public:
   inline bool is_marked() const noexcept { return is_marked_; }
   inline void set_marked(bool is_marked = true) noexcept { is_marked_ = is_marked; }
 
+  virtual bool is_equal_to(BaseObject* r) const { return this == r; }
   virtual bool is_truthy() const { return true; }
   virtual str_t stringify() const { return "<object>"; }
   virtual void iter_children(ObjectVisitor&& visitor) {}
