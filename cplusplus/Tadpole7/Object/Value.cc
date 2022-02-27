@@ -55,7 +55,22 @@ bool Value::is_equal_as_string(const char* s) const noexcept {
   return as_string()->is_equal(s);
 }
 
-bool Value::operator==(const Value& r) const noexcept { return false; }
+bool Value::operator==(const Value& r) const noexcept {
+  if (this == &r)
+    return true;
+  if (type_ != r.type_)
+    return false;
+
+  switch (type_) {
+  case ValueType::NIL: return true;
+  case ValueType::BOOLEAN: return as_.boolean == r.as_.boolean;
+  case ValueType::NUMERIC: return as_.numeric == r.as_.numeric;
+  case ValueType::OBJECT: return as_.object->is_equal_to(r.as_.object);
+  default:  break;
+  }
+  return false;
+}
+
 bool Value::operator!=(const Value& r) const noexcept { return false; }
 
 bool Value::is_truthy() const {
