@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fstream>
 #include <iostream>
 #include "lox.hh"
 
@@ -46,9 +47,26 @@ int Lox::run(int argc, char* argv[]) {
 }
 
 void Lox::run_from_file(const str_t& filepath) {
+  if (std::ifstream fp(filepath); fp.is_open()) {
+    ss_t ss;
+    ss << fp.rdbuf();
+
+    run(filepath, ss.str());
+  }
 }
 
 void Lox::run_from_prompt() {
+  str_t line;
+  for (;;) {
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line) || line == "exit")
+      break;
+
+    run("", line);
+  }
+}
+
+void Lox::run(const str_t& filepath, const str_t& source_bytes) {
 }
 
 }

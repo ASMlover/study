@@ -25,10 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "common.hh"
+#include "lox.hh"
 
 int main(int argc, char* argv[]) {
-  LOXPP_UNUSED(argc), LOXPP_UNUSED(argv);
-
-  return 0;
+  return loxpp::Lox::make().run(argc, argv);
 }

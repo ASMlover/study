@@ -44,7 +44,7 @@
 # define interface struct
 #endif
 
-namespace lox {
+namespace loxpp {
 
 using nil_t   = std::nullptr_t;
 using byte_t  = std::uint8_t;

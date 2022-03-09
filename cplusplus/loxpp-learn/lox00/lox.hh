@@ -33,6 +33,8 @@ namespace loxpp {
 class Lox final : private UnCopyable {
   void run_from_file(const str_t& filepath);
   void run_from_prompt();
+
+  void run(const str_t& filepath, const str_t& source_bytes);
 public:
   int run(int argc, char* argv[]);
 
