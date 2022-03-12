@@ -26,6 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iomanip>
+#include <limits>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <sstream>
@@ -93,5 +96,27 @@ public:
     return ins;
   }
 };
+
+template <typename T, typename S> inline T as_type(S x) noexcept {
+  return static_cast<T>(x);
+}
+
+template <typename T, typename S> inline T* as_down(S* x) noexcept {
+  return dynamic_cast<T*>(x);
+}
+
+template <typename T>  inline T* as_ptr(void* p) noexcept {
+  return reinterpret_cast<T*>(p);
+}
+
+template <typename T, typename PTR> inline T* get_rawptr(const PTR& p) noexcept {
+  return p.get();
+}
+
+inline str_t as_string(double d) noexcept {
+  ss_t ss;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
+  return ss.str();
+}
 
 }
