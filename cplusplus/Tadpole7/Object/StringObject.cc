@@ -65,6 +65,12 @@ StringObject::~StringObject() {
   delete [] data_;
 }
 
+bool StringObject::is_equal_to(BaseObject* r) const {
+  if (this == r)
+    return true;
+  return is_same_type(this, r) ? is_equal(Common::as_down<StringObject>(r)) : false;
+}
+
 bool StringObject::is_truthy() const {
   return size_ > 0;
 }

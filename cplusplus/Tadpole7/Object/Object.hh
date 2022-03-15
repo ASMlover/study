@@ -93,4 +93,7 @@ public:
   ClosureObject* as_closure();
 };
 
+template <typename T, typename Y>
+inline bool is_same_type(T* o1, Y* o2) noexcept { return o1->type() == o2->type(); }
+
 }
