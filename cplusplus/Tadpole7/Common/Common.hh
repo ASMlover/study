@@ -73,6 +73,11 @@ public:
   }
 };
 
+template <typename... Mixins> class MixinClass : public Mixins... {
+public:
+  constexpr MixinClass() : Mixins()... {}
+};
+
 template <typename T, typename S> inline T as_type(S x) noexcept {
   return static_cast<T>(x);
 }
