@@ -39,6 +39,11 @@
 
 namespace Tadpole::Object {
 
+bool NativeObject::is_equal_to(BaseObject* r) const {
+  typedef Value::Value (*FnPtr)(sz_t, Value::Value*);
+  return this == r || fn_.target<FnPtr>() == Common::as_down<NativeObject>(r)->fn_.target<FnPtr>();
+}
+
 str_t NativeObject::stringify() const {
   ss_t ss;
   ss << "<native function at `" << this << "`>";

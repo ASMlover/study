@@ -50,6 +50,7 @@ public:
   inline Value::Value call(sz_t nargs, Value::Value* args) noexcept { return fn_(nargs, args); }
   inline Value::Value operator()(sz_t nargs, Value::Value* args) noexcept { return fn_(nargs, args); }
 
+  virtual bool is_equal_to(BaseObject* r) const override;
   virtual str_t stringify() const override;
 
   static NativeObject* create(Value::TadpoleCFun&& fn);
