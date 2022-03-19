@@ -26,11 +26,28 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include "common.hh"
+#include "token.hh"
 
 namespace loxpp {
 
 class Scanner final : private UnCopyable {
+  const str_t& source_bytes_;
+  str_t filename_;
+  std::vector<Token> tokens_;
+
+  sz_t start_pos_{};
+  sz_t current_pos_{};
+  int lineno_{1};
+
+  inline bool is_at_end() const noexcept { return current_pos_ >= source_bytes_.size(); }
+
+  void scan_token() noexcept;
+public:
+  Scanner(const str_t& source_bytes, const str_t& filename = "") noexcept;
+
+  std::vector<Token>& scan_tokens() noexcept;
 };
 
 }
