@@ -41,7 +41,17 @@ class Scanner final : private UnCopyable {
   sz_t current_pos_{};
   int lineno_{1};
 
+  inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
+    return source_bytes_.substr(begpos, endpos - begpos);
+  }
+
   inline bool is_at_end() const noexcept { return current_pos_ >= source_bytes_.size(); }
+  inline char advance() noexcept { return source_bytes_[current_pos_++]; }
+
+  inline void add_token(TokenType type) noexcept {
+    str_t literal = gen_literal(start_pos_, current_pos_);
+    tokens_.push_back(Token::make_from_details(type, literal, lineno_));
+  }
 
   void scan_token() noexcept;
 public:
