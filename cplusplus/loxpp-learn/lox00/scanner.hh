@@ -32,7 +32,10 @@
 
 namespace loxpp {
 
+class ErrorReporter;
+
 class Scanner final : private UnCopyable {
+  ErrorReporter& error_repoter_;
   const str_t& source_bytes_;
   str_t filename_;
   std::vector<Token> tokens_;
@@ -55,7 +58,7 @@ class Scanner final : private UnCopyable {
 
   void scan_token() noexcept;
 public:
-  Scanner(const str_t& source_bytes, const str_t& filename = "") noexcept;
+  Scanner(ErrorReporter& error_repoter, const str_t& source_bytes, const str_t& filename = "") noexcept;
 
   std::vector<Token>& scan_tokens() noexcept;
 };
