@@ -24,12 +24,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "errors.hh"
 #include "scanner.hh"
 
 namespace loxpp {
 
-Scanner::Scanner(const str_t& source_bytes, const str_t& filename) noexcept
-  : source_bytes_(source_bytes)
+Scanner::Scanner(ErrorReporter& error_repoter, const str_t& source_bytes, const str_t& filename) noexcept
+  : error_repoter_(error_repoter)
+  , source_bytes_(source_bytes)
   , filename_(filename) {
 }
 
@@ -46,7 +48,19 @@ std::vector<Token>& Scanner::scan_tokens() noexcept {
 }
 
 void Scanner::scan_token() noexcept {
-  // TODO:
+  char c = advance();
+  switch (c) {
+  case '(': add_token(TokenType::TK_LPAREN); break;
+  case ')': add_token(TokenType::TK_RPAREN); break;
+  case '{': add_token(TokenType::TK_LBRACE); break;
+  case '}': add_token(TokenType::TK_RBRACE); break;
+  case ',': add_token(TokenType::TK_COMMA); break;
+  case '.': add_token(TokenType::TK_DOT); break;
+  case '-': add_token(TokenType::TK_MINUS); break;
+  case '+': add_token(TokenType::TK_PLUS); break;
+  case ';': add_token(TokenType::TK_SEMI); break;
+  case '*': add_token(TokenType::TK_STAR); break;
+  }
 }
 
 }
