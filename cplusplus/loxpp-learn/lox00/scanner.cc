@@ -60,6 +60,9 @@ void Scanner::scan_token() noexcept {
   case '+': add_token(TokenType::TK_PLUS); break;
   case ';': add_token(TokenType::TK_SEMI); break;
   case '*': add_token(TokenType::TK_STAR); break;
+  default:
+    error_repoter_.error("", lineno_, "Unexpected character.");
+    break;
   }
 }
 
