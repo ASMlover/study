@@ -51,6 +51,14 @@ class Scanner final : private UnCopyable {
   inline bool is_at_end() const noexcept { return current_pos_ >= source_bytes_.size(); }
   inline char advance() noexcept { return source_bytes_[current_pos_++]; }
 
+  inline bool match(char expected) noexcept {
+    if (is_at_end() || source_bytes_[current_pos_] != expected)
+      return false;
+
+    ++current_pos_;
+    return true;
+  }
+
   inline void add_token(TokenType type) noexcept {
     str_t literal = gen_literal(start_pos_, current_pos_);
     tokens_.push_back(Token::make_from_details(type, literal, lineno_));
