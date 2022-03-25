@@ -60,6 +60,10 @@ void Scanner::scan_token() noexcept {
   case '+': add_token(TokenType::TK_PLUS); break;
   case ';': add_token(TokenType::TK_SEMI); break;
   case '*': add_token(TokenType::TK_STAR); break;
+  case '!': add_token(match('=') ? TokenType::TK_NE : TokenType::TK_NOT); break;
+  case '=': add_token(match('=') ? TokenType::TK_EQEQ : TokenType::TK_EQ); break;
+  case '<': add_token(match('=') ? TokenType::TK_LE : TokenType::TK_LT); break;
+  case '>': add_token(match('=') ? TokenType::TK_GE : TokenType::TK_GT); break;
   default:
     error_repoter_.error("", lineno_, "Unexpected character.");
     break;
