@@ -64,6 +64,16 @@ void Scanner::scan_token() noexcept {
   case '=': add_token(match('=') ? TokenType::TK_EQEQ : TokenType::TK_EQ); break;
   case '<': add_token(match('=') ? TokenType::TK_LE : TokenType::TK_LT); break;
   case '>': add_token(match('=') ? TokenType::TK_GE : TokenType::TK_GT); break;
+  case '/':
+    if (match('/')) {
+      // a comment goes until the end of the line.
+      while (!is_at_end() && peek() != '\n')
+        advance();
+    }
+    else {
+      add_token(TokenType::TK_SLASH);
+    }
+    break;
   default:
     error_repoter_.error("", lineno_, "Unexpected character.");
     break;
