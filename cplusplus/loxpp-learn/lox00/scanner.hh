@@ -62,10 +62,15 @@ class Scanner final : private UnCopyable {
 
   inline void add_token(TokenType type) noexcept {
     str_t literal = gen_literal(start_pos_, current_pos_);
+    add_token(type, literal);
+  }
+
+  inline void add_token(TokenType type, const str_t& literal) noexcept {
     tokens_.push_back(Token::make_from_details(type, literal, lineno_));
   }
 
   void scan_token() noexcept;
+  void string() noexcept;
 public:
   Scanner(ErrorReporter& error_repoter, const str_t& source_bytes, const str_t& filename = "") noexcept;
 
