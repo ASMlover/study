@@ -74,10 +74,36 @@ void Scanner::scan_token() noexcept {
       add_token(TokenType::TK_SLASH);
     }
     break;
+  case ' ':
+  case '\r':
+  case '\t':
+    // Ignore whitespace
+    break;
+  case '\n': ++lineno_; break;
+  case '"': string(); break;
   default:
     error_repoter_.error("", lineno_, "Unexpected character.");
     break;
   }
+}
+
+void Scanner::string() noexcept {
+  while (!is_at_end() && peek() != '"') {
+    if (peek() == '\n')
+      ++lineno_;
+    advance();
+  }
+
+  if (is_at_end()) {
+    error_repoter_.error("", lineno_, "Unterminated string.");
+    return;
+  }
+
+  // The closing ".
+  advance();
+
+  str_t literal = gen_literal(start_pos_ + 1, current_pos_ - 1);
+  add_token(TokenType::TK_STRING, literal);
 }
 
 }
