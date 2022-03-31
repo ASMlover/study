@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <cctype>
 #include <vector>
 #include "common.hh"
 #include "token.hh"
@@ -43,6 +44,8 @@ class Scanner final : private UnCopyable {
   sz_t start_pos_{};
   sz_t current_pos_{};
   int lineno_{1};
+
+  inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
 
   inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
     return source_bytes_.substr(begpos, endpos - begpos);
