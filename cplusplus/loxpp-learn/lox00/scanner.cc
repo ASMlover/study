@@ -82,7 +82,10 @@ void Scanner::scan_token() noexcept {
   case '\n': ++lineno_; break;
   case '"': string(); break;
   default:
-    error_repoter_.error("", lineno_, "Unexpected character.");
+    if (is_digit(c))
+      ;
+    else
+      error_repoter_.error("", lineno_, "Unexpected character.");
     break;
   }
 }
@@ -104,6 +107,21 @@ void Scanner::string() noexcept {
 
   str_t literal = gen_literal(start_pos_ + 1, current_pos_ - 1);
   add_token(TokenType::TK_STRING, literal);
+}
+
+void Scanner::number() noexcept {
+  while (is_digit(peek()))
+    advance();
+
+  if (peek() == '.' && is_digit(peek_next())) {
+    // consume the "."
+    advance();
+
+    while (is_digit(peek()))
+      advance();
+  }
+
+  add_token(TokenType::TK_NUMERIC);
 }
 
 }
