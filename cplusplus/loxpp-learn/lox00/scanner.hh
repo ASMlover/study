@@ -54,6 +54,9 @@ class Scanner final : private UnCopyable {
   inline bool is_at_end() const noexcept { return current_pos_ >= source_bytes_.size(); }
   inline char advance() noexcept { return source_bytes_[current_pos_++]; }
   inline char peek() const noexcept { return is_at_end() ? 0 : source_bytes_[current_pos_]; }
+  inline char peek_next() const noexcept {
+    return current_pos_ + 1 >= source_bytes_.size() ? 0 : source_bytes_[current_pos_ + 1];
+  }
 
   inline bool match(char expected) noexcept {
     if (is_at_end() || source_bytes_[current_pos_] != expected)
@@ -74,6 +77,7 @@ class Scanner final : private UnCopyable {
 
   void scan_token() noexcept;
   void string() noexcept;
+  void number() noexcept;
 public:
   Scanner(ErrorReporter& error_repoter, const str_t& source_bytes, const str_t& filename = "") noexcept;
 
