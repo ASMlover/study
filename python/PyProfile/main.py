@@ -47,31 +47,35 @@ def profile(func: Callable[..., Any]) -> Callable[..., Any]:
             print(f"{funcname} | {filename}:{lineno} | {(time_end - time_beg) / 1000.0}μs")
     return _profile_caller
 
-class Engine(object):
+class TestMain(object):
     def __init__(self) -> None:
-        self.world: World = World()
+        self.scanner: Scanner = Scanner('../')
 
     @profile
     def update(self) -> None:
-        self.world.update()
+        self.scanner.update()
 
-class World(object):
+class Scanner(object):
+    def __init__(self, scan_filepath: str = './'):
+        super(Scanner, self).__init__()
+        self.scan_filepath: str = scan_filepath
+
     @profile
-    def scanning(self) -> List[str]:
+    def do_scanning(self) -> List[str]:
         scanning_files = []
-        for dirpath, dirs, files in os.walk('../'):
+        for dirpath, dirs, files in os.walk(self.scan_filepath):
             for filename in files:
                 scanning_files.append(os.path.join(dirpath, filename))
         return scanning_files
 
     @profile
     def update(self) -> None:
-        self.scanning()
+        self.do_scanning()
 
 def main():
-    engine = Engine()
+    test = TestMain()
     while True:
-        engine.update()
+        test.update()
         time.sleep(0.01)
 
 if __name__ == '__main__':
