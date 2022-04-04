@@ -30,6 +30,7 @@
 
 import functools
 import os
+import random
 import time
 
 from typing import Any, Callable, List
@@ -50,13 +51,15 @@ def profile(func: Callable[..., Any]) -> Callable[..., Any]:
 class TestMain(object):
     def __init__(self) -> None:
         self.scanner: Scanner = Scanner('../')
+        self.sorter: Sorter = Sorter(500000)
 
     @profile
     def update(self) -> None:
         self.scanner.update()
+        self.sorter.update()
 
 class Scanner(object):
-    def __init__(self, scan_filepath: str = './'):
+    def __init__(self, scan_filepath: str = './') -> None:
         super(Scanner, self).__init__()
         self.scan_filepath: str = scan_filepath
 
@@ -71,6 +74,26 @@ class Scanner(object):
     @profile
     def update(self) -> None:
         self.do_scanning()
+
+class Sorter(object):
+    def __init__(self, counter: int = 100000, times: int = 100) -> None:
+        self.counter: int = counter
+        self.times: int = times
+        self.random_nums: List[int] = []
+
+    @profile
+    def do_generating(self) -> None:
+        self.random_nums.append(random.randint(1, self.counter))
+
+    @profile
+    def do_sorting(self) -> None:
+        self.random_nums.sort()
+
+    @profile
+    def update(self) -> None:
+        for _ in range(self.times):
+            self.do_generating()
+            self.do_sorting()
 
 def main():
     test = TestMain()
