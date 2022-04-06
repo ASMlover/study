@@ -28,32 +28,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import functools
 import os
 import random
 import time
+from typing import List
 
-from typing import Any, Callable, List
-
-
-def profile(func: Callable[..., Any]) -> Callable[..., Any]:
-    @functools.wraps(func)
-    def _profile_caller(*args, **kwds) -> Any:
-        try:
-            time_beg = time.time_ns()
-            return func(*args, **kwds)
-        finally:
-            time_end, func_code = time.time_ns(), func.__code__
-            filename, funcname, lineno = func_code.co_filename, func_code.co_name, func_code.co_firstlineno
-            print(f"{funcname} | {filename}:{lineno} | {(time_end - time_beg) / 1000.0}μs")
-    return _profile_caller
+import py_profile as pprof
 
 class TestMain(object):
     def __init__(self) -> None:
         self.scanner: Scanner = Scanner('../')
         self.sorter: Sorter = Sorter(500000)
 
-    @profile
+    @pprof.profile
     def update(self) -> None:
         self.scanner.update()
         self.sorter.update()
@@ -63,7 +50,7 @@ class Scanner(object):
         super(Scanner, self).__init__()
         self.scan_filepath: str = scan_filepath
 
-    @profile
+    @pprof.profile
     def do_scanning(self) -> List[str]:
         scanning_files = []
         for dirpath, dirs, files in os.walk(self.scan_filepath):
@@ -71,7 +58,7 @@ class Scanner(object):
                 scanning_files.append(os.path.join(dirpath, filename))
         return scanning_files
 
-    @profile
+    @pprof.profile
     def update(self) -> None:
         self.do_scanning()
 
@@ -81,15 +68,15 @@ class Sorter(object):
         self.times: int = times
         self.random_nums: List[int] = []
 
-    @profile
+    @pprof.profile
     def do_generating(self) -> None:
         self.random_nums.append(random.randint(1, self.counter))
 
-    @profile
+    @pprof.profile
     def do_sorting(self) -> None:
         self.random_nums.sort()
 
-    @profile
+    @pprof.profile
     def update(self) -> None:
         for _ in range(self.times):
             self.do_generating()
@@ -97,9 +84,13 @@ class Sorter(object):
 
 def main():
     test = TestMain()
-    while True:
+
+    test_count = 0
+    while test_count < 100:
         test.update()
         time.sleep(0.01)
+
+        test_count += 1
 
 if __name__ == '__main__':
     main()
