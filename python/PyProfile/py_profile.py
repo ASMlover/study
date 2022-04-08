@@ -44,3 +44,9 @@ def profile(func: Callable[..., Any]) -> Callable[..., Any]:
             filename, funcname, lineno = func_code.co_filename, func_code.co_name, func_code.co_firstlineno
             print(f"{funcname} | {filename}:{lineno} | {(time_end - time_beg) / 1000.0}μs")
     return _profile_caller
+
+def start_stats() -> None:
+    pass
+
+def print_stats() -> None:
+    pass
