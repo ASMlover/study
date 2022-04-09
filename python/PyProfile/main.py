@@ -33,12 +33,16 @@ import random
 import time
 from typing import List
 
-import py_profile as pprof
+USE_PROF_V2 = True
+if USE_PROF_V2:
+    import py_profile2 as pprof
+else:
+    import py_profile as pprof
 
 class TestMain(object):
     def __init__(self) -> None:
-        self.scanner: Scanner = Scanner('../')
-        self.sorter: Sorter = Sorter(500000)
+        self.scanner = Scanner('../')
+        self.sorter = Sorter(random.randint(500000, 1000000), random.randint(100, 200))
 
     @pprof.profile
     def update(self) -> None:
@@ -48,7 +52,7 @@ class TestMain(object):
 class Scanner(object):
     def __init__(self, scan_filepath: str = './') -> None:
         super(Scanner, self).__init__()
-        self.scan_filepath: str = scan_filepath
+        self.scan_filepath = scan_filepath
 
     @pprof.profile
     def do_scanning(self) -> List[str]:
@@ -64,9 +68,9 @@ class Scanner(object):
 
 class Sorter(object):
     def __init__(self, counter: int = 100000, times: int = 100) -> None:
-        self.counter: int = counter
-        self.times: int = times
-        self.random_nums: List[int] = []
+        self.counter = counter
+        self.times = times
+        self.random_nums  = []
 
     @pprof.profile
     def do_generating(self) -> None:
@@ -83,14 +87,16 @@ class Sorter(object):
             self.do_sorting()
 
 def main():
-    test = TestMain()
+    pprof.start_stats()
 
-    test_count = 0
-    while test_count < 100:
-        test.update()
+    test_main, test_count = TestMain(), 0
+    while test_count < random.randint(100, 500):
+        test_count += 1
+        test_main.update()
+
         time.sleep(0.01)
 
-        test_count += 1
+    pprof.print_stats()
 
 if __name__ == '__main__':
     main()
