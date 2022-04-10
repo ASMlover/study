@@ -55,11 +55,10 @@ def start_stats() -> None:
 def print_stats() -> None:
     processed_stats = []
     for stat_key, stats in _profile_stats.items():
-        total_ns, total_cnt = sum(stats), len(stats)
-        avg_ns = total_ns / total_cnt
-        processed_stats.append((stat_key, total_ns, total_cnt, avg_ns))
+        total_ns, total_cnt, max_ns = sum(stats), len(stats), max(stats)
+        processed_stats.append((stat_key, total_ns, total_cnt, max_ns))
 
     sorted_stats = sorted(processed_stats, key=operator.itemgetter(1))
-    for stat_key, total_ns, total_cnt, avg_ns in sorted_stats:
+    for stat_key, total_ns, total_cnt, max_ns in sorted_stats:
         funcname, filename, lineno = stat_key
-        print(f"{funcname} | {filename}:{lineno} | {total_ns}μs | {total_cnt} | {avg_ns}μs")
+        print(f"{funcname} ({filename}:{lineno}) | TOTAL(μs):{total_ns} | COUNT:{total_cnt} | MAX(μs):{max_ns}")
