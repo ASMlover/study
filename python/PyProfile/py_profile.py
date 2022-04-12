@@ -37,16 +37,10 @@ def profile(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
     def _profile_caller(*args, **kwds) -> Any:
         try:
-            time_beg = time.time_ns()
+            enter_ns = time.time_ns()
             return func(*args, **kwds)
         finally:
-            time_end, func_code = time.time_ns(), func.__code__
+            leave_ns, func_code = time.time_ns(), func.__code__
             filename, funcname, lineno = func_code.co_filename, func_code.co_name, func_code.co_firstlineno
-            print(f"{funcname} ({filename}:{lineno}) | Execution Time: {(time_end - time_beg) / 1000.0}μs")
+            print(f"{funcname} ({filename}:{lineno}) | Execution Time(ns): {leave_ns - enter_ns}")
     return _profile_caller
-
-def start_stats() -> None:
-    pass
-
-def print_stats() -> None:
-    pass
