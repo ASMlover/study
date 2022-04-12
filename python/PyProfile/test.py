@@ -33,25 +33,32 @@ import random
 import time
 from typing import List
 
-USE_PROF_V2 = True
-if USE_PROF_V2:
-    import py_profile2 as pprof
-else:
-    import py_profile as pprof
+import py_profile as pprof
 
-class TestMain(object):
+class TestEntry(object):
     def __init__(self) -> None:
-        self.scanner = Scanner('../')
-        self.sorter = Sorter(random.randint(500000, 1000000), random.randint(100, 200))
+        self.nothing = NothingEvent()
+        self.scanning = ScanningEvent('../')
+        self.sorting = SortingEvent(max_number=random.randint(500000, 1000000), sort_times=random.randint(100, 200))
 
     @pprof.profile
-    def update(self) -> None:
-        self.scanner.update()
-        self.sorter.update()
+    def entry(self) -> None:
+        self.nothing.do_event()
+        self.scanning.do_event()
+        self.sorting.do_event()
 
-class Scanner(object):
+class TestEvent(object):
+    def do_event(self) -> None:
+        pass
+
+class NothingEvent(TestEvent):
+    @pprof.profile
+    def do_event(self) -> None:
+        super(NothingEvent, self).do_event()
+
+class ScanningEvent(TestEvent):
     def __init__(self, scan_filepath: str = './') -> None:
-        super(Scanner, self).__init__()
+        super(ScanningEvent, self).__init__()
         self.scan_filepath = scan_filepath
 
     @pprof.profile
@@ -63,40 +70,38 @@ class Scanner(object):
         return scanning_files
 
     @pprof.profile
-    def update(self) -> None:
+    def do_event(self) -> None:
         self.do_scanning()
 
-class Sorter(object):
-    def __init__(self, counter: int = 100000, times: int = 100) -> None:
-        self.counter = counter
-        self.times = times
+class SortingEvent(TestEvent):
+    def __init__(self, array_len: int = 5000, max_number: int = 100000, sort_times: int = 100) -> None:
+        super(SortingEvent, self).__init__()
+        self.array_len = array_len
+        self.max_number = max_number
+        self.sort_times = sort_times
         self.random_nums  = []
 
     @pprof.profile
     def do_generating(self) -> None:
-        self.random_nums.append(random.randint(1, self.counter))
+        self.random_nums = [random.randint(1, self.max_number) for _ in range(self.array_len)]
 
     @pprof.profile
     def do_sorting(self) -> None:
         self.random_nums.sort()
 
     @pprof.profile
-    def update(self) -> None:
-        for _ in range(self.times):
+    def do_event(self) -> None:
+        for _ in range(self.sort_times):
             self.do_generating()
             self.do_sorting()
 
-def main():
-    pprof.start_stats()
-
-    test_main, test_count = TestMain(), 0
-    while test_count < random.randint(100, 500):
+def test() -> None:
+    test_entry, test_count = TestEntry(), 0
+    while test_count < random.randint(10, 100):
         test_count += 1
-        test_main.update()
+        test_entry.entry()
 
-        time.sleep(0.01)
-
-    pprof.print_stats()
+        time.sleep(0.033)
 
 if __name__ == '__main__':
-    main()
+    test()
