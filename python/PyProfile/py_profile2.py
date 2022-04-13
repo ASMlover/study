@@ -40,25 +40,22 @@ def profile(func: Callable[..., Any]) -> Callable[..., Any]:
     @functools.wraps(func)
     def _profile_caller(*args, **kwds) -> Any:
         try:
-            time_beg = time.time_ns()
+            enter_ns = time.time_ns()
             return func(*args, **kwds)
         finally:
-            time_end, func_code = time.time_ns(), func.__code__
+            leave_ns, func_code = time.time_ns(), func.__code__
             funcname, filename, lineno = func_code.co_name, func_code.co_filename, func_code.co_firstlineno
             profile_times = _profile_stats.setdefault((funcname, filename, lineno), [])
-            profile_times.append(time_end - time_beg)
+            profile_times.append(leave_ns - enter_ns)
     return _profile_caller
 
 def start_stats() -> None:
     _profile_stats = {}
 
 def print_stats() -> None:
-    processed_stats = []
-    for stat_key, stats in _profile_stats.items():
-        total_ns, total_cnt, max_ns = sum(stats), len(stats), max(stats)
-        processed_stats.append((stat_key, total_ns, total_cnt, max_ns))
-
-    sorted_stats = sorted(processed_stats, key=operator.itemgetter(1))
+    sorted_stats = sorted(
+            [(stat_key, sum(stats), len(stats), max(stats)) for stat_key, stats in _profile_stats.items()],
+            key=operator.itemgetter(3), reverse=True)
     for stat_key, total_ns, total_cnt, max_ns in sorted_stats:
         funcname, filename, lineno = stat_key
-        print(f"{funcname} ({filename}:{lineno}) | TOTAL(μs):{total_ns} | COUNT:{total_cnt} | MAX(μs):{max_ns}")
+        print(f"{funcname} ({filename}:{lineno}) | TOTAL(ns):{total_ns} | COUNT:{total_cnt} | MAX(ns):{max_ns}")
