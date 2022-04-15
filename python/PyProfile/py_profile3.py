@@ -28,20 +28,40 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import operator
 import sys
-from typing import Any
+import time
+from collections import deque
+from types import BuiltinFunctionType, FrameType
+from typing import Any, Union
 
 
 _profile_stats = {} # {(funcname, filename, lineno): [use_tm1, use_tm2, ...], ...}
+_profile_queue = deque() # [(funcname, filename, lineno, enter_ns), ...]
 
-def profilefunc(frame, event, arg) -> None:
+def profilefunc(frame: FrameType, event: str, arg: Union[Any, BuiltinFunctionType, None]) -> None:
     if event == 'call':
         fcode = frame.f_code
         funcname, filename, lineno = fcode.co_name, fcode.co_filename, fcode.co_firstlineno
-    elif event == 'return':
-        pass
+        _profile_queue.append((funcname, filename, lineno, time.time_ns()))
+    elif event == 'c_call':
+        funcname = arg.__name__
+        if arg.__module__:
+            filename = arg.__module__
+        elif arg.__self__:
+            filename = f'<method `{funcname}` of `{arg.__self__.__class__.__name__}` objects>'
+        else:
+            filename = '<built-in method>'
+        _profile_queue.append((funcname, filename, 0, time.time_ns()))
+    elif event in ('return', 'c_return', 'c_exception'):
+        if _profile_queue:
+            funcname, filename, lineno, enter_ns = _profile_queue.pop()
+            profile_times = _profile_stats.setdefault((funcname, filename, lineno), [])
+            profile_times.append(time.time_ns() - enter_ns)
 
 def start_stats() -> None:
+    _profile_stats = {}
+    _profile_queue = deque()
     sys.setprofile(profilefunc)
 
 def stop_stats() -> None:
@@ -50,4 +70,8 @@ def stop_stats() -> None:
 def print_stats() -> None:
     stop_stats()
 
-    # TODO:
+    processed_stats = [(stat_key, sum(stats), len(stats), max(stats)) for stat_key, stats in _profile_stats.items()]
+    sorted_stats = sorted(processed_stats, key=operator.itemgetter(3), reverse=True)
+    for stat_key, total_ns, total_cnt, max_ns in sorted_stats:
+        funcname, filename, lineno = stat_key
+        print(f"{funcname} ({filename}:{lineno}) | TOTAL(ns):{total_ns} | COUNT:{total_cnt} | MAX(ns):{max_ns}")
