@@ -30,7 +30,6 @@
 
 import os
 import random
-import time
 from typing import List
 
 import py_profile as pprof
@@ -96,12 +95,8 @@ class SortingEvent(TestEvent):
             self.do_sorting()
 
 def test() -> None:
-    test_entry, test_count = TestEntry(), 0
-    while test_count < random.randint(10, 100):
-        test_count += 1
-        test_entry.entry()
-
-        time.sleep(0.033)
+    test_entry = TestEntry()
+    test_entry.entry()
 
 if __name__ == '__main__':
     test()
