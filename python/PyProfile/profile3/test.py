@@ -40,7 +40,6 @@ class TestEntry(object):
         self.scanning = ScanningEvent('../')
         self.sorting = SortingEvent(max_number=random.randint(500000, 1000000), sort_times=random.randint(100, 200))
 
-    @pprof.profile
     def entry(self) -> None:
         self.nothing.do_event()
         self.scanning.do_event()
@@ -51,7 +50,6 @@ class TestEvent(object):
         pass
 
 class NothingEvent(TestEvent):
-    @pprof.profile
     def do_event(self) -> None:
         super(NothingEvent, self).do_event()
 
@@ -60,7 +58,6 @@ class ScanningEvent(TestEvent):
         super(ScanningEvent, self).__init__()
         self.scan_filepath = scan_filepath
 
-    @pprof.profile
     def do_scanning(self) -> List[str]:
         scanning_files = []
         for dirpath, dirs, files in os.walk(self.scan_filepath):
@@ -68,7 +65,6 @@ class ScanningEvent(TestEvent):
                 scanning_files.append(os.path.join(dirpath, filename))
         return scanning_files
 
-    @pprof.profile
     def do_event(self) -> None:
         self.do_scanning()
 
@@ -80,15 +76,12 @@ class SortingEvent(TestEvent):
         self.sort_times = sort_times
         self.random_nums  = []
 
-    @pprof.profile
     def do_generating(self) -> None:
         self.random_nums = [random.randint(1, self.max_number) for _ in range(self.array_len)]
 
-    @pprof.profile
     def do_sorting(self) -> None:
         self.random_nums.sort()
 
-    @pprof.profile
     def do_event(self) -> None:
         for _ in range(self.sort_times):
             self.do_generating()
