@@ -33,24 +33,6 @@
 
 namespace python_helper {
 
-class UnCopyable {
-  UnCopyable(const UnCopyable&) noexcept = delete;
-  UnCopyable(UnCopyable&&) noexcept =  delete;
-  UnCopyable& operator=(const UnCopyable&) noexcept = delete;
-  UnCopyable& operator=(UnCopyable&&) noexcept = delete;
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-};
-
-template <typename T> class Singleton : private UnCopyable {
-public:
-  static T& get_instance() noexcept {
-    static T ins;
-    return ins;
-  }
-};
-
 inline std::tuple<std::string, std::string> get_from_call(PyCodeObject* funccode) noexcept {
   std::string funcname;
   if (PyObject* py_funcname = PyUnicode_AsASCIIString(funccode->co_name); py_funcname != nullptr) {
