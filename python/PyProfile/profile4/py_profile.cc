@@ -34,6 +34,7 @@
 #include <list>
 #include <vector>
 #include <unordered_map>
+#include "../common/common.hh"
 #include "../common/python_helper.hh"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -43,7 +44,7 @@ inline std::uint64_t time_ns() noexcept {
       std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
-class CachedSourceLocation final : public python_helper::Singleton<CachedSourceLocation> {
+class CachedSourceLocation final : public common::Singleton<CachedSourceLocation> {
   static constexpr std::string kEmptyLocation = "";
   std::unordered_map<std::uint32_t, std::string> cached_locations_;
 
@@ -83,7 +84,7 @@ struct FunctionMark {
   FunctionMark(std::uint32_t h, std::uint64_t t) noexcept : hashcode{h}, timestamp{t} {}
 };
 
-class FunctionStatistics final : private python_helper::UnCopyable {
+class FunctionStatistics final : private common::UnCopyable {
   std::uint32_t hashcode_;
   std::vector<std::uint64_t> executed_times_;
 public:
@@ -118,7 +119,7 @@ struct SortedMark {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // [C++ Profiler] Implementation
-class Profiler final : public python_helper::Singleton<Profiler> {
+class Profiler final : public common::Singleton<Profiler> {
   std::unordered_map<std::uint32_t, FunctionStatisticsPtr> pprofile_stats_;
   std::list<FunctionMark> pprofile_deque_;
 public:
@@ -197,8 +198,12 @@ static int _pprofile_tracefunc(PyObject* obj, PyFrameObject* frame, int what, Py
     } break;
   case PyTrace_RETURN:
   case PyTrace_C_RETURN:
+    Profiler::get_instance().pop_event();
+    break;
   case PyTrace_C_EXCEPTION:
-    Profiler::get_instance().pop_event(); break;
+    if (PyCFunction_Check(arg))
+      Profiler::get_instance().pop_event();
+    break;
   default: break;
   }
   return 0;
