@@ -26,9 +26,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include "optick/optick.h"
+#include "../common/common.hh"
 #include "../common/python_helper.hh"
 
-class OptickProfiler final : public python_helper::Singleton<OptickProfiler> {
+class OptickProfiler final : public common::Singleton<OptickProfiler> {
 public:
   inline void push_event(const std::string& funcname, const std::string& filename, int lineno) noexcept {
     Optick::EventDescription* desc = Optick::CreateDescription(funcname.c_str(), filename.c_str(), lineno);
@@ -57,8 +58,12 @@ static int _pprofile_tracefunc(PyObject* obj, PyFrameObject* frame, int what, Py
     } break;
   case PyTrace_RETURN:
   case PyTrace_C_RETURN:
+    OptickProfiler::get_instance().pop_event();
+    break;
   case PyTrace_C_EXCEPTION:
-    OptickProfiler::get_instance().pop_event(); break;
+    if (PyCFunction_Check(arg))
+      OptickProfiler::get_instance().pop_event();
+    break;
   default: break;
   }
   return 0;
