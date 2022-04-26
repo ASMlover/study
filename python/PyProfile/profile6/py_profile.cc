@@ -31,9 +31,10 @@
 #include "./tracy/Tracy.hpp"
 #include "./tracy/client/TracyProfiler.hpp"
 #include "./tracy/client/TracyScoped.hpp"
+#include "../common/common.hh"
 #include "../common/python_helper.hh"
 
-class TracyProfiler final : public python_helper::Singleton<TracyProfiler> {
+class TracyProfiler final : public common::Singleton<TracyProfiler> {
   using ScopedZonePtr = std::shared_ptr<tracy::ScopedZone>;
 
   std::list<ScopedZonePtr> scoped_zones_;
@@ -68,8 +69,12 @@ static int _pprofile_tracefunc(PyObject* obj, PyFrameObject* frame, int what, Py
     } break;
   case PyTrace_RETURN:
   case PyTrace_C_RETURN:
+    TracyProfiler::get_instance().pop_event();
+    break;
   case PyTrace_C_EXCEPTION:
-    TracyProfiler::get_instance().pop_event(); break;
+    if (PyCFunction_Check(arg))
+      TracyProfiler::get_instance().pop_event();
+    break;
   default: break;
   }
   return 0;
