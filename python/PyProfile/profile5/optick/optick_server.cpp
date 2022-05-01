@@ -56,7 +56,14 @@ typedef UINT_PTR TcpSocket;
 namespace Optick
 {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-static const short DEFAULT_PORT = 31318;
+static short DEFAULT_PORT = 31318;
+
+
+void SetDefaultPort(short defaultPort)
+{
+  if (defaultPort > 0)
+    DEFAULT_PORT = defaultPort;
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined(USE_WINDOWS_SOCKETS)
 class Wsa
@@ -119,7 +126,7 @@ inline bool SetSocketBlockingMode(TcpSocket socket, bool isBlocking)
 #if defined(USE_WINDOWS_SOCKETS)
 	unsigned long mode = isBlocking ? 0 : 1;
 	return (ioctlsocket(socket, FIONBIO, &mode) == 0) ? true : false;
-#else 
+#else
 #if defined(OPTICK_OSX) || defined(OPTICK_LINUX)
 	int flags = fcntl(socket, F_GETFL, 0);
 	if (flags < 0) return false;
@@ -468,7 +475,7 @@ string Server::GetHostName() const
 {
     const uint32 HOST_NAME_LENGTH = 256;
     char hostname[HOST_NAME_LENGTH] = { 0 };
-    
+
 #if defined(USE_BERKELEY_SOCKETS)
 #if defined(OPTICK_LINUX) || defined(OPTICK_OSX)
 	gethostname(hostname, HOST_NAME_LENGTH);

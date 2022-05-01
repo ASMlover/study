@@ -74,12 +74,12 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// EXPORTS 
+// EXPORTS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #if defined(OPTICK_EXPORTS) && defined(OPTICK_MSVC)
 #define OPTICK_API __declspec(dllexport)
 #else
-#define OPTICK_API 
+#define OPTICK_API
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define OPTICK_CONCAT_IMPL(x, y) x##y
@@ -118,7 +118,7 @@ struct VkCommandBufferBeginInfo;
     // On Windows, Vulkan commands use the stdcall convention
 	#define VKAPI_PTR  __stdcall
 #else
-	#define VKAPI_PTR 
+	#define VKAPI_PTR
 #endif
 #endif
 
@@ -326,10 +326,10 @@ namespace Optick
 		enum Type : uint32_t
 		{
 			None,
-			
+
 			// CPU
 			AI,
-			Animation, 
+			Animation,
 			Audio,
 			Debug,
 			Camera,
@@ -493,6 +493,8 @@ OPTICK_API bool UnRegisterThread(bool keepAlive);
 OPTICK_API EventStorage** GetEventStorageSlotForCurrentThread();
 OPTICK_API bool IsFiberStorage(EventStorage* fiberStorage);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+OPTICK_API void SetDefaultPort(short defaultPort = 31318);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ThreadMask
 {
 	enum Type
@@ -548,7 +550,7 @@ struct File
 	{
 		// Supported formats: PNG, JPEG, BMP, TIFF
 		OPTICK_IMAGE,
-		
+
 		// Text file
 		OPTICK_TEXT,
 
@@ -830,7 +832,7 @@ struct OptickApp
 //		Full name is usually shortened in the Optick GUI in order to highlight the most important bits.
 #define OPTICK_EVENT(...)	 static ::Optick::EventDescription* OPTICK_CONCAT(autogen_description_, __LINE__) = nullptr; \
 							 if (OPTICK_CONCAT(autogen_description_, __LINE__) == nullptr) OPTICK_CONCAT(autogen_description_, __LINE__) = ::Optick::CreateDescription(OPTICK_FUNC, __FILE__, __LINE__, ##__VA_ARGS__); \
-							 ::Optick::Event OPTICK_CONCAT(autogen_event_, __LINE__)( *(OPTICK_CONCAT(autogen_description_, __LINE__)) ); 
+							 ::Optick::Event OPTICK_CONCAT(autogen_event_, __LINE__)( *(OPTICK_CONCAT(autogen_description_, __LINE__)) );
 
 // Backward compatibility with previous versions of Optick
 //#if !defined(PROFILE)
@@ -845,7 +847,7 @@ struct OptickApp
 //			OPTICK_CATEGORY("UpdateAI", Optick::Category::AI);
 //			... code ...
 //		}
-//	
+//
 //		Macro could automatically capture current function name:
 //		void UpdateAI()
 //		{
@@ -880,7 +882,7 @@ struct OptickApp
 //		// Flip "Main/Update" frame
 //		OPTICK_FRAME_EVENT(Optick::FrameType::CPU);
 //
-//		// Root category event 
+//		// Root category event
 //		OPTICK_CATEGORY("UpdateFrame", Optick::Category::GameLogic);
 //
 //		...
@@ -938,7 +940,7 @@ struct OptickApp
 //		OPTICK_EVENT_DYNAMIC(name);
 #define OPTICK_EVENT_DYNAMIC(NAME)	OPTICK_CUSTOM_EVENT(::Optick::EventDescription::CreateShared(NAME, __FILE__, __LINE__));
 // Push\Pop profiling macro with DYNAMIC name.
-#define OPTICK_PUSH_DYNAMIC(NAME)		::Optick::Event::Push(NAME);		
+#define OPTICK_PUSH_DYNAMIC(NAME)		::Optick::Event::Push(NAME);
 
 // Push\Pop profiling macro with STATIC name.
 // Please avoid using Push\Pop approach in favor for scoped macros.
@@ -949,7 +951,7 @@ struct OptickApp
 //		OPTICK_POP();
 #define OPTICK_PUSH(NAME)				static ::Optick::EventDescription* OPTICK_CONCAT(autogen_description_, __LINE__) = nullptr; \
 										if (OPTICK_CONCAT(autogen_description_, __LINE__) == nullptr) OPTICK_CONCAT(autogen_description_, __LINE__) = ::Optick::EventDescription::Create( NAME, __FILE__, __LINE__ ); \
-										::Optick::Event::Push(*OPTICK_CONCAT(autogen_description_, __LINE__));		
+										::Optick::Event::Push(*OPTICK_CONCAT(autogen_description_, __LINE__));
 #define OPTICK_POP()					::Optick::Event::Pop();
 
 
@@ -984,7 +986,7 @@ struct OptickApp
 //
 //			//Creating a shared event-description
 //			static Optick::EventDescription* IORead = Optick::EventDescription::CreateShared("IO Read");
-// 
+//
 //			OPTICK_STORAGE_EVENT(IOStorage, IORead, cpuTimestampStart, cpuTimestampFinish);
 // Notes:
 //		It's not thread-safe to add events to the same storage from multiple threads.
@@ -1024,8 +1026,8 @@ struct OptickApp
 //		(CommandBuffer\CommandList, [Optional] Optick::GPUQueue queue, [Optional] int NodeIndex)
 // Examples:
 //		OPTICK_GPU_CONTEXT(cmdBuffer); - all OPTICK_GPU_EVENT will use the same command buffer within the scope
-//		OPTICK_GPU_CONTEXT(cmdBuffer, Optick::GPU_QUEUE_COMPUTE); - all events will use the same command buffer and queue for the scope 
-//		OPTICK_GPU_CONTEXT(cmdBuffer, Optick::GPU_QUEUE_COMPUTE, gpuIndex); - all events will use the same command buffer and queue for the scope 
+//		OPTICK_GPU_CONTEXT(cmdBuffer, Optick::GPU_QUEUE_COMPUTE); - all events will use the same command buffer and queue for the scope
+//		OPTICK_GPU_CONTEXT(cmdBuffer, Optick::GPU_QUEUE_COMPUTE, gpuIndex); - all events will use the same command buffer and queue for the scope
 #define OPTICK_GPU_CONTEXT(...)	 ::Optick::GPUContextScope OPTICK_CONCAT(gpu_autogen_context_, __LINE__)(__VA_ARGS__); \
 									 (void)OPTICK_CONCAT(gpu_autogen_context_, __LINE__);
 
@@ -1063,7 +1065,7 @@ struct OptickApp
 //		NAME - name of the application
 // Examples:
 //		int main() {
-//			OPTICK_APP("MyGame"); //Optick will automatically save a capture in the working directory with the name "MyGame(2019-09-08.14-30-19).opt"	
+//			OPTICK_APP("MyGame"); //Optick will automatically save a capture in the working directory with the name "MyGame(2019-09-08.14-30-19).opt"
 //			...
 //		}
 #define OPTICK_APP(NAME)			OPTICK_THREAD(NAME); \
@@ -1079,17 +1081,17 @@ struct OptickApp
 #define OPTICK_START_THREAD(THREAD_NAME)
 #define OPTICK_STOP_THREAD()
 #define OPTICK_TAG(NAME, DATA)
-#define OPTICK_EVENT_DYNAMIC(NAME)	
-#define OPTICK_PUSH_DYNAMIC(NAME)		
-#define OPTICK_PUSH(NAME)				
-#define OPTICK_POP()		
+#define OPTICK_EVENT_DYNAMIC(NAME)
+#define OPTICK_PUSH_DYNAMIC(NAME)
+#define OPTICK_PUSH(NAME)
+#define OPTICK_POP()
 #define OPTICK_CUSTOM_EVENT(DESCRIPTION)
 #define OPTICK_STORAGE_REGISTER(STORAGE_NAME)
 #define OPTICK_STORAGE_EVENT(STORAGE, DESCRIPTION, CPU_TIMESTAMP_START, CPU_TIMESTAMP_FINISH)
 #define OPTICK_STORAGE_PUSH(STORAGE, DESCRIPTION, CPU_TIMESTAMP_START)
-#define OPTICK_STORAGE_POP(STORAGE, CPU_TIMESTAMP_FINISH)				
+#define OPTICK_STORAGE_POP(STORAGE, CPU_TIMESTAMP_FINISH)
 #define OPTICK_SET_STATE_CHANGED_CALLBACK(CALLBACK)
-#define OPTICK_SET_MEMORY_ALLOCATOR(ALLOCATE_FUNCTION, DEALLOCATE_FUNCTION)	
+#define OPTICK_SET_MEMORY_ALLOCATOR(ALLOCATE_FUNCTION, DEALLOCATE_FUNCTION)
 #define OPTICK_SHUTDOWN()
 #define OPTICK_GPU_INIT_D3D12(DEVICE, CMD_QUEUES, NUM_CMD_QUEUS)
 #define OPTICK_GPU_INIT_VULKAN(DEVICES, PHYSICAL_DEVICES, CMD_QUEUES, CMD_QUEUES_FAMILY, NUM_CMD_QUEUS, FUNCTIONS)
