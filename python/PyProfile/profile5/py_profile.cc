@@ -31,6 +31,10 @@
 
 class OptickProfiler final : public common::Singleton<OptickProfiler> {
 public:
+  inline void startup(short listen_port = 8099) noexcept {
+    Optick::SetDefaultPort(listen_port);
+  }
+
   inline void push_event(const std::string& funcname, const std::string& filename, int lineno) noexcept {
     Optick::EventDescription* desc = Optick::CreateDescription(funcname.c_str(), filename.c_str(), lineno);
     if (desc != nullptr)
@@ -69,6 +73,19 @@ static int _pprofile_tracefunc(PyObject* obj, PyFrameObject* frame, int what, Py
   return 0;
 }
 
+static PyObject* _pprofile_startup(PyObject* obj, PyObject* args, PyObject* kwds) {
+  (void)obj, (void)args;
+
+  static char* kwdslist[] = {(char*)"port", nullptr};
+
+  int listen_port = 8099;
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i:startup", kwdslist, &listen_port))
+    return nullptr;
+
+  OptickProfiler::get_instance().startup(static_cast<short>(listen_port));
+  Py_RETURN_NONE;
+}
+
 static PyObject* _pprofile_enable(PyObject* obj,  PyObject* args) {
   (void)obj, (void)args;
 
@@ -92,6 +109,7 @@ static PyObject* _pprofile_frame(PyObject* obj, PyObject* args) {
 
 PyMODINIT_FUNC PyInit_cpprofile() {
   static PyMethodDef _pprofile_methods[] = {
+    {"startup", (PyCFunction)_pprofile_startup, METH_VARARGS | METH_KEYWORDS, "cpprofile.startup(port=8099) -> None"},
     {"enable", _pprofile_enable, METH_NOARGS, "cpprofile.enable() -> None"},
     {"disable", _pprofile_disable, METH_NOARGS, "cpprofile.disable() -> None"},
     {"frame", _pprofile_frame, METH_NOARGS, "cpprofile.frame() -> None"},
