@@ -74,7 +74,7 @@ static int _pprofile_tracefunc(PyObject* obj, PyFrameObject* frame, int what, Py
 }
 
 static PyObject* _pprofile_startup(PyObject* obj, PyObject* args, PyObject* kwds) {
-  (void)obj, (void)args;
+  (void)obj;
 
   static char* kwdslist[] = {(char*)"port", nullptr};
 
@@ -109,7 +109,7 @@ static PyObject* _pprofile_frame(PyObject* obj, PyObject* args) {
 
 PyMODINIT_FUNC PyInit_cpprofile() {
   static PyMethodDef _pprofile_methods[] = {
-    {"startup", (PyCFunction)_pprofile_startup, METH_VARARGS | METH_KEYWORDS, "cpprofile.startup(port=8099) -> None"},
+    {"startup", (PyCFunction)_pprofile_startup, METH_VARARGS | METH_KEYWORDS, "cpprofile.startup(port: int = 8099) -> None"},
     {"enable", _pprofile_enable, METH_NOARGS, "cpprofile.enable() -> None"},
     {"disable", _pprofile_disable, METH_NOARGS, "cpprofile.disable() -> None"},
     {"frame", _pprofile_frame, METH_NOARGS, "cpprofile.frame() -> None"},
