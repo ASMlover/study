@@ -46,6 +46,8 @@ class Scanner final : private UnCopyable {
   int lineno_{1};
 
   inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
+  inline bool is_alpha(char c) const noexcept { return std::isalpha(c) || c == '_'; }
+  inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
 
   inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
     return source_bytes_.substr(begpos, endpos - begpos);
@@ -78,6 +80,7 @@ class Scanner final : private UnCopyable {
   void scan_token() noexcept;
   void string() noexcept;
   void number() noexcept;
+  void identifier() noexcept;
 public:
   Scanner(ErrorReporter& error_repoter, const str_t& source_bytes, const str_t& filename = "") noexcept;
 
