@@ -32,6 +32,10 @@
 
 namespace loxpp {
 
+class Token;
+
+namespace ast {
+
 struct Expr;
 struct Stmt;
 struct ExprVisitor;
@@ -46,4 +50,18 @@ struct Expr : private UnCopyable {
   virtual void accept(const ExprVisitorPtr& visitor) = 0;
 };
 
-}
+class Assign final : public Expr, std::enable_shared_from_this<AssignExpr> {
+  Token name_;
+  ExprPtr value_;
+public:
+  Assign(const Token& name, const ExprPtr& value) noexcept
+    : name_{name}, value_{value} {
+  }
+
+  inline const Token& name() const noexcept { return name_; }
+  inline const ExprPtr& value() const noexcept { return value_; }
+
+  virtual void accept(const ExprVisitorPtr& visitor) override;
+};
+
+}}
