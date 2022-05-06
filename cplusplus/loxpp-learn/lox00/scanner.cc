@@ -24,10 +24,30 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <unordered_map>
 #include "errors.hh"
 #include "scanner.hh"
 
 namespace loxpp {
+
+static const std::unordered_map<std::string, TokenType> kKeywords = {
+  {"and",   TokenType::KW_AND},
+  {"class", TokenType::KW_CLASS},
+  {"else",  TokenType::KW_ELSE},
+  {"false", TokenType::KW_FALSE},
+  {"for",   TokenType::KW_FOR},
+  {"fun",   TokenType::KW_FUN},
+  {"if",    TokenType::KW_IF},
+  {"nil",   TokenType::KW_NIL},
+  {"or",    TokenType::KW_OR},
+  {"print", TokenType::KW_PRINT},
+  {"return",TokenType::KW_RETURN},
+  {"super", TokenType::KW_SUPER},
+  {"this",  TokenType::KW_THIS},
+  {"true",  TokenType::KW_TRUE},
+  {"var",   TokenType::KW_VAR},
+  {"while", TokenType::KW_WHILE},
+};
 
 Scanner::Scanner(ErrorReporter& error_repoter, const str_t& source_bytes, const str_t& filename) noexcept
   : error_repoter_(error_repoter)
@@ -83,7 +103,9 @@ void Scanner::scan_token() noexcept {
   case '"': string(); break;
   default:
     if (is_digit(c))
-      ;
+      number();
+    else if (is_alpha(c))
+      identifier();
     else
       error_repoter_.error("", lineno_, "Unexpected character.");
     break;
@@ -122,6 +144,17 @@ void Scanner::number() noexcept {
   }
 
   add_token(TokenType::TK_NUMERIC);
+}
+
+void Scanner::identifier() noexcept {
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(start_pos_, current_pos_);
+  TokenType type = TokenType::TK_IDENTIFIER;
+  if (auto it = kKeywords.find(literal); it != kKeywords.end())
+    type = it->second;
+  add_token(type);
 }
 
 }
