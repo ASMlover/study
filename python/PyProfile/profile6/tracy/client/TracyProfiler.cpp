@@ -1143,10 +1143,11 @@ thread_local bool RpThreadShutdown = false;
 #  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
 static ProfilerThreadData& GetProfilerThreadData();
-TRACY_API void StartupProfiler()
+TRACY_API void StartupProfiler(uint32_t userPort)
 {
     s_profilerData = (ProfilerData*)tracy_malloc( sizeof( ProfilerData ) );
     new (s_profilerData) ProfilerData();
+    s_profilerData->profiler.SetUserPort(userPort);
     s_profilerData->profiler.SpawnWorkerThreads();
     GetProfilerThreadData().token = ProducerWrapper( *s_profilerData );
 }

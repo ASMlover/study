@@ -44,7 +44,7 @@
 namespace tracy
 {
 #if defined(TRACY_DELAYED_INIT) && defined(TRACY_MANUAL_LIFETIME)
-TRACY_API void StartupProfiler();
+TRACY_API void StartupProfiler(uint32_t userPort = 8099);
 TRACY_API void ShutdownProfiler();
 #endif
 
@@ -177,6 +177,12 @@ class Profiler
 public:
     Profiler();
     ~Profiler();
+
+    tracy_force_inline void SetUserPort(uint32_t userPort)
+    {
+        if (userPort > 0)
+            m_userPort = userPort;
+    }
 
     void SpawnWorkerThreads();
 
