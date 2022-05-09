@@ -37,8 +37,16 @@
 class TracyProfiler final : public common::Singleton<TracyProfiler> {
   using ScopedZonePtr = std::shared_ptr<tracy::ScopedZone>;
 
+  bool is_started_{};
   std::list<ScopedZonePtr> scoped_zones_;
 public:
+  inline void startup(std::uint32_t listen_port = 8099) noexcept {
+    if (!is_started_) {
+      tracy::StartupProfiler(listen_port);
+      is_started_ = true;
+    }
+  }
+
   inline void push_event(const std::string& funcname, const std::string& filename, int lineno) noexcept {
     scoped_zones_.push_back(std::make_shared<tracy::ScopedZone>(
           lineno, filename.c_str(), filename.size(), funcname.c_str(), funcname.size(),
@@ -80,6 +88,19 @@ static int _pprofile_tracefunc(PyObject* obj, PyFrameObject* frame, int what, Py
   return 0;
 }
 
+static PyObject* _pprofile_startup(PyObject* obj, PyObject* args, PyObject* kwds) {
+  (void)obj;
+
+  static char* kwdslist[] = {(char*)"port", nullptr};
+
+  int listen_port = 8099;
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i:startup", kwdslist, &listen_port))
+    return nullptr;
+
+  TracyProfiler::get_instance().startup(static_cast<std::uint32_t>(listen_port));
+  Py_RETURN_NONE;
+}
+
 static PyObject* _pprofile_enable(PyObject* obj, PyObject* args) {
   (void)obj, (void)args;
 
@@ -103,6 +124,7 @@ static PyObject* _pprofile_frame(PyObject* obj, PyObject* args) {
 
 PyMODINIT_FUNC PyInit_cpprofile() {
   static PyMethodDef _pprofile_methods[] = {
+    {"startup", (PyCFunction)_pprofile_startup, METH_VARARGS | METH_KEYWORDS, "cpprofile.startup(port: int = 80999) -> None"},
     {"enable", _pprofile_enable, METH_NOARGS, "cpprofile.enable() -> None"},
     {"disable", _pprofile_disable, METH_NOARGS, "cpprofile.disable() -> None"},
     {"frame", _pprofile_frame, METH_NOARGS, "cpprofile.frame() -> None"},
