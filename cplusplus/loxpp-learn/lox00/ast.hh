@@ -29,6 +29,7 @@
 #include <memory>
 #include <vector>
 #include "common.hh"
+#include "token.hh"
 
 namespace loxpp {
 
@@ -36,10 +37,10 @@ class Token;
 
 namespace ast {
 
-struct Expr;
-struct Stmt;
-struct ExprVisitor;
-struct StmtVisitor;
+interface Expr;
+interface Stmt;
+interface ExprVisitor;
+interface StmtVisitor;
 
 using ExprPtr = std::shared_ptr<Expr>;
 using StmtPtr = std::shared_ptr<Stmt>;
@@ -50,7 +51,7 @@ struct Expr : private UnCopyable {
   virtual void accept(const ExprVisitorPtr& visitor) = 0;
 };
 
-class Assign final : public Expr, std::enable_shared_from_this<AssignExpr> {
+class Assign final : public Expr, std::enable_shared_from_this<Assign> {
   Token name_;
   ExprPtr value_;
 public:
@@ -62,6 +63,11 @@ public:
   inline const ExprPtr& value() const noexcept { return value_; }
 
   virtual void accept(const ExprVisitorPtr& visitor) override;
+};
+using AssignPtr = std::shared_ptr<Assign>;
+
+interface ExprVisitor : private UnCopyable {
+  virtual void visit_assign(const AssignPtr& expr) = 0;
 };
 
 }}
