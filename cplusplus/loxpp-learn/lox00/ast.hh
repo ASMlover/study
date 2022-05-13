@@ -66,6 +66,23 @@ public:
 };
 using AssignPtr = std::shared_ptr<Assign>;
 
+class Binary final : public Expr, std::enable_shared_from_this<Binary> {
+  ExprPtr left_;
+  Token oper_;
+  ExprPtr right_;
+public:
+  Binary(const ExprPtr& left, const Token& oper, const ExprPtr& right) noexcept
+    : left_{left}, oper_{oper}, right_{right} {
+  }
+
+  inline const ExprPtr& left() const noexcept { return left_; }
+  inline const Token& oper() const noexcept { return oper_; }
+  inline const ExprPtr& right() const noexcept { return right_; }
+
+  virtual void accept(const ExprVisitorPtr& visitor) override;
+};
+using BinaryPtr = std::shared_ptr<Binary>;
+
 interface ExprVisitor : private UnCopyable {
   virtual void visit_assign(const AssignPtr& expr) = 0;
 };
