@@ -51,7 +51,7 @@ struct Expr : private UnCopyable {
   virtual void accept(const ExprVisitorPtr& visitor) = 0;
 };
 
-class Assign final : public Expr, std::enable_shared_from_this<Assign> {
+class Assign final : public Expr, public std::enable_shared_from_this<Assign> {
   Token name_;
   ExprPtr value_;
 public:
@@ -66,7 +66,7 @@ public:
 };
 using AssignPtr = std::shared_ptr<Assign>;
 
-class Binary final : public Expr, std::enable_shared_from_this<Binary> {
+class Binary final : public Expr, public std::enable_shared_from_this<Binary> {
   ExprPtr left_;
   Token oper_;
   ExprPtr right_;
@@ -82,6 +82,23 @@ public:
   virtual void accept(const ExprVisitorPtr& visitor) override;
 };
 using BinaryPtr = std::shared_ptr<Binary>;
+
+class Call final : public Expr, public std::enable_shared_from_this<Call> {
+  ExprPtr callee_;
+  Token paren_;
+  std::vector<ExprPtr> arguments_;
+public:
+  Call(const ExprPtr& callee, const Token& paren, const std::vector<ExprPtr>& arguments) noexcept
+    : callee_{callee}, paren_{paren}, arguments_{arguments} {
+  }
+
+  inline const ExprPtr& callee() const noexcept { return callee_; }
+  inline const Token& paren() const noexcept { return paren_; }
+  inline const std::vector<ExprPtr>& arguments() const noexcept { return arguments_; }
+
+  virtual void accept(const ExprVisitorPtr& visitor) override;
+};
+using CallPtr = std::shared_ptr<Call>;
 
 interface ExprVisitor : private UnCopyable {
   virtual void visit_assign(const AssignPtr& expr) = 0;
