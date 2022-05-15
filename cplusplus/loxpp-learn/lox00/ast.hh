@@ -102,6 +102,8 @@ using CallPtr = std::shared_ptr<Call>;
 
 interface ExprVisitor : private UnCopyable {
   virtual void visit_assign(const AssignPtr& expr) = 0;
+  virtual void visit_binary(const BinaryPtr& expr) = 0;
+  virtual void visit_call(const CallPtr& expr) = 0;
 };
 
 }}
