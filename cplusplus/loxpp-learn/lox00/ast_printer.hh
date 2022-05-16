@@ -36,7 +36,12 @@ class AstPrinter
   : public ast::ExprVisitor, public std::enable_shared_from_this<AstPrinter> {
   str_t printer_bytes_;
 
+  void parenthesize(const str_t& name, const std::initializer_list<ast::ExprPtr>& exprs) noexcept;
   str_t stringify(const ast::ExprPtr& expr) noexcept;
+
+  virtual void visit_assign(const ast::AssignPtr& expr) override;
+  virtual void visit_binary(const ast::BinaryPtr& expr) override;
+  virtual void visit_call(const ast::CallPtr& expr) override;
 };
 
 }
