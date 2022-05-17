@@ -33,7 +33,7 @@
 namespace loxpp::printer {
 
 class AstPrinter
-  : public ast::ExprVisitor, public std::enable_shared_from_this<AstPrinter> {
+  : public ast::Expr::Visitor, public std::enable_shared_from_this<AstPrinter> {
   str_t printer_bytes_;
 
   void parenthesize(const str_t& name, const std::initializer_list<ast::ExprPtr>& exprs) noexcept;
