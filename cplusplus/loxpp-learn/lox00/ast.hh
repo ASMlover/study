@@ -39,16 +39,54 @@ namespace ast {
 
 interface Expr;
 interface Stmt;
-interface ExprVisitor;
-interface StmtVisitor;
 
 using ExprPtr = std::shared_ptr<Expr>;
 using StmtPtr = std::shared_ptr<Stmt>;
-using ExprVisitorPtr = std::shared_ptr<ExprVisitor>;
-using StmtVisitorPtr = std::shared_ptr<StmtVisitor>;
 
-struct Expr : private UnCopyable {
-  virtual void accept(const ExprVisitorPtr& visitor) = 0;
+class Assign;
+class Binary;
+class Call;
+class Get;
+class Grouping;
+class Literal;
+class Logical;
+class Set;
+class Super;
+class This;
+class Unary;
+class Variable;
+
+using AssignPtr = std::shared_ptr<Assign>;
+using BinaryPtr = std::shared_ptr<Binary>;
+using CallPtr = std::shared_ptr<Call>;
+using GetPtr = std::shared_ptr<Get>;
+using GroupingPtr = std::shared_ptr<Grouping>;
+using LiteralPtr = std::shared_ptr<Literal>;
+using LogicalPtr = std::shared_ptr<Logical>;
+using SetPtr = std::shared_ptr<Set>;
+using SuperPtr = std::shared_ptr<Super>;
+using ThisPtr = std::shared_ptr<This>;
+using UnaryPtr = std::shared_ptr<Unary>;
+using VariablePtr = std::shared_ptr<Variable>;
+
+interface Expr : private UnCopyable {
+  interface Visitor : private UnCopyable {
+    virtual void visit_assign(const AssignPtr& expr) = 0;
+    virtual void visit_binary(const BinaryPtr& expr) = 0;
+    virtual void visit_call(const CallPtr& expr) = 0;
+    virtual void visit_get(const GetPtr& expr) = 0;
+    virtual void visit_grouping(const GroupingPtr& expr) = 0;
+    virtual void visit_literal(const LiteralPtr& expr) = 0;
+    virtual void visit_logical(const LogicalPtr& expr) = 0;
+    virtual void visit_set(const SetPtr& expr) = 0;
+    virtual void visit_super(const SuperPtr& expr) = 0;
+    virtual void visit_this(const ThisPtr& expr) = 0;
+    virtual void visit_unary(const UnaryPtr& expr) = 0;
+    virtual void visit_variable(const VariablePtr& expr) = 0;
+  };
+  using VisitorPtr = std::shared_ptr<Visitor>;
+
+  virtual void accept(const VisitorPtr& visitor) = 0;
 };
 
 class Assign final : public Expr, public std::enable_shared_from_this<Assign> {
@@ -62,9 +100,8 @@ public:
   inline const Token& name() const noexcept { return name_; }
   inline const ExprPtr& value() const noexcept { return value_; }
 
-  virtual void accept(const ExprVisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
-using AssignPtr = std::shared_ptr<Assign>;
 
 class Binary final : public Expr, public std::enable_shared_from_this<Binary> {
   ExprPtr left_;
@@ -79,9 +116,8 @@ public:
   inline const Token& oper() const noexcept { return oper_; }
   inline const ExprPtr& right() const noexcept { return right_; }
 
-  virtual void accept(const ExprVisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
-using BinaryPtr = std::shared_ptr<Binary>;
 
 class Call final : public Expr, public std::enable_shared_from_this<Call> {
   ExprPtr callee_;
@@ -96,14 +132,7 @@ public:
   inline const Token& paren() const noexcept { return paren_; }
   inline const std::vector<ExprPtr>& arguments() const noexcept { return arguments_; }
 
-  virtual void accept(const ExprVisitorPtr& visitor) override;
-};
-using CallPtr = std::shared_ptr<Call>;
-
-interface ExprVisitor : private UnCopyable {
-  virtual void visit_assign(const AssignPtr& expr) = 0;
-  virtual void visit_binary(const BinaryPtr& expr) = 0;
-  virtual void visit_call(const CallPtr& expr) = 0;
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
 
 }}
