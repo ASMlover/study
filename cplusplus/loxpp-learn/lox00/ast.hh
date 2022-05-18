@@ -135,4 +135,18 @@ public:
   virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
 
+class Get final : public Expr, public std::enable_shared_from_this<Get> {
+  ExprPtr object_;
+  Token name_;
+public:
+  Get(const ExprPtr& object, const Token& name) noexcept
+    : object_{object}, name_{name} {
+  }
+
+  inline const ExprPtr& object() const noexcept { return object_; }
+  inline const Token& name() const noexcept { return name_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
 }}
