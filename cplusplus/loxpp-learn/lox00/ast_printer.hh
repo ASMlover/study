@@ -42,6 +42,15 @@ class AstPrinter
   virtual void visit_assign(const ast::AssignPtr& expr) override;
   virtual void visit_binary(const ast::BinaryPtr& expr) override;
   virtual void visit_call(const ast::CallPtr& expr) override;
+  virtual void visit_get(const ast::GetPtr& expr) override;
+  virtual void visit_grouping(const ast::GroupingPtr& expr) override;
+  virtual void visit_literal(const ast::LiteralPtr& expr) override;
+  virtual void visit_logical(const ast::LogicalPtr& expr) override;
+  virtual void visit_set(const ast::SetPtr& expr) override;
+  virtual void visit_super(const ast::SuperPtr& expr) override;
+  virtual void visit_this(const ast::ThisPtr& expr) override;
+  virtual void visit_unary(const ast::UnaryPtr& expr) override;
+  virtual void visit_variable(const ast::VariablePtr& expr) override;
 };
 
 }
