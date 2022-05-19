@@ -13,6 +13,7 @@ tolset
 *.ilk
 *.idb
 *.pyc
+*.pyd
 *.out
 *.conf
 logging
