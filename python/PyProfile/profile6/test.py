@@ -87,6 +87,7 @@ class SortingEvent(TestEvent):
         self.do_sorting()
 
 def test() -> None:
+    pprof.startup(8099)
     pprof.enable()
 
     test_entry = TestEntry()
