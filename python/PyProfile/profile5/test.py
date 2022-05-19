@@ -87,14 +87,15 @@ class SortingEvent(TestEvent):
         self.do_sorting()
 
 def test() -> None:
+    pprof.startup(8099)
     pprof.enable()
 
     test_entry = TestEntry()
     while True:
         test_entry.entry()
 
-        pprof.frame()
         time.sleep(0.033)
+        pprof.frame()
 
 if __name__ == '__main__':
     test()
