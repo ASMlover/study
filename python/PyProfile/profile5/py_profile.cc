@@ -38,7 +38,7 @@ public:
   inline void push_event(const std::string& funcname, const std::string& filename, int lineno) noexcept {
     Optick::EventDescription* desc = Optick::CreateDescription(funcname.c_str(), filename.c_str(), lineno);
     if (desc != nullptr)
-      desc->color = static_cast<std::uint32_t>(Optick::Color::GoldenRod);
+      desc->color = static_cast<std::uint32_t>(Optick::Color::Gold);
     Optick::Event::Push(*desc);
   }
 
