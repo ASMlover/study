@@ -28,9 +28,43 @@
 
 namespace loxpp::printer {
 
+void AstPrinter::parenthesize(
+    const str_t& name, const std::initializer_list<ast::ExprPtr>& exprs) noexcept {
+  printer_bytes_ += "(";
+  printer_bytes_ += name;
+  for (auto& expr : exprs) {
+    printer_bytes_ += " ";
+    expr->accept(shared_from_this());
+  }
+  printer_bytes_ += ")";
+}
+
 str_t AstPrinter::stringify(const ast::ExprPtr& expr) noexcept {
   expr->accept(shared_from_this());
   return printer_bytes_;
 }
+
+void AstPrinter::visit_assign(const ast::AssignPtr& expr) {
+  str_t name("= ");
+  name += expr->name().literal();
+  parenthesize(name, {expr->value()});
+}
+
+void AstPrinter::visit_binary(const ast::BinaryPtr& expr) {
+  parenthesize(expr->oper().literal(), {expr->left(), expr->right()});
+}
+
+void AstPrinter::visit_call(const ast::CallPtr& expr) {
+}
+
+void AstPrinter::visit_get(const ast::GetPtr& expr) {}
+void AstPrinter::visit_grouping(const ast::GroupingPtr& expr) {}
+void AstPrinter::visit_literal(const ast::LiteralPtr& expr) {}
+void AstPrinter::visit_logical(const ast::LogicalPtr& expr) {}
+void AstPrinter::visit_set(const ast::SetPtr& expr) {}
+void AstPrinter::visit_super(const ast::SuperPtr& expr) {}
+void AstPrinter::visit_this(const ast::ThisPtr& expr) {}
+void AstPrinter::visit_unary(const ast::UnaryPtr& expr) {}
+void AstPrinter::visit_variable(const ast::VariablePtr& expr) {}
 
 }
