@@ -30,6 +30,7 @@
 #include <vector>
 #include "common.hh"
 #include "token.hh"
+#include "value.hh"
 
 namespace loxpp {
 
@@ -157,6 +158,18 @@ public:
   }
 
   inline const ExprPtr& expression() const noexcept { return expression_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
+class Literal final : public Expr, public std::enable_shared_from_this<Literal> {
+  value::Value value_;
+public:
+  Literal(const value::Value& value) noexcept
+    : value_{value} {
+  }
+
+  inline const value::Value& value() const noexcept { return value_; }
 
   virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
