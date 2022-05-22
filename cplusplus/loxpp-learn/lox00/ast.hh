@@ -149,4 +149,16 @@ public:
   virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
 
+class Grouping final : public Expr, public std::enable_shared_from_this<Grouping> {
+  ExprPtr expression_;
+public:
+  Grouping(const ExprPtr& expression) noexcept
+    : expression_{expression} {
+  }
+
+  inline const ExprPtr& expression() const noexcept { return expression_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
 }}
