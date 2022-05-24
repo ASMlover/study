@@ -32,17 +32,7 @@
 #include "token.hh"
 #include "value.hh"
 
-namespace loxpp {
-
-class Token;
-
-namespace ast {
-
-interface Expr;
-interface Stmt;
-
-using ExprPtr = std::shared_ptr<Expr>;
-using StmtPtr = std::shared_ptr<Stmt>;
+namespace loxpp::expr {
 
 class Assign;
 class Binary;
@@ -89,6 +79,7 @@ interface Expr : private UnCopyable {
 
   virtual void accept(const VisitorPtr& visitor) = 0;
 };
+using ExprPtr = std::shared_ptr<Expr>;
 
 class Assign final : public Expr, public std::enable_shared_from_this<Assign> {
   Token name_;
@@ -190,4 +181,72 @@ public:
   virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
 
-}}
+class Set final : public Expr, public std::enable_shared_from_this<Set> {
+  ExprPtr object_;
+  Token name_;
+  ExprPtr value_;
+public:
+  Set(const ExprPtr& object, const Token& name, const ExprPtr& value) noexcept
+    : object_{object}, name_{name}, value_{value} {
+  }
+
+  inline const ExprPtr& object() const noexcept { return object_; }
+  inline const Token& name() const noexcept { return name_; }
+  inline const ExprPtr& value() const noexcept { return value_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
+class Super final : public Expr, public std::enable_shared_from_this<Super> {
+  Token keyword_;
+  Token method_;
+public:
+  Super(const Token& keyword, const Token& method) noexcept
+    : keyword_{keyword}, method_{method} {
+  }
+
+  inline const Token& keyword() const noexcept { return keyword_; }
+  inline const Token& method() const noexcept { return method_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
+class This final : public Expr, public std::enable_shared_from_this<This> {
+  Token keyword_;
+public:
+  This(const Token& keyword) noexcept
+    : keyword_{keyword} {
+  }
+
+  inline const Token& keyword() const noexcept { return keyword_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
+class Unary final : public Expr, public std::enable_shared_from_this<Unary> {
+  Token oper_;
+  ExprPtr right_;
+public:
+  Unary(const Token& oper, const ExprPtr& right) noexcept
+    : oper_{oper}, right_{right} {
+  }
+
+  inline const Token& oper() const noexcept { return oper_; }
+  inline const ExprPtr& right() const noexcept { return right_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
+class Variable final : public Expr, public std::enable_shared_from_this<Variable> {
+  Token name_;
+public:
+  Variable(const Token& name) noexcept
+    : name_{name} {
+  }
+
+  inline const Token& name() const noexcept { return name_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
+}
