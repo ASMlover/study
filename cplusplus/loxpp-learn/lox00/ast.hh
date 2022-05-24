@@ -174,4 +174,20 @@ public:
   virtual void accept(const Expr::VisitorPtr& visitor) override;
 };
 
+class Logical final : public Expr, public std::enable_shared_from_this<Logical> {
+  ExprPtr left_;
+  Token oper_;
+  ExprPtr right_;
+public:
+  Logical(const ExprPtr& left, const Token& oper, const ExprPtr& right) noexcept
+    : left_{left}, oper_{oper}, right_{right} {
+  }
+
+  inline const ExprPtr& left() const noexcept { return left_; }
+  inline const Token& oper() const noexcept { return oper_; }
+  inline const ExprPtr& right() const noexcept { return right_; }
+
+  virtual void accept(const Expr::VisitorPtr& visitor) override;
+};
+
 }}
