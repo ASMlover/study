@@ -45,7 +45,7 @@ inline std::uint64_t time_ns() noexcept {
 }
 
 class CachedSourceLocation final : public common::Singleton<CachedSourceLocation> {
-  static constexpr std::string kEmptyLocation = "";
+  static const std::string kEmptyLocation;
   std::unordered_map<std::uint32_t, std::string> cached_locations_;
 
   inline std::uint32_t calc_hash(const char* s, std::size_t n) noexcept {
@@ -76,6 +76,7 @@ public:
     return kEmptyLocation;
   }
 };
+const std::string CachedSourceLocation::kEmptyLocation{};
 
 struct FunctionMark {
   std::uint32_t hashcode;
@@ -141,7 +142,7 @@ public:
     FunctionMark fn_mark = pprofile_deque_.back();
     pprofile_deque_.pop_back();
 
-    std::uint32_t hashcode = hashcode = fn_mark.hashcode;
+    std::uint32_t hashcode = fn_mark.hashcode;
     std::uint64_t executed_ns = time_ns() - fn_mark.timestamp;
 
     if (auto it = pprofile_stats_.find(hashcode); it != pprofile_stats_.end()) {
