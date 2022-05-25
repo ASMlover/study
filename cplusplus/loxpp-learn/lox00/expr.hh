@@ -60,7 +60,7 @@ using ThisPtr = std::shared_ptr<This>;
 using UnaryPtr = std::shared_ptr<Unary>;
 using VariablePtr = std::shared_ptr<Variable>;
 
-interface Expr : private UnCopyable {
+struct Expr : private UnCopyable {
   interface Visitor : private UnCopyable {
     virtual void visit_assign(const AssignPtr& expr) = 0;
     virtual void visit_binary(const BinaryPtr& expr) = 0;
@@ -92,7 +92,9 @@ public:
   inline const Token& name() const noexcept { return name_; }
   inline const ExprPtr& value() const noexcept { return value_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_assign(shared_from_this());
+  }
 };
 
 class Binary final : public Expr, public std::enable_shared_from_this<Binary> {
@@ -108,7 +110,9 @@ public:
   inline const Token& oper() const noexcept { return oper_; }
   inline const ExprPtr& right() const noexcept { return right_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_binary(shared_from_this());
+  }
 };
 
 class Call final : public Expr, public std::enable_shared_from_this<Call> {
@@ -124,7 +128,9 @@ public:
   inline const Token& paren() const noexcept { return paren_; }
   inline const std::vector<ExprPtr>& arguments() const noexcept { return arguments_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_call(shared_from_this());
+  }
 };
 
 class Get final : public Expr, public std::enable_shared_from_this<Get> {
@@ -138,7 +144,9 @@ public:
   inline const ExprPtr& object() const noexcept { return object_; }
   inline const Token& name() const noexcept { return name_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_get(shared_from_this());
+  }
 };
 
 class Grouping final : public Expr, public std::enable_shared_from_this<Grouping> {
@@ -150,7 +158,9 @@ public:
 
   inline const ExprPtr& expression() const noexcept { return expression_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_grouping(shared_from_this());
+  }
 };
 
 class Literal final : public Expr, public std::enable_shared_from_this<Literal> {
@@ -162,7 +172,9 @@ public:
 
   inline const value::Value& value() const noexcept { return value_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_literal(shared_from_this());
+  }
 };
 
 class Logical final : public Expr, public std::enable_shared_from_this<Logical> {
@@ -178,7 +190,9 @@ public:
   inline const Token& oper() const noexcept { return oper_; }
   inline const ExprPtr& right() const noexcept { return right_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_logical(shared_from_this());
+  }
 };
 
 class Set final : public Expr, public std::enable_shared_from_this<Set> {
@@ -194,7 +208,9 @@ public:
   inline const Token& name() const noexcept { return name_; }
   inline const ExprPtr& value() const noexcept { return value_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_set(shared_from_this());
+  }
 };
 
 class Super final : public Expr, public std::enable_shared_from_this<Super> {
@@ -208,7 +224,9 @@ public:
   inline const Token& keyword() const noexcept { return keyword_; }
   inline const Token& method() const noexcept { return method_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_super(shared_from_this());
+  }
 };
 
 class This final : public Expr, public std::enable_shared_from_this<This> {
@@ -220,7 +238,9 @@ public:
 
   inline const Token& keyword() const noexcept { return keyword_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_this(shared_from_this());
+  }
 };
 
 class Unary final : public Expr, public std::enable_shared_from_this<Unary> {
@@ -234,7 +254,9 @@ public:
   inline const Token& oper() const noexcept { return oper_; }
   inline const ExprPtr& right() const noexcept { return right_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_unary(shared_from_this());
+  }
 };
 
 class Variable final : public Expr, public std::enable_shared_from_this<Variable> {
@@ -246,7 +268,9 @@ public:
 
   inline const Token& name() const noexcept { return name_; }
 
-  virtual void accept(const Expr::VisitorPtr& visitor) override;
+  virtual void accept(const Expr::VisitorPtr& visitor) override {
+    visitor->visit_variable(shared_from_this());
+  }
 };
 
 }
