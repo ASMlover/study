@@ -28,29 +28,29 @@
 
 #include <memory>
 #include "common.hh"
-#include "ast.hh"
+#include "expr.hh"
 
 namespace loxpp::printer {
 
 class AstPrinter
-  : public ast::Expr::Visitor, public std::enable_shared_from_this<AstPrinter> {
+  : public expr::Expr::Visitor, public std::enable_shared_from_this<AstPrinter> {
   str_t printer_bytes_;
 
-  void parenthesize(const str_t& name, const std::initializer_list<ast::ExprPtr>& exprs) noexcept;
-  str_t stringify(const ast::ExprPtr& expr) noexcept;
+  void parenthesize(const str_t& name, const std::initializer_list<expr::ExprPtr>& exprs) noexcept;
+  str_t stringify(const expr::ExprPtr& expr) noexcept;
 
-  virtual void visit_assign(const ast::AssignPtr& expr) override;
-  virtual void visit_binary(const ast::BinaryPtr& expr) override;
-  virtual void visit_call(const ast::CallPtr& expr) override;
-  virtual void visit_get(const ast::GetPtr& expr) override;
-  virtual void visit_grouping(const ast::GroupingPtr& expr) override;
-  virtual void visit_literal(const ast::LiteralPtr& expr) override;
-  virtual void visit_logical(const ast::LogicalPtr& expr) override;
-  virtual void visit_set(const ast::SetPtr& expr) override;
-  virtual void visit_super(const ast::SuperPtr& expr) override;
-  virtual void visit_this(const ast::ThisPtr& expr) override;
-  virtual void visit_unary(const ast::UnaryPtr& expr) override;
-  virtual void visit_variable(const ast::VariablePtr& expr) override;
+  virtual void visit_assign(const expr::AssignPtr& expr) override;
+  virtual void visit_binary(const expr::BinaryPtr& expr) override;
+  virtual void visit_call(const expr::CallPtr& expr) override;
+  virtual void visit_get(const expr::GetPtr& expr) override;
+  virtual void visit_grouping(const expr::GroupingPtr& expr) override;
+  virtual void visit_literal(const expr::LiteralPtr& expr) override;
+  virtual void visit_logical(const expr::LogicalPtr& expr) override;
+  virtual void visit_set(const expr::SetPtr& expr) override;
+  virtual void visit_super(const expr::SuperPtr& expr) override;
+  virtual void visit_this(const expr::ThisPtr& expr) override;
+  virtual void visit_unary(const expr::UnaryPtr& expr) override;
+  virtual void visit_variable(const expr::VariablePtr& expr) override;
 };
 
 }
