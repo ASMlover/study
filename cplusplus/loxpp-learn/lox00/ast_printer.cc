@@ -29,7 +29,7 @@
 namespace loxpp::printer {
 
 void AstPrinter::parenthesize(
-    const str_t& name, const std::initializer_list<ast::ExprPtr>& exprs) noexcept {
+    const str_t& name, const std::initializer_list<expr::ExprPtr>& exprs) noexcept {
   printer_bytes_ += "(";
   printer_bytes_ += name;
   for (auto& expr : exprs) {
@@ -39,32 +39,32 @@ void AstPrinter::parenthesize(
   printer_bytes_ += ")";
 }
 
-str_t AstPrinter::stringify(const ast::ExprPtr& expr) noexcept {
+str_t AstPrinter::stringify(const expr::ExprPtr& expr) noexcept {
   expr->accept(shared_from_this());
   return printer_bytes_;
 }
 
-void AstPrinter::visit_assign(const ast::AssignPtr& expr) {
+void AstPrinter::visit_assign(const expr::AssignPtr& expr) {
   str_t name("= ");
   name += expr->name().literal();
   parenthesize(name, {expr->value()});
 }
 
-void AstPrinter::visit_binary(const ast::BinaryPtr& expr) {
+void AstPrinter::visit_binary(const expr::BinaryPtr& expr) {
   parenthesize(expr->oper().literal(), {expr->left(), expr->right()});
 }
 
-void AstPrinter::visit_call(const ast::CallPtr& expr) {
+void AstPrinter::visit_call(const expr::CallPtr& expr) {
 }
 
-void AstPrinter::visit_get(const ast::GetPtr& expr) {}
-void AstPrinter::visit_grouping(const ast::GroupingPtr& expr) {}
-void AstPrinter::visit_literal(const ast::LiteralPtr& expr) {}
-void AstPrinter::visit_logical(const ast::LogicalPtr& expr) {}
-void AstPrinter::visit_set(const ast::SetPtr& expr) {}
-void AstPrinter::visit_super(const ast::SuperPtr& expr) {}
-void AstPrinter::visit_this(const ast::ThisPtr& expr) {}
-void AstPrinter::visit_unary(const ast::UnaryPtr& expr) {}
-void AstPrinter::visit_variable(const ast::VariablePtr& expr) {}
+void AstPrinter::visit_get(const expr::GetPtr& expr) {}
+void AstPrinter::visit_grouping(const expr::GroupingPtr& expr) {}
+void AstPrinter::visit_literal(const expr::LiteralPtr& expr) {}
+void AstPrinter::visit_logical(const expr::LogicalPtr& expr) {}
+void AstPrinter::visit_set(const expr::SetPtr& expr) {}
+void AstPrinter::visit_super(const expr::SuperPtr& expr) {}
+void AstPrinter::visit_this(const expr::ThisPtr& expr) {}
+void AstPrinter::visit_unary(const expr::UnaryPtr& expr) {}
+void AstPrinter::visit_variable(const expr::VariablePtr& expr) {}
 
 }
