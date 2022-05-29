@@ -105,4 +105,18 @@ public:
   }
 };
 
+class Expression final : public Stmt, public std::enable_shared_from_this<Expression> {
+  expr::ExprPtr expression_;
+public:
+  Expression(const expr::ExprPtr& expression) noexcept
+    : expression_{expression} {
+  }
+
+  inline const expr::ExprPtr& expression() const noexcept { return expression_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_expression(shared_from_this());
+  }
+};
+
 }
