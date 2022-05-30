@@ -119,4 +119,40 @@ public:
   }
 };
 
+class Function final : public Stmt, public std::enable_shared_from_this<Function> {
+  Token name_;
+  std::vector<Token> params_;
+  std::vector<StmtPtr> body_;
+public:
+  Function(const Token& name, const std::vector<Token>& params, const std::vector<StmtPtr>& body) noexcept
+    : name_{name}, params_{params}, body_{body} {
+  }
+
+  inline const Token& name() const noexcept { return name_; }
+  inline const std::vector<Token>& params() const noexcept { return params_; }
+  inline const std::vector<StmtPtr>& body() const noexcept { return body_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_function(shared_from_this());
+  }
+};
+
+class If final : public Stmt, public std::enable_shared_from_this<If> {
+  expr::ExprPtr condition_;
+  StmtPtr then_branch_;
+  StmtPtr else_branch_;
+public:
+  If(const expr::ExprPtr& condition, const StmtPtr& then_branch, const StmtPtr& else_branch) noexcept
+    : condition_{condition}, then_branch_{then_branch}, else_branch_{else_branch} {
+  }
+
+  inline const expr::ExprPtr& condition() const noexcept { return condition_; }
+  inline const StmtPtr& then_branch() const noexcept { return then_branch_; }
+  inline const StmtPtr& else_branch() const noexcept { return else_branch_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_if(shared_from_this());
+  }
+};
+
 }
