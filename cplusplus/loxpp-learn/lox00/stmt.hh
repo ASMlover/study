@@ -155,4 +155,18 @@ public:
   }
 };
 
+class Print final : public Stmt, public std::enable_shared_from_this<Print> {
+  expr::ExprPtr expression_;
+public:
+  Print(const expr::ExprPtr& expression) noexcept
+    : expression_{expression} {
+  }
+
+  inline const expr::ExprPtr& expression() const noexcept { return expression_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_print(shared_from_this());
+  }
+};
+
 }
