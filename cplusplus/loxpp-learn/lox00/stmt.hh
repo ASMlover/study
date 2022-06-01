@@ -169,4 +169,20 @@ public:
   }
 };
 
+class Return final : public Stmt, public std::enable_shared_from_this<Return> {
+  Token keyword_;
+  expr::ExprPtr value_;
+public:
+  Return(const Token& keyword, const expr::ExprPtr& value) noexcept
+    : keyword_{keyword}, value_{value} {
+  }
+
+  inline const Token& keyword() const noexcept { return keyword_; }
+  inline const expr::ExprPtr& value() const noexcept { return value_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_return(shared_from_this());
+  }
+};
+
 }
