@@ -185,4 +185,20 @@ public:
   }
 };
 
+class Var final : public Stmt, public std::enable_shared_from_this<Var> {
+  Token name_;
+  expr::ExprPtr initializer_;
+public:
+  Var(const Token& name, const expr::ExprPtr& initializer) noexcept
+    : name_{name}, initializer_{initializer} {
+  }
+
+  inline const Token& name() const noexcept { return name_; }
+  inline const expr::ExprPtr& initializer() const noexcept { return initializer_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_var(shared_from_this());
+  }
+};
+
 }
