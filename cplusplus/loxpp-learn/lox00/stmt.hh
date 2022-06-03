@@ -201,4 +201,20 @@ public:
   }
 };
 
+class While final : public Stmt, public std::enable_shared_from_this<While> {
+  expr::ExprPtr condition_;
+  StmtPtr body_;
+public:
+  While(const expr::ExprPtr& condition, const StmtPtr& body) noexcept
+    : condition_{condition}, body_{body} {
+  }
+
+  inline const expr::ExprPtr& condition() const noexcept { return condition_; }
+  inline const StmtPtr& body() const noexcept { return body_; }
+
+  virtual void accept(const Stmt::VisitorPtr& visitor) override {
+    visitor->visit_while(shared_from_this());
+  }
+};
+
 }
