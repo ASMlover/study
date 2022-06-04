@@ -66,6 +66,7 @@ using sz_t    = std::size_t;
   using ssz_t = std::int64_t;
 #endif
 using str_t   = std::string;
+using cstr_t  = const char*;
 using strv_t  = std::string_view;
 using ss_t    = std::stringstream;
 
