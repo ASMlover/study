@@ -54,17 +54,29 @@ void AstPrinter::visit_binary(const expr::BinaryPtr& expr) {
   parenthesize(expr->oper().literal(), {expr->left(), expr->right()});
 }
 
-void AstPrinter::visit_call(const expr::CallPtr& expr) {
+void AstPrinter::visit_call(const expr::CallPtr& expr) {}
+void AstPrinter::visit_get(const expr::GetPtr& expr) {}
+
+void AstPrinter::visit_grouping(const expr::GroupingPtr& expr) {
+  parenthesize("group", {expr->expression()});
 }
 
-void AstPrinter::visit_get(const expr::GetPtr& expr) {}
-void AstPrinter::visit_grouping(const expr::GroupingPtr& expr) {}
-void AstPrinter::visit_literal(const expr::LiteralPtr& expr) {}
-void AstPrinter::visit_logical(const expr::LogicalPtr& expr) {}
+void AstPrinter::visit_literal(const expr::LiteralPtr& expr) {
+  // TODO:
+}
+
+void AstPrinter::visit_logical(const expr::LogicalPtr& expr) {
+  parenthesize(expr->oper().literal(), {expr->left(), expr->right()});
+}
+
 void AstPrinter::visit_set(const expr::SetPtr& expr) {}
 void AstPrinter::visit_super(const expr::SuperPtr& expr) {}
 void AstPrinter::visit_this(const expr::ThisPtr& expr) {}
-void AstPrinter::visit_unary(const expr::UnaryPtr& expr) {}
+
+void AstPrinter::visit_unary(const expr::UnaryPtr& expr) {
+  parenthesize(expr->oper().literal(), {expr->right()});
+}
+
 void AstPrinter::visit_variable(const expr::VariablePtr& expr) {}
 
 }
