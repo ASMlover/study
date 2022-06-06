@@ -32,98 +32,66 @@
 namespace loxpp::value {
 
 class Value : public Copyable {
-  enum class Type {
-    NIL,
-    BOOLEAN,
+  std::variant<nil_t, bool, i64_t, double, str_t> v_{};
 
-    INTEGER_BEG,
-    INT8,
-    UINT8,
-    INT16,
-    UINT16,
-    INT32,
-    UINT32,
-    INT64,
-    UINT64,
-    INTEGER_END,
-
-    FLOAT,
-    DOUBLE,
-    STRING,
-  };
-
-  using Variant = std::variant<
-    nil_t,
-    bool,
-    i8_t,
-    u8_t,
-    i16_t,
-    u16_t,
-    i32_t,
-    u32_t,
-    i64_t,
-    u64_t,
-    float,
-    double,
-    str_t>;
-
-  Type t_{Type::NIL};
-  Variant v_{};
+  template <typename T> inline double numeric_cast(T x) noexcept { return as_type<double>(x); }
 public:
-  Value() noexcept : t_{Type::NIL}, v_{nullptr} {}
-  Value(nil_t) noexcept : t_{Type::NIL}, v_{nullptr} {}
-  Value(bool b) noexcept : t_{Type::BOOLEAN}, v_{b} {}
-  Value(i8_t n) noexcept : t_{Type::INT8}, v_{n} {}
-  Value(u8_t n) noexcept : t_{Type::UINT8}, v_{n} {}
-  Value(i16_t n) noexcept : t_{Type::INT16}, v_{n} {}
-  Value(u16_t n) noexcept : t_{Type::UINT16}, v_{n} {}
-  Value(i32_t n) noexcept : t_{Type::INT32}, v_{n} {}
-  Value(u32_t n) noexcept : t_{Type::UINT32}, v_{n} {}
-  Value(i64_t n) noexcept : t_{Type::INT64}, v_{n} {}
-  Value(u64_t n) noexcept : t_{Type::UINT64}, v_{n} {}
+  Value() noexcept : v_{nullptr} {}
+  Value(nil_t) noexcept : v_{nullptr} {}
+  Value(bool b) noexcept : v_{b} {}
+  Value(i8_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(u8_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(i16_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(u16_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(i32_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(u32_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(i64_t n) noexcept : v_{numeric_cast(n)} {}
+  Value(u64_t n) noexcept : v_{numeric_cast(n)} {}
 #if defined(LOXPP_GNUC)
-  Value(long long n) noexcept : t_{Type::INT64}, v_{as_type<i64_t>(n)} {}
-  Value(unsigned long long n) noexcept : t_{Type::UINT64}, v_{as_type<u64_t>(n)} {}
+  Value(long long n) noexcept : v_{numeric_cast(n)} {}
+  Value(unsigned long long n) noexcept : v_{numeric_cast(n)} {}
 #endif
-  Value(float n) noexcept : t_{Type::FLOAT}, v_{n} {}
-  Value(double n) noexcept : t_{Type::DOUBLE}, v_{n} {}
-  Value(cstr_t s) noexcept : t_{Type::STRING}, v_{str_t(s)} {}
-  Value(strv_t s) noexcept : t_{Type::STRING}, v_{str_t(s)} {}
-  Value(const str_t& s) noexcept : t_{Type::STRING}, v_{s} {}
-  Value(const Value& r) noexcept : t_{r.t_}, v_{r.v_} {}
-  Value(Value&& r) noexcept : t_{std::move(r.t_)}, v_{std::move(r.v_)} {}
+  Value(float n) noexcept : v_{numeric_cast(n)} {}
+  Value(double n) noexcept : v_{n} {}
+  Value(cstr_t s) noexcept : v_{str_t(s)} {}
+  Value(strv_t s) noexcept : v_{str_t(s)} {}
+  Value(const str_t& s) noexcept : v_{s} {}
+  Value(const Value& r) noexcept : v_{r.v_} {}
+  Value(Value&& r) noexcept : v_{std::move(r.v_)} {}
 
   inline bool is_nil() const noexcept { return std::holds_alternative<nil_t>(v_); }
   inline bool is_boolean() const noexcept { return std::holds_alternative<bool>(v_); }
-  inline bool is_int8() const noexcept { return std::holds_alternative<i8_t>(v_); }
-  inline bool is_uint8() const noexcept { return std::holds_alternative<u8_t>(v_); }
-  inline bool is_int16() const noexcept { return std::holds_alternative<i16_t>(v_); }
-  inline bool is_uint16() const noexcept { return std::holds_alternative<u16_t>(v_); }
-  inline bool is_int32() const noexcept { return std::holds_alternative<i32_t>(v_); }
-  inline bool is_uint32() const noexcept { return std::holds_alternative<u32_t>(v_); }
-  inline bool is_int64() const noexcept { return std::holds_alternative<i64_t>(v_); }
-  inline bool is_uint64() const noexcept { return std::holds_alternative<u64_t>(v_); }
-  inline bool is_integer() const noexcept { return Type::INTEGER_BEG < t_ && t_ < Type::INTEGER_END; }
-  inline bool is_float() const noexcept { return std::holds_alternative<float>(v_); }
-  inline bool is_double() const noexcept { return std::holds_alternative<double>(v_); }
-  inline bool is_decimal() const noexcept { return is_float() || is_double(); }
-  inline bool is_numeric() const noexcept { return is_integer() || is_decimal(); }
+  inline bool is_numeric() const noexcept { return std::holds_alternative<double>(v_); }
   inline bool is_string() const noexcept { return std::holds_alternative<str_t>(v_); }
 
   inline bool as_boolean() const noexcept { return std::get<bool>(v_); }
-  inline i8_t as_int8() const noexcept { return std::get<i8_t>(v_); }
-  inline u8_t as_uint8() const noexcept { return std::get<u8_t>(v_); }
-  inline i16_t as_int16() const noexcept { return std::get<i16_t>(v_); }
-  inline u16_t as_uint16() const noexcept { return std::get<u16_t>(v_); }
-  inline i32_t as_int32() const noexcept { return std::get<i32_t>(v_); }
-  inline u32_t as_uint32() const noexcept { return std::get<u32_t>(v_); }
-  inline i64_t as_int64() const noexcept { return std::get<i64_t>(v_); }
-  inline u64_t as_uint64() const noexcept { return std::get<u64_t>(v_); }
-  i64_t as_integer() const noexcept;
-  inline float as_float() const noexcept { return std::get<float>(v_); }
-  inline double as_double() const noexcept { return std::get<double>(v_); }
-  double as_decimal() const noexcept;
+  inline double as_numeric() const noexcept { return std::get<double>(v_); }
   inline str_t as_string() const noexcept { return std::get<str_t>(v_); }
+
+  inline bool operator==(const Value& r) const noexcept {
+    return (is_numeric() && r.is_numeric()) ? as_numeric() == r.as_numeric() : v_ == r.v_;
+  }
+
+  inline bool operator!=(const Value& r) const noexcept { return !(*this == r); }
+  inline bool operator<(const Value& r) const noexcept { return as_numeric() < r.as_numeric(); }
+  inline bool operator<=(const Value& r) const noexcept { return as_numeric() <= r.as_numeric(); }
+  inline bool operator>(const Value& r) const noexcept { return as_numeric() > r.as_numeric(); }
+  inline bool operator>=(const Value& r) const noexcept { return as_numeric() >= r.as_numeric(); }
+
+  inline Value& operator=(const Value& r) noexcept { if (this != &r) v_ = r.v_; return *this; }
+  inline Value& operator=(Value&& r) noexcept { if (this != &r) v_ = std::move(r.v_); return *this; }
+
+  inline Value operator+(const Value& r) const noexcept {
+    if (is_string() && r.is_string())
+      return as_string() + r.as_string();
+    return as_numeric() + r.as_numeric();
+  }
+
+  str_t stringify() const noexcept;
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
+  return out << val.stringify();
+}
 
 }
