@@ -87,6 +87,10 @@ public:
     return as_numeric() + r.as_numeric();
   }
 
+  inline Value operator-(const Value& r) const noexcept { return as_numeric() - r.as_numeric(); }
+  inline Value operator*(const Value& r) const noexcept { return as_numeric() * r.as_numeric(); }
+  inline Value operator/(const Value& r) const noexcept { return as_numeric() / r.as_numeric(); }
+
   str_t stringify() const noexcept;
 };
 
