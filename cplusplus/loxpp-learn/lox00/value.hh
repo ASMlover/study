@@ -32,7 +32,7 @@
 namespace loxpp::value {
 
 class Value : public Copyable {
-  std::variant<nil_t, bool, i64_t, double, str_t> v_{};
+  std::variant<nil_t, bool, double, str_t> v_{};
 
   template <typename T> inline double numeric_cast(T x) noexcept { return as_type<double>(x); }
 public:
@@ -90,7 +90,13 @@ public:
   inline Value operator-(const Value& r) const noexcept { return as_numeric() - r.as_numeric(); }
   inline Value operator*(const Value& r) const noexcept { return as_numeric() * r.as_numeric(); }
   inline Value operator/(const Value& r) const noexcept { return as_numeric() / r.as_numeric(); }
+  inline Value operator-() const noexcept { return -as_numeric(); }
+  inline Value operator!() const noexcept { return !is_truthy(); }
 
+  inline bool is_abs_equal(const Value& r) const noexcept { return v_ == r.v_; }
+  inline bool is_equal(const Value& r) const noexcept { return (this == &r) || (*this == r); }
+
+  bool is_truthy() const noexcept;
   str_t stringify() const noexcept;
 };
 
