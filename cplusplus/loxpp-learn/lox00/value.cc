@@ -31,11 +31,19 @@ namespace loxpp::value {
 template <typename... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <typename... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+bool Value::is_truthy() const noexcept {
+  return std::visit(overloaded {
+        [](nil_t) -> bool { return false; },
+        [](bool b) -> bool { return b; },
+        [](double d) -> bool { return d; },
+        [](const str_t& s) -> bool { return !s.empty(); },
+      }, v_);
+}
+
 str_t Value::stringify() const noexcept {
   return std::visit(overloaded {
         [](nil_t) -> str_t { return "nil"; },
         [](bool b) -> str_t { return b ? "true" : "false"; },
-        [](i64_t i64) -> str_t { return std::to_string(i64); },
         [](double d) -> str_t { return loxpp::as_string(d); },
         [](const str_t& s) -> str_t { return s; },
       }, v_);
