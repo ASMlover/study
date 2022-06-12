@@ -35,6 +35,7 @@ class Value : public Copyable {
   std::variant<nil_t, bool, double, str_t> v_{};
 
   template <typename T> inline double numeric_cast(T x) noexcept { return as_type<double>(x); }
+  template <typename T> inline str_t string_cast(T x) noexcept { return str_t(x); }
 public:
   Value() noexcept : v_{nullptr} {}
   Value(nil_t) noexcept : v_{nullptr} {}
@@ -53,8 +54,8 @@ public:
 #endif
   Value(float n) noexcept : v_{numeric_cast(n)} {}
   Value(double n) noexcept : v_{n} {}
-  Value(cstr_t s) noexcept : v_{str_t(s)} {}
-  Value(strv_t s) noexcept : v_{str_t(s)} {}
+  Value(cstr_t s) noexcept : v_{string_cast(s)} {}
+  Value(strv_t s) noexcept : v_{string_cast(s)} {}
   Value(const str_t& s) noexcept : v_{s} {}
   Value(const Value& r) noexcept : v_{r.v_} {}
   Value(Value&& r) noexcept : v_{std::move(r.v_)} {}
