@@ -29,12 +29,21 @@
 #include <vector>
 #include "common.hh"
 #include "token.hh"
+#include "expr.hh"
 
 namespace loxpp::parser {
 
 class Parser final : private UnCopyable {
   std::vector<Token> tokens_;
   sz_t current_{};
+
+  inline expr::ExprPtr expression() noexcept {
+    return equality();
+  }
+
+  inline expr::ExprPtr equality() noexcept {
+    return nullptr;
+  }
 public:
   Parser(const std::vector<Token>& tokens) noexcept
     : tokens_{tokens} {
