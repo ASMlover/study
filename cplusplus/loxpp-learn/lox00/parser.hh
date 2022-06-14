@@ -33,15 +33,32 @@
 
 namespace loxpp::parser {
 
+// expression -> equality ;
+// equality   -> comparison ( ( "!=" | "==" ) comparison )* ;
+// comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+// term       -> factor ( ( "-" | "+" ) factor )* ;
+// factor     -> unary ( ( "/" | "*" ) unary )* ;
+// unary      -> ( "!" | "-" ) unary | primary ;
+// primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+
 class Parser final : private UnCopyable {
   std::vector<Token> tokens_;
   sz_t current_{};
 
   inline expr::ExprPtr expression() noexcept {
+    // expression -> equality ;
+
     return equality();
   }
 
   inline expr::ExprPtr equality() noexcept {
+    // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
+
+    expr::ExprPtr expr = comparison();
+    return nullptr;
+  }
+
+  inline expr::ExprPtr comparison() noexcept {
     return nullptr;
   }
 public:
