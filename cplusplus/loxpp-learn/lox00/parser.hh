@@ -45,6 +45,27 @@ class Parser final : private UnCopyable {
   std::vector<Token> tokens_;
   sz_t current_{};
 
+  inline const Token& peek() const noexcept { return tokens_[current_]; }
+  inline const Token& prev() const noexcept { return tokens_[current_ - 1]; }
+  inline bool is_at_end() const noexcept { return peek().type() == TokenType::TK_EOF; }
+  inline bool check(TokenType type) const noexcept { return is_at_end() ? false : peek().type() == type; }
+
+  Token advance() noexcept {
+    if (!is_at_end())
+      ++current_;
+    return prev();
+  }
+
+  bool match(const std::initializer_list<TokenType>& types) noexcept {
+    for (auto type : types) {
+      if (check(type)) {
+        advance();
+        return true;
+      }
+    }
+    return false;
+  }
+
   inline expr::ExprPtr expression() noexcept {
     // expression -> equality ;
 
