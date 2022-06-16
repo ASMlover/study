@@ -75,8 +75,13 @@ class Parser final : private UnCopyable {
   inline expr::ExprPtr equality() noexcept {
     // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
 
-    expr::ExprPtr expr = comparison();
-    return nullptr;
+    expr::ExprPtr left = comparison();
+    while (match({TokenType::TK_NE, TokenType::TK_EQEQ})) {
+      Token oper = prev();
+      expr::ExprPtr right = comparison();
+      left = std::make_shared<expr::Binary>(left, oper, right);
+    }
+    return left;
   }
 
   inline expr::ExprPtr comparison() noexcept {
