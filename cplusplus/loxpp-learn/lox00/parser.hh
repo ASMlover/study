@@ -97,6 +97,20 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr term() noexcept {
+    // term -> factor ( ( "-" | "+" ) factor )* ;
+
+    expr::ExprPtr left = factor();
+    while (match({TokenType::TK_MINUS, TokenType::TK_PLUS})) {
+      Token oper = prev();
+      expr::ExprPtr right = factor();
+      left = std::make_shared<expr::Binary>(left, oper, right);
+    }
+    return left;
+  }
+
+  inline expr::ExprPtr factor() noexcept {
+    // factor -> unary ( ( "/" | "*" ) unary )* ;
+
     return nullptr;
   }
 public:
