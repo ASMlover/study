@@ -111,6 +111,18 @@ class Parser final : private UnCopyable {
   inline expr::ExprPtr factor() noexcept {
     // factor -> unary ( ( "/" | "*" ) unary )* ;
 
+    expr::ExprPtr left = unary();
+    while (match({TokenType::TK_SLASH, TokenType::TK_STAR})) {
+      Token oper = prev();
+      expr::ExprPtr right = unary();
+      left = std::make_shared<expr::Binary>(left, oper, right);
+    }
+    return left;
+  }
+
+  inline expr::ExprPtr unary() noexcept {
+    // unary -> ( "!" | "-" ) unary | primary ;
+
     return nullptr;
   }
 public:
