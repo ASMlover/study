@@ -123,6 +123,17 @@ class Parser final : private UnCopyable {
   inline expr::ExprPtr unary() noexcept {
     // unary -> ( "!" | "-" ) unary | primary ;
 
+    if (match({TokenType::TK_NOT, TokenType::TK_MINUS})) {
+      TokenType oper = prev();
+      expr::ExprPtr right = unary();
+      return std::make_shared<expr::Unary>(oper, right);
+    }
+    return primary();
+  }
+
+  inline expr::ExprPtr primary() noexcept {
+    // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+
     return nullptr;
   }
 public:
