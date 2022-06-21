@@ -66,6 +66,11 @@ class Parser final : private UnCopyable {
     return false;
   }
 
+  Token consume(TokenType type, const str_t& message) noexcept {
+    // TODO:
+    return Token{};
+  }
+
   inline expr::ExprPtr expression() noexcept {
     // expression -> equality ;
 
@@ -134,6 +139,23 @@ class Parser final : private UnCopyable {
   inline expr::ExprPtr primary() noexcept {
     // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
+    if (match({TokenType::KW_TRUE}))
+      return std::make_shared<expr::Literal>(true);
+    if (match({TokenType::KW_FALSE}))
+      return std::make_shared<expr::Literal>(false);
+    if (match({TokenType::KW_NIL}))
+      return std::make_shared<expr::Literal>(nullptr);
+
+    if (match({TokenType::TK_NUMERIC}))
+      return std::make_shared<expr::Literal>(prev().as_numeric());
+    if (match({TokenType::TK_STRING}))
+      return std::make_shared<expr::Literal>(prev().as_string());
+
+    if (match({TokenType::TK_LPAREN})) {
+      expr::ExprPtr expr = expression();
+      consume(TokenType::TK_RPAREN, "Expect `)` after expression.");
+      return std::make_shared<expr::Grouping>(expr);
+    }
     return nullptr;
   }
 public:
