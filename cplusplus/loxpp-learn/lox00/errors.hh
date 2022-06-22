@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <exception>
 #include "common.hh"
+#include "token.hh"
 
 namespace loxpp {
 
@@ -36,6 +38,22 @@ class ErrorReporter final : private UnCopyable {
   void report(const str_t& fname, int lineno, const str_t& where, const str_t& message) noexcept;
 public:
   void error(const str_t& fname, int lineno, const str_t& message) noexcept;
+};
+
+class RuntimeError final : public Copyable, public std::exception {
+  const Token token_;
+  str_t message_;
+
+  const char* what() const noexcept override {
+    return message_.c_str();
+  }
+public:
+  RuntimeError(const Token& tok, const str_t& msg) noexcept
+    : token_{tok}, message_{msg} {
+  }
+
+  inline const Token& token() const noexcept { return token_; }
+  inline const str_t& message() const noexcept { return message_; }
 };
 
 }
