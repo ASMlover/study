@@ -29,6 +29,7 @@
 #include <vector>
 #include "common.hh"
 #include "token.hh"
+#include "errors.hh"
 #include "expr.hh"
 
 namespace loxpp::parser {
@@ -67,8 +68,10 @@ class Parser final : private UnCopyable {
   }
 
   Token consume(TokenType type, const str_t& message) noexcept {
-    // TODO:
-    return Token{};
+    if (check(type))
+      return advance();
+
+    throw RuntimeError(peek(), message);
   }
 
   inline expr::ExprPtr expression() noexcept {
