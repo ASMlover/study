@@ -38,6 +38,7 @@ class ErrorReporter final : private UnCopyable {
   void report(const str_t& fname, int lineno, const str_t& where, const str_t& message) noexcept;
 public:
   void error(const str_t& fname, int lineno, const str_t& message) noexcept;
+  void error(const Token& token, const str_t& message) noexcept;
 };
 
 class RuntimeError final : public Copyable, public std::exception {

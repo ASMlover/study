@@ -39,4 +39,11 @@ void ErrorReporter::error(const str_t& fname, int lineno, const str_t& message) 
   report(fname, lineno, "", message);
 }
 
+void ErrorReporter::error(const Token& token, const str_t& message) noexcept {
+  if (token.type() == TokenType::TK_EOF)
+    report("", token.lineno(), " at end", message);
+  else
+    report("", token.lineno(), " at `" + token.literal() + "`", message);
+}
+
 }
