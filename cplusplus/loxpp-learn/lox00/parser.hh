@@ -42,7 +42,10 @@ namespace loxpp::parser {
 // unary      -> ( "!" | "-" ) unary | primary ;
 // primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
+class ParserError final : public std::exception {};
+
 class Parser final : private UnCopyable {
+  ErrorReporter& err_reporter_;
   std::vector<Token> tokens_;
   sz_t current_{};
 
@@ -67,11 +70,16 @@ class Parser final : private UnCopyable {
     return false;
   }
 
-  Token consume(TokenType type, const str_t& message) noexcept {
+  Token consume(TokenType type, const str_t& message) {
     if (check(type))
       return advance();
 
     throw RuntimeError(peek(), message);
+  }
+
+  inline ParserError error(const Token& token, const str_t& message) noexcept {
+    err_reporter_.error(token, message);
+    return ParserError();
   }
 
   inline expr::ExprPtr expression() noexcept {
@@ -132,7 +140,7 @@ class Parser final : private UnCopyable {
     // unary -> ( "!" | "-" ) unary | primary ;
 
     if (match({TokenType::TK_NOT, TokenType::TK_MINUS})) {
-      TokenType oper = prev();
+      Token oper = prev();
       expr::ExprPtr right = unary();
       return std::make_shared<expr::Unary>(oper, right);
     }
@@ -162,8 +170,8 @@ class Parser final : private UnCopyable {
     return nullptr;
   }
 public:
-  Parser(const std::vector<Token>& tokens) noexcept
-    : tokens_{tokens} {
+  Parser(ErrorReporter& err_reporter, const std::vector<Token>& tokens) noexcept
+    : err_reporter_{err_reporter}, tokens_{tokens} {
   }
 };
 
