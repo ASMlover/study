@@ -74,7 +74,7 @@ class Parser final : private UnCopyable {
     if (check(type))
       return advance();
 
-    throw RuntimeError(peek(), message);
+    throw error(peek(), message);
   }
 
   inline ParserError error(const Token& token, const str_t& message) noexcept {
