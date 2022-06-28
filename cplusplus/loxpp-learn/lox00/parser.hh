@@ -82,6 +82,29 @@ class Parser final : private UnCopyable {
     return ParserError();
   }
 
+  void synchronize() {
+    advance();
+
+    while (!is_at_end()) {
+      if (prev().type() == TokenType::TK_SEMI)
+        return;
+
+      switch (peek().type()) {
+      case TokenType::KW_CLASS:
+      case TokenType::KW_FUN:
+      case TokenType::KW_VAR:
+      case TokenType::KW_FOR:
+      case TokenType::KW_IF:
+      case TokenType::KW_WHILE:
+      case TokenType::KW_PRINT:
+      case TokenType::KW_RETURN:
+        return;
+      }
+
+      advance();
+    }
+  }
+
   inline expr::ExprPtr expression() noexcept {
     // expression -> equality ;
 
