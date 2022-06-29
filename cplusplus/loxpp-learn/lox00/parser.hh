@@ -170,7 +170,7 @@ class Parser final : private UnCopyable {
     return primary();
   }
 
-  inline expr::ExprPtr primary() noexcept {
+  inline expr::ExprPtr primary() noexcept(false) {
     // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
     if (match({TokenType::KW_TRUE}))
@@ -190,7 +190,8 @@ class Parser final : private UnCopyable {
       consume(TokenType::TK_RPAREN, "Expect `)` after expression.");
       return std::make_shared<expr::Grouping>(expr);
     }
-    return nullptr;
+
+    throw error(peek(), "Expect expression.");
   }
 public:
   Parser(ErrorReporter& err_reporter, const std::vector<Token>& tokens) noexcept
