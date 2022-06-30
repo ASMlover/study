@@ -197,6 +197,16 @@ public:
   Parser(ErrorReporter& err_reporter, const std::vector<Token>& tokens) noexcept
     : err_reporter_{err_reporter}, tokens_{tokens} {
   }
+
+  inline expr::ExprPtr parse() noexcept {
+    try {
+      return expression();
+    }
+    catch (const ParserError& e) {
+      (void)e;
+      return nullptr;
+    }
+  }
 };
 
 }
