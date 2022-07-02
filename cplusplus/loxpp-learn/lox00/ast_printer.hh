@@ -37,7 +37,6 @@ class AstPrinter
   str_t printer_bytes_;
 
   void parenthesize(const str_t& name, const std::initializer_list<expr::ExprPtr>& exprs) noexcept;
-  str_t stringify(const expr::ExprPtr& expr) noexcept;
 
   virtual void visit_assign(const expr::AssignPtr& expr) override;
   virtual void visit_binary(const expr::BinaryPtr& expr) override;
@@ -51,6 +50,8 @@ class AstPrinter
   virtual void visit_this(const expr::ThisPtr& expr) override;
   virtual void visit_unary(const expr::UnaryPtr& expr) override;
   virtual void visit_variable(const expr::VariablePtr& expr) override;
+public:
+  str_t stringify(const expr::ExprPtr& expr) noexcept;
 };
 
 }

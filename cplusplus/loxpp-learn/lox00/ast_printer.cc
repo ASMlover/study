@@ -28,6 +28,11 @@
 
 namespace loxpp::printer {
 
+str_t AstPrinter::stringify(const expr::ExprPtr& expr) noexcept {
+  expr->accept(shared_from_this());
+  return printer_bytes_;
+}
+
 void AstPrinter::parenthesize(
     const str_t& name, const std::initializer_list<expr::ExprPtr>& exprs) noexcept {
   printer_bytes_ += "(";
@@ -37,11 +42,6 @@ void AstPrinter::parenthesize(
     expr->accept(shared_from_this());
   }
   printer_bytes_ += ")";
-}
-
-str_t AstPrinter::stringify(const expr::ExprPtr& expr) noexcept {
-  expr->accept(shared_from_this());
-  return printer_bytes_;
 }
 
 void AstPrinter::visit_assign(const expr::AssignPtr& expr) {
