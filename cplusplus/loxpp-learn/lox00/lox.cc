@@ -26,6 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <iostream>
+#include "scanner.hh"
+#include "parser.hh"
+#include "ast_printer.hh"
 #include "lox.hh"
 
 namespace loxpp {
@@ -67,6 +70,18 @@ void Lox::run_from_prompt() {
 }
 
 void Lox::run(const str_t& filepath, const str_t& source_bytes) {
+  Scanner scanner(err_reporter_, source_bytes, "");
+  const std::vector<Token>& tokens = scanner.scan_tokens();
+
+  parser::Parser parser(err_reporter_, tokens);
+  expr::ExprPtr expr = parser.parse();
+
+  // stop if there was a syntax error.
+  if (err_reporter_.had_error())
+    return;
+
+  auto astp = std::make_shared<printer::AstPrinter>();
+  std::cout << astp->stringify(expr) << std::endl;
 }
 
 }
