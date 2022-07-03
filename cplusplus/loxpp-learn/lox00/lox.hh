@@ -27,10 +27,13 @@
 #pragma once
 
 #include "common.hh"
+#include "errors.hh"
 
 namespace loxpp {
 
 class Lox final : private UnCopyable {
+  ErrorReporter err_reporter_;
+
   void run_from_file(const str_t& filepath);
   void run_from_prompt();
 
