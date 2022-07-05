@@ -36,11 +36,19 @@ namespace loxpp::interpret {
 class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_this<Interpreter> {
   value::Value value_{};
 
+  inline value::Value evaluate(const expr::ExprPtr& expr) noexcept {
+    expr->accept(shared_from_this());
+    return value_;
+  }
+
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
   virtual void visit_call(const expr::CallPtr& expr) override {}
   virtual void visit_get(const expr::GetPtr& expr) override {}
-  virtual void visit_grouping(const expr::GroupingPtr& expr) override {}
+
+  virtual void visit_grouping(const expr::GroupingPtr& expr) override {
+    evaluate(expr->expression());
+  }
 
   virtual void visit_literal(const expr::LiteralPtr& expr) override {
     value_ = expr->value();
