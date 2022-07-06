@@ -58,7 +58,18 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
   virtual void visit_set(const expr::SetPtr& expr) override {}
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
-  virtual void visit_unary(const expr::UnaryPtr& expr) override {}
+
+  virtual void visit_unary(const expr::UnaryPtr& expr) override {
+    value::Value right = evaluate(expr->right());
+
+    switch (expr->oper().type()) {
+    case TokenType::TK_MINUS:
+      value_ = -right; break;
+    case TokenType::TK_NE:
+      value_ = !right; break;
+    }
+  }
+
   virtual void visit_variable(const expr::VariablePtr& expr) override {}
 };
 
