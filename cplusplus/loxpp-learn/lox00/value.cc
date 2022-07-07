@@ -35,7 +35,7 @@ bool Value::is_truthy() const noexcept {
   return std::visit(overloaded {
         [](nil_t) -> bool { return false; },
         [](bool b) -> bool { return b; },
-        [](double d) -> bool { return d; },
+        [](double d) -> bool { return d != 0.0; },
         [](const str_t& s) -> bool { return !s.empty(); },
       }, v_);
 }
