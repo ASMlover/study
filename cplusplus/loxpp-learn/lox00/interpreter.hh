@@ -42,7 +42,21 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
   }
 
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
-  virtual void visit_binary(const expr::BinaryPtr& expr) override {}
+
+  virtual void visit_binary(const expr::BinaryPtr& expr) override {
+    value::Value left = evaluate(expr->left());
+    value::Value right = evaluate(expr->right());
+
+    switch (expr->oper().type()) {
+    case TokenType::TK_MINUS:
+      value_ = left - right; break;
+    case TokenType::TK_SLASH:
+      value_ = left / right; break;
+    case TokenType::TK_STAR:
+      value_ = left * right; break;
+    }
+  }
+
   virtual void visit_call(const expr::CallPtr& expr) override {}
   virtual void visit_get(const expr::GetPtr& expr) override {}
 
