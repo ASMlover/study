@@ -48,12 +48,13 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
     value::Value right = evaluate(expr->right());
 
     switch (expr->oper().type()) {
-    case TokenType::TK_MINUS:
-      value_ = left - right; break;
-    case TokenType::TK_SLASH:
-      value_ = left / right; break;
-    case TokenType::TK_STAR:
-      value_ = left * right; break;
+    case TokenType::TK_GT: value_ = left > right; break;
+    case TokenType::TK_GE: value_ = left >= right; break;
+    case TokenType::TK_LT: value_ = left < right; break;
+    case TokenType::TK_LE: value_ = left <= right; break;
+    case TokenType::TK_MINUS: value_ = left - right; break;
+    case TokenType::TK_SLASH: value_ = left / right; break;
+    case TokenType::TK_STAR: value_ = left * right; break;
     }
   }
 
