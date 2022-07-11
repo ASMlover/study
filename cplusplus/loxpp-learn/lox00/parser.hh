@@ -42,7 +42,7 @@ namespace loxpp::parser {
 // unary      -> ( "!" | "-" ) unary | primary ;
 // primary    -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
 
-class ParserError final : public std::exception {};
+class ParserError final : public Copyable, public std::exception {};
 
 class Parser final : private UnCopyable {
   ErrorReporter& err_reporter_;
