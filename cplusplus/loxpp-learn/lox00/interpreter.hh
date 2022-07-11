@@ -55,6 +55,8 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
     case TokenType::TK_MINUS: value_ = left - right; break;
     case TokenType::TK_SLASH: value_ = left / right; break;
     case TokenType::TK_STAR: value_ = left * right; break;
+    case TokenType::TK_NE: value_ = left != right; break;
+    case TokenType::TK_EQEQ: value_ = left == right; break;
     }
   }
 
