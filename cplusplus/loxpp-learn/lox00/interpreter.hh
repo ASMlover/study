@@ -28,6 +28,7 @@
 
 #include <memory>
 #include "common.hh"
+#include "errors.hh"
 #include "expr.hh"
 #include "value.hh"
 
@@ -41,6 +42,11 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
     return value_;
   }
 
+  void  check_numeric_operand(const Token& oper, const value::Value& operand) {
+    if (!operand.as_numeric())
+      throw RuntimeError(oper, "operand must be a numeric.");
+  }
+
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
 
   virtual void visit_binary(const expr::BinaryPtr& expr) override {
@@ -52,7 +58,9 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
     case TokenType::TK_GE: value_ = left >= right; break;
     case TokenType::TK_LT: value_ = left < right; break;
     case TokenType::TK_LE: value_ = left <= right; break;
-    case TokenType::TK_MINUS: value_ = left - right; break;
+    case TokenType::TK_MINUS:
+        check_numeric_operand(expr->oper(), right);
+        value_ = left - right; break;
     case TokenType::TK_SLASH: value_ = left / right; break;
     case TokenType::TK_STAR: value_ = left * right; break;
     case TokenType::TK_NE: value_ = left != right; break;
