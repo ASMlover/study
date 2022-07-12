@@ -42,9 +42,16 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
     return value_;
   }
 
-  void  check_numeric_operand(const Token& oper, const value::Value& operand) {
-    if (!operand.as_numeric())
-      throw RuntimeError(oper, "operand must be a numeric.");
+  void check_numeric_operands(const Token& oper, const value::Value& left, const value::Value& right) {
+    if (left.is_numeric() && right.is_numeric())
+      return;
+    throw RuntimeError(oper, "operands must be numerics.");
+  }
+
+  void check_plus_operands(const Token& oper, const value::Value& left, const value::Value& right) {
+    if ((left.is_numeric() && right.is_numeric()) || (left.is_string() && right.is_string()))
+      return;
+    throw RuntimeError(oper, "operands must be two numerics or two strings.");
   }
 
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
@@ -53,16 +60,32 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
     value::Value left = evaluate(expr->left());
     value::Value right = evaluate(expr->right());
 
-    switch (expr->oper().type()) {
-    case TokenType::TK_GT: value_ = left > right; break;
-    case TokenType::TK_GE: value_ = left >= right; break;
-    case TokenType::TK_LT: value_ = left < right; break;
-    case TokenType::TK_LE: value_ = left <= right; break;
+    const Token& oper = expr->oper();
+    switch (oper.type()) {
+    case TokenType::TK_GT:
+      check_numeric_operands(oper, left, right);
+      value_ = left > right; break;
+    case TokenType::TK_GE:
+      check_numeric_operands(oper, left, right);
+      value_ = left >= right; break;
+    case TokenType::TK_LT:
+      check_numeric_operands(oper, left, right);
+      value_ = left < right; break;
+    case TokenType::TK_LE:
+      check_numeric_operands(oper, left, right);
+      value_ = left <= right; break;
+    case TokenType::TK_PLUS:
+      check_plus_operands(oper, left, right);
+      value_ = left + right; break;
     case TokenType::TK_MINUS:
-        check_numeric_operand(expr->oper(), right);
-        value_ = left - right; break;
-    case TokenType::TK_SLASH: value_ = left / right; break;
-    case TokenType::TK_STAR: value_ = left * right; break;
+      check_numeric_operands(oper, left, right);
+      value_ = left - right; break;
+    case TokenType::TK_SLASH:
+      check_numeric_operands(oper, left, right);
+      value_ = left / right; break;
+    case TokenType::TK_STAR:
+      check_numeric_operands(oper, left, right);
+      value_ = left * right; break;
     case TokenType::TK_NE: value_ = left != right; break;
     case TokenType::TK_EQEQ: value_ = left == right; break;
     }
