@@ -119,6 +119,17 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
   }
 
   virtual void visit_variable(const expr::VariablePtr& expr) override {}
+public:
+  void interpret(const expr::ExprPtr& expression) noexcept {
+    try {
+      value::Value value = evaluate(expression);
+      std::cout << value << std::endl;
+    }
+    catch (const RuntimeError& err) {
+      (void)err;
+      // TODO:
+    }
+  }
 };
 
 }
