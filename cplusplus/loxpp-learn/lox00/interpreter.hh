@@ -35,6 +35,7 @@
 namespace loxpp::interpret {
 
 class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_this<Interpreter> {
+  ErrorReporter& err_reporter_;
   value::Value value_{};
 
   inline value::Value evaluate(const expr::ExprPtr& expr) noexcept {
@@ -120,14 +121,15 @@ class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_th
 
   virtual void visit_variable(const expr::VariablePtr& expr) override {}
 public:
+  Interpreter(ErrorReporter& err_reporter) noexcept : err_reporter_{err_reporter} {}
+
   void interpret(const expr::ExprPtr& expression) noexcept {
     try {
       value::Value value = evaluate(expression);
       std::cout << value << std::endl;
     }
     catch (const RuntimeError& err) {
-      (void)err;
-      // TODO:
+      err_reporter_.error(err.token(), err.message());
     }
   }
 };
