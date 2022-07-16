@@ -37,11 +37,11 @@ namespace loxpp {
 int Lox::run(int argc, char* argv[]) {
   LOXPP_UNUSED(argc), LOXPP_UNUSED(argv);
 
-  if (argc > 1) {
+  if (argc > 2) {
     std::cout << "Usage: loxpp [script]" << std::endl;
   }
-  else if (argc == 1) {
-    run_from_file(argv[0]);
+  else if (argc == 2) {
+    run_from_file(argv[1]);
   }
   else {
     run_from_prompt();
@@ -84,7 +84,6 @@ void Lox::run(const str_t& filepath, const str_t& source_bytes) {
   // auto astp = std::make_shared<printer::AstPrinter>();
   auto interp = std::make_shared<interpret::Interpreter>(err_reporter_);
   interp->interpret(expr);
-  // std::cout << astp->stringify(expr) << std::endl;
 }
 
 }
