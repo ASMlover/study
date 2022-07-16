@@ -29,6 +29,7 @@
 #include "scanner.hh"
 #include "parser.hh"
 #include "ast_printer.hh"
+#include "interpreter.hh"
 #include "lox.hh"
 
 namespace loxpp {
@@ -80,8 +81,10 @@ void Lox::run(const str_t& filepath, const str_t& source_bytes) {
   if (err_reporter_.had_error())
     return;
 
-  auto astp = std::make_shared<printer::AstPrinter>();
-  std::cout << astp->stringify(expr) << std::endl;
+  // auto astp = std::make_shared<printer::AstPrinter>();
+  auto interp = std::make_shared<interpret::Interpreter>(err_reporter_);
+  interp->interpret(expr);
+  // std::cout << astp->stringify(expr) << std::endl;
 }
 
 }
