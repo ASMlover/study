@@ -34,7 +34,7 @@
 
 namespace loxpp::interpret {
 
-class Interpreter final : public expr::Expr::Visitor, std::enable_shared_from_this<Interpreter> {
+class Interpreter final : public expr::Expr::Visitor, public std::enable_shared_from_this<Interpreter> {
   ErrorReporter& err_reporter_;
   value::Value value_{};
 
