@@ -31,9 +31,14 @@
 #include "token.hh"
 #include "errors.hh"
 #include "expr.hh"
+#include "stmt.hh"
 
 namespace loxpp::parser {
 
+// program    -> statement* EOF ;
+// statement  -> exprStmt | printStmt ;
+// exprStmt   -> expression ";" ;
+// printStmt  -> "print" expression ";" ;
 // expression -> equality ;
 // equality   -> comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -103,6 +108,22 @@ class Parser final : private UnCopyable {
 
       advance();
     }
+  }
+
+  inline stmt::StmtPtr statement() noexcept {
+    return match({TokenType::KW_PRINT}) ? print_statement() : expression_statement();
+  }
+
+  inline stmt::StmtPtr print_statement() noexcept {
+    expr::ExprPtr value = expression();
+    consume(TokenType::TK_SEMI, "expect `;` after value ...");
+    return std::make_shared<stmt::Print>(value);
+  }
+
+  inline stmt::StmtPtr expression_statement() noexcept {
+    expr::ExprPtr expr = expression();
+    consume(TokenType::TK_SEMI, "expect `;` after expression ...");
+    return std::make_shared<stmt::Expression>(expr);
   }
 
   inline expr::ExprPtr expression() noexcept {
@@ -198,14 +219,11 @@ public:
     : err_reporter_{err_reporter}, tokens_{tokens} {
   }
 
-  inline expr::ExprPtr parse() noexcept {
-    try {
-      return expression();
-    }
-    catch (const ParserError& e) {
-      (void)e;
-      return nullptr;
-    }
+  inline std::vector<stmt::StmtPtr> parse() noexcept {
+    std::vector<stmt::StmtPtr> statements;
+    while (!is_at_end())
+      statements.push_back(statement());
+    return statements;
   }
 };
 
