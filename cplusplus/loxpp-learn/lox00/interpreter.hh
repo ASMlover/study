@@ -30,11 +30,15 @@
 #include "common.hh"
 #include "errors.hh"
 #include "expr.hh"
+#include "stmt.hh"
 #include "value.hh"
 
 namespace loxpp::interpret {
 
-class Interpreter final : public expr::Expr::Visitor, public std::enable_shared_from_this<Interpreter> {
+class Interpreter final
+  : public expr::Expr::Visitor
+  , public stmt::Stmt::Visitor
+  , public std::enable_shared_from_this<Interpreter> {
   ErrorReporter& err_reporter_;
   value::Value value_{};
 
@@ -120,6 +124,16 @@ class Interpreter final : public expr::Expr::Visitor, public std::enable_shared_
   }
 
   virtual void visit_variable(const expr::VariablePtr& expr) override {}
+
+  virtual void visit_block(const stmt::BlockPtr& stmt) override {}
+  virtual void visit_class(const stmt::ClassPtr& stmt) override {}
+  virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {}
+  virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
+  virtual void visit_if(const stmt::IfPtr& stmt) override {}
+  virtual void visit_print(const stmt::PrintPtr& stmt) override {}
+  virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
+  virtual void visit_var(const stmt::VarPtr& stmt) override {}
+  virtual void visit_while(const stmt::WhilePtr& stmt) override {}
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept : err_reporter_{err_reporter} {}
 
