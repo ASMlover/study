@@ -127,7 +127,11 @@ class Interpreter final
 
   virtual void visit_block(const stmt::BlockPtr& stmt) override {}
   virtual void visit_class(const stmt::ClassPtr& stmt) override {}
-  virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {}
+
+  virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
+    evaluate(stmt->expression());
+  }
+
   virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
   virtual void visit_if(const stmt::IfPtr& stmt) override {}
   virtual void visit_print(const stmt::PrintPtr& stmt) override {}
