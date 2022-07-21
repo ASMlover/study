@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include "common.hh"
 #include "errors.hh"
@@ -134,7 +135,12 @@ class Interpreter final
 
   virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
   virtual void visit_if(const stmt::IfPtr& stmt) override {}
-  virtual void visit_print(const stmt::PrintPtr& stmt) override {}
+
+  virtual void visit_print(const stmt::PrintPtr& stmt) override {
+    value::Value value = evaluate(stmt->expression());
+    std::cout << value << std::endl;
+  }
+
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
   virtual void visit_var(const stmt::VarPtr& stmt) override {}
   virtual void visit_while(const stmt::WhilePtr& stmt) override {}
