@@ -48,6 +48,10 @@ class Interpreter final
     return value_;
   }
 
+  inline void execute(const stmt::StmtPtr& stmt) noexcept {
+    stmt->accept(shared_from_this());
+  }
+
   void check_numeric_operands(const Token& oper, const value::Value& left, const value::Value& right) {
     if (left.is_numeric() && right.is_numeric())
       return;
@@ -151,6 +155,16 @@ public:
     try {
       value::Value value = evaluate(expression);
       std::cout << value << std::endl;
+    }
+    catch (const RuntimeError& err) {
+      err_reporter_.error(err.token(), err.message());
+    }
+  }
+
+  void interpret(const std::vector<stmt::StmtPtr>& statements) noexcept {
+    try {
+      for (auto& stmt : statements)
+        execute(stmt);
     }
     catch (const RuntimeError& err) {
       err_reporter_.error(err.token(), err.message());
