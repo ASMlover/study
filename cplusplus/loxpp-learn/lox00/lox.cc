@@ -75,7 +75,7 @@ void Lox::run(const str_t& filepath, const str_t& source_bytes) {
   const std::vector<Token>& tokens = scanner.scan_tokens();
 
   parser::Parser parser(err_reporter_, tokens);
-  expr::ExprPtr expr = parser.parse();
+  std::vector<stmt::StmtPtr> statements = parser.parse();
 
   // stop if there was a syntax error.
   if (err_reporter_.had_error())
@@ -83,7 +83,7 @@ void Lox::run(const str_t& filepath, const str_t& source_bytes) {
 
   // auto astp = std::make_shared<printer::AstPrinter>();
   auto interp = std::make_shared<interpret::Interpreter>(err_reporter_);
-  interp->interpret(expr);
+  interp->interpret(statements);
 }
 
 }
