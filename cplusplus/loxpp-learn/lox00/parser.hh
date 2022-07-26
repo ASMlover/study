@@ -112,17 +112,49 @@ class Parser final : private UnCopyable {
     }
   }
 
+  inline stmt::StmtPtr declaration() noexcept {
+    // declaration -> varDecl | statement ;
+
+    try {
+      if (match({TokenType::KW_VAR}))
+        return var_declaration();
+      return statement();
+    }
+    catch (const ParserError&) {
+      synchronize();
+      return nullptr;
+    }
+  }
+
+  inline stmt::StmtPtr var_declaration() noexcept {
+    // varDecl -> "var" IDENTIFIER ( "=" expression )? ";" ;
+
+    Token name = consume(TokenType::TK_IDENTIFIER, "expect variable name");
+
+    expr::ExprPtr initializer = nullptr;
+    if (match({TokenType::TK_EQ}))
+      initializer = expression();
+    consume(TokenType::TK_SEMI, "expect `;` after variable declaration");
+    return std::make_shared<stmt::Var>(name, initializer);
+  }
+
   inline stmt::StmtPtr statement() noexcept {
+    // statement -> exprStmt | printStmt ;
+
     return match({TokenType::KW_PRINT}) ? print_statement() : expression_statement();
   }
 
   inline stmt::StmtPtr print_statement() noexcept {
+    // printStmt -> "print" expression ";" ;
+
     expr::ExprPtr value = expression();
     consume(TokenType::TK_SEMI, "expect `;` after value ...");
     return std::make_shared<stmt::Print>(value);
   }
 
   inline stmt::StmtPtr expression_statement() noexcept {
+    // exprStmt -> expression ;
+
     expr::ExprPtr expr = expression();
     consume(TokenType::TK_SEMI, "expect `;` after expression ...");
     return std::make_shared<stmt::Expression>(expr);
@@ -194,7 +226,7 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr primary() noexcept(false) {
-    // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+    // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 
     if (match({TokenType::KW_TRUE}))
       return std::make_shared<expr::Literal>(true);
@@ -222,9 +254,11 @@ public:
   }
 
   inline std::vector<stmt::StmtPtr> parse() noexcept {
+    // program -> declaration* EOF ;
+
     std::vector<stmt::StmtPtr> statements;
     while (!is_at_end())
-      statements.push_back(statement());
+      statements.push_back(declaration());
     return statements;
   }
 };
