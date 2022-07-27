@@ -240,6 +240,9 @@ class Parser final : private UnCopyable {
     if (match({TokenType::TK_STRING}))
       return std::make_shared<expr::Literal>(prev().as_string());
 
+    if (match({TokenType::TK_IDENTIFIER}))
+      return std::make_shared<expr::Variable>(prev());
+
     if (match({TokenType::TK_LPAREN})) {
       expr::ExprPtr expr = expression();
       consume(TokenType::TK_RPAREN, "Expect `)` after expression.");
