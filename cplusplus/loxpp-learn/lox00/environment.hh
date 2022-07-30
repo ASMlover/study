@@ -28,6 +28,8 @@
 
 #include <unordered_map>
 #include "common.hh"
+#include "token.hh"
+#include "errors.hh"
 #include "value.hh"
 
 namespace loxpp::env {
@@ -37,6 +39,13 @@ class Environment final : private UnCopyable {
 public:
   inline void define(const str_t& name, const value::Value& value) noexcept {
     values_[name] = value;
+  }
+
+  inline const value::Value& get(const Token& name) noexcept(false) {
+    if (auto it = values_.find(name.literal()); it != values_.end())
+      return it->second;
+
+    throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
   }
 };
 
