@@ -33,6 +33,7 @@
 #include "expr.hh"
 #include "stmt.hh"
 #include "value.hh"
+#include "environment.hh"
 
 namespace loxpp::interpret {
 
@@ -42,6 +43,7 @@ class Interpreter final
   , public std::enable_shared_from_this<Interpreter> {
   ErrorReporter& err_reporter_;
   value::Value value_{};
+  env::Environment environment_;
 
   inline value::Value evaluate(const expr::ExprPtr& expr) noexcept {
     expr->accept(shared_from_this());
@@ -146,7 +148,15 @@ class Interpreter final
   }
 
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
-  virtual void visit_var(const stmt::VarPtr& stmt) override {}
+
+  virtual void visit_var(const stmt::VarPtr& stmt) override {
+    value::Value value = nullptr;
+    if (stmt->initializer() != nullptr)
+      value = evaluate(stmt->initializer());
+
+    environment_.define(stmt->name().literal(), value);
+  }
+
   virtual void visit_while(const stmt::WhilePtr& stmt) override {}
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept : err_reporter_{err_reporter} {}
