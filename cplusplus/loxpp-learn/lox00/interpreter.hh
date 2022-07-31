@@ -130,7 +130,9 @@ class Interpreter final
     }
   }
 
-  virtual void visit_variable(const expr::VariablePtr& expr) override {}
+  virtual void visit_variable(const expr::VariablePtr& expr) override {
+    value_ = environment_.get(expr->name());
+  }
 
   virtual void visit_block(const stmt::BlockPtr& stmt) override {}
   virtual void visit_class(const stmt::ClassPtr& stmt) override {}
