@@ -41,7 +41,8 @@ namespace loxpp::parser {
 // statement    -> exprStmt | printStmt ;
 // exprStmt     -> expression ";" ;
 // printStmt    -> "print" expression ";" ;
-// expression   -> equality ;
+// expression   -> assignment ;
+// assignment   -> IDENTIFIER  "=" assignment | equality ;
 // equality     -> comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison   -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term         -> factor ( ( "-" | "+" ) factor )* ;
@@ -161,9 +162,27 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr expression() noexcept {
-    // expression -> equality ;
+    // expression -> assignment ;
 
-    return equality();
+    return assignment();
+  }
+
+  inline expr::ExprPtr assignment() noexcept {
+    // assignment -> IDENTIFIER "=" assignment | equality ;
+
+    expr::ExprPtr expr = equality();
+    if (match({TokenType::TK_EQ})) {
+      const Token& equals = prev();
+      expr::ExprPtr value = assignment();
+
+      if (std::dynamic_pointer_cast<expr::Variable>(expr)) {
+        const Token& name = std::static_pointer_cast<expr::Variable>(expr)->name();
+        return std::make_shared<expr::Assign>(name, value);
+      }
+
+      error(equals, "invalid assignment target");
+    }
+    return expr;
   }
 
   inline expr::ExprPtr equality() noexcept {
