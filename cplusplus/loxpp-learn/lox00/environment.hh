@@ -41,6 +41,15 @@ public:
     values_[name] = value;
   }
 
+  inline void assign(const Token& name, const value::Value& value) noexcept(false) {
+    if (auto it = values_.find(name.literal()); it != values_.end()) {
+      values_[name.literal()] = value;
+      return;
+    }
+
+    throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
+  }
+
   inline const value::Value& get(const Token& name) noexcept(false) {
     if (auto it = values_.find(name.literal()); it != values_.end())
       return it->second;
