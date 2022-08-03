@@ -66,7 +66,13 @@ class Interpreter final
     throw RuntimeError(oper, "operands must be two numerics or two strings.");
   }
 
-  virtual void visit_assign(const expr::AssignPtr& expr) override {}
+  virtual void visit_assign(const expr::AssignPtr& expr) override {
+    value::Value value = evaluate(expr->value());
+    environment_.assign(expr->name(), value);
+    value_ = value;
+
+    // TODO:
+  }
 
   virtual void visit_binary(const expr::BinaryPtr& expr) override {
     value::Value left = evaluate(expr->left());
