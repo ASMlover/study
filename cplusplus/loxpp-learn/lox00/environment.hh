@@ -34,9 +34,16 @@
 
 namespace loxpp::env {
 
+class Environment;
+using EnvironmentPtr = std::shared_ptr<Environment>;
+
 class Environment final : private UnCopyable {
+  EnvironmentPtr enclosing_{};
   std::unordered_map<str_t, value::Value> values_;
 public:
+  Environment() noexcept {}
+  Environment(EnvironmentPtr enclosing) noexcept : enclosing_{enclosing} {}
+
   inline void define(const str_t& name, const value::Value& value) noexcept {
     values_[name] = value;
   }
@@ -47,12 +54,20 @@ public:
       return;
     }
 
+    if (enclosing_) {
+      enclosing_->assign(name, value);
+      return;
+    }
+
     throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
   }
 
   inline const value::Value& get(const Token& name) noexcept(false) {
     if (auto it = values_.find(name.literal()); it != values_.end())
       return it->second;
+
+    if (enclosing_)
+      return enclosing_->get(name);
 
     throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
   }
