@@ -38,9 +38,10 @@ namespace loxpp::parser {
 // program      -> declaration* EOF ;
 // declaration  -> varDecl | statement ;
 // varDecl      -> "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement    -> exprStmt | printStmt ;
+// statement    -> exprStmt | printStmt | block ;
 // exprStmt     -> expression ";" ;
 // printStmt    -> "print" expression ";" ;
+// block        -> "{" declaration* "}" ;
 // expression   -> assignment ;
 // assignment   -> IDENTIFIER  "=" assignment | equality ;
 // equality     -> comparison ( ( "!=" | "==" ) comparison )* ;
@@ -140,9 +141,13 @@ class Parser final : private UnCopyable {
   }
 
   inline stmt::StmtPtr statement() noexcept {
-    // statement -> exprStmt | printStmt ;
+    // statement -> exprStmt | printStmt | block ;
 
-    return match({TokenType::KW_PRINT}) ? print_statement() : expression_statement();
+    if (match({TokenType::KW_PRINT}))
+      return print_statement();
+    if (match({TokenType::TK_LBRACE}))
+      return std::make_shared<stmt::Block>(block());
+    return expression_statement();
   }
 
   inline stmt::StmtPtr print_statement() noexcept {
@@ -151,6 +156,17 @@ class Parser final : private UnCopyable {
     expr::ExprPtr value = expression();
     consume(TokenType::TK_SEMI, "expect `;` after value ...");
     return std::make_shared<stmt::Print>(value);
+  }
+
+  inline std::vector<stmt::StmtPtr> block() noexcept {
+    // block -> "{" declaration* "}" ;
+
+    std::vector<stmt::StmtPtr> statements;
+    while (!check(TokenType::TK_RBRACE) && !is_at_end())
+      statements.emplace_back(declaration());
+
+    consume(TokenType::TK_RBRACE, "expect `}` after block");
+    return statements;
   }
 
   inline stmt::StmtPtr expression_statement() noexcept {
