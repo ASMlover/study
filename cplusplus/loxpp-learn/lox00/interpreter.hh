@@ -43,7 +43,7 @@ class Interpreter final
   , public std::enable_shared_from_this<Interpreter> {
   ErrorReporter& err_reporter_;
   value::Value value_{};
-  env::Environment environment_;
+  env::EnvironmentPtr environment_;
 
   inline value::Value evaluate(const expr::ExprPtr& expr) noexcept {
     expr->accept(shared_from_this());
@@ -52,6 +52,16 @@ class Interpreter final
 
   inline void execute(const stmt::StmtPtr& stmt) noexcept {
     stmt->accept(shared_from_this());
+  }
+
+  void execute_block(const std::vector<stmt::StmtPtr>& statements, const env::EnvironmentPtr& env) {
+    env::EnvironmentPtr prev = environment_;
+
+    environment_ = env;
+    for (const auto& stmt : statements)
+      execute(stmt);
+
+    environment_ = prev;
   }
 
   void check_numeric_operands(const Token& oper, const value::Value& left, const value::Value& right) {
@@ -68,7 +78,7 @@ class Interpreter final
 
   virtual void visit_assign(const expr::AssignPtr& expr) override {
     value::Value value = evaluate(expr->value());
-    environment_.assign(expr->name(), value);
+    environment_->assign(expr->name(), value);
     value_ = value;
 
     // TODO:
@@ -137,10 +147,13 @@ class Interpreter final
   }
 
   virtual void visit_variable(const expr::VariablePtr& expr) override {
-    value_ = environment_.get(expr->name());
+    value_ = environment_->get(expr->name());
   }
 
-  virtual void visit_block(const stmt::BlockPtr& stmt) override {}
+  virtual void visit_block(const stmt::BlockPtr& stmt) override {
+    execute_block(stmt->statements(), std::make_shared<env::Environment>(environment_));
+  }
+
   virtual void visit_class(const stmt::ClassPtr& stmt) override {}
 
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
@@ -162,12 +175,15 @@ class Interpreter final
     if (stmt->initializer() != nullptr)
       value = evaluate(stmt->initializer());
 
-    environment_.define(stmt->name().literal(), value);
+    environment_->define(stmt->name().literal(), value);
   }
 
   virtual void visit_while(const stmt::WhilePtr& stmt) override {}
 public:
-  Interpreter(ErrorReporter& err_reporter) noexcept : err_reporter_{err_reporter} {}
+  Interpreter(ErrorReporter& err_reporter) noexcept
+    : err_reporter_{err_reporter}
+    , environment_{new env::Environment()} {
+  }
 
   void interpret(const expr::ExprPtr& expression) noexcept {
     try {
