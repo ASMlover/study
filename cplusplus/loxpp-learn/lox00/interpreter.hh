@@ -161,7 +161,14 @@ class Interpreter final
   }
 
   virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
-  virtual void visit_if(const stmt::IfPtr& stmt) override {}
+
+  virtual void visit_if(const stmt::IfPtr& stmt) override {
+    value::Value cond = evaluate(stmt->condition());
+    if (cond.is_truthy())
+      execute(stmt->then_branch());
+    else if (stmt->else_branch())
+      execute(stmt->else_branch());
+  }
 
   virtual void visit_print(const stmt::PrintPtr& stmt) override {
     value::Value value = evaluate(stmt->expression());
