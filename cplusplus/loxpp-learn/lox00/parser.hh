@@ -204,7 +204,7 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr assignment() noexcept {
-    // assignment -> IDENTIFIER "=" assignment | equality ;
+    // assignment -> IDENTIFIER "=" assignment | logic_or ;
 
     expr::ExprPtr expr = equality();
     if (match({TokenType::TK_EQ})) {
@@ -219,6 +219,26 @@ class Parser final : private UnCopyable {
       error(equals, "invalid assignment target");
     }
     return expr;
+  }
+
+  inline expr::ExprPtr logic_or() noexcept {
+    // logic_or -> logic_and ( "or" logic_and )* ;
+
+    expr::ExprPtr expr = logic_and();
+    while (match({TokenType::KW_OR})) {
+      Token oper = prev();
+      expr::ExprPtr right = logic_and();
+      expr = std::make_shared<expr::Logical>(expr, oper, right);
+    }
+
+    return expr;
+  }
+
+  inline expr::ExprPtr logic_and() noexcept {
+    // logic_and -> equality ( "and" equality )* ;
+
+    // TODO:
+    return nullptr;
   }
 
   inline expr::ExprPtr equality() noexcept {
