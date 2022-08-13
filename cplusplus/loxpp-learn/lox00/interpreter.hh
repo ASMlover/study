@@ -130,7 +130,25 @@ class Interpreter final
     value_ = expr->value();
   }
 
-  virtual void visit_logical(const expr::LogicalPtr& expr) override {}
+  virtual void visit_logical(const expr::LogicalPtr& expr) override {
+    value::Value left = evaluate(expr->left());
+
+    if (expr->oper().type() == TokenType::KW_OR) {
+      if (left.is_truthy()) {
+        value_ = left;
+        return;
+      }
+    }
+    else {
+      if (!left.is_truthy()) {
+        value_ = left;
+        return;
+      }
+    }
+
+    value_ = evaluate(expr->right());
+  }
+
   virtual void visit_set(const expr::SetPtr& expr) override {}
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
