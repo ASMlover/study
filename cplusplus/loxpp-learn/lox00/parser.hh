@@ -38,9 +38,10 @@ namespace loxpp::parser {
 // program      -> declaration* EOF ;
 // declaration  -> varDecl | statement ;
 // varDecl      -> "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement    -> exprStmt | ifStmt | printStmt | block ;
+// statement    -> exprStmt | ifStmt | whileStmt | printStmt | block ;
 // exprStmt     -> expression ";" ;
 // ifStmt       -> "if" "(" expression ")" statement ( "else" statement )? ;
+// whileStmt    -> "while" "(" expression ")" statement ;
 // printStmt    -> "print" expression ";" ;
 // block        -> "{" declaration* "}" ;
 // expression   -> assignment ;
