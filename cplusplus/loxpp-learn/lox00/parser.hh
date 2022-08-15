@@ -149,6 +149,8 @@ class Parser final : private UnCopyable {
 
     if (match({TokenType::KW_IF}))
       return if_statement();
+    if (match({TokenType::KW_WHILE}))
+      return while_statement();
     if (match({TokenType::KW_PRINT}))
       return print_statement();
     if (match({TokenType::TK_LBRACE}))
@@ -184,7 +186,7 @@ class Parser final : private UnCopyable {
   }
 
   inline stmt::StmtPtr if_statement() noexcept {
-    // "if" "(" expression ")" statement ( "else" statement )? ;
+    // ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
 
     consume(TokenType::TK_LPAREN, "expect `(` after `if`");
     expr::ExprPtr condition = expression();
@@ -196,6 +198,17 @@ class Parser final : private UnCopyable {
       else_branch = statement();
 
     return std::make_shared<stmt::If>(condition, then_branch, else_branch);
+  }
+
+  inline stmt::StmtPtr while_statement() noexcept {
+    // whileStmt -> "while" "(" expression ")" statement ;
+
+    consume(TokenType::TK_LPAREN, "expect `(` after `while`");
+    expr::ExprPtr cond = expression();
+    consume(TokenType::TK_RPAREN, "expect `)` after while condition");
+    stmt::StmtPtr body = statement();
+
+    return std::make_shared<stmt::While>(cond, body);
   }
 
   inline expr::ExprPtr expression() noexcept {
