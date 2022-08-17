@@ -203,7 +203,10 @@ class Interpreter final
     environment_->define(stmt->name().literal(), value);
   }
 
-  virtual void visit_while(const stmt::WhilePtr& stmt) override {}
+  virtual void visit_while(const stmt::WhilePtr& stmt) override {
+    while (evaluate(stmt->condition()).is_truthy())
+      execute(stmt->body());
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}
