@@ -212,6 +212,21 @@ class Parser final : private UnCopyable {
     return std::make_shared<stmt::While>(cond, body);
   }
 
+  inline stmt::StmtPtr for_statement() noexcept {
+    // forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+
+    consume(TokenType::TK_LPAREN, "expect `(` after `for`");
+    stmt::StmtPtr initializer;
+    if (match({TokenType::TK_SEMI}))
+      initializer = nullptr;
+    else if (match({TokenType::KW_VAR}))
+      initializer = var_declaration();
+    else
+      initializer = expression_statement();
+
+    return nullptr;
+  }
+
   inline expr::ExprPtr expression() noexcept {
     // expression -> assignment ;
 
