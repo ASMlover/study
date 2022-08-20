@@ -224,17 +224,31 @@ class Parser final : private UnCopyable {
     else
       initializer = expression_statement();
 
-    expr::ExprPtr condition = nullptr;
+    expr::ExprPtr condition;
     if (!check(TokenType::TK_SEMI))
       condition = expression();
     consume(TokenType::TK_SEMI, "expect `;` after loop condition");
 
-    expr::ExprPtr increment = nullptr;
+    expr::ExprPtr increment;
     if (!check(TokenType::TK_RPAREN))
       increment = expression();
     consume(TokenType::TK_RPAREN, "expect `)` after for clauses");
 
-    return nullptr;
+    stmt::StmtPtr body = statement();
+    if (increment) {
+      std::vector<stmt::StmtPtr> stmts{body, std::make_shared<stmt::Expression>(increment)};
+      body = std::make_shared<stmt::Block>(stmts);
+    }
+    if (!condition)
+      condition = std::make_shared<expr::Literal>(true);
+    body = std::make_shared<stmt::While>(condition, body);
+
+    if (!initializer) {
+      std::vector<stmt::StmtPtr> stmts{initializer, body};
+      body = std::make_shared<stmt::Block>(stmts);
+    }
+
+    return body;
   }
 
   inline expr::ExprPtr expression() noexcept {
