@@ -224,6 +224,16 @@ class Parser final : private UnCopyable {
     else
       initializer = expression_statement();
 
+    expr::ExprPtr condition = nullptr;
+    if (!check(TokenType::TK_SEMI))
+      condition = expression();
+    consume(TokenType::TK_SEMI, "expect `;` after loop condition");
+
+    expr::ExprPtr increment = nullptr;
+    if (!check(TokenType::TK_RPAREN))
+      increment = expression();
+    consume(TokenType::TK_RPAREN, "expect `)` after for clauses");
+
     return nullptr;
   }
 
