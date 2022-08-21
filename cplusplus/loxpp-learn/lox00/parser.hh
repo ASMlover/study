@@ -152,6 +152,8 @@ class Parser final : private UnCopyable {
       return if_statement();
     if (match({TokenType::KW_WHILE}))
       return while_statement();
+    if (match({TokenType::KW_FOR}))
+      return for_statement();
     if (match({TokenType::KW_PRINT}))
       return print_statement();
     if (match({TokenType::TK_LBRACE}))
