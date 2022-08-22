@@ -53,7 +53,9 @@ namespace loxpp::parser {
 // comparison   -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term         -> factor ( ( "-" | "+" ) factor )* ;
 // factor       -> unary ( ( "/" | "*" ) unary )* ;
-// unary        -> ( "!" | "-" ) unary | primary ;
+// unary        -> ( "!" | "-" ) unary | call ;
+// call         -> primary ( "(" arguments? ")" )* ;
+// arguments    -> expression ( "," expression )* ;
 // primary      -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 
 class ParserError final : public Copyable, public std::exception {};
