@@ -364,6 +364,25 @@ class Parser final : private UnCopyable {
     return primary();
   }
 
+  inline expr::ExprPtr call() noexcept {
+    // call -> primary ( "(" arguments? ")" )* ;
+
+    expr::ExprPtr expr = primary();
+    while (true) {
+      if (match({TokenType::TK_LPAREN}))
+        expr = finish_call(expr);
+      else
+        break;
+    }
+
+    return expr;
+  }
+
+  inline expr::ExprPtr finish_call(const expr::ExprPtr& callee)  noexcept {
+    // TODO:
+    return nullptr;
+  }
+
   inline expr::ExprPtr primary() noexcept(false) {
     // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 
