@@ -379,8 +379,15 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr finish_call(const expr::ExprPtr& callee)  noexcept {
-    // TODO:
-    return nullptr;
+    std::vector<expr::ExprPtr> arguments;
+    if (!check(TokenType::TK_LPAREN)) {
+      do {
+        arguments.push_back(expression());
+      } while (match({TokenType::TK_COMMA}));
+    }
+    Token paren = consume(TokenType::TK_RPAREN, "expect `)` after arguments");
+
+    return std::make_shared<expr::Call>(callee, paren, arguments);
   }
 
   inline expr::ExprPtr primary() noexcept(false) {
