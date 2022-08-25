@@ -382,6 +382,8 @@ class Parser final : private UnCopyable {
     std::vector<expr::ExprPtr> arguments;
     if (!check(TokenType::TK_LPAREN)) {
       do {
+        if (arguments.size() >= 255)
+          error(peek(), "cannot have more than 255 arguments");
         arguments.push_back(expression());
       } while (match({TokenType::TK_COMMA}));
     }
