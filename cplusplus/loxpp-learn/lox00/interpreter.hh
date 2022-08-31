@@ -121,12 +121,12 @@ class Interpreter final
 
   virtual void visit_call(const expr::CallPtr& expr) override {
     value::Value callee = evaluate(expr->callee());
+    if (!callee.is_callable())
+      throw RuntimeError(expr->paren(), "can only call functions and classes");
 
     std::vector<value::Value> arguments;
     for (const auto& argument : expr->arguments())
       arguments.push_back(evaluate(argument));
-
-    // TODO:
   }
 
   virtual void visit_get(const expr::GetPtr& expr) override {}
