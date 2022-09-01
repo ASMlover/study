@@ -114,6 +114,10 @@ template <typename T, typename PTR> inline T* get_rawptr(const PTR& p) noexcept 
   return p.get();
 }
 
+template <typename N> inline str_t as_string(N n) noexcept {
+  return std::to_string(n);
+}
+
 inline str_t as_string(double d) noexcept {
   ss_t ss;
   ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
