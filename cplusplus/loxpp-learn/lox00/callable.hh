@@ -40,6 +40,7 @@ interface Callable : private UnCopyable {
   virtual ~Callable() {}
 
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) = 0;
+  virtual sz_t arity() const = 0;
   virtual str_t as_string() const = 0;
 };
 
