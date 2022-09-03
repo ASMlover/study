@@ -34,6 +34,7 @@
 #include "stmt.hh"
 #include "value.hh"
 #include "environment.hh"
+#include "callable.hh"
 
 namespace loxpp::interpret {
 
@@ -127,6 +128,13 @@ class Interpreter final
     std::vector<value::Value> arguments;
     for (const auto& argument : expr->arguments())
       arguments.push_back(evaluate(argument));
+
+    auto function = callee.as_callable();
+    if (arguments.size() != function->arity()) {
+      throw RuntimeError(expr->paren(), "expected " + as_string(function->arity())
+          + " arguments but got " + as_string(arguments.size()));
+    }
+    value_ = function->call(shared_from_this(), arguments);
   }
 
   virtual void visit_get(const expr::GetPtr& expr) override {}
