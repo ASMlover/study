@@ -44,6 +44,7 @@ class Interpreter final
   , public std::enable_shared_from_this<Interpreter> {
   ErrorReporter& err_reporter_;
   value::Value value_{};
+  env::EnvironmentPtr globals_;
   env::EnvironmentPtr environment_;
 
   inline value::Value evaluate(const expr::ExprPtr& expr) noexcept {
@@ -227,7 +228,8 @@ class Interpreter final
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}
-    , environment_{new env::Environment()} {
+    , globals_{new env::Environment()}
+    , environment_{globals_} {
   }
 
   void interpret(const expr::ExprPtr& expression) noexcept {
