@@ -35,6 +35,7 @@
 #include "value.hh"
 #include "environment.hh"
 #include "callable.hh"
+#include "builtins.hh"
 
 namespace loxpp::interpret {
 
@@ -229,7 +230,8 @@ public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}
     , globals_{new env::Environment()}
-    , environment_{globals_} {
+    , environment_{globals_} {
+    globals_->define("clock", value::Value(std::make_shared<builtins::NativeClock>()));
   }
 
   void interpret(const expr::ExprPtr& expression) noexcept {
