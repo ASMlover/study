@@ -125,9 +125,11 @@ class Parser final : private UnCopyable {
   }
 
   inline stmt::StmtPtr declaration() noexcept {
-    // declaration -> varDecl | statement ;
+    // declaration -> funDecl | varDecl | statement ;
 
     try {
+      if (match({TokenType::KW_FUN}))
+        return function("function");
       if (match({TokenType::KW_VAR}))
         return var_declaration();
       return statement();
@@ -136,6 +138,14 @@ class Parser final : private UnCopyable {
       synchronize();
       return nullptr;
     }
+  }
+
+  inline stmt::FunctionPtr function(const str_t& kind) noexcept {
+    // function -> IDENTIFIER "(" parameters? ")" block ;
+    // TODO:
+
+    Token name = consume(TokenType::TK_IDENTIFIER, "expect " + kind + " name");
+    return nullptr;
   }
 
   inline stmt::StmtPtr var_declaration() noexcept {
