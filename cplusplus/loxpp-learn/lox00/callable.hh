@@ -29,6 +29,7 @@
 #include <vector>
 #include "common.hh"
 #include "value.hh"
+#include "stmt.hh"
 
 namespace loxpp::interpret { class Interpreter; }
 
@@ -42,6 +43,14 @@ interface Callable : private UnCopyable {
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) = 0;
   virtual sz_t arity() const = 0;
   virtual str_t as_string() const = 0;
+};
+
+class Function final : public Callable {
+  stmt::FunctionPtr declaration_;
+public:
+  Function(const stmt::FunctionPtr& declaration) noexcept
+    : declaration_{declaration} {
+  }
 };
 
 }
