@@ -145,6 +145,18 @@ class Parser final : private UnCopyable {
     // TODO:
 
     Token name = consume(TokenType::TK_IDENTIFIER, "expect " + kind + " name");
+    consume(TokenType::TK_LPAREN, "expect `(` after " + kind + " name");
+    std::vector<Token> parameters;
+    if (!check(TokenType::TK_RPAREN)) {
+      do {
+        if (parameters.size() >= 255)
+          error(peek(), "Cannot have more than 255 parameters");
+
+        parameters.push_back(consume(TokenType::TK_IDENTIFIER, "expect parameter name"));
+      } while (match({TokenType::TK_COMMA}));
+    }
+    consume(TokenType::TK_RPAREN, "expect `)` after parameters");
+
     return nullptr;
   }
 
