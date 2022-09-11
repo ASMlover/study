@@ -142,7 +142,6 @@ class Parser final : private UnCopyable {
 
   inline stmt::FunctionPtr function(const str_t& kind) noexcept {
     // function -> IDENTIFIER "(" parameters? ")" block ;
-    // TODO:
 
     Token name = consume(TokenType::TK_IDENTIFIER, "expect " + kind + " name");
     consume(TokenType::TK_LPAREN, "expect `(` after " + kind + " name");
@@ -157,7 +156,9 @@ class Parser final : private UnCopyable {
     }
     consume(TokenType::TK_RPAREN, "expect `)` after parameters");
 
-    return nullptr;
+    consume(TokenType::TK_LBRACE, "expect `{` before " + kind + " body");
+    std::vector<stmt::StmtPtr> body = block();
+    return std::make_shared<stmt::Function>(name, parameters, body);
   }
 
   inline stmt::StmtPtr var_declaration() noexcept {
