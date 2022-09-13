@@ -35,7 +35,7 @@ namespace loxpp::interpret { class Interpreter; }
 
 namespace loxpp::callable {
 
-using InterpreterPtr = std::shared_ptr<interpret::Interpreter>;
+using InterpreterPtr =  std::shared_ptr<interpret::Interpreter>;
 
 interface Callable : private UnCopyable {
   virtual ~Callable() {}
@@ -51,6 +51,8 @@ public:
   Function(const stmt::FunctionPtr& declaration) noexcept
     : declaration_{declaration} {
   }
+
+  virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
 };
 
 }
