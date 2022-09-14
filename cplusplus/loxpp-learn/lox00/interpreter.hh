@@ -234,6 +234,13 @@ public:
     globals_->define("clock", value::Value(std::make_shared<builtins::NativeClock>()));
   }
 
+  inline env::EnvironmentPtr globals() const noexcept { return globals_; }
+
+  inline void invoke_execute_block(
+      const std::vector<stmt::StmtPtr>& stmts, const env::EnvironmentPtr& env) noexcept {
+    execute_block(stmts, env);
+  }
+
   void interpret(const expr::ExprPtr& expression) noexcept {
     try {
       value::Value value = evaluate(expression);
