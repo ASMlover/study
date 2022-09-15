@@ -25,11 +25,17 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "interpreter.hh"
+#include "environment.hh"
 #include "callable.hh"
 
 namespace loxpp::callable {
 
 value::Value Function::call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) {
+  env::EnvironmentPtr environment = std::make_shared<env::Environment>(interp->globals());
+  for (sz_t i = 0; i < arguments.size(); ++i)
+    environment->define(declaration_->params()[i].literal(), arguments[i]);
+
+  interp->invoke_execute_block(declaration_->body(), environment);
   return nullptr;
 }
 
