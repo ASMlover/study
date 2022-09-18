@@ -290,7 +290,7 @@ class Parser final : private UnCopyable {
   inline expr::ExprPtr assignment() noexcept {
     // assignment -> IDENTIFIER "=" assignment | logic_or ;
 
-    expr::ExprPtr expr = equality();
+    expr::ExprPtr expr = logic_or();
     if (match({TokenType::TK_EQ})) {
       const Token& equals = prev();
       expr::ExprPtr value = assignment();
@@ -380,14 +380,14 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr unary() noexcept {
-    // unary -> ( "!" | "-" ) unary | primary ;
+    // unary -> ( "!" | "-" ) unary | call ;
 
     if (match({TokenType::TK_NOT, TokenType::TK_MINUS})) {
       Token oper = prev();
       expr::ExprPtr right = unary();
       return std::make_shared<expr::Unary>(oper, right);
     }
-    return primary();
+    return call();
   }
 
   inline expr::ExprPtr call() noexcept {
@@ -406,7 +406,7 @@ class Parser final : private UnCopyable {
 
   inline expr::ExprPtr finish_call(const expr::ExprPtr& callee)  noexcept {
     std::vector<expr::ExprPtr> arguments;
-    if (!check(TokenType::TK_LPAREN)) {
+    if (!check(TokenType::TK_RPAREN)) {
       do {
         if (arguments.size() >= 255)
           error(peek(), "cannot have more than 255 arguments");
