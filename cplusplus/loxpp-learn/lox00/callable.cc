@@ -39,4 +39,10 @@ value::Value Function::call(const InterpreterPtr& interp, const std::vector<valu
   return nullptr;
 }
 
+str_t Function::as_string() const {
+  ss_t ss;
+  ss << "<fn " << declaration_->name().as_string() << ">";
+  return ss.str();
+}
+
 }
