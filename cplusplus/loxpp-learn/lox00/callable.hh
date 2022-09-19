@@ -45,6 +45,9 @@ interface Callable : private UnCopyable {
   virtual str_t as_string() const = 0;
 };
 
+class Function;
+using FunctionPtr = std::shared_ptr<Function>;
+
 class Function final : public Callable {
   stmt::FunctionPtr declaration_;
 public:
