@@ -197,7 +197,10 @@ class Interpreter final
     evaluate(stmt->expression());
   }
 
-  virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
+  virtual void visit_function(const stmt::FunctionPtr& stmt) override {
+    callable::FunctionPtr function = std::make_shared<callable::Function>(stmt);
+    environment_->define(stmt->name().literal(), value::Value(function));
+  }
 
   virtual void visit_if(const stmt::IfPtr& stmt) override {
     value::Value cond = evaluate(stmt->condition());
