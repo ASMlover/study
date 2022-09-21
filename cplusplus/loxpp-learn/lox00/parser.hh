@@ -41,12 +41,13 @@ namespace loxpp::parser {
 // function     -> IDENTIFIER "(" parameters? ")" block ;
 // parameters   -> IDENTIFIER ( "," IDENTIFIER )* ;
 // varDecl      -> "var" IDENTIFIER ( "=" expression )? ";" ;
-// statement    -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | block ;
+// statement    -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | returnStmt | block ;
 // exprStmt     -> expression ";" ;
 // ifStmt       -> "if" "(" expression ")" statement ( "else" statement )? ;
 // whileStmt    -> "while" "(" expression ")" statement ;
 // forStmt      -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
 // printStmt    -> "print" expression ";" ;
+// returnStmt   -> "return" expression? ";" ;
 // block        -> "{" declaration* "}" ;
 // expression   -> assignment ;
 // assignment   -> IDENTIFIER  "=" assignment | logic_or ;
