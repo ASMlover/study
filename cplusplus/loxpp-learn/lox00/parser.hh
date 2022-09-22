@@ -175,7 +175,7 @@ class Parser final : private UnCopyable {
   }
 
   inline stmt::StmtPtr statement() noexcept {
-    // statement -> exprStmt | printStmt | block ;
+    // statement    -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | returnStmt | block ;
 
     if (match({TokenType::KW_IF}))
       return if_statement();
@@ -185,6 +185,8 @@ class Parser final : private UnCopyable {
       return for_statement();
     if (match({TokenType::KW_PRINT}))
       return print_statement();
+    if (match({TokenType::KW_RETURN}))
+      return return_statement();
     if (match({TokenType::TK_LBRACE}))
       return std::make_shared<stmt::Block>(block());
     return expression_statement();
@@ -280,6 +282,18 @@ class Parser final : private UnCopyable {
     }
 
     return body;
+  }
+
+  inline stmt::StmtPtr return_statement() noexcept {
+    // returnStmt -> "return" expression? ";" ;
+
+    Token keyword = prev();
+    expr::ExprPtr value = nullptr;
+    if (!check(TokenType::TK_SEMI))
+      value = expression();
+
+    consume(TokenType::TK_SEMI, "expect `;` after return value");
+    return std::make_shared<stmt::Return>(keyword, value);
   }
 
   inline expr::ExprPtr expression() noexcept {
