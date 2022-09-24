@@ -36,6 +36,7 @@
 #include "environment.hh"
 #include "callable.hh"
 #include "builtins.hh"
+#include "return.hh"
 
 namespace loxpp::interpret {
 
@@ -215,7 +216,10 @@ class Interpreter final
     std::cout << value << std::endl;
   }
 
-  virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
+  virtual void visit_return(const stmt::ReturnPtr& stmt) override {
+    expr::ExprPtr value = stmt->value();
+    throw except::Return(value ?  evaluate(value) : value::Value{});
+  }
 
   virtual void visit_var(const stmt::VarPtr& stmt) override {
     value::Value value = nullptr;
