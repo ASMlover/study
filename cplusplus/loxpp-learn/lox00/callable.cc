@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "interpreter.hh"
 #include "environment.hh"
+#include "return.hh"
 #include "callable.hh"
 
 namespace loxpp::callable {
@@ -35,7 +36,13 @@ value::Value Function::call(const InterpreterPtr& interp, const std::vector<valu
   for (sz_t i = 0; i < arguments.size(); ++i)
     environment->define(declaration_->params()[i].literal(), arguments[i]);
 
-  interp->invoke_execute_block(declaration_->body(), environment);
+  try {
+    interp->invoke_execute_block(declaration_->body(), environment);
+  }
+  catch (const except::Return& rv) {
+    return rv.value();
+  }
+
   return nullptr;
 }
 
