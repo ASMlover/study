@@ -29,6 +29,7 @@
 #include <vector>
 #include "common.hh"
 #include "value.hh"
+#include "environment.hh"
 #include "stmt.hh"
 
 namespace loxpp::interpret { class Interpreter; }
@@ -50,9 +51,11 @@ using FunctionPtr = std::shared_ptr<Function>;
 
 class Function final : public Callable {
   stmt::FunctionPtr declaration_;
+  env::EnvironmentPtr closure_;
 public:
-  Function(const stmt::FunctionPtr& declaration) noexcept
-    : declaration_{declaration} {
+  Function(const stmt::FunctionPtr& declaration, const env::EnvironmentPtr& closre) noexcept
+    : declaration_{declaration}
+    , closure_{closre} {
   }
 
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
