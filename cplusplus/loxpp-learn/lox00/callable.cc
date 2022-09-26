@@ -32,7 +32,7 @@
 namespace loxpp::callable {
 
 value::Value Function::call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) {
-  env::EnvironmentPtr environment = std::make_shared<env::Environment>(interp->globals());
+  env::EnvironmentPtr environment = std::make_shared<env::Environment>(closure_);
   for (sz_t i = 0; i < arguments.size(); ++i)
     environment->define(declaration_->params()[i].literal(), arguments[i]);
 
