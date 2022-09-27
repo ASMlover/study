@@ -199,7 +199,7 @@ class Interpreter final
   }
 
   virtual void visit_function(const stmt::FunctionPtr& stmt) override {
-    callable::FunctionPtr function = std::make_shared<callable::Function>(stmt);
+    callable::FunctionPtr function = std::make_shared<callable::Function>(stmt, environment_);
     environment_->define(stmt->name().literal(), value::Value(function));
   }
 
