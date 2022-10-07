@@ -45,6 +45,31 @@ class Resolver final
   , public stmt::Stmt::Visitor
   , public std::enable_shared_from_this<Resolver> {
   interpret::InterpreterPtr interpreter_;
+
+  virtual void visit_assign(const AssignPtr& expr) override {}
+  virtual void visit_binary(const BinaryPtr& expr) override {}
+  virtual void visit_call(const CallPtr& expr) override {}
+  virtual void visit_get(const GetPtr& expr) override {}
+  virtual void visit_grouping(const GroupingPtr& expr) override {}
+  virtual void visit_literal(const LiteralPtr& expr) override {}
+  virtual void visit_logical(const LogicalPtr& expr) override {}
+  virtual void visit_set(const SetPtr& expr) override {}
+  virtual void visit_super(const SuperPtr& expr) override {}
+  virtual void visit_this(const ThisPtr& expr) override {}
+  virtual void visit_unary(const UnaryPtr& expr) override {}
+  virtual void visit_variable(const VariablePtr& expr) override {}
+
+  virtual void visit_block(const BlockPtr& stmt) override {
+  }
+
+  virtual void visit_class(const ClassPtr& stmt) override {}
+  virtual void visit_expression(const ExpressionPtr& stmt) override {}
+  virtual void visit_function(const FunctionPtr& stmt) override {}
+  virtual void visit_if(const IfPtr& stmt) override {}
+  virtual void visit_print(const PrintPtr& stmt) override {}
+  virtual void visit_return(const ReturnPtr& stmt) override {}
+  virtual void visit_var(const VarPtr& stmt) override {}
+  virtual void visit_while(const WhilePtr& stmt) override {}
 public:
   Resolver(const interpret::InterpreterPtr& interpreter) noexcept
     : interpreter_{interpreter} {
