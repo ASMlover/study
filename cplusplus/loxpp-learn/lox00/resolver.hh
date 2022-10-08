@@ -31,7 +31,7 @@
 #include "expr.hh"
 #include "stmt.hh"
 
-namespace loxpp::loxpp::interpret {
+namespace loxpp::interpret {
 
 class Interpreter;
 using InterpreterPtr = std::shared_ptr<Interpreter>;
@@ -46,30 +46,32 @@ class Resolver final
   , public std::enable_shared_from_this<Resolver> {
   interpret::InterpreterPtr interpreter_;
 
-  virtual void visit_assign(const AssignPtr& expr) override {}
-  virtual void visit_binary(const BinaryPtr& expr) override {}
-  virtual void visit_call(const CallPtr& expr) override {}
-  virtual void visit_get(const GetPtr& expr) override {}
-  virtual void visit_grouping(const GroupingPtr& expr) override {}
-  virtual void visit_literal(const LiteralPtr& expr) override {}
-  virtual void visit_logical(const LogicalPtr& expr) override {}
-  virtual void visit_set(const SetPtr& expr) override {}
-  virtual void visit_super(const SuperPtr& expr) override {}
-  virtual void visit_this(const ThisPtr& expr) override {}
-  virtual void visit_unary(const UnaryPtr& expr) override {}
-  virtual void visit_variable(const VariablePtr& expr) override {}
+  inline void resolve(const stmt::StmtPtr& stmt) noexcept { stmt->accept(shared_from_this()); }
+private:
+  virtual void visit_assign(const expr::AssignPtr& expr) override {}
+  virtual void visit_binary(const expr::BinaryPtr& expr) override {}
+  virtual void visit_call(const expr::CallPtr& expr) override {}
+  virtual void visit_get(const expr::GetPtr& expr) override {}
+  virtual void visit_grouping(const expr::GroupingPtr& expr) override {}
+  virtual void visit_literal(const expr::LiteralPtr& expr) override {}
+  virtual void visit_logical(const expr::LogicalPtr& expr) override {}
+  virtual void visit_set(const expr::SetPtr& expr) override {}
+  virtual void visit_super(const expr::SuperPtr& expr) override {}
+  virtual void visit_this(const expr::ThisPtr& expr) override {}
+  virtual void visit_unary(const expr::UnaryPtr& expr) override {}
+  virtual void visit_variable(const expr::VariablePtr& expr) override {}
 
-  virtual void visit_block(const BlockPtr& stmt) override {
+  virtual void visit_block(const stmt::BlockPtr& stmt) override {
   }
 
-  virtual void visit_class(const ClassPtr& stmt) override {}
-  virtual void visit_expression(const ExpressionPtr& stmt) override {}
-  virtual void visit_function(const FunctionPtr& stmt) override {}
-  virtual void visit_if(const IfPtr& stmt) override {}
-  virtual void visit_print(const PrintPtr& stmt) override {}
-  virtual void visit_return(const ReturnPtr& stmt) override {}
-  virtual void visit_var(const VarPtr& stmt) override {}
-  virtual void visit_while(const WhilePtr& stmt) override {}
+  virtual void visit_class(const stmt::ClassPtr& stmt) override {}
+  virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {}
+  virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
+  virtual void visit_if(const stmt::IfPtr& stmt) override {}
+  virtual void visit_print(const stmt::PrintPtr& stmt) override {}
+  virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
+  virtual void visit_var(const stmt::VarPtr& stmt) override {}
+  virtual void visit_while(const stmt::WhilePtr& stmt) override {}
 public:
   Resolver(const interpret::InterpreterPtr& interpreter) noexcept
     : interpreter_{interpreter} {
