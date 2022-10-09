@@ -46,7 +46,13 @@ class Resolver final
   , public std::enable_shared_from_this<Resolver> {
   interpret::InterpreterPtr interpreter_;
 
+  inline void resolve(const expr::ExprPtr& expr) noexcept { expr->accept(shared_from_this()); }
   inline void resolve(const stmt::StmtPtr& stmt) noexcept { stmt->accept(shared_from_this()); }
+
+  inline void resolve(const std::vector<stmt::StmtPtr>& statements) noexcept {
+    for (const auto& stmt : statements)
+      resolve(stmt);
+  }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
