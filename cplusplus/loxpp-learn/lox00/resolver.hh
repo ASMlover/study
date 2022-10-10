@@ -27,6 +27,8 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+#include <unordered_map>
 #include "common.hh"
 #include "expr.hh"
 #include "stmt.hh"
@@ -44,7 +46,10 @@ class Resolver final
   : public expr::Expr::Visitor
   , public stmt::Stmt::Visitor
   , public std::enable_shared_from_this<Resolver> {
+  using ScopeMap = std::unordered_map<str_t, bool>;
+
   interpret::InterpreterPtr interpreter_;
+  std::vector<ScopeMap> scopes_;
 
   inline void resolve(const expr::ExprPtr& expr) noexcept { expr->accept(shared_from_this()); }
   inline void resolve(const stmt::StmtPtr& stmt) noexcept { stmt->accept(shared_from_this()); }
@@ -53,6 +58,9 @@ class Resolver final
     for (const auto& stmt : statements)
       resolve(stmt);
   }
+
+  inline void begin_scope() noexcept { scopes_.push_back({}); }
+  inline void end_scope() noexcept { scopes_.pop_back(); }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
