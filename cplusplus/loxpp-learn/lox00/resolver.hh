@@ -61,6 +61,14 @@ class Resolver final
 
   inline void begin_scope() noexcept { scopes_.push_back({}); }
   inline void end_scope() noexcept { scopes_.pop_back(); }
+
+  void declare(const Token& name) noexcept {
+    if (scopes_.empty())
+      return;
+
+    auto& scope = scopes_.back();
+    scope.insert({name.literal(), false});
+  }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
@@ -84,7 +92,10 @@ private:
   virtual void visit_if(const stmt::IfPtr& stmt) override {}
   virtual void visit_print(const stmt::PrintPtr& stmt) override {}
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
-  virtual void visit_var(const stmt::VarPtr& stmt) override {}
+
+  virtual void visit_var(const stmt::VarPtr& stmt) override {
+  }
+
   virtual void visit_while(const stmt::WhilePtr& stmt) override {}
 public:
   Resolver(const interpret::InterpreterPtr& interpreter) noexcept
