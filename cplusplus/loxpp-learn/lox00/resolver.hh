@@ -91,6 +91,9 @@ private:
   virtual void visit_variable(const expr::VariablePtr& expr) override {}
 
   virtual void visit_block(const stmt::BlockPtr& stmt) override {
+    begin_scope();
+    resolve(stmt->statements());
+    end_scope();
   }
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {}
