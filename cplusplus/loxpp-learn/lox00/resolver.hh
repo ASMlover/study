@@ -69,6 +69,13 @@ class Resolver final
     auto& scope = scopes_.back();
     scope.insert({name.literal(), false});
   }
+
+  void define(const Token& name) noexcept {
+    if (scopes_.empty())
+      return;
+
+    scopes_.back().insert({name.literal(), true});
+  }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
