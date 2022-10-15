@@ -28,6 +28,7 @@
 
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 #include "common.hh"
 #include "errors.hh"
 #include "expr.hh"
@@ -48,6 +49,7 @@ class Interpreter final
   value::Value value_{};
   env::EnvironmentPtr globals_;
   env::EnvironmentPtr environment_;
+  std::unordered_map<expr::ExprPtr, int> locals_;
 
   inline value::Value evaluate(const expr::ExprPtr& expr) noexcept {
     expr->accept(shared_from_this());
@@ -246,6 +248,10 @@ public:
   inline void invoke_execute_block(
       const std::vector<stmt::StmtPtr>& stmts, const env::EnvironmentPtr& env) noexcept {
     execute_block(stmts, env);
+  }
+
+  template <typename N> inline void resolve(const expr::ExprPtr& expr, N depth) noexcept {
+    locals_.insert({expr, as_type<int>(depth)});
   }
 
   void interpret(const expr::ExprPtr& expression) noexcept {
