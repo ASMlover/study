@@ -30,6 +30,7 @@
 #include <vector>
 #include <unordered_map>
 #include "common.hh"
+#include "errors.hh"
 #include "expr.hh"
 #include "stmt.hh"
 
@@ -76,6 +77,9 @@ class Resolver final
 
     scopes_.back().insert({name.literal(), true});
   }
+
+  void resolve_local(const expr::ExprPtr& expr, const Token& name) noexcept {
+  }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
@@ -88,7 +92,17 @@ private:
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
   virtual void visit_unary(const expr::UnaryPtr& expr) override {}
-  virtual void visit_variable(const expr::VariablePtr& expr) override {}
+
+  virtual void visit_variable(const expr::VariablePtr& expr) override {
+    if (!scopes_.empty()) {
+      auto& scope = scopes_.back();
+      str_t name = expr->name().literal();
+      if (scope.find(name) != scope.end() && !scope[name])
+        throw RuntimeError(expr->name(), "cannot read local variable in its own initializer ...");
+    }
+
+    resolve_local(expr, expr->name());
+  }
 
   virtual void visit_block(const stmt::BlockPtr& stmt) override {
     begin_scope();
