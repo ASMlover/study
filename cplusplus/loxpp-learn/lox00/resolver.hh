@@ -33,13 +33,7 @@
 #include "errors.hh"
 #include "expr.hh"
 #include "stmt.hh"
-
-namespace loxpp::interpret {
-
-class Interpreter;
-using InterpreterPtr = std::shared_ptr<Interpreter>;
-
-}
+#include "interpreter.hh"
 
 namespace loxpp::resolver {
 
@@ -48,8 +42,9 @@ class Resolver final
   , public stmt::Stmt::Visitor
   , public std::enable_shared_from_this<Resolver> {
   using ScopeMap = std::unordered_map<str_t, bool>;
+  using InterpreterPtr = std::shared_ptr<interpret::Interpreter>;
 
-  interpret::InterpreterPtr interpreter_;
+  InterpreterPtr interpreter_;
   std::vector<ScopeMap> scopes_;
 
   inline void resolve(const expr::ExprPtr& expr) noexcept { expr->accept(shared_from_this()); }
@@ -79,6 +74,14 @@ class Resolver final
   }
 
   void resolve_local(const expr::ExprPtr& expr, const Token& name) noexcept {
+    sz_t n = scopes_.size() - 1;
+    for (sz_t i = n; i >= 0; --i) {
+      auto& scope = scopes_[i];
+      if (scope.find(name.literal()) != scope.end()) {
+        interpreter_->resolve(expr, n - i);
+        return;
+      }
+    }
   }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {}
@@ -122,7 +125,7 @@ private:
 
   virtual void visit_while(const stmt::WhilePtr& stmt) override {}
 public:
-  Resolver(const interpret::InterpreterPtr& interpreter) noexcept
+  Resolver(const InterpreterPtr& interpreter) noexcept
     : interpreter_{interpreter} {
   }
 };
