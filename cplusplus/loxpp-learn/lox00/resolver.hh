@@ -84,7 +84,11 @@ class Resolver final
     }
   }
 private:
-  virtual void visit_assign(const expr::AssignPtr& expr) override {}
+  virtual void visit_assign(const expr::AssignPtr& expr) override {
+    resolve(expr->value());
+    resolve_local(expr, expr->name());
+  }
+
   virtual void visit_binary(const expr::BinaryPtr& expr) override {}
   virtual void visit_call(const expr::CallPtr& expr) override {}
   virtual void visit_get(const expr::GetPtr& expr) override {}
