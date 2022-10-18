@@ -83,6 +83,18 @@ class Resolver final
       }
     }
   }
+
+  void resolve_function(const stmt::FunctionPtr& function) noexcept {
+    begin_scope();
+
+    for (const Token& param : function->params()) {
+      declare(param);
+      define(param);
+    }
+    resolve(function->body());
+
+    end_scope();
+  }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {
     resolve(expr->value());
