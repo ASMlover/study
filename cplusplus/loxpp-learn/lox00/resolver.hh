@@ -131,7 +131,14 @@ private:
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {}
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {}
-  virtual void visit_function(const stmt::FunctionPtr& stmt) override {}
+
+  virtual void visit_function(const stmt::FunctionPtr& stmt) override {
+    declare(stmt->name());
+    define(stmt->name());
+
+    resolve_function(stmt);
+  }
+
   virtual void visit_if(const stmt::IfPtr& stmt) override {}
   virtual void visit_print(const stmt::PrintPtr& stmt) override {}
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
