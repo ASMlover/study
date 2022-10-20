@@ -130,7 +130,10 @@ private:
   }
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {}
-  virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {}
+
+  virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
+    resolve(stmt->expression());
+  }
 
   virtual void visit_function(const stmt::FunctionPtr& stmt) override {
     declare(stmt->name());
