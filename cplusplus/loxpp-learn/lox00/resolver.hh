@@ -142,7 +142,13 @@ private:
     resolve_function(stmt);
   }
 
-  virtual void visit_if(const stmt::IfPtr& stmt) override {}
+  virtual void visit_if(const stmt::IfPtr& stmt) override {
+    resolve(stmt->condition());
+    resolve(stmt->then_branch());
+    if (stmt->else_branch())
+      resolve(stmt->else_branch());
+  }
+
   virtual void visit_print(const stmt::PrintPtr& stmt) override {}
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
 
