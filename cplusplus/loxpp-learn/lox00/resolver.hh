@@ -149,7 +149,10 @@ private:
       resolve(stmt->else_branch());
   }
 
-  virtual void visit_print(const stmt::PrintPtr& stmt) override {}
+  virtual void visit_print(const stmt::PrintPtr& stmt) override {
+    resolve(stmt->expression());
+  }
+
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
 
   virtual void visit_var(const stmt::VarPtr& stmt) override {
