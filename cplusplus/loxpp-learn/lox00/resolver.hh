@@ -153,7 +153,10 @@ private:
     resolve(stmt->expression());
   }
 
-  virtual void visit_return(const stmt::ReturnPtr& stmt) override {}
+  virtual void visit_return(const stmt::ReturnPtr& stmt) override {
+    if (stmt->value())
+      resolve(stmt->value());
+  }
 
   virtual void visit_var(const stmt::VarPtr& stmt) override {
   }
