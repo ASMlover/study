@@ -161,7 +161,10 @@ private:
   virtual void visit_var(const stmt::VarPtr& stmt) override {
   }
 
-  virtual void visit_while(const stmt::WhilePtr& stmt) override {}
+  virtual void visit_while(const stmt::WhilePtr& stmt) override {
+    resolve(stmt->condition());
+    resolve(stmt->body());
+  }
 public:
   Resolver(const InterpreterPtr& interpreter) noexcept
     : interpreter_{interpreter} {
