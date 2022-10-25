@@ -101,7 +101,11 @@ private:
     resolve_local(expr, expr->name());
   }
 
-  virtual void visit_binary(const expr::BinaryPtr& expr) override {}
+  virtual void visit_binary(const expr::BinaryPtr& expr) override {
+    resolve(expr->left());
+    resolve(expr->right());
+  }
+
   virtual void visit_call(const expr::CallPtr& expr) override {}
   virtual void visit_get(const expr::GetPtr& expr) override {}
   virtual void visit_grouping(const expr::GroupingPtr& expr) override {}
