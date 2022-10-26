@@ -106,7 +106,13 @@ private:
     resolve(expr->right());
   }
 
-  virtual void visit_call(const expr::CallPtr& expr) override {}
+  virtual void visit_call(const expr::CallPtr& expr) override {
+    resolve(expr->callee());
+
+    for (auto& argument : expr->arguments())
+      resolve(argument);
+  }
+
   virtual void visit_get(const expr::GetPtr& expr) override {}
   virtual void visit_grouping(const expr::GroupingPtr& expr) override {}
   virtual void visit_literal(const expr::LiteralPtr& expr) override {}
