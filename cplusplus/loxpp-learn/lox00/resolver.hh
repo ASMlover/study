@@ -114,7 +114,11 @@ private:
   }
 
   virtual void visit_get(const expr::GetPtr& expr) override {}
-  virtual void visit_grouping(const expr::GroupingPtr& expr) override {}
+
+  virtual void visit_grouping(const expr::GroupingPtr& expr) override {
+    resolve(expr->expression());
+  }
+
   virtual void visit_literal(const expr::LiteralPtr& expr) override {}
   virtual void visit_logical(const expr::LogicalPtr& expr) override {}
   virtual void visit_set(const expr::SetPtr& expr) override {}
