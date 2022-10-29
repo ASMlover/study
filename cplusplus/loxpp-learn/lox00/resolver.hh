@@ -120,7 +120,12 @@ private:
   }
 
   virtual void visit_literal(const expr::LiteralPtr& expr) override {}
-  virtual void visit_logical(const expr::LogicalPtr& expr) override {}
+
+  virtual void visit_logical(const expr::LogicalPtr& expr) override {
+    resolve(expr->left());
+    resolve(expr->right());
+  }
+
   virtual void visit_set(const expr::SetPtr& expr) override {}
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
