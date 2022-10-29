@@ -129,7 +129,10 @@ private:
   virtual void visit_set(const expr::SetPtr& expr) override {}
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
-  virtual void visit_unary(const expr::UnaryPtr& expr) override {}
+
+  virtual void visit_unary(const expr::UnaryPtr& expr) override {
+    resolve(expr->right());
+  }
 
   virtual void visit_variable(const expr::VariablePtr& expr) override {
     if (!scopes_.empty()) {
