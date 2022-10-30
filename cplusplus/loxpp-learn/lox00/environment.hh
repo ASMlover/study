@@ -37,9 +37,16 @@ namespace loxpp::env {
 class Environment;
 using EnvironmentPtr = std::shared_ptr<Environment>;
 
-class Environment final : private UnCopyable {
+class Environment final : private UnCopyable, public std::enable_shared_from_this<Environment> {
   EnvironmentPtr enclosing_{};
   std::unordered_map<str_t, value::Value> values_;
+
+  inline const EnvironmentPtr& ancestor(int distance) noexcept {
+    auto environment(shared_from_this());
+    for (int i = 0; i < distance; ++i)
+      environment = environment->enclosing_;
+    return environment;
+  }
 public:
   Environment() noexcept {}
   Environment(EnvironmentPtr enclosing) noexcept : enclosing_{enclosing} {}
@@ -70,6 +77,10 @@ public:
       return enclosing_->get(name);
 
     throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
+  }
+
+  inline const value::Value& get_at(int distance, const Token& name) noexcept {
+    return ancestor(distance)->get(name);
   }
 };
 
