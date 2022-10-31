@@ -69,17 +69,25 @@ public:
     throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
   }
 
-  inline const value::Value& get(const Token& name) noexcept(false) {
-    if (auto it = values_.find(name.literal()); it != values_.end())
+  inline const value::Value& get(const str_t& name) noexcept(false) {
+    if (auto it = values_.find(name); it != values_.end())
       return it->second;
 
     if (enclosing_)
       return enclosing_->get(name);
 
-    throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
+    throw RuntimeError(Token::make_from_literal(name), "undefined varable `" + name + "`");
   }
 
-  inline const value::Value& get_at(int distance, const Token& name) noexcept {
+  inline const value::Value& get(const Token& name) noexcept(false) {
+    return get(name.literal());
+  }
+
+  inline const value::Value& get_at(int distance, const str_t& name) noexcept(false) {
+    return ancestor(distance)->get(name);
+  }
+
+  inline const value::Value& get_at(int distance, const Token& name) noexcept(false) {
     return ancestor(distance)->get(name);
   }
 };
