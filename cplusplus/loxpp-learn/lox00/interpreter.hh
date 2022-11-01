@@ -82,6 +82,13 @@ class Interpreter final
     throw RuntimeError(oper, "operands must be two numerics or two strings.");
   }
 
+  value::Value lookup_variable(const Token& name, const expr::ExprPtr& expr) noexcept {
+    auto distance_iter = locals_.find(expr);
+
+    // TODO:
+    return nullptr;
+  }
+
   virtual void visit_assign(const expr::AssignPtr& expr) override {
     value::Value value = evaluate(expr->value());
     environment_->assign(expr->name(), value);
@@ -187,7 +194,7 @@ class Interpreter final
   }
 
   virtual void visit_variable(const expr::VariablePtr& expr) override {
-    value_ = environment_->get(expr->name());
+    value_ = lookup_variable(expr->name(), expr);
   }
 
   virtual void visit_block(const stmt::BlockPtr& stmt) override {
