@@ -41,7 +41,7 @@ class Environment final : private UnCopyable, public std::enable_shared_from_thi
   EnvironmentPtr enclosing_{};
   std::unordered_map<str_t, value::Value> values_;
 
-  inline const EnvironmentPtr& ancestor(int distance) noexcept {
+  inline EnvironmentPtr ancestor(int distance) noexcept {
     auto environment(shared_from_this());
     for (int i = 0; i < distance; ++i)
       environment = environment->enclosing_;
