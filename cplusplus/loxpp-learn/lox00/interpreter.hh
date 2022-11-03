@@ -83,10 +83,10 @@ class Interpreter final
   }
 
   value::Value lookup_variable(const Token& name, const expr::ExprPtr& expr) noexcept {
-    auto distance_iter = locals_.find(expr);
-
-    // TODO:
-    return nullptr;
+    if (auto distance_iter = locals_.find(expr); distance_iter != locals_.end())
+      return environment_->get_at(distance_iter->second, name);
+    else
+      return globals_->get(name);
   }
 
   virtual void visit_assign(const expr::AssignPtr& expr) override {
