@@ -69,6 +69,10 @@ public:
     throw RuntimeError(name, "undefined variable `" + name.literal() + "`");
   }
 
+  inline void assign_at(int distance, const Token& name, const value::Value& value) noexcept {
+    ancestor(distance)->values_[name.literal()] = value;
+  }
+
   inline const value::Value& get(const str_t& name) noexcept(false) {
     if (auto it = values_.find(name); it != values_.end())
       return it->second;
