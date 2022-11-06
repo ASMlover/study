@@ -91,10 +91,11 @@ class Interpreter final
 
   virtual void visit_assign(const expr::AssignPtr& expr) override {
     value::Value value = evaluate(expr->value());
-    environment_->assign(expr->name(), value);
-    value_ = value;
 
-    // TODO:
+    if (auto distance_iter = locals_.find(expr); distance_iter != locals_.end())
+      environment_->assign_at(distance_iter->second, expr->name(), value);
+    else
+      globals_->assign(expr->name(), value);
   }
 
   virtual void visit_binary(const expr::BinaryPtr& expr) override {
