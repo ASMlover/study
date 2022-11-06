@@ -44,6 +44,7 @@ class Resolver final
   using ScopeMap = std::unordered_map<str_t, bool>;
   using InterpreterPtr = std::shared_ptr<interpret::Interpreter>;
 
+  ErrorReporter& err_reporter_;
   InterpreterPtr interpreter_;
   std::vector<ScopeMap> scopes_;
 
@@ -188,8 +189,13 @@ private:
     resolve(stmt->body());
   }
 public:
-  Resolver(const InterpreterPtr& interpreter) noexcept
-    : interpreter_{interpreter} {
+  Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
+    : err_reporter_{err_reporter}
+    , interpreter_{interpreter} {
+  }
+
+  inline void invoke_resolve(const std::vector<stmt::StmtPtr>& stmts) noexcept {
+    resolve(stmts);
   }
 };
 
