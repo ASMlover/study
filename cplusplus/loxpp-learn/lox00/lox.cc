@@ -29,6 +29,7 @@
 #include "scanner.hh"
 #include "parser.hh"
 #include "ast_printer.hh"
+#include "resolver.hh"
 #include "interpreter.hh"
 #include "lox.hh"
 
@@ -83,6 +84,10 @@ void Lox::run(const str_t& filepath, const str_t& source_bytes) {
 
   // auto astp = std::make_shared<printer::AstPrinter>();
   auto interp = std::make_shared<interpret::Interpreter>(err_reporter_);
+
+  auto resolver = std::make_shared<resolver::Resolver>(err_reporter_, interp);
+  resolver->invoke_resolve(statements);
+
   interp->interpret(statements);
 }
 
