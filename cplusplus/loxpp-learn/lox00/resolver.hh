@@ -64,6 +64,8 @@ class Resolver final
       return;
 
     auto& scope = scopes_.back();
+    if (auto it = scope.find(name.literal()); it != scope.end())
+      err_reporter_.error(name, "already a variable with this name in this scope");
     scope.insert({name.literal(), false});
   }
 
