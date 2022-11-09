@@ -44,9 +44,15 @@ class Resolver final
   using ScopeMap = std::unordered_map<str_t, bool>;
   using InterpreterPtr = std::shared_ptr<interpret::Interpreter>;
 
+  enum class FunctionType {
+    NONE,
+    FUNCTION,
+  };
+
   ErrorReporter& err_reporter_;
   InterpreterPtr interpreter_;
   std::vector<ScopeMap> scopes_;
+  FunctionType current_function_{FunctionType::NONE};
 
   inline void resolve(const expr::ExprPtr& expr) noexcept { expr->accept(shared_from_this()); }
   inline void resolve(const stmt::StmtPtr& stmt) noexcept { stmt->accept(shared_from_this()); }
