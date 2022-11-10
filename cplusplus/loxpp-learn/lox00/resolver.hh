@@ -93,7 +93,10 @@ class Resolver final
     }
   }
 
-  void resolve_function(const stmt::FunctionPtr& function) noexcept {
+  void resolve_function(const stmt::FunctionPtr& function, FunctionType type) noexcept {
+    FunctionType enclosing_function = current_function_;
+    current_function_ = type;
+
     begin_scope();
 
     for (const Token& param : function->params()) {
@@ -103,6 +106,8 @@ class Resolver final
     resolve(function->body());
 
     end_scope();
+
+    current_function_ = enclosing_function;
   }
 private:
   virtual void visit_assign(const expr::AssignPtr& expr) override {
@@ -170,7 +175,7 @@ private:
     declare(stmt->name());
     define(stmt->name());
 
-    resolve_function(stmt);
+    resolve_function(stmt, FunctionType::FUNCTION);
   }
 
   virtual void visit_if(const stmt::IfPtr& stmt) override {
