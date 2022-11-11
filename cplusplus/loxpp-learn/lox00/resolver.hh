@@ -190,6 +190,9 @@ private:
   }
 
   virtual void visit_return(const stmt::ReturnPtr& stmt) override {
+    if (current_function_ == FunctionType::NONE)
+      err_reporter_.error(stmt->keyword(), "cannot return from top-level code");
+
     if (stmt->value())
       resolve(stmt->value());
   }
