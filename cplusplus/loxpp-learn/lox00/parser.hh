@@ -130,6 +130,8 @@ class Parser final : private UnCopyable {
     // declaration -> funDecl | varDecl | statement ;
 
     try {
+      if (match({TokenType::KW_CLASS}))
+        return class_declaration();
       if (match({TokenType::KW_FUN}))
         return function("function");
       if (match({TokenType::KW_VAR}))
@@ -140,6 +142,11 @@ class Parser final : private UnCopyable {
       synchronize();
       return nullptr;
     }
+  }
+
+  inline stmt::StmtPtr class_declaration() noexcept {
+    // TODO:
+    return nullptr;
   }
 
   inline stmt::FunctionPtr function(const str_t& kind) noexcept {
