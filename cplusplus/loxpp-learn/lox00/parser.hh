@@ -145,8 +145,18 @@ class Parser final : private UnCopyable {
   }
 
   inline stmt::StmtPtr class_declaration() noexcept {
+    // classDecl -> "class" IDENTIFIER "{" function* "}" ;
+
+    Token name = consume(TokenType::TK_IDENTIFIER, "expect class name");
+
+    consume(TokenType::TK_LBRACE, "expect `{` before class body");
+    std::vector<stmt::FunctionPtr> methods;
+    while (!check(TokenType::TK_RBRACE) && !is_at_end())
+      methods.push_back(function("method"));
+    consume(TokenType::TK_RBRACE, "expect `}` after class body");
+
     // TODO:
-    return nullptr;
+    return std::make_shared<stmt::Class>(name, nullptr, methods);
   }
 
   inline stmt::FunctionPtr function(const str_t& kind) noexcept {
