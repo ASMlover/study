@@ -165,7 +165,10 @@ private:
     end_scope();
   }
 
-  virtual void visit_class(const stmt::ClassPtr& stmt) override {}
+  virtual void visit_class(const stmt::ClassPtr& stmt) override {
+    declare(stmt->name());
+    define(stmt->name());
+  }
 
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
     resolve(stmt->expression());
