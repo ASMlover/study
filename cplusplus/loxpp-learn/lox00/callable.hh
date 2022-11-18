@@ -64,4 +64,14 @@ public:
   virtual sz_t arity() const override { return declaration_->params().size(); }
 };
 
+class Class final : public Callable {
+  str_t name_;
+public:
+  Class(const str_t& name) noexcept : name_{name} {}
+
+  virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
+  virtual sz_t arity() const override { return 0; }
+  virtual str_t as_string() const override { return name_; }
+};
+
 }
