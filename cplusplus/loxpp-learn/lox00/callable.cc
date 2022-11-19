@@ -52,4 +52,9 @@ str_t Function::as_string() const {
   return ss.str();
 }
 
+value::Value Class::call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) {
+  // TODO:
+  return nullptr;
+}
+
 }
