@@ -202,7 +202,11 @@ class Interpreter final
     execute_block(stmt->statements(), std::make_shared<env::Environment>(environment_));
   }
 
-  virtual void visit_class(const stmt::ClassPtr& stmt) override {}
+  virtual void visit_class(const stmt::ClassPtr& stmt) override {
+    environment_->define(stmt->name().as_string(), nullptr);
+    auto klass = std::make_shared<callable::Class>(stmt->name().as_string());
+    environment_->assign(stmt->name(), value::Value{klass});
+  }
 
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
     evaluate(stmt->expression());
