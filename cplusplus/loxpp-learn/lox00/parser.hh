@@ -155,7 +155,7 @@ class Parser final : private UnCopyable {
       methods.push_back(function("method"));
     consume(TokenType::TK_RBRACE, "expect `}` after class body");
 
-    // TODO:
+    // TODO: needs superclass argument f or class
     return std::make_shared<stmt::Class>(name, nullptr, methods);
   }
 

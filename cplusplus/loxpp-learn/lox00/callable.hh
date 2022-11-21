@@ -47,7 +47,9 @@ interface Callable : private UnCopyable {
 };
 
 class Function;
+class Class;
 using FunctionPtr = std::shared_ptr<Function>;
+using ClassPtr    = std::shared_ptr<Class>;
 
 class Function final : public Callable {
   stmt::FunctionPtr declaration_;
@@ -69,9 +71,19 @@ class Class final : public Callable {
 public:
   Class(const str_t& name) noexcept : name_{name} {}
 
+  inline str_t name() const noexcept {  return name_; }
+
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
   virtual sz_t arity() const override { return 0; }
   virtual str_t as_string() const override { return name_; }
+};
+
+class Instance : private UnCopyable {
+  ClassPtr klass_;
+public:
+  Instance(const ClassPtr& klass) noexcept : klass_{klass} {}
+
+  str_t as_string() const noexcept;
 };
 
 }
