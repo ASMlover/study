@@ -29,14 +29,20 @@
 #include <variant>
 #include "common.hh"
 
-namespace loxpp::callable { interface Callable; }
+namespace loxpp::callable {
+
+interface Callable;
+class Instance;
+
+}
 
 namespace loxpp::value {
 
 using CallablePtr = std::shared_ptr<callable::Callable>;
+using InstancePtr = std::shared_ptr<callable::Instance>;
 
 class Value : public Copyable {
-  std::variant<nil_t, bool, double, str_t, CallablePtr> v_{};
+  std::variant<nil_t, bool, double, str_t, CallablePtr, InstancePtr> v_{};
 
   template <typename T> inline double numeric_cast(T x) noexcept { return as_type<double>(x); }
   template <typename T> inline str_t string_cast(T x) noexcept { return str_t(x); }
@@ -62,6 +68,7 @@ public:
   Value(strv_t s) noexcept : v_{string_cast(s)} {}
   Value(const str_t& s) noexcept : v_{s} {}
   Value(const CallablePtr& c) noexcept : v_{c} {}
+  Value(const InstancePtr& i) noexcept : v_{i} {}
   Value(const Value& r) noexcept : v_{r.v_} {}
   Value(Value&& r) noexcept : v_{std::move(r.v_)} {}
 
@@ -70,11 +77,13 @@ public:
   inline bool is_numeric() const noexcept { return std::holds_alternative<double>(v_); }
   inline bool is_string() const noexcept { return std::holds_alternative<str_t>(v_); }
   inline bool is_callable() const noexcept { return std::holds_alternative<CallablePtr>(v_); }
+  inline bool is_instance() const noexcept { return std::holds_alternative<InstancePtr>(v_); }
 
   inline bool as_boolean() const noexcept { return std::get<bool>(v_); }
   inline double as_numeric() const noexcept { return std::get<double>(v_); }
   inline str_t as_string() const noexcept { return std::get<str_t>(v_); }
   inline CallablePtr as_callable() const noexcept { return std::get<CallablePtr>(v_); }
+  inline InstancePtr as_instance() const noexcept { return std::get<InstancePtr>(v_); }
 
   inline bool operator==(const Value& r) const noexcept {
     return (is_numeric() && r.is_numeric()) ? as_numeric() == r.as_numeric() : v_ == r.v_;
