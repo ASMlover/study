@@ -66,7 +66,7 @@ public:
   virtual sz_t arity() const override { return declaration_->params().size(); }
 };
 
-class Class final : public Callable {
+class Class final : public Callable, public std::enable_shared_from_this<Class> {
   str_t name_;
 public:
   Class(const str_t& name) noexcept : name_{name} {}
