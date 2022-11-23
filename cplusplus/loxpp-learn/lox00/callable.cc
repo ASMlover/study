@@ -53,8 +53,14 @@ str_t Function::as_string() const {
 }
 
 value::Value Class::call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) {
-  // TODO:
-  return nullptr;
+  auto instance = std::make_shared<Instance>(shared_from_this());
+  return instance;
+}
+
+str_t Instance::as_string() const noexcept {
+  ss_t ss;
+  ss << "<" << klass_->name() << " instance at " << this << ">";
+  return ss.str();
 }
 
 }
