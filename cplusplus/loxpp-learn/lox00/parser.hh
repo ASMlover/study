@@ -59,7 +59,7 @@ namespace loxpp::parser {
 // term         -> factor ( ( "-" | "+" ) factor )* ;
 // factor       -> unary ( ( "/" | "*" ) unary )* ;
 // unary        -> ( "!" | "-" ) unary | call ;
-// call         -> primary ( "(" arguments? ")" )* ;
+// call         -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments    -> expression ( "," expression )* ;
 // primary      -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
 
@@ -424,14 +424,20 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr call() noexcept {
-    // call -> primary ( "(" arguments? ")" )* ;
+    // call -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 
     expr::ExprPtr expr = primary();
     while (true) {
-      if (match({TokenType::TK_LPAREN}))
+      if (match({TokenType::TK_LPAREN})) {
         expr = finish_call(expr);
-      else
+      }
+      else if (match({TokenType::TK_DOT})) {
+        Token name = consume(TokenType::TK_IDENTIFIER, "expect property name after `.`");
+        expr = std::make_shared<expr::Get>(expr, name);
+      }
+      else {
         break;
+      }
     }
 
     return expr;
