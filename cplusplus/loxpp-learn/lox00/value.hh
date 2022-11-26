@@ -85,6 +85,12 @@ public:
   inline CallablePtr as_callable() const noexcept { return std::get<CallablePtr>(v_); }
   inline InstancePtr as_instance() const noexcept { return std::get<InstancePtr>(v_); }
 
+  inline operator bool() const noexcept { return as_boolean(); }
+  inline operator double() const noexcept { return as_numeric(); }
+  inline operator str_t() const noexcept { return as_string(); }
+  inline operator CallablePtr() const noexcept { return as_callable(); }
+  inline operator InstancePtr() const noexcept { return as_instance(); }
+
   inline bool operator==(const Value& r) const noexcept {
     return (is_numeric() && r.is_numeric()) ? as_numeric() == r.as_numeric() : v_ == r.v_;
   }
