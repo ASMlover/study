@@ -39,6 +39,7 @@ bool Value::is_truthy() const noexcept {
         [](double d) -> bool { return d != 0.0; },
         [](const str_t& s) -> bool { return !s.empty(); },
         [](const CallablePtr& c) -> bool { return true; },
+        [](const InstancePtr& i) -> bool { return true; },
       }, v_);
 }
 
@@ -49,6 +50,7 @@ str_t Value::stringify() const noexcept {
         [](double d) -> str_t { return loxpp::as_string(d); },
         [](const str_t& s) -> str_t { return s; },
         [](const CallablePtr& c) -> str_t { return c->as_string(); },
+        [](const InstancePtr& i) -> str_t { return i->as_string(); },
       }, v_);
 }
 
