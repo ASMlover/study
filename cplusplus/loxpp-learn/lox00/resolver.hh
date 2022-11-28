@@ -127,7 +127,9 @@ private:
       resolve(argument);
   }
 
-  virtual void visit_get(const expr::GetPtr& expr) override {}
+  virtual void visit_get(const expr::GetPtr& expr) override {
+    resolve(expr->object());
+  }
 
   virtual void visit_grouping(const expr::GroupingPtr& expr) override {
     resolve(expr->expression());
