@@ -80,10 +80,18 @@ public:
 
 class Instance : private UnCopyable {
   ClassPtr klass_;
+  std::unordered_map<str_t, value::Value> fields_;
 public:
   Instance(const ClassPtr& klass) noexcept : klass_{klass} {}
 
   str_t as_string() const noexcept;
+
+  inline const value::Value& get(const Token& name) const {
+    if (auto it = fields_.find(name.literal()); it != fields_.end())
+      return it->second;
+
+    throw RuntimeError(name, "undefined property `" + name.literal() + "`");
+  }
 };
 
 }
