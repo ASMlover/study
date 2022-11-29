@@ -150,7 +150,13 @@ class Interpreter final
     value_ = function->call(shared_from_this(), arguments);
   }
 
-  virtual void visit_get(const expr::GetPtr& expr) override {}
+  virtual void visit_get(const expr::GetPtr& expr) override {
+    value::Value object = evaluate(expr->object());
+    if (object.is_instance())
+      value_ = object.as_instance()->get(expr->name());
+
+    throw RuntimeError(expr->name(), "only instances have properties");
+  }
 
   virtual void visit_grouping(const expr::GroupingPtr& expr) override {
     evaluate(expr->expression());
