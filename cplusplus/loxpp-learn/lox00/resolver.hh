@@ -142,7 +142,11 @@ private:
     resolve(expr->right());
   }
 
-  virtual void visit_set(const expr::SetPtr& expr) override {}
+  virtual void visit_set(const expr::SetPtr& expr) override {
+    resolve(expr->value());
+    resolve(expr->object());
+  }
+
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
 
