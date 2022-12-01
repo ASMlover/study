@@ -51,7 +51,7 @@ namespace loxpp::parser {
 // returnStmt   -> "return" expression? ";" ;
 // block        -> "{" declaration* "}" ;
 // expression   -> assignment ;
-// assignment   -> IDENTIFIER  "=" assignment | logic_or ;
+// assignment   -> ( call "." )? IDENTIFIER  "=" assignment | logic_or ;
 // logic_or     -> logic_and ( "or" logic_and )* ;
 // logic_and    -> equality ( "and" equality )* ;
 // equality     -> comparison ( ( "!=" | "==" ) comparison )* ;
@@ -321,7 +321,7 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr assignment() noexcept {
-    // assignment -> IDENTIFIER "=" assignment | logic_or ;
+    // assignment   -> ( call "." )? IDENTIFIER  "=" assignment | logic_or ;
 
     expr::ExprPtr expr = logic_or();
     if (match({TokenType::TK_EQ})) {
@@ -331,6 +331,10 @@ class Parser final : private UnCopyable {
       if (std::dynamic_pointer_cast<expr::Variable>(expr)) {
         const Token& name = std::static_pointer_cast<expr::Variable>(expr)->name();
         return std::make_shared<expr::Assign>(name, value);
+      }
+      else if (std::dynamic_pointer_cast<expr::Get>(expr)) {
+        expr::GetPtr get = std::static_pointer_cast<expr::Get>(expr);
+        return std::make_shared<expr::Set>(get->object(), get->name(), value);
       }
 
       error(equals, "invalid assignment target");
