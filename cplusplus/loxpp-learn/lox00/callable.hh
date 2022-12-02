@@ -92,6 +92,10 @@ public:
 
     throw RuntimeError(name, "undefined property `" + name.literal() + "`");
   }
+
+  inline void set(const Token& name, const value::Value& value) noexcept {
+    fields_[name.literal()] = value;
+  }
 };
 
 }
