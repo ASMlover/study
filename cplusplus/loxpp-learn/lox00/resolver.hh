@@ -47,6 +47,7 @@ class Resolver final
   enum class FunctionType {
     NONE,
     FUNCTION,
+    METHOD,
   };
 
   ErrorReporter& err_reporter_;
@@ -174,6 +175,11 @@ private:
   virtual void visit_class(const stmt::ClassPtr& stmt) override {
     declare(stmt->name());
     define(stmt->name());
+
+    for (const auto& method : stmt->methods()) {
+      FunctionType declaration = FunctionType::METHOD;
+      resolve_function(method, declaration);
+    }
   }
 
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
