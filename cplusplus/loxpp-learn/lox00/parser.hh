@@ -321,7 +321,7 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr assignment() noexcept {
-    // assignment   -> ( call "." )? IDENTIFIER  "=" assignment | logic_or ;
+    // assignment -> ( call "." )? IDENTIFIER  "=" assignment | logic_or ;
 
     expr::ExprPtr expr = logic_or();
     if (match({TokenType::TK_EQ})) {
