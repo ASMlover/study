@@ -185,7 +185,16 @@ class Interpreter final
     value_ = evaluate(expr->right());
   }
 
-  virtual void visit_set(const expr::SetPtr& expr) override {}
+  virtual void visit_set(const expr::SetPtr& expr) override {
+    value::Value object = evaluate(expr->object());
+
+    if (!object.is_instance())
+      throw RuntimeError(expr->name(), "only instance have fields");
+
+    value::Value value = evaluate(expr->value());
+    object.as_instance()->set(expr->name(), value);
+  }
+
   virtual void visit_super(const expr::SuperPtr& expr) override {}
   virtual void visit_this(const expr::ThisPtr& expr) override {}
 
