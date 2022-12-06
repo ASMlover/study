@@ -70,7 +70,7 @@ class Class final : public Callable, public std::enable_shared_from_this<Class> 
   str_t name_;
   std::unordered_map<str_t, FunctionPtr> methods_;
 public:
-  Class(const str_t& name, const std::unordered_map<FunctionPtr>& methods) noexcept
+  Class(const str_t& name, const std::unordered_map<str_t, FunctionPtr>& methods) noexcept
     : name_{name}
     , methods_{methods} {
   }
