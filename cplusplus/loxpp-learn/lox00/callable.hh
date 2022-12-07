@@ -77,6 +77,12 @@ public:
 
   inline str_t name() const noexcept {  return name_; }
 
+  inline FunctionPtr find_method(const str_t& name) const noexcept {
+    if (auto it = methods_.find(name); it != methods_.end())
+      return it->second;
+    return nullptr;
+  }
+
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
   virtual sz_t arity() const override { return 0; }
   virtual str_t as_string() const override { return name_; }
