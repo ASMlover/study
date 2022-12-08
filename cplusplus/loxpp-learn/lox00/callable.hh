@@ -96,9 +96,13 @@ public:
 
   str_t as_string() const noexcept;
 
-  inline const value::Value& get(const Token& name) const {
+  inline value::Value get(const Token& name) const {
     if (auto it = fields_.find(name.literal()); it != fields_.end())
       return it->second;
+
+    FunctionPtr method = klass_->find_method(name.literal());
+    if (method)
+      return value::Value(method);
 
     throw RuntimeError(name, "undefined property `" + name.literal() + "`");
   }
