@@ -219,7 +219,14 @@ class Interpreter final
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {
     environment_->define(stmt->name().as_string(), nullptr);
-    auto klass = std::make_shared<callable::Class>(stmt->name().as_string());
+
+    std::unordered_map<str_t, callable::FunctionPtr> methods;
+    for (const auto& method : stmt->methods()) {
+      auto function = std::make_shared<callable::Function>(method, environment_);
+      methods[method->name().literal()] = function;
+    }
+
+    auto klass = std::make_shared<callable::Class>(stmt->name().literal(), methods);
     environment_->assign(stmt->name(), value::Value{klass});
   }
 
