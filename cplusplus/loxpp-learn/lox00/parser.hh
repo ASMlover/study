@@ -475,6 +475,8 @@ class Parser final : private UnCopyable {
       return std::make_shared<expr::Literal>(prev().as_numeric());
     if (match({TokenType::TK_STRING}))
       return std::make_shared<expr::Literal>(prev().as_string());
+    if (match({TokenType::KW_THIS}))
+      return std::make_shared<expr::This>(prev());
 
     if (match({TokenType::TK_IDENTIFIER}))
       return std::make_shared<expr::Variable>(prev());
