@@ -149,7 +149,10 @@ private:
   }
 
   virtual void visit_super(const expr::SuperPtr& expr) override {}
-  virtual void visit_this(const expr::ThisPtr& expr) override {}
+
+  virtual void visit_this(const expr::ThisPtr& expr) override {
+    resolve_local(expr, expr->keyword());
+  }
 
   virtual void visit_unary(const expr::UnaryPtr& expr) override {
     resolve(expr->right());
