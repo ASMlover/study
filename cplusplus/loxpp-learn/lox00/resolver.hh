@@ -179,10 +179,15 @@ private:
     declare(stmt->name());
     define(stmt->name());
 
+    begin_scope();
+    scopes_.back().insert({"this", true});
+
     for (const auto& method : stmt->methods()) {
       FunctionType declaration = FunctionType::METHOD;
       resolve_function(method, declaration);
     }
+
+    end_scope();
   }
 
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
