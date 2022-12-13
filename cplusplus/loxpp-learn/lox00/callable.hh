@@ -48,8 +48,10 @@ interface Callable : private UnCopyable {
 
 class Function;
 class Class;
+class Instance;
 using FunctionPtr = std::shared_ptr<Function>;
 using ClassPtr    = std::shared_ptr<Class>;
+using InstancePtr = std::shared_ptr<Instance>;
 
 class Function final : public Callable {
   stmt::FunctionPtr declaration_;
@@ -59,6 +61,8 @@ public:
     : declaration_{declaration}
     , closure_{closre} {
   }
+
+  FunctionPtr bind(InstancePtr instance) noexcept;
 
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
   virtual str_t as_string() const override;
