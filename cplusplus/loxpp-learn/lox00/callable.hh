@@ -92,7 +92,7 @@ public:
   virtual str_t as_string() const override { return name_; }
 };
 
-class Instance : private UnCopyable {
+class Instance : private UnCopyable, public std::enable_shared_from_this<Instance> {
   ClassPtr klass_;
   std::unordered_map<str_t, value::Value> fields_;
 public:
@@ -100,13 +100,13 @@ public:
 
   str_t as_string() const noexcept;
 
-  inline value::Value get(const Token& name) const {
+  inline value::Value get(const Token& name) {
     if (auto it = fields_.find(name.literal()); it != fields_.end())
       return it->second;
 
     FunctionPtr method = klass_->find_method(name.literal());
     if (method)
-      return value::Value(method);
+      return value::Value{method->bind(shared_from_this())};
 
     throw RuntimeError(name, "undefined property `" + name.literal() + "`");
   }
