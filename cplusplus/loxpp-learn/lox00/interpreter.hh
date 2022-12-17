@@ -196,7 +196,10 @@ class Interpreter final
   }
 
   virtual void visit_super(const expr::SuperPtr& expr) override {}
-  virtual void visit_this(const expr::ThisPtr& expr) override {}
+
+  virtual void visit_this(const expr::ThisPtr& expr) override {
+    value_ = lookup_variable(expr->keyword(), expr);
+  }
 
   virtual void visit_unary(const expr::UnaryPtr& expr) override {
     value::Value right = evaluate(expr->right());
