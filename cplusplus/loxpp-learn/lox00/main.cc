@@ -26,7 +26,13 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "lox.hh"
+#include "parser.hh"
+#include "interpreter.hh"
+#include "environment.hh"
+#include "resolver.hh"
 
 int main(int argc, char* argv[]) {
+  (void)argc, (void)argv;
+
   return loxpp::Lox::make().run(argc, argv);
 }
