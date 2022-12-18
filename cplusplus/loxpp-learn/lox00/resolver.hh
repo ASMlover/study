@@ -50,10 +50,16 @@ class Resolver final
     METHOD,
   };
 
+  enum class ClassType {
+    NONE,
+    CLASS,
+  };
+
   ErrorReporter& err_reporter_;
   InterpreterPtr interpreter_;
   std::vector<ScopeMap> scopes_;
   FunctionType current_function_{FunctionType::NONE};
+  ClassType current_class_{ClassType::NONE};
 
   inline void resolve(const expr::ExprPtr& expr) noexcept { expr->accept(shared_from_this()); }
   inline void resolve(const stmt::StmtPtr& stmt) noexcept { stmt->accept(shared_from_this()); }
@@ -176,6 +182,9 @@ private:
   }
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {
+    ClassType enclosing_class = current_class_;
+    current_class_ = ClassType::CLASS;
+
     declare(stmt->name());
     define(stmt->name());
 
@@ -188,6 +197,8 @@ private:
     }
 
     end_scope();
+
+    current_class_ = enclosing_class;
   }
 
   virtual void visit_expression(const stmt::ExpressionPtr& stmt) override {
