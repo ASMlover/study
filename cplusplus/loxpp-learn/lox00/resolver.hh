@@ -157,6 +157,11 @@ private:
   virtual void visit_super(const expr::SuperPtr& expr) override {}
 
   virtual void visit_this(const expr::ThisPtr& expr) override {
+    if (current_class_ == ClassType::NONE) {
+      err_reporter_.error(expr->keyword(), "cannot use `this` outside of a class");
+      return;
+    }
+
     resolve_local(expr, expr->keyword());
   }
 
