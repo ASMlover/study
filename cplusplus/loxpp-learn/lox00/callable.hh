@@ -88,7 +88,7 @@ public:
   }
 
   virtual value::Value call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) override;
-  virtual sz_t arity() const override { return 0; }
+  virtual sz_t arity() const override;
   virtual str_t as_string() const override { return name_; }
 };
 
