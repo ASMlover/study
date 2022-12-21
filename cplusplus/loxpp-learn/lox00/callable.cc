@@ -60,7 +60,15 @@ str_t Function::as_string() const {
 
 value::Value Class::call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) {
   auto instance = std::make_shared<Instance>(shared_from_this());
+  FunctionPtr initializer = find_method("init");
+  if (initializer)
+    initializer->bind(instance)->call(interp, arguments);
   return instance;
+}
+
+sz_t Class::arity() const {
+  FunctionPtr initializer = find_method("init");
+  return initializer ? initializer->arity() : 0;
 }
 
 str_t Instance::as_string() const noexcept {
