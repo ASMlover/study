@@ -56,10 +56,13 @@ using InstancePtr = std::shared_ptr<Instance>;
 class Function final : public Callable {
   stmt::FunctionPtr declaration_;
   env::EnvironmentPtr closure_;
+  bool is_initializer_{};
 public:
-  Function(const stmt::FunctionPtr& declaration, const env::EnvironmentPtr& closre) noexcept
+  Function(const stmt::FunctionPtr& declaration,
+      const env::EnvironmentPtr& closre, bool is_initializer) noexcept
     : declaration_{declaration}
-    , closure_{closre} {
+    , closure_{closre}
+    , is_initializer_{is_initializer} {
   }
 
   FunctionPtr bind(InstancePtr instance) noexcept;
