@@ -34,7 +34,7 @@ namespace loxpp::callable {
 FunctionPtr Function::bind(InstancePtr instance) noexcept {
   env::EnvironmentPtr environment = std::make_shared<env::Environment>(closure_);
   environment->define("this", instance);
-  return std::make_shared<Function>(declaration_, environment);
+  return std::make_shared<Function>(declaration_, environment, is_initializer_);
 }
 
 value::Value Function::call(const InterpreterPtr& interp, const std::vector<value::Value>& arguments) {
@@ -48,6 +48,9 @@ value::Value Function::call(const InterpreterPtr& interp, const std::vector<valu
   catch (const except::Return& rv) {
     return rv.value();
   }
+
+  if (is_initializer_)
+    return closure_->get_at(0, "this");
 
   return nullptr;
 }
