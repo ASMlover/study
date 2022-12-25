@@ -225,7 +225,7 @@ class Interpreter final
 
     std::unordered_map<str_t, callable::FunctionPtr> methods;
     for (const auto& method : stmt->methods()) {
-      auto function = std::make_shared<callable::Function>(method, environment_);
+      auto function = std::make_shared<callable::Function>(method, environment_, method->name().literal() == "init");
       methods[method->name().literal()] = function;
     }
 
@@ -238,7 +238,7 @@ class Interpreter final
   }
 
   virtual void visit_function(const stmt::FunctionPtr& stmt) override {
-    callable::FunctionPtr function = std::make_shared<callable::Function>(stmt, environment_);
+    callable::FunctionPtr function = std::make_shared<callable::Function>(stmt, environment_, false);
     environment_->define(stmt->name().literal(), value::Value(function));
   }
 
