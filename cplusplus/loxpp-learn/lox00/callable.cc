@@ -46,6 +46,9 @@ value::Value Function::call(const InterpreterPtr& interp, const std::vector<valu
     interp->invoke_execute_block(declaration_->body(), environment);
   }
   catch (const except::Return& rv) {
+    if (is_initializer_)
+      return closure_->get_at(0, "this");
+
     return rv.value();
   }
 
