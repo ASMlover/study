@@ -47,6 +47,7 @@ class Resolver final
   enum class FunctionType {
     NONE,
     FUNCTION,
+    INITIALIZER,
     METHOD,
   };
 
@@ -198,6 +199,8 @@ private:
 
     for (const auto& method : stmt->methods()) {
       FunctionType declaration = FunctionType::METHOD;
+      if (method->name().literal() == "init")
+        declaration = FunctionType::INITIALIZER;
       resolve_function(method, declaration);
     }
 
@@ -232,8 +235,12 @@ private:
     if (current_function_ == FunctionType::NONE)
       err_reporter_.error(stmt->keyword(), "cannot return from top-level code");
 
-    if (stmt->value())
+    if (stmt->value()) {
+      if (current_function_ == FunctionType::INITIALIZER)
+        err_reporter_.error(stmt->keyword(), "cannot return a value from an initializer");
+
       resolve(stmt->value());
+    }
   }
 
   virtual void visit_var(const stmt::VarPtr& stmt) override {
