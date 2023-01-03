@@ -89,6 +89,9 @@ public:
     return !(*this == r);
   }
 
+  inline bool is_equal_to(const Token& r) const noexcept { return *this == r; }
+  inline bool is_equal_to(const str_t& s) const noexcept { return literal_ == s; }
+
   inline TokenType type() const noexcept { return type_; }
   inline const str_t& literal() const noexcept { return literal_; }
   inline int lineno() const noexcept { return lineno_; }
