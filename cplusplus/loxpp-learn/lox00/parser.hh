@@ -37,7 +37,7 @@ namespace loxpp::parser {
 
 // program      -> declaration* EOF ;
 // declaration  -> classDecl | funDecl | varDecl | statement ;
-// classDecl    -> "class" IDENTIFIER "{" function* "}" ;
+// classDecl    -> "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 // funDecl      -> "fun" function ;
 // function     -> IDENTIFIER "(" parameters? ")" block ;
 // parameters   -> IDENTIFIER ( "," IDENTIFIER )* ;
@@ -145,9 +145,15 @@ class Parser final : private UnCopyable {
   }
 
   inline stmt::StmtPtr class_declaration() noexcept {
-    // classDecl -> "class" IDENTIFIER "{" function* "}" ;
+    // classDecl -> "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 
     Token name = consume(TokenType::TK_IDENTIFIER, "expect class name");
+
+    expr::VariablePtr superclass{};
+    if (match({TokenType::TK_LE})) {
+      consume(TokenType::TK_IDENTIFIER, "expect superclass name");
+      superclass = std::make_shared<expr::Variable>(prev());
+    }
 
     consume(TokenType::TK_LBRACE, "expect `{` before class body");
     std::vector<stmt::FunctionPtr> methods;
@@ -155,8 +161,7 @@ class Parser final : private UnCopyable {
       methods.push_back(function("method"));
     consume(TokenType::TK_RBRACE, "expect `}` after class body");
 
-    // TODO: needs superclass argument f or class
-    return std::make_shared<stmt::Class>(name, nullptr, methods);
+    return std::make_shared<stmt::Class>(name, superclass, methods);
   }
 
   inline stmt::FunctionPtr function(const str_t& kind) noexcept {
