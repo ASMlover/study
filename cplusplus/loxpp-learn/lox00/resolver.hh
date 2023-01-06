@@ -194,6 +194,14 @@ private:
     declare(stmt->name());
     define(stmt->name());
 
+    expr::VariablePtr superclass = stmt->superclass();
+    if (superclass) {
+      if (stmt->name().is_equal_to(superclass->name()))
+        err_reporter_.error(superclass->name(), "a class cannot inherit from itself");
+
+      resolve(superclass);
+    }
+
     begin_scope();
     scopes_.back().insert({"this", true});
 
