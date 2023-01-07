@@ -221,6 +221,15 @@ class Interpreter final
   }
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {
+    value::Value superclass{};
+    if (stmt->superclass()) {
+      superclass = evaluate(stmt->superclass());
+      if (!(superclass.is_callable()
+            && std::dynamic_pointer_cast<callable::Class>(superclass.as_callable()))) {
+        throw RuntimeError(stmt->superclass()->name(), "superclass must be a class");
+      }
+    }
+
     environment_->define(stmt->name().as_string(), nullptr);
 
     std::unordered_map<str_t, callable::FunctionPtr> methods;
