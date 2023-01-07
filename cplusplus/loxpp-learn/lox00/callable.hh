@@ -75,10 +75,13 @@ public:
 
 class Class final : public Callable, public std::enable_shared_from_this<Class> {
   str_t name_;
+  ClassPtr superclass_;
   std::unordered_map<str_t, FunctionPtr> methods_;
 public:
-  Class(const str_t& name, const std::unordered_map<str_t, FunctionPtr>& methods) noexcept
+  Class(const str_t& name, const ClassPtr& superclass,
+      const std::unordered_map<str_t, FunctionPtr>& methods) noexcept
     : name_{name}
+    , superclass_{superclass}
     , methods_{methods} {
   }
 
