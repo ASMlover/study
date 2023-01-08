@@ -221,11 +221,11 @@ class Interpreter final
   }
 
   virtual void visit_class(const stmt::ClassPtr& stmt) override {
-    value::Value superclass{};
+    value::Value superclass_value{};
     if (stmt->superclass()) {
-      superclass = evaluate(stmt->superclass());
-      if (!(superclass.is_callable()
-            && std::dynamic_pointer_cast<callable::Class>(superclass.as_callable()))) {
+      superclass_value = evaluate(stmt->superclass());
+      if (!(superclass_value.is_callable()
+            && std::dynamic_pointer_cast<callable::Class>(superclass_value.as_callable()))) {
         throw RuntimeError(stmt->superclass()->name(), "superclass must be a class");
       }
     }
@@ -238,7 +238,8 @@ class Interpreter final
       methods[method->name().literal()] = function;
     }
 
-    auto klass = std::make_shared<callable::Class>(stmt->name().literal(), methods);
+    callable::ClassPtr superclass = std::static_pointer_cast<callable::Class>(superclass_value.as_callable());
+    auto klass = std::make_shared<callable::Class>(stmt->name().literal(), superclass, methods);
     environment_->assign(stmt->name(), value::Value{klass});
   }
 
