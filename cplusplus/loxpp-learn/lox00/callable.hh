@@ -90,6 +90,9 @@ public:
   inline FunctionPtr find_method(const str_t& name) const noexcept {
     if (auto it = methods_.find(name); it != methods_.end())
       return it->second;
+
+    if (superclass_)
+      return superclass_->find_method(name);
     return nullptr;
   }
 
