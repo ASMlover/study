@@ -61,7 +61,8 @@ namespace loxpp::parser {
 // unary        -> ( "!" | "-" ) unary | call ;
 // call         -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 // arguments    -> expression ( "," expression )* ;
-// primary      -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
+// primary      -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
+//                 | "(" expression ")" | "super" "." IDENTIFIER ;
 
 class ParserError final : public Copyable, public std::exception {};
 
@@ -467,7 +468,8 @@ class Parser final : private UnCopyable {
   }
 
   inline expr::ExprPtr primary() noexcept(false) {
-    // primary -> NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" | IDENTIFIER ;
+    // primary -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
+    //          | "(" expression ")" | "super" "." IDENTIFIER ;
 
     if (match({TokenType::KW_TRUE}))
       return std::make_shared<expr::Literal>(true);
@@ -480,6 +482,12 @@ class Parser final : private UnCopyable {
       return std::make_shared<expr::Literal>(prev().as_numeric());
     if (match({TokenType::TK_STRING}))
       return std::make_shared<expr::Literal>(prev().as_string());
+    if (match({TokenType::KW_SUPER})) {
+      Token keyword = prev();
+      consume(TokenType::TK_DOT, "expect `.` after `super`");
+      Token method = consume(TokenType::TK_IDENTIFIER, "expect superclass method name");
+      return std::make_shared<expr::Super>(keyword, method);
+    }
     if (match({TokenType::KW_THIS}))
       return std::make_shared<expr::This>(prev());
 
