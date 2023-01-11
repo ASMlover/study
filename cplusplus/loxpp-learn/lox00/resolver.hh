@@ -155,7 +155,9 @@ private:
     resolve(expr->object());
   }
 
-  virtual void visit_super(const expr::SuperPtr& expr) override {}
+  virtual void visit_super(const expr::SuperPtr& expr) override {
+    resolve_local(expr, expr->keyword());
+  }
 
   virtual void visit_this(const expr::ThisPtr& expr) override {
     if (current_class_ == ClassType::NONE) {
@@ -202,6 +204,11 @@ private:
       resolve(superclass);
     }
 
+    if (stmt->superclass()) {
+      begin_scope();
+      scopes_.back().insert({"super", true});
+    }
+
     begin_scope();
     scopes_.back().insert({"this", true});
 
@@ -213,6 +220,9 @@ private:
     }
 
     end_scope();
+
+    if (stmt->superclass())
+      end_scope();
 
     current_class_ = enclosing_class;
   }
