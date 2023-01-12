@@ -51,6 +51,8 @@ public:
   Environment() noexcept {}
   Environment(EnvironmentPtr enclosing) noexcept : enclosing_{enclosing} {}
 
+  inline EnvironmentPtr enclosing() const noexcept { return enclosing_; }
+
   inline void define(const str_t& name, const value::Value& value) noexcept {
     values_[name] = value;
   }
