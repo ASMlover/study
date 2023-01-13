@@ -232,6 +232,11 @@ class Interpreter final
 
     environment_->define(stmt->name().as_string(), nullptr);
 
+    if (stmt->superclass()) {
+      environment_ = std::make_shared<env::Environment>(environment_);
+      environment_->define("super", superclass_value);
+    }
+
     std::unordered_map<str_t, callable::FunctionPtr> methods;
     for (const auto& method : stmt->methods()) {
       auto function = std::make_shared<callable::Function>(method, environment_, method->name().literal() == "init");
@@ -240,6 +245,10 @@ class Interpreter final
 
     callable::ClassPtr superclass = std::static_pointer_cast<callable::Class>(superclass_value.as_callable());
     auto klass = std::make_shared<callable::Class>(stmt->name().literal(), superclass, methods);
+
+    if (!superclass_value.is_nil())
+      environment_ = environment_->enclosing();
+
     environment_->assign(stmt->name(), value::Value{klass});
   }
 
