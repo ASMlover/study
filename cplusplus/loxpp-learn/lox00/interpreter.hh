@@ -195,7 +195,23 @@ class Interpreter final
     object.as_instance()->set(expr->name(), value);
   }
 
-  virtual void visit_super(const expr::SuperPtr& expr) override {}
+  virtual void visit_super(const expr::SuperPtr& expr) override {
+    int distance = 0;
+    if (auto super_iter = locals_.find(expr); super_iter != locals_.end())
+      distance = super_iter->second;
+
+    callable::ClassPtr superclass = std::static_pointer_cast<callable::Class>(
+        environment_->get_at(distance, "super").as_callable());
+    callable::InstancePtr object = std::static_pointer_cast<callable::Instance>(
+        environment_->get_at(distance - 1, "this").as_instance());
+    callable::FunctionPtr method = superclass->find_method(expr->method().literal());
+    if (!method) {
+      throw RuntimeError(expr->method(), "undefined property `" + expr->method().literal() + "`");
+    }
+    method->bind(object);
+
+    value_ = value::Value{method};
+  }
 
   virtual void visit_this(const expr::ThisPtr& expr) override {
     value_ = lookup_variable(expr->keyword(), expr);
