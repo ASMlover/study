@@ -54,6 +54,7 @@ class Resolver final
   enum class ClassType {
     NONE,
     CLASS,
+    SUBCLASS,
   };
 
   ErrorReporter& err_reporter_;
@@ -201,10 +202,11 @@ private:
       if (stmt->name().is_equal_to(superclass->name()))
         err_reporter_.error(superclass->name(), "a class cannot inherit from itself");
 
+      current_class_ = ClassType::SUBCLASS;
       resolve(superclass);
     }
 
-    if (stmt->superclass()) {
+    if (superclass) {
       begin_scope();
       scopes_.back().insert({"super", true});
     }
