@@ -157,6 +157,13 @@ private:
   }
 
   virtual void visit_super(const expr::SuperPtr& expr) override {
+    if (current_class_ == ClassType::NONE) {
+      err_reporter_.error(expr->keyword(), "Cannot use `super` outside of a class");
+    }
+    else if (current_class_ != ClassType::SUBCLASS) {
+      err_reporter_.error(expr->keyword(), "Cannot use `super` in a class with no superclass");
+    }
+
     resolve_local(expr, expr->keyword());
   }
 
