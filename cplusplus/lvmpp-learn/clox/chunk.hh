@@ -26,10 +26,17 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
+#include "common.hh"
+
 namespace clox {
 
-enum class OpCode {
+enum class OpCode : u8_t {
   OP_RETURN,
+};
+
+class Chunk final : private UnCopyable {
+  std::vector<u8_t> codes_;
 };
 
 }
