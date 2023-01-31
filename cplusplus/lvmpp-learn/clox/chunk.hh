@@ -35,8 +35,41 @@ enum class OpCode : u8_t {
   OP_RETURN,
 };
 
+inline int operator-(OpCode a, OpCode b) noexcept {
+  return as_type<int>(a) - as_type<int>(b);
+}
+
+template <typename N> inline OpCode operator+(OpCode a, N b) noexcept {
+  return as_type<OpCode>(as_type<int>(a) + as_type<int>(b));
+}
+
+inline std::ostream& operator<<(std::ostream& out, OpCode code) noexcept {
+  return out << as_type<int>(code);
+}
+
+using Value = double;
+
 class Chunk final : private UnCopyable {
   std::vector<u8_t> codes_;
+  std::vector<int> lines_;
+  std::vector<Value> constants_;
+public:
+  template <typename T> inline u8_t write(T c, int lineno) noexcept {
+    codes_.push_back(as_type<u8_t>(c));
+    lines_.push_back(lineno);
+    return as_type<u8_t>(codes_.size() - 1);
+  }
+
+  inline u8_t add_constant(Value value) noexcept {
+    constants_.push_back(value);
+    return as_type<u8_t>(constants_.size() -  1);
+  }
+
+  inline void write_constant(Value value, int lineno) noexcept {
+  }
+
+  void dis(strv_t prompt) noexcept;
+  sz_t dis_code(sz_t offset) noexcept;
 };
 
 }
