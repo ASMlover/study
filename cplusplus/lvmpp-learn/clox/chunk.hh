@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include "common.hh"
 
@@ -66,6 +67,19 @@ public:
   }
 
   inline void write_constant(Value value, int lineno) noexcept {
+    // TODO:
+  }
+
+  inline sz_t codes_count() const noexcept { return codes_.size(); }
+  inline const u8_t* codes() const noexcept { return codes_.data(); }
+  inline u8_t get_code(sz_t i) const noexcept { return codes_[i]; }
+  template <typename T> inline void set_code(sz_t i, T c) noexcept { codes_[i] = as_type<u8_t>(c); }
+  inline int get_line(sz_t i) const noexcept { return lines_[i]; }
+  inline const Value& get_constant(sz_t i) const noexcept { return constants_[i]; }
+  inline sz_t offset_from(const u8_t* ip) const noexcept { return as_type<sz_t>(ip - codes()); }
+
+  template <typename Fn> inline void iter_constants(Fn fn) noexcept {
+    std::for_each(constants_.begin(), constants_.end(), fn);
   }
 
   void dis(strv_t prompt) noexcept;
