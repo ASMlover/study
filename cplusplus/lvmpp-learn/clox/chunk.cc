@@ -24,9 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "chunk.hh"
 
 namespace clox {
+
+inline sz_t dis_compound(
+    Chunk* chunk, const char* prompt, sz_t i, bool with_constant = false) noexcept {
+  auto c = chunk->get_code(i + 1);
+  std::fprintf(stdout, "%-16s %4d", prompt, c);
+  if (with_constant)
+    std::cout << " `" << chunk->get_constant(c) << "`";
+  std::cout << std::endl;
+
+  return i + 2;
+}
 
 void Chunk::dis(strv_t prompt) noexcept {
 }
