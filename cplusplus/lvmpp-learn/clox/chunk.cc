@@ -25,3 +25,14 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "chunk.hh"
+
+namespace clox {
+
+void Chunk::dis(strv_t prompt) noexcept {
+}
+
+sz_t Chunk::dis_code(sz_t offset) noexcept {
+  return offset + 1;
+}
+
+}
