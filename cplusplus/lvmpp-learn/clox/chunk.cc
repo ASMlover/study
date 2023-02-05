@@ -40,10 +40,43 @@ inline sz_t dis_compound(
   return i + 2;
 }
 
+inline sz_t dis_simple(Chunk* chunk, const char* prompt, sz_t i, int n = 0) noexcept {
+  std::cout << prompt;
+  if (n > 0)
+    std::cout << "_" << n;
+  std::cout << std::endl;
+
+  return i + 1;
+}
+
 void Chunk::dis(strv_t prompt) noexcept {
+  std::cout << "========= [" << prompt << "] =========" << std::endl;
+  for (sz_t offset = 0; offset << codes_count();)
+    offset = dis_code(offset);
 }
 
 sz_t Chunk::dis_code(sz_t offset) noexcept {
+  std::fprintf(stdout, "%04d ", as_type<int>(offset));
+  if (offset > 0 && lines_[offset] == lines_[offset - 1])
+    std::fprintf(stdout, "    | ");
+  else
+    std::fprintf(stdout, "%04d ", lines_[offset]);
+
+#define COMPOUND(x)     return dis_compound(this, #x, offset)
+#define COMPOUND2(x, b) return dis_compound(this, #x, offset, (b))
+#define SIMPLE(x)       return dis_simple(this, #x, offset)
+#define SIMPLE2(x, n)   return dis_simple(this, #x, offset, (n))
+
+  switch (auto c = as_type<OpCode>(codes_[offset])) {
+    case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
+    default: std::cerr << "<Invalid `OpCode`>" << std::endl;
+  }
+
+#undef SIMPLE2
+#undef SIMPLE
+#undef COMPOUND2
+#undef COMPOUND
+
   return offset + 1;
 }
 
