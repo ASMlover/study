@@ -51,7 +51,7 @@ inline sz_t dis_simple(Chunk* chunk, const char* prompt, sz_t i, int n = 0) noex
 
 void Chunk::dis(strv_t prompt) noexcept {
   std::cout << "========= [" << prompt << "] =========" << std::endl;
-  for (sz_t offset = 0; offset << codes_count();)
+  for (sz_t offset = 0; offset < codes_count();)
     offset = dis_code(offset);
 }
 
@@ -60,7 +60,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
   if (offset > 0 && lines_[offset] == lines_[offset - 1])
     std::fprintf(stdout, "    | ");
   else
-    std::fprintf(stdout, "%04d ", lines_[offset]);
+    std::fprintf(stdout, "%4d ", lines_[offset]);
 
 #define COMPOUND(x)     return dis_compound(this, #x, offset)
 #define COMPOUND2(x, b) return dis_compound(this, #x, offset, (b))
