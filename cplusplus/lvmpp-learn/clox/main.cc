@@ -26,8 +26,16 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "common.hh"
 
+namespace clox::test1 {
+
+extern void test();
+
+}
+
 int main(int argc, char* argv[]) {
   CLOX_UNUSED(argc), CLOX_UNUSED(argv);
+
+  clox::test1::test();
 
   return 0;
 }
