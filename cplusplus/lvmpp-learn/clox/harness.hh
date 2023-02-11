@@ -78,4 +78,18 @@ public:
   }
 };
 
+using ClosureFn = std::function<void ()>;
+
+bool register_harness(strv_t name, ClosureFn&& fn) noexcept;
+int run_all_harness();
+int run_harness_with_name(strv_t name);
+
 }
+
+#define CLOX_CHECK_TRUE(c)  clox::harness::Tester(__FILE__, __LINE__).is_true((c), #c)
+#define CLOX_CHECK_EQ(a, b) clox::harness::Tester(__FILE__, __LINE__).is_eq((a), (b))
+#define CLOX_CHECK_NE(a, b) clox::harness::Tester(__FILE__, __LINE__).is_ne((a), (b))
+#define CLOX_CHECK_GT(a, b) clox::harness::Tester(__FILE__, __LINE__).is_gt((a), (b))
+#define CLOX_CHECK_GE(a, b) clox::harness::Tester(__FILE__, __LINE__).is_ge((a), (b))
+#define CLOX_CHECK_LT(a, b) clox::harness::Tester(__FILE__, __LINE__).is_lt((a), (b))
+#define CLOX_CHECK_LE(a, b) clox::harness::Tester(__FILE__, __LINE__).is_le((a), (b))
