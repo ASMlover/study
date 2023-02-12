@@ -93,3 +93,22 @@ int run_harness_with_name(strv_t name);
 #define CLOX_CHECK_GE(a, b) clox::harness::Tester(__FILE__, __LINE__).is_ge((a), (b))
 #define CLOX_CHECK_LT(a, b) clox::harness::Tester(__FILE__, __LINE__).is_lt((a), (b))
 #define CLOX_CHECK_LE(a, b) clox::harness::Tester(__FILE__, __LINE__).is_le((a), (b))
+
+#if defined(_CLOX_RUN_HARNESS)
+# define _CLOX_IGNORED_REGISTER(Name, Fn)\
+  bool _Ignored_CloxHarness_##Name = clox::harness::register_harness(#Name, Fn);
+#else
+# define _CLOX_IGNORED_REGISTER(Name, Fn)
+#endif
+
+#define CLOX_TEST(Name)\
+class CloxHarness_##Name final : private clox::UnCopyable {\
+  void _run();\
+public:\
+  static void run_harness() {\
+    static CloxHarness_##Name ins;\
+    ins._run();\
+  }\
+};\
+_CLOX_IGNORED_REGISTER(Name, &CloxHarness_##Name::run_harness)\
+void CloxHarness_##Name::_run()
