@@ -24,8 +24,32 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <tuple>
+#include <vector>
+#include <unordered_map>
 #include "harness.hh"
 
 namespace clox::harness {
+
+class GlobalHarness final : public Singleton<GlobalHarness> {
+  using Context     = std::tuple<strv_t, ClosureFn>;
+  using ContextList = std::vector<Context>;
+
+  ContextList* harness_{};
+  std::unordered_map<strv_t, sz_t> harness_indexes_;
+public:
+};
+
+bool register_harness(strv_t name, ClosureFn&& fn) noexcept {
+  return false;
+}
+
+int run_all_harness() {
+  return 0;
+}
+
+int run_harness_with_name(strv_t name) {
+  return 0;
+}
 
 }
