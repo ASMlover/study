@@ -35,13 +35,20 @@ class GlobalHarness final : public Singleton<GlobalHarness> {
   using Context     = std::tuple<strv_t, ClosureFn>;
   using ContextList = std::vector<Context>;
 
-  ContextList* harness_{};
+  ContextList harness_;
   std::unordered_map<strv_t, sz_t> harness_indexes_;
 public:
+  inline sz_t size() const noexcept { return harness_.size(); }
+
+  inline bool append_harness(strv_t name, ClosureFn&& fn) noexcept {
+    harness_.push_back({name, std::move(fn)});
+    harness_indexes_.insert({name, harness_.size() - 1});
+    return true;
+  }
 };
 
 bool register_harness(strv_t name, ClosureFn&& fn) noexcept {
-  return false;
+  return GlobalHarness::get_instance().append_harness(name, std::move(fn));
 }
 
 int run_all_harness() {
