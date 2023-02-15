@@ -25,25 +25,33 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <tuple>
+#include <optional>
 #include <vector>
 #include <unordered_map>
 #include "harness.hh"
 
 namespace clox::harness {
 
-class GlobalHarness final : public Singleton<GlobalHarness> {
-  using Context     = std::tuple<strv_t, ClosureFn>;
-  using ContextList = std::vector<Context>;
+using Context     = std::tuple<strv_t, ClosureFn>;
+using ContextList = std::vector<Context>;
 
+class GlobalHarness final : public Singleton<GlobalHarness> {
   ContextList harness_;
   std::unordered_map<strv_t, sz_t> harness_indexes_;
 public:
   inline sz_t size() const noexcept { return harness_.size(); }
+  inline bool is_empty() const noexcept { return harness_.empty(); }
 
   inline bool append_harness(strv_t name, ClosureFn&& fn) noexcept {
     harness_.push_back({name, std::move(fn)});
     harness_indexes_.insert({name, harness_.size() - 1});
     return true;
+  }
+
+  std::optional<Context> get_harness(strv_t name) const noexcept {
+    if (auto it = harness_indexes_.find(name); it != harness_indexes_.end())
+      return harness_.at(it->second);
+    return {};
   }
 };
 
