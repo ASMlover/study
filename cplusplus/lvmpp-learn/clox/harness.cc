@@ -64,6 +64,15 @@ int run_all_harness() {
 }
 
 int run_harness_with_name(strv_t name) {
+  if (GlobalHarness::get_instance().is_empty())
+    return 0;
+
+  if (auto hc = GlobalHarness::get_instance().get_harness(name); hc.has_value()) {
+    auto [_, hc_fn] = *hc;
+    hc_fn();
+
+    std::cout << "********* Run [" << name << "] Test Harness PASSED *********" << std::endl;
+  }
   return 0;
 }
 
