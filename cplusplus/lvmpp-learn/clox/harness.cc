@@ -53,6 +53,13 @@ public:
       return harness_.at(it->second);
     return {};
   }
+
+  template <typename Fn> inline void iter_harness(Fn fn) noexcept {
+    for (auto& hc : harness_) {
+      auto [hc_name, hc_fn] = hc;
+      fn(hc_name, hc_fn);
+    }
+  }
 };
 
 bool register_harness(strv_t name, ClosureFn&& fn) noexcept {
@@ -60,6 +67,21 @@ bool register_harness(strv_t name, ClosureFn&& fn) noexcept {
 }
 
 int run_all_harness() {
+  if (GlobalHarness::get_instance().is_empty())
+    return 0;
+
+  sz_t total_tests = GlobalHarness::get_instance().size();
+  sz_t passed_tests{};
+  GlobalHarness::get_instance().iter_harness([&total_tests, &passed_tests](strv_t hc_name, ClosureFn hc_fn) {
+        hc_fn();
+        ++passed_tests;
+
+        std::cout << "********* [" << hc_name << "] test Harness PASSED "
+          << "(" << passed_tests << "/" << total_tests << ") *********"
+          << std::endl;
+      });
+  std::cout << "========= PASSED " << "(" << passed_tests << "/" << total_tests << ") test Harness =========" << std::endl;
+
   return 0;
 }
 
