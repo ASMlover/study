@@ -25,17 +25,15 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "common.hh"
+#include "harness.hh"
 
-namespace clox::test1 {
-
-extern void test();
-
-}
 
 int main(int argc, char* argv[]) {
   CLOX_UNUSED(argc), CLOX_UNUSED(argv);
 
-  clox::test1::test();
+#if defined(_CLOX_RUN_HARNESS)
+  clox::harness::run_all_harness();
+#endif
 
   return 0;
 }
