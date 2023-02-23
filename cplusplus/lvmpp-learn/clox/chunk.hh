@@ -29,10 +29,12 @@
 #include <algorithm>
 #include <vector>
 #include "common.hh"
+#include "value.hh"
 
 namespace clox {
 
 enum class OpCode : u8_t {
+  OP_CONSTANT,
   OP_RETURN,
 };
 
@@ -47,8 +49,6 @@ template <typename N> inline OpCode operator+(OpCode a, N b) noexcept {
 inline std::ostream& operator<<(std::ostream& out, OpCode code) noexcept {
   return out << as_type<int>(code);
 }
-
-using Value = double;
 
 class Chunk final : private UnCopyable {
   std::vector<u8_t> codes_;
@@ -67,7 +67,8 @@ public:
   }
 
   inline void write_constant(Value value, int lineno) noexcept {
-    // TODO:
+    write(OpCode::OP_CONSTANT, lineno);
+    write(add_constant(value), lineno);
   }
 
   inline sz_t codes_count() const noexcept { return codes_.size(); }
