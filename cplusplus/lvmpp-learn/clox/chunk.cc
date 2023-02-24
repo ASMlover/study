@@ -58,7 +58,7 @@ void Chunk::dis(strv_t prompt) noexcept {
 sz_t Chunk::dis_code(sz_t offset) noexcept {
   std::fprintf(stdout, "%04d ", as_type<int>(offset));
   if (offset > 0 && lines_[offset] == lines_[offset - 1])
-    std::fprintf(stdout, "    | ");
+    std::fprintf(stdout, "   | ");
   else
     std::fprintf(stdout, "%4d ", lines_[offset]);
 
@@ -68,8 +68,9 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
 #define SIMPLE2(x, n)   return dis_simple(this, #x, offset, (n))
 
   switch (auto c = as_type<OpCode>(codes_[offset])) {
-    case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
-    default: std::cerr << "<Invalid `OpCode`>" << std::endl;
+  case OpCode::OP_CONSTANT: COMPOUND2(OP_CONSTANT, true);
+  case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
+  default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
 
 #undef SIMPLE2
