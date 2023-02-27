@@ -30,7 +30,21 @@
 
 namespace clox {
 
+enum class InterpretResult : u8_t {
+  INTERPRET_OK,
+  INTERPRET_COMPILE_ERROR,
+  INTERPRET_RUNTIME_ERROR,
+};
+
+class Chunk;
+
 class VM final : private UnCopyable {
+  Chunk* chunk_;
+  const u8_t* ip_;
+
+  InterpretResult run() noexcept;
+public:
+  InterpretResult interpret(Chunk* chunk) noexcept;
 };
 
 }
