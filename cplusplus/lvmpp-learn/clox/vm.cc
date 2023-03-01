@@ -37,6 +37,15 @@ InterpretResult VM::interpret(Chunk* chunk) noexcept {
 }
 
 InterpretResult VM::run() noexcept {
+#define READ_BYTE() (*ip_++)
+
+  for (;;) {
+    switch (OpCode instruction = as_type<OpCode>(READ_BYTE())) {
+    case OpCode::OP_RETURN: return InterpretResult::INTERPRET_OK;
+    }
+  }
+
+#undef READ_BYTE
   return InterpretResult::INTERPRET_OK;
 }
 
