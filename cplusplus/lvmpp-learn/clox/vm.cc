@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "chunk.hh"
 #include "vm.hh"
 
@@ -37,14 +38,21 @@ InterpretResult VM::interpret(Chunk* chunk) noexcept {
 }
 
 InterpretResult VM::run() noexcept {
-#define READ_BYTE() (*ip_++)
+#define READ_BYTE()     (*ip_++)
+#define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
 
   for (;;) {
     switch (OpCode instruction = as_type<OpCode>(READ_BYTE())) {
     case OpCode::OP_RETURN: return InterpretResult::INTERPRET_OK;
+    case OpCode::OP_CONSTANT:
+      {
+        Value constant = READ_CONSTANT();
+        std::cout << constant << std::endl;
+      } break;
     }
   }
 
+#undef READ_CONSTANT
 #undef READ_BYTE
   return InterpretResult::INTERPRET_OK;
 }
