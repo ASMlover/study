@@ -34,10 +34,14 @@ endif()
 message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 option(CLOX_RUN_HARNESS "Enable/Disable run test harness" OFF)
+option(CLOX_DEBUG_TRACE_EXECUTION "Enable/Disable debug trace execution" OFF)
 
 
 if (CLOX_RUN_HARNESS)
   add_compile_options(-D_CLOX_RUN_HARNESS)
+endif()
+if (CLOX_DEBUG_TRACE_EXECUTION)
+  add_compile_options(-D_CLOX_DEBUG_TRACE_EXECUTION)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
