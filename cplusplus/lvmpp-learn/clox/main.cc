@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "common.hh"
 #include "harness.hh"
+#include "chunk.hh"
+#include "vm.hh"
 
 
 int main(int argc, char* argv[]) {
@@ -34,6 +36,15 @@ int main(int argc, char* argv[]) {
 #if defined(_CLOX_RUN_HARNESS)
   clox::harness::run_all_harness();
 #endif
+
+  clox::VM vm;
+
+  clox::Chunk chunk;
+  chunk.write_constant(1.2, 0);
+  chunk.write(clox::OpCode::OP_RETURN, 0);
+  chunk.dis("[CLOX] test chunk");
+
+  vm.interpret(&chunk);
 
   return 0;
 }
