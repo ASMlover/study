@@ -30,6 +30,13 @@
 
 namespace clox {
 
+VM::VM() noexcept {
+  reset_stack();
+}
+
+VM::~VM() noexcept {
+}
+
 InterpretResult VM::interpret(Chunk* chunk) noexcept {
   chunk_ = chunk;
   ip_ = chunk->codes();
@@ -42,6 +49,10 @@ InterpretResult VM::run() noexcept {
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
 
   for (;;) {
+#if defined(_CLOX_DEBUG_TRACE_EXECUTION)
+    chunk_->dis_code(as_type<sz_t>(ip_ - chunk_->codes()));
+#endif
+
     switch (OpCode instruction = as_type<OpCode>(READ_BYTE())) {
     case OpCode::OP_RETURN: return InterpretResult::INTERPRET_OK;
     case OpCode::OP_CONSTANT:
