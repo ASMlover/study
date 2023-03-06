@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include "common.hh"
+#include "value.hh"
 
 namespace clox {
 
@@ -39,11 +41,17 @@ enum class InterpretResult : u8_t {
 class Chunk;
 
 class VM final : private UnCopyable {
+  static constexpr sz_t kStackMax = 256;
+
   Chunk* chunk_;
   const u8_t* ip_;
+  std::vector<Value> stack_;
 
   InterpretResult run() noexcept;
 public:
+  VM() noexcept;
+  ~VM() noexcept;
+
   InterpretResult interpret(Chunk* chunk) noexcept;
 };
 
