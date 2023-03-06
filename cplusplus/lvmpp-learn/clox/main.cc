@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
   clox::Chunk chunk;
   chunk.write_constant(1.2, 0);
   chunk.write(clox::OpCode::OP_RETURN, 0);
-  chunk.dis("[CLOX] test chunk");
 
   vm.interpret(&chunk);
 
