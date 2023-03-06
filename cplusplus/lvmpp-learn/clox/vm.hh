@@ -45,8 +45,10 @@ class VM final : private UnCopyable {
 
   Chunk* chunk_;
   const u8_t* ip_;
-  std::vector<Value> stack_;
+  Value stack_[kStackMax];
+  Value* stack_top_;
 
+  void reset_stack() noexcept;
   InterpretResult run() noexcept;
 public:
   VM() noexcept;
