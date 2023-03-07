@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <vector>
 #include "common.hh"
 #include "value.hh"
 
@@ -48,7 +47,10 @@ class VM final : private UnCopyable {
   Value stack_[kStackMax];
   Value* stack_top_;
 
-  void reset_stack() noexcept;
+  inline void reset_stack() noexcept { stack_top_ = stack_; }
+  inline void push(Value value) noexcept { *stack_top_++ = value; }
+  inline Value pop() noexcept { return *(--stack_top_); }
+
   InterpretResult run() noexcept;
 public:
   VM() noexcept;
