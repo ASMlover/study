@@ -35,6 +35,7 @@ namespace clox {
 
 enum class OpCode : u8_t {
   OP_CONSTANT,
+  OP_NEGATE,
   OP_RETURN,
 };
 
