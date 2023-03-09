@@ -50,15 +50,25 @@ InterpretResult VM::run() noexcept {
 
   for (;;) {
 #if defined(_CLOX_DEBUG_TRACE_EXECUTION)
+    std::cout << "          ";
+    for (Value* slot = stack_; slot < stack_top_; ++slot) {
+      std::cout << "[ " << *slot << " ]";
+    }
+    std::cout << std::endl;
     chunk_->dis_code(as_type<sz_t>(ip_ - chunk_->codes()));
 #endif
 
     switch (OpCode instruction = as_type<OpCode>(READ_BYTE())) {
-    case OpCode::OP_RETURN: return InterpretResult::INTERPRET_OK;
     case OpCode::OP_CONSTANT:
       {
         Value constant = READ_CONSTANT();
-        std::cout << constant << std::endl;
+        push(constant);
+      } break;
+    case OpCode::OP_NEGATE: push(-pop()); break;
+    case OpCode::OP_RETURN:
+      {
+        std::cout << pop() << std::endl;
+        return InterpretResult::INTERPRET_OK;
       } break;
     }
   }
