@@ -69,6 +69,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
 
   switch (auto c = as_type<OpCode>(codes_[offset])) {
   case OpCode::OP_CONSTANT: COMPOUND2(OP_CONSTANT, true);
+  case OpCode::OP_NEGATE: SIMPLE(OP_NEGATE);
   case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
   default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
