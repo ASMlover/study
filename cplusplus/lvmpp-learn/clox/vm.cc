@@ -47,6 +47,12 @@ InterpretResult VM::interpret(Chunk* chunk) noexcept {
 InterpretResult VM::run() noexcept {
 #define READ_BYTE()     (*ip_++)
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
+#define BINARY_OP(op)\
+  do {\
+    double b = pop();\
+    double a = pop();\
+    push(a op b);\
+  } while (false)
 
   for (;;) {
 #if defined(_CLOX_DEBUG_TRACE_EXECUTION)
@@ -64,6 +70,10 @@ InterpretResult VM::run() noexcept {
         Value constant = READ_CONSTANT();
         push(constant);
       } break;
+    case OpCode::OP_ADD: BINARY_OP(+); break;
+    case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
+    case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
+    case OpCode::OP_DIVIDE: BINARY_OP(/); break;
     case OpCode::OP_NEGATE: push(-pop()); break;
     case OpCode::OP_RETURN:
       {
