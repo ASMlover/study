@@ -40,7 +40,14 @@ int main(int argc, char* argv[]) {
   clox::VM vm;
 
   clox::Chunk chunk;
+
+  // (1.2 + 3.4) / 5.6
   chunk.write_constant(1.2, 1);
+  chunk.write_constant(3.4, 1);
+  chunk.write(clox::OpCode::OP_ADD, 1);
+  chunk.write_constant(5.6, 1);
+  chunk.write(clox::OpCode::OP_DIVIDE, 1);
+
   chunk.write(clox::OpCode::OP_NEGATE, 1);
   chunk.write(clox::OpCode::OP_RETURN, 1);
 
