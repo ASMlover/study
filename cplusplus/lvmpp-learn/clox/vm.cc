@@ -83,6 +83,7 @@ InterpretResult VM::run() noexcept {
     }
   }
 
+#undef BINARY_OP
 #undef READ_CONSTANT
 #undef READ_BYTE
   return InterpretResult::INTERPRET_OK;
