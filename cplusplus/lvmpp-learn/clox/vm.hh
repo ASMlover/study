@@ -57,6 +57,7 @@ public:
   ~VM() noexcept;
 
   InterpretResult interpret(Chunk* chunk) noexcept;
+  InterpretResult interpret(const str_t& source) noexcept;
 };
 
 }
