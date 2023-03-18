@@ -44,6 +44,11 @@ InterpretResult VM::interpret(Chunk* chunk) noexcept {
   return run();
 }
 
+InterpretResult VM::interpret(const str_t& source) noexcept {
+  // TODO: compile
+  return InterpretResult::INTERPRET_OK;
+}
+
 InterpretResult VM::run() noexcept {
 #define READ_BYTE()     (*ip_++)
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
