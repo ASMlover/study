@@ -93,6 +93,9 @@ public:
   inline TokenType type() const noexcept { return type_; }
   inline const str_t& literal() const noexcept { return literal_; }
   inline int lineno() const noexcept { return lineno_; }
+  inline double as_numeric() const noexcept { return std::atof(literal_.c_str()); }
+  inline const str_t& as_string() const noexcept { return literal_; }
+  inline cstr_t as_cstring() const noexcept { return literal_.c_str(); }
 };
 
 }
