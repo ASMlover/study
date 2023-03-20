@@ -96,6 +96,20 @@ public:
   inline double as_numeric() const noexcept { return std::atof(literal_.c_str()); }
   inline const str_t& as_string() const noexcept { return literal_; }
   inline cstr_t as_cstring() const noexcept { return literal_.c_str(); }
+
+  str_t stringify() const;
+
+  static Token make_from_literal(const str_t& literal) noexcept {
+    return Token{TokenType::TOKEN_STRING, literal};
+  }
+
+  static Token make_from_details(TokenType type, const str_t& literal, int lineno) noexcept {
+    return Token{type, literal, lineno};
+  }
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Token& token) noexcept {
+  return out << token.stringify();
+}
 
 }
