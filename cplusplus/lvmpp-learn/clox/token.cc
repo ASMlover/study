@@ -25,3 +25,15 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "token.hh"
+
+namespace clox {
+
+str_t Token::stringify() const {
+  ss_t ss;
+
+  // TODO:
+
+  return ss.str();
+}
+
+}
