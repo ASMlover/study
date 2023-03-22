@@ -39,8 +39,10 @@ enum class TokenType {
 #undef TOKDEF
 
   TOKENTYPE_END,
-
 };
+
+cstr_t get_type_name(TokenType type) noexcept;
+TokenType get_keyword_type(const str_t& keyword) noexcept;
 
 class Token final : public Copyable {
   TokenType type_{TokenType::TOKEN_ERROR};
