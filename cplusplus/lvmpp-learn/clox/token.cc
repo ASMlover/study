@@ -24,9 +24,34 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <unordered_map>
 #include "token.hh"
 
 namespace clox {
+
+static constexpr cstr_t kNames[] = {
+#undef TOKDEF
+#define TOKDEF(k, s) s
+#include "token_types.hh"
+#undef TOKDEF
+
+  nullptr
+};
+
+static const std::unordered_map<str_t, TokenType> kKeywords = {
+#undef KEYWORD
+#define KEYWORD(k, s) {s, TokenType::KEYWORD_##k},
+#include "token_types.hh"
+#undef KEYWORD
+};
+
+cstr_t get_type_name(TokenType type) noexcept {
+  return nullptr;
+}
+
+TokenType get_keyword_type(const str_t& keyword) noexcept {
+  return TokenType::TOKEN_IDENTIFIER;
+}
 
 str_t Token::stringify() const {
   ss_t ss;
