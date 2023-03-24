@@ -46,10 +46,14 @@ static const std::unordered_map<str_t, TokenType> kKeywords = {
 };
 
 cstr_t get_type_name(TokenType type) noexcept {
+  if (type > TokenType::TOKENTYPE_BEG && type < TokenType::TOKENTYPE_END)
+    return kNames[as_type<int>(type)];
   return nullptr;
 }
 
 TokenType get_keyword_type(const str_t& keyword) noexcept {
+  if (auto it = kKeywords.find(keyword); it != kKeywords.end())
+    return it->second;
   return TokenType::TOKEN_IDENTIFIER;
 }
 
