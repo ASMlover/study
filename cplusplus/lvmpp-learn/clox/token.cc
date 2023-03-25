@@ -60,8 +60,9 @@ TokenType get_keyword_type(const str_t& keyword) noexcept {
 str_t Token::stringify() const {
   ss_t ss;
 
-  // TODO:
-
+  ss << std::left << std::setw(20) << get_type_name(type_) << ":"
+    << std::right << std::setw(24) << literal_ << "|"
+    << std::right << std::setw(4) << lineno_;
   return ss.str();
 }
 
