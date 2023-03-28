@@ -44,6 +44,10 @@ enum class TokenType {
 cstr_t get_type_name(TokenType type) noexcept;
 TokenType get_keyword_type(const str_t& keyword) noexcept;
 
+inline std::ostream& operator<<(std::ostream& out, TokenType type) noexcept {
+  return out << get_type_name(type);
+}
+
 class Token final : public Copyable {
   TokenType type_{TokenType::TOKEN_ERROR};
   str_t literal_;
