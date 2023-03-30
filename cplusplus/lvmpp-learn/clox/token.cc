@@ -31,7 +31,7 @@ namespace clox {
 
 static constexpr cstr_t kNames[] = {
 #undef TOKDEF
-#define TOKDEF(k, s) s
+#define TOKDEF(k, s) s,
 #include "token_types.hh"
 #undef TOKDEF
 
