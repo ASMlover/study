@@ -42,6 +42,8 @@ class Scanenr final : private UnCopyable {
   inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
   inline bool is_alpha(char c) const noexcept { return std::isalpha(c) || c == '_'; }
   inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
+  inline bool is_tail() const noexcept { return current_pos_ > source_bytes_.size(); }
+  inline char advance() noexcept { return source_bytes_[current_pos_++]; }
 };
 
 }
