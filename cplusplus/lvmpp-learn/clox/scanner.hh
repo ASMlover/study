@@ -44,6 +44,14 @@ class Scanenr final : private UnCopyable {
   inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
   inline bool is_tail() const noexcept { return current_pos_ > source_bytes_.size(); }
   inline char advance() noexcept { return source_bytes_[current_pos_++]; }
+
+  inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept {
+    return source_bytes_.substr(begpos, endpos - begpos);
+  }
+
+  inline char peek(sz_t distance = 0) const noexcept {
+    return current_pos_ + distance >= source_bytes_.size() ? 0 : source_bytes_[current_pos_ + distance];
+  }
 };
 
 }
