@@ -28,6 +28,7 @@
 
 #include <cctype>
 #include "common.hh"
+#include "token.hh"
 
 namespace clox {
 
@@ -52,6 +53,26 @@ class Scanenr final : private UnCopyable {
   inline char peek(sz_t distance = 0) const noexcept {
     return current_pos_ + distance >= source_bytes_.size() ? 0 : source_bytes_[current_pos_ + distance];
   }
+
+  inline bool match(char expected) noexcept {
+    if (source_bytes_[current_pos_] == expected) {
+      advance();
+      return true;
+    }
+    return false;
+  }
+
+  void skip_whitespace();
+  Token make_token(TokenType type);
+  Token make_token(TokenType type, const str_t& literal);
+  Token make_error(const str_t& message);
+  Token make_identifier();
+  Token make_number();
+  Token make_string();
+public:
+  Scanenr(const str_t& source_bytes) noexcept : source_bytes_{source_bytes} {}
+
+  Token next_token();
 };
 
 }
