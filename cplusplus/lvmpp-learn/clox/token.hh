@@ -105,11 +105,11 @@ public:
 
   str_t stringify() const;
 
-  static Token make_from_literal(const str_t& literal) noexcept {
+  static Token from_literal(const str_t& literal) noexcept {
     return Token{TokenType::TOKEN_STRING, literal};
   }
 
-  static Token make_from_details(TokenType type, const str_t& literal, int lineno) noexcept {
+  static Token from_details(TokenType type, const str_t& literal, int lineno) noexcept {
     return Token{type, literal, lineno};
   }
 };
