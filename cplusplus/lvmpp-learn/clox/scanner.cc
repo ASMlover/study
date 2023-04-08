@@ -48,7 +48,11 @@ Token Scanenr::make_error(const str_t& message) {
 }
 
 Token Scanenr::make_identifier() {
-  return make_token(TokenType::TOKEN_IDENTIFIER);
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(start_pos_, current_pos_);
+  return make_token(get_keyword_type(literal), literal);
 }
 
 Token Scanenr::make_number() {
