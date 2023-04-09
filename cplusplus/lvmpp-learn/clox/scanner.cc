@@ -56,6 +56,13 @@ Token Scanenr::make_identifier() {
 }
 
 Token Scanenr::make_number() {
+  while (is_digit(peek()))
+    advance();
+  if (peek() == '.' && is_digit(peek(1))) {
+    advance();
+    while (is_digit(peek()))
+      advance();
+  }
   return make_token(TokenType::TOKEN_NUMBER);
 }
 
