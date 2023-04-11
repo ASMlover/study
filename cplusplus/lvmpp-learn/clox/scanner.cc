@@ -67,7 +67,23 @@ Token Scanenr::make_number() {
 }
 
 Token Scanenr::make_string() {
-  return make_token(TokenType::TOKEN_STRING);
+#define _MKCHAR(x, y) case x: c = y; advance(); break
+  str_t literal;
+  while (!is_tail() && peek() != '"') {
+    char c = peek();
+    switch (c) {
+    case '\n': ++lineno_; break;
+    }
+    literal.push_back(c);
+    advance();
+  }
+#undef _MKCHAR
+
+  if (is_tail())
+    return make_error("unterminated string");
+
+  advance();
+  return make_token(TokenType::TOKEN_STRING, literal);
 }
 
 }
