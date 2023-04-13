@@ -73,6 +73,21 @@ Token Scanenr::make_string() {
     char c = peek();
     switch (c) {
     case '\n': ++lineno_; break;
+    case '\\':
+      switch (peek()) {
+      _MKCHAR('"', '"');
+      _MKCHAR('\\', '\\');
+      _MKCHAR('%', '%');
+      _MKCHAR('0', '\0');
+      _MKCHAR('a', '\a');
+      _MKCHAR('b', '\b');
+      _MKCHAR('f', '\f');
+      _MKCHAR('n', '\n');
+      _MKCHAR('r', '\r');
+      _MKCHAR('t', '\t');
+      _MKCHAR('v', '\v');
+      }
+      break;
     }
     literal.push_back(c);
     advance();
