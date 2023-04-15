@@ -29,6 +29,33 @@
 namespace clox {
 
 Token Scanenr::next_token() {
+  skip_whitespace();
+
+  start_pos_ = current_pos_;
+  if (is_tail())
+    return make_token(TokenType::TOKEN_EOF);
+
+  char c = advance();
+  if (is_alpha(c))
+    return make_identifier();
+  if (is_digit(c))
+    return make_number();
+
+#define _MKTK(c, k) case c: return make_token(TokenType::TOKEN_##k)
+  switch (c) {
+  _MKTK('(', LEFT_PAREN);
+  _MKTK(')', RIGHT_PAREN);
+  _MKTK('{', LEFT_BRACE);
+  _MKTK('}', RIGHT_BRACE);
+  _MKTK(';', SEMICOLON);
+  _MKTK(',', COMMA);
+  _MKTK('.', DOT);
+  _MKTK('-', MINUS);
+  _MKTK('+', PLUS);
+  _MKTK('/', SLASH);
+  _MKTK('*', STAR);
+  }
+#undef _MKTK
   return make_error("unexpected character");
 }
 
