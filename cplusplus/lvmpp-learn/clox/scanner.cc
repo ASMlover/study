@@ -41,7 +41,8 @@ Token Scanenr::next_token() {
   if (is_digit(c))
     return make_number();
 
-#define _MKTK(c, k) case c: return make_token(TokenType::TOKEN_##k)
+#define _MKTK(c, k)             case c: return make_token(TokenType::TOKEN_##k)
+#define _MKTK2(c1, c2, k1, k2)  case c1: return make_token(match(c2) ? TokenType::TOKEN_##k1 : TokenType::TOKEN_##k2)
   switch (c) {
   _MKTK('(', LEFT_PAREN);
   _MKTK(')', RIGHT_PAREN);
@@ -54,8 +55,14 @@ Token Scanenr::next_token() {
   _MKTK('+', PLUS);
   _MKTK('/', SLASH);
   _MKTK('*', STAR);
+  _MKTK2('!', '=', BANG_EQUAL, BANG);
+  _MKTK2('=', '=', EQUAL_EQUAL, EQUAL);
+  _MKTK2('<', '=', LESS_EQUAL, LESS);
+  _MKTK2('>', '=', GREATER_EQUAL, GREATER);
   }
+#undef _MKTK2
 #undef _MKTK
+
   return make_error("unexpected character");
 }
 
