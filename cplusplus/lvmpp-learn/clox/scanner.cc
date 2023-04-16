@@ -59,6 +59,7 @@ Token Scanenr::next_token() {
   _MKTK2('=', '=', EQUAL_EQUAL, EQUAL);
   _MKTK2('<', '=', LESS_EQUAL, LESS);
   _MKTK2('>', '=', GREATER_EQUAL, GREATER);
+  case '"': return make_string();
   }
 #undef _MKTK2
 #undef _MKTK
