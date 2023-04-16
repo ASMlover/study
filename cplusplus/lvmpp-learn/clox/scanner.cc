@@ -75,7 +75,7 @@ void Scanenr::skip_whitespace() {
     case '/':
       {
         if (peek(1) == '/') {
-          while (peek() != '\n')
+          while (!is_tail() && peek() != '\n')
             advance();
         }
         else {
