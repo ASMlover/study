@@ -28,7 +28,7 @@
 
 namespace clox {
 
-Token Scanenr::next_token() {
+Token Scanenr::scan_token() {
   skip_whitespace();
 
   start_pos_ = current_pos_;

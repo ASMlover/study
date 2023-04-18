@@ -72,7 +72,7 @@ class Scanenr final : private UnCopyable {
 public:
   Scanenr(const str_t& source_bytes) noexcept : source_bytes_{source_bytes} {}
 
-  Token next_token();
+  Token scan_token();
 };
 
 }
