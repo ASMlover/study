@@ -46,6 +46,8 @@ InterpretResult VM::interpret(Chunk* chunk) noexcept {
 
 InterpretResult VM::interpret(const str_t& source) noexcept {
   // TODO: compile
+  Chunk chunk;
+
   return InterpretResult::INTERPRET_OK;
 }
 
