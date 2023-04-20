@@ -24,12 +24,39 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "common.hh"
+#include "vm.hh"
+#include "token.hh"
+#include "scanner.hh"
 #include "compiler.hh"
 
 namespace clox {
 
-void Compiler::compile(const str_t& source) noexcept {
-  // TODO: init scanner
+class Parser final : private UnCopyable {
+  VM& vm_;
+  Scanenr& scanner_;
+  Token previous_;
+  Token current_;
+
+  void advance() {
+    previous_ = current_;
+
+    for (;;) {
+      current_ = scanner_.scan_token();
+      if (current_.type() != TokenType::TOKEN_ERROR)
+        break;
+
+      // TODO: error at current
+    }
+  }
+public:
+  Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
+};
+
+void Compiler::compile(VM& vm, const str_t& source) noexcept {
+  Scanenr scanner(source);
+
+  // TODO:
 }
 
 }
