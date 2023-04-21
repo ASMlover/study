@@ -46,6 +46,12 @@ CLOX_TEST(Token) {
   TESTEQ(t.as_numeric(), n);\
   TESTEQ(t.lineno(), 0);\
 } while (false)
+#define TESTSTR(s, l) do {\
+  auto t = NEWTK3(TTy::TOKEN_STRING, s, l);\
+  TESTEQ(t.type(), TTy::TOKEN_STRING);\
+  TESTEQ(t.as_string(), s);\
+  TESTEQ(t.lineno(), l);\
+} while (false)
 
   {
     TESTTK(TTy::TOKEN_LEFT_PAREN, "(");
@@ -189,6 +195,7 @@ CLOX_TEST(Token) {
     TESTNUM(+100.0);
   }
 
+#undef TESTSTR
 #undef TESTNUM
 #undef TESTID
 #undef TESTTK
