@@ -29,11 +29,22 @@
 
 
 CLOX_TEST(CloxChunk) {
-  clox::Chunk chunk;
-
 #define EXPV(v)  chunk.write_constant((v), n)
 #define EXPC(c)  chunk.write((c), n)
 #define EXPC2(c) chunk.write((c), n++)
+
+  clox::Chunk chunk;
+  int n = 1;
+
+  // 22.45 + 34
+  EXPV(34); EXPV(22.45); EXPC2(clox::OpCode::OP_ADD);
+
+  // 10.45 - 87.89
+  EXPV(87.89); EXPV(10.45); EXPC2(clox::OpCode::OP_SUBTRACT);
+
+  // return
+  chunk.write(clox::OpCode::OP_RETURN, n);
+  chunk.dis("Clox-Chunk");
 
 #undef EXPC2
 #undef EXPC
