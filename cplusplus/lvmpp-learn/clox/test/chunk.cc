@@ -48,6 +48,12 @@ CLOX_TEST(CloxChunk) {
   // 34.91 / 82.45
   EXPV(82.45); EXPV(34.91); EXPC2(clox::OpCode::OP_DIVIDE);
 
+  // ((98.23 - (-45.89)) + 8.19) / 78.29
+  EXPV(78.29); EXPV(8.19); EXPV(-45.89); EXPV(98.23);
+  EXPC(clox::OpCode::OP_SUBTRACT);
+  EXPC(clox::OpCode::OP_ADD);
+  EXPC2(clox::OpCode::OP_DIVIDE);
+
   // return
   chunk.write(clox::OpCode::OP_RETURN, n);
   chunk.dis("Clox-Chunk");
