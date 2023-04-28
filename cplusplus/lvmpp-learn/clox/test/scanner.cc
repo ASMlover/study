@@ -24,9 +24,29 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "../harness.hh"
 #include "../scanner.hh"
 
 CLOX_TEST(Scanner) {
   using TTy = clox::TokenType;
+
+#define TESTEQ(t)     CLOX_CHECK_EQ(scanner.scan_token().type(), t)
+#define DUMPSCANNER() do {\
+  for (;;) {\
+    auto t = scanner.scan_token();\
+    std::cout << t << std::endl;\
+    if (t.type() == TTy::TOKEN_EOF)\
+      break;\
+  }\
+} while (false)
+
+  {
+    clox::str_t s = "print(\"Hello, world!\")";
+    clox::Scanenr scanner(s);
+    DUMPSCANNER();
+  }
+
+#undef DUMPSCANNER
+#undef TESTEQ
 }
