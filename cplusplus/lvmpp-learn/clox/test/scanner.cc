@@ -47,6 +47,17 @@ CLOX_TEST(Scanner) {
     DUMPSCANNER();
   }
 
+  {
+    clox::str_t s = "var a = 1.234";
+    clox::Scanenr scanner(s);
+    TESTEQ(TTy::KEYWORD_VAR);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_EQUAL);
+    TESTEQ(TTy::TOKEN_NUMBER);
+    TESTEQ(TTy::TOKEN_SEMICOLON);
+    TESTEQ(TTy::TOKEN_EOF);
+  }
+
 #undef DUMPSCANNER
 #undef TESTEQ
 }
