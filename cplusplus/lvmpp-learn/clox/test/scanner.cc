@@ -58,6 +58,21 @@ CLOX_TEST(Scanner) {
     TESTEQ(TTy::TOKEN_EOF);
   }
 
+  {
+    clox::str_t s = "print(\"33 + 45.6 = \", 33 + 45.6);";
+    clox::Scanenr scanner(s);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_LEFT_PAREN);
+    TESTEQ(TTy::TOKEN_STRING);
+    TESTEQ(TTy::TOKEN_COMMA);
+    TESTEQ(TTy::TOKEN_NUMBER);
+    TESTEQ(TTy::TOKEN_PLUS);
+    TESTEQ(TTy::TOKEN_NUMBER);
+    TESTEQ(TTy::TOKEN_RIGHT_PAREN);
+    TESTEQ(TTy::TOKEN_SEMICOLON);
+    TESTEQ(TTy::TOKEN_EOF);
+  }
+
 #undef DUMPSCANNER
 #undef TESTEQ
 }
