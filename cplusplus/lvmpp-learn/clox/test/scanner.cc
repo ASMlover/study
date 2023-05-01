@@ -73,6 +73,24 @@ CLOX_TEST(Scanner) {
     TESTEQ(TTy::TOKEN_EOF);
   }
 
+  {
+    clox::str_t s = "fun show_message(msg) { print(msg); }";
+    clox::Scanenr scanner(s);
+    TESTEQ(TTy::KEYWORD_FUN);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_LEFT_PAREN);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_RIGHT_PAREN);
+    TESTEQ(TTy::TOKEN_LEFT_BRACE);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_LEFT_PAREN);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_RIGHT_PAREN);
+    TESTEQ(TTy::TOKEN_SEMICOLON);
+    TESTEQ(TTy::TOKEN_RIGHT_BRACE);
+    TESTEQ(TTy::TOKEN_EOF);
+  }
+
 #undef DUMPSCANNER
 #undef TESTEQ
 }
