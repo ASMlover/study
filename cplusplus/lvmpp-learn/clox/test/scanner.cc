@@ -120,6 +120,28 @@ CLOX_TEST(Scanner) {
     TESTEQ(TTy::TOKEN_EOF);
   }
 
+  {
+    clox::str_t s = "var a = nil; print(a, true, false, nil);";
+    clox::Scanenr scanner(s);
+    TESTEQ(TTy::KEYWORD_VAR);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_EQUAL);
+    TESTEQ(TTy::KEYWORD_NIL);
+    TESTEQ(TTy::TOKEN_SEMICOLON);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_LEFT_PAREN);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_COMMA);
+    TESTEQ(TTy::KEYWORD_TRUE);
+    TESTEQ(TTy::TOKEN_COMMA);
+    TESTEQ(TTy::KEYWORD_FALSE);
+    TESTEQ(TTy::TOKEN_COMMA);
+    TESTEQ(TTy::KEYWORD_NIL);
+    TESTEQ(TTy::TOKEN_RIGHT_PAREN);
+    TESTEQ(TTy::TOKEN_SEMICOLON);
+    TESTEQ(TTy::TOKEN_EOF);
+  }
+
 #undef DUMPSCANNER
 #undef TESTEQ
 }
