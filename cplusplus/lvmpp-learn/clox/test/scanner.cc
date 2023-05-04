@@ -142,6 +142,16 @@ CLOX_TEST(Scanner) {
     TESTEQ(TTy::TOKEN_EOF);
   }
 
+  {
+    clox::str_t s = "class Foo {}";
+    clox::Scanenr scanner(s);
+    TESTEQ(TTy::KEYWORD_CLASS);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_LEFT_PAREN);
+    TESTEQ(TTy::TOKEN_RIGHT_PAREN);
+    TESTEQ(TTy::TOKEN_EOF);
+  }
+
 #undef DUMPSCANNER
 #undef TESTEQ
 }
