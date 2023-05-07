@@ -174,6 +174,16 @@ CLOX_TEST(Scanner) {
     TESTEQ(TTy::TOKEN_EOF);
   }
 
+  {
+    clox::str_t s = "var s = \"ERROR SCANNER";
+    clox::Scanenr scanner(s);
+    TESTEQ(TTy::KEYWORD_VAR);
+    TESTEQ(TTy::TOKEN_IDENTIFIER);
+    TESTEQ(TTy::TOKEN_EQUAL);
+    TESTEQ(TTy::TOKEN_ERROR);
+    TESTEQ(TTy::TOKEN_EOF);
+  }
+
 #undef DUMPSCANNER
 #undef TESTEQ
 }
