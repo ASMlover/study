@@ -46,8 +46,12 @@ class Parser final : private UnCopyable {
       if (current_.type() != TokenType::TOKEN_ERROR)
         break;
 
-      // TODO: error at current
+      error_at_current(current_.as_string());
     }
+  }
+
+  inline void error_at_current(const str_t& message) noexcept {
+    // TODO:
   }
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
