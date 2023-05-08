@@ -50,7 +50,10 @@ class Parser final : private UnCopyable {
     }
   }
 
-  inline void error_at_current(const str_t& message) noexcept {
+  inline void error_at_current(const str_t& message) noexcept { error_at(current_, message); }
+  inline void error(const str_t& message) noexcept { error_at(previous_, message); }
+
+  void error_at(const Token& token, const str_t& message) noexcept {
     // TODO:
   }
 public:
