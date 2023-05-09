@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "common.hh"
 #include "vm.hh"
 #include "token.hh"
@@ -37,6 +38,7 @@ class Parser final : private UnCopyable {
   Scanenr& scanner_;
   Token previous_;
   Token current_;
+  bool had_error_{};
 
   void advance() {
     previous_ = current_;
@@ -54,7 +56,19 @@ class Parser final : private UnCopyable {
   inline void error(const str_t& message) noexcept { error_at(previous_, message); }
 
   void error_at(const Token& token, const str_t& message) noexcept {
-    // TODO:
+    std::cerr << "[line " << token.lineno() << "] Error";
+
+    if (token.type() == TokenType::TOKEN_EOF) {
+      std::cerr << " at end";
+    }
+    else if (token.type() == TokenType::TOKEN_ERROR) {
+    }
+    else {
+      std::cerr << " at `" << token.as_string() << "`";
+    }
+
+    std::cerr << ": " << message << std::endl;
+    had_error_ = true;
   }
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
