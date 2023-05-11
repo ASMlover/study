@@ -31,8 +31,10 @@
 namespace clox {
 
 class VM;
+class Parser;
 
 class Compiler final : UnCopyable {
+  Parser* parser_{};
 public:
   void compile(VM& vm, const str_t& source) noexcept;
 };
