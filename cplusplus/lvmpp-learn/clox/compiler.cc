@@ -72,12 +72,22 @@ class Parser final : private UnCopyable {
   }
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
+
+  void compile() {
+    advance();
+    // TODO: expression();
+    // consume(...)
+  }
 };
 
 void Compiler::compile(VM& vm, const str_t& source) noexcept {
   Scanenr scanner(source);
 
-  // TODO:
+  if (parser_ = new Parser{vm, scanner}; parser_ != nullptr) {
+    parser_->compile();
+    delete parser_;
+    parser_ = nullptr;
+  }
 }
 
 }
