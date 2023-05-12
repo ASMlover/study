@@ -73,10 +73,12 @@ class Parser final : private UnCopyable {
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
 
-  void compile() {
+  bool compile() {
     advance();
     // TODO: expression();
     // consume(...)
+
+    return !had_error_;
   }
 };
 
