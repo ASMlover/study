@@ -39,6 +39,7 @@ class Parser final : private UnCopyable {
   Token previous_;
   Token current_;
   bool had_error_{};
+  bool panic_mode_{};
 
   void advance() {
     previous_ = current_;
@@ -56,8 +57,11 @@ class Parser final : private UnCopyable {
   inline void error(const str_t& message) noexcept { error_at(previous_, message); }
 
   void error_at(const Token& token, const str_t& message) noexcept {
-    std::cerr << "[line " << token.lineno() << "] Error";
+    if (panic_mode_)
+      return;
+    panic_mode_ = true;
 
+    std::cerr << "[line " << token.lineno() << "] Error";
     if (token.type() == TokenType::TOKEN_EOF) {
       std::cerr << " at end";
     }
@@ -66,8 +70,8 @@ class Parser final : private UnCopyable {
     else {
       std::cerr << " at `" << token.as_string() << "`";
     }
-
     std::cerr << ": " << message << std::endl;
+
     had_error_ = true;
   }
 public:
