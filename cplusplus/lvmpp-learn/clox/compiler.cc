@@ -53,6 +53,15 @@ class Parser final : private UnCopyable {
     }
   }
 
+  void consume(TokenType type, const str_t& message) {
+    if (current_.type() == type) {
+      advance();
+      return;
+    }
+
+    error_at_current(message);
+  }
+
   inline void error_at_current(const str_t& message) noexcept { error_at(current_, message); }
   inline void error(const str_t& message) noexcept { error_at(previous_, message); }
 
