@@ -29,6 +29,7 @@
 #include "vm.hh"
 #include "token.hh"
 #include "scanner.hh"
+#include "chunk.hh"
 #include "compiler.hh"
 
 namespace clox {
@@ -62,6 +63,11 @@ class Parser final : private UnCopyable {
     error_at_current(message);
   }
 
+  inline Chunk* curr_chunk() noexcept {
+    static Chunk _chunk;
+    return &_chunk;
+  }
+
   inline void error_at_current(const str_t& message) noexcept { error_at(current_, message); }
   inline void error(const str_t& message) noexcept { error_at(previous_, message); }
 
@@ -83,13 +89,17 @@ class Parser final : private UnCopyable {
 
     had_error_ = true;
   }
+
+  inline void emit_byte(u8_t byte) noexcept {
+    curr_chunk()->write(byte, previous_.lineno());
+  }
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
 
   bool compile() {
     advance();
     // TODO: expression();
-    // consume(...)
+    consume(TokenType::TOKEN_EOF, "expect end of expression");
 
     return !had_error_;
   }

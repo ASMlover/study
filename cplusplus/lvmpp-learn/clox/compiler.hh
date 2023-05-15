@@ -31,6 +31,7 @@
 namespace clox {
 
 class VM;
+class Chunk;
 class Parser;
 
 class Compiler final : UnCopyable {
