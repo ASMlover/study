@@ -37,6 +37,7 @@ namespace clox {
 class Parser final : private UnCopyable {
   VM& vm_;
   Scanenr& scanner_;
+  Chunk& chunk_;
   Token previous_;
   Token current_;
   bool had_error_{};
@@ -64,8 +65,7 @@ class Parser final : private UnCopyable {
   }
 
   inline Chunk* curr_chunk() noexcept {
-    static Chunk _chunk;
-    return &_chunk;
+    return &chunk_;
   }
 
   inline void error_at_current(const str_t& message) noexcept { error_at(current_, message); }
@@ -90,11 +90,19 @@ class Parser final : private UnCopyable {
     had_error_ = true;
   }
 
-  inline void emit_byte(u8_t byte) noexcept {
-    curr_chunk()->write(byte, previous_.lineno());
+  inline void emit_return() noexcept { emit_byte(OpCode::OP_RETURN); }
+
+  template <typename T> inline void emit_byte(T byte) noexcept { curr_chunk()->write(byte, previous_.lineno()); }
+  template <typename T> inline void emit_bytes(T byte1, T byte2) noexcept {
+    emit_byte(byte1);
+    emit_byte(byte2);
+  }
+
+  inline void end_compiler() noexcept {
+    emit_return();
   }
 public:
-  Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
+  Parser(VM& vm, Scanenr& scanner, Chunk& chunk) noexcept : vm_{vm}, scanner_{scanner}, chunk_{chunk} {}
 
   bool compile() {
     advance();
@@ -107,8 +115,9 @@ public:
 
 void Compiler::compile(VM& vm, const str_t& source) noexcept {
   Scanenr scanner(source);
+  Chunk chunk;
 
-  if (parser_ = new Parser{vm, scanner}; parser_ != nullptr) {
+  if (parser_ = new Parser{vm, scanner, chunk}; parser_ != nullptr) {
     parser_->compile();
     delete parser_;
     parser_ = nullptr;
