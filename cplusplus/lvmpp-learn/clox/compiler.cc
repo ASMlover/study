@@ -93,20 +93,32 @@ class Parser final : private UnCopyable {
   inline void emit_return() noexcept { emit_byte(OpCode::OP_RETURN); }
 
   template <typename T> inline void emit_byte(T byte) noexcept { curr_chunk()->write(byte, previous_.lineno()); }
-  template <typename T> inline void emit_bytes(T byte1, T byte2) noexcept {
+  template <typename T, typename U> inline void emit_bytes(T byte1, U byte2) noexcept {
     emit_byte(byte1);
     emit_byte(byte2);
   }
 
+  inline void emit_constant(Value value) noexcept {
+    emit_bytes(OpCode::OP_CONSTANT, curr_chunk()->add_constant(value));
+  }
+
   inline void end_compiler() noexcept {
     emit_return();
+  }
+
+  inline void number() noexcept {
+    double value = previous_.as_numeric();
+    // emit_constant(value);
+  }
+
+  void expression() noexcept {
   }
 public:
   Parser(VM& vm, Scanenr& scanner, Chunk& chunk) noexcept : vm_{vm}, scanner_{scanner}, chunk_{chunk} {}
 
   bool compile() {
     advance();
-    // TODO: expression();
+    expression();
     consume(TokenType::TOKEN_EOF, "expect end of expression");
 
     return !had_error_;
