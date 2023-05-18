@@ -106,9 +106,14 @@ class Parser final : private UnCopyable {
     emit_return();
   }
 
+  inline void grouping() noexcept {
+    expression();
+    consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after expression");
+  }
+
   inline void number() noexcept {
     double value = previous_.as_numeric();
-    // emit_constant(value);
+    emit_constant(value);
   }
 
   void expression() noexcept {
