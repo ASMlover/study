@@ -34,6 +34,20 @@
 
 namespace clox {
 
+enum class Precedence {
+  PREC_NONE,
+  PREC_ASSIGNMENT,  // =
+  PREC_OR,          // or
+  PREC_AND,         // and
+  PREC_EQUALITY,    // == !=
+  PREC_COMPARISON,  // < > <= >=
+  PREC_TERM,        // + -
+  PREC_FACTOR,      // * /
+  PREC_UNARY,       // ! -
+  PREC_CALL,        // . ()
+  PREC_PRIMARY,
+};
+
 class Parser final : private UnCopyable {
   VM& vm_;
   Scanenr& scanner_;
@@ -127,6 +141,10 @@ class Parser final : private UnCopyable {
     case TokenType::TOKEN_MINUS: emit_byte(OpCode::OP_NEGATE); break;
     default: return; // unreachable
     }
+  }
+
+  void parse_precedence(Precedence precedence) noexcept {
+    // what goes here ?
   }
 
   void expression() noexcept {
