@@ -116,6 +116,19 @@ class Parser final : private UnCopyable {
     emit_constant(value);
   }
 
+  inline void unary() noexcept {
+    TokenType operator_type = previous_.type();
+
+    // compile the operand
+    expression();
+
+    // emit the operator instruction
+    switch (operator_type) {
+    case TokenType::TOKEN_MINUS: emit_byte(OpCode::OP_NEGATE); break;
+    default: return; // unreachable
+    }
+  }
+
   void expression() noexcept {
   }
 public:
