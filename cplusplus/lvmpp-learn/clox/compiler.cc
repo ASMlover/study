@@ -134,7 +134,7 @@ class Parser final : private UnCopyable {
     TokenType operator_type = previous_.type();
 
     // compile the operand
-    expression();
+    parse_precedence(Precedence::PREC_UNARY);
 
     // emit the operator instruction
     switch (operator_type) {
@@ -148,6 +148,7 @@ class Parser final : private UnCopyable {
   }
 
   void expression() noexcept {
+    parse_precedence(Precedence::PREC_ASSIGNMENT);
   }
 public:
   Parser(VM& vm, Scanenr& scanner, Chunk& chunk) noexcept : vm_{vm}, scanner_{scanner}, chunk_{chunk} {}
