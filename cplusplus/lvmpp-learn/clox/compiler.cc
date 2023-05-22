@@ -120,6 +120,21 @@ class Parser final : private UnCopyable {
     emit_return();
   }
 
+  inline void binary() noexcept {
+    TokenType operator_type = previous_.type();
+
+    // ParseRule& rule = get_rule(operator_type);
+    // parse_precedence(rule.precedence + 1);
+
+    switch (operator_type) {
+    case TokenType::TOKEN_PLUS: emit_byte(OpCode::OP_ADD); break;
+    case TokenType::TOKEN_MINUS: emit_byte(OpCode::OP_SUBTRACT); break;
+    case TokenType::TOKEN_STAR: emit_byte(OpCode::OP_MULTIPLY); break;
+    case TokenType::TOKEN_SLASH: emit_byte(OpCode::OP_DIVIDE); break;
+    default: return; // unreachable
+    }
+  }
+
   inline void grouping() noexcept {
     expression();
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after expression");
