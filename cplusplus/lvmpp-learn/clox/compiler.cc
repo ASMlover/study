@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <functional>
 #include <iostream>
 #include "common.hh"
 #include "vm.hh"
@@ -46,6 +47,20 @@ enum class Precedence {
   PREC_UNARY,       // ! -
   PREC_CALL,        // . ()
   PREC_PRIMARY,
+};
+
+template <typename N> inline Precedence operator+(Precedence a, N b) noexcept {
+  return as_type<Precedence>(as_type<int>(a) + as_type<int>(b));
+}
+
+class Parser;
+
+struct ParseRule {
+  using ParseFn = std::function<void (Parser& parser)>;
+
+  ParseFn prefix;
+  ParseFn infix;
+  Precedence precedence;
 };
 
 class Parser final : private UnCopyable {
