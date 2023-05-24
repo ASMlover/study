@@ -173,6 +173,59 @@ class Parser final : private UnCopyable {
     }
   }
 
+  const ParseRule& get_rule(TokenType type) const noexcept {
+#define _RULE(fn) [](Parser& p) { p.fn(); }
+    static const ParseRule _rules[] = {
+      {_RULE(grouping), nullptr, Precedence::PREC_NONE},      // PUNCTUATOR(LEFT_PAREN, "(")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(RIGHT_PAREN, ")")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(LEFT_BRACE, "{")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(RIGHT_BRACE, "}")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(COMMA, ",")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(DOT, ".")
+      {_RULE(unary), _RULE(binary), Precedence::PREC_TERM},   // PUNCTUATOR(MINUS, "-")
+      {_RULE(unary), _RULE(binary), Precedence::PREC_TERM},   // PUNCTUATOR(PLUS, "+")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(SEMICOLON, ";")
+      {nullptr, _RULE(binary), Precedence::PREC_FACTOR},      // PUNCTUATOR(SLASH, "/")
+      {nullptr, _RULE(binary), Precedence::PREC_FACTOR},      // PUNCTUATOR(STAR, "*")
+
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(BANG, "!")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(BANG_EQUAL, "!=")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(EQUAL, "=")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(EQUAL_EQUAL, "==")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(GREATER, ">")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(GREATER_EQUAL, ">=")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(LESS, "<")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(LESS_EQUAL, "<=")
+
+      {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(IDENTIFIER, "Token-Identifier")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(STRING, "Token-String")
+      {_RULE(number), nullptr, Precedence::PREC_NONE},        // TOKEN(NUMBER, "Token-Number")
+
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(AND, "and")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(CLASS, "class")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(ELSE, "else")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FALSE, "false")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FOR, "for")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FUN, "fun")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(IF, "if")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(NIL, "nil")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(OR, "or")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(PRINT, "print")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(RETURN, "return")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(SUPER, "super")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(THIS, "this")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(TRUE, "true")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(VAR, "var")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(WHILE, "while")
+
+      {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(ERROR, "Token-Error")
+      {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(EOF, "Token-Eof")
+    };
+#undef _RULE
+
+    return _rules[as_type<int>(type)];
+  }
+
   void parse_precedence(Precedence precedence) noexcept {
     // what goes here ?
   }
