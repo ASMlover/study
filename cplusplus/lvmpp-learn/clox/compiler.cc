@@ -138,8 +138,8 @@ class Parser final : private UnCopyable {
   inline void binary() noexcept {
     TokenType operator_type = previous_.type();
 
-    // ParseRule& rule = get_rule(operator_type);
-    // parse_precedence(rule.precedence + 1);
+    const ParseRule& rule = get_rule(operator_type);
+    parse_precedence(rule.precedence + 1);
 
     switch (operator_type) {
     case TokenType::TOKEN_PLUS: emit_byte(OpCode::OP_ADD); break;
