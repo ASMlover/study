@@ -227,7 +227,14 @@ class Parser final : private UnCopyable {
   }
 
   void parse_precedence(Precedence precedence) noexcept {
-    // what goes here ?
+    advance();
+    auto prefix_rule = get_rule(previous_.type()).prefix;
+    if (!prefix_rule) {
+      error("expect expression");
+      return;
+    }
+
+    prefix_rule(*this);
   }
 
   void expression() noexcept {
