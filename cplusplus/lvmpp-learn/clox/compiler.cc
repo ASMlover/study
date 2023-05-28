@@ -235,6 +235,14 @@ class Parser final : private UnCopyable {
     }
 
     prefix_rule(*this);
+
+    while (precedence <= get_rule(current_.type()).precedence) {
+      advance();
+      auto infix_rule = get_rule(previous_.type()).infix;
+
+      if (infix_rule)
+        infix_rule(*this);
+    }
   }
 
   void expression() noexcept {
