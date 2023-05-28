@@ -133,6 +133,11 @@ class Parser final : private UnCopyable {
 
   inline void end_compiler() noexcept {
     emit_return();
+
+#if defined(_CLOX_DEBUG_PRINT_CODE)
+    if (!had_error_)
+      curr_chunk()->dis("code");
+#endif
   }
 
   inline void binary() noexcept {
