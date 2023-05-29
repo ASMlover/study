@@ -26,7 +26,23 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include "common.hh"
+
 namespace clox {
+
+enum class ValueType : u8_t {
+  VAL_BOOL,
+  VAL_NIL,
+  VAL_NUMBER,
+};
+
+class ValueObj final : public Copyable {
+  ValueType type_{ValueType::VAL_NIL};
+  union {
+    bool boolean;
+    double number;
+  } as_;
+};
 
 using Value = double;
 
