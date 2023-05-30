@@ -36,14 +36,72 @@ enum class ValueType : u8_t {
   VAL_NUMBER,
 };
 
-class ValueObj final : public Copyable {
+class Value final : public Copyable {
   ValueType type_{ValueType::VAL_NIL};
   union {
     bool boolean;
-    double number;
+    double number{};
   } as_;
+
+  template <typename T> inline void set_number(T x) noexcept { as_.number = as_type<double>(x); }
+public:
+  Value() noexcept {}
+  Value(bool b) noexcept : type_{ValueType::VAL_BOOL} { as_.boolean = b; }
+  Value(nil_t) noexcept {}
+  Value(i8_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(u8_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(i16_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(u16_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(i32_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(u32_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(i64_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(u64_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
+  Value(float f) noexcept : type_{ValueType::VAL_NUMBER} { set_number(f); }
+  Value(double d) noexcept : type_{ValueType::VAL_NUMBER} { as_.number = d; }
+
+  Value(const Value& r) noexcept
+    : type_{r.type_} {
+    as_.number = r.as_.number;
+  }
+
+  Value(Value&& r) noexcept
+    : type_{std::move(r.type_)} {
+    as_.number = std::move(r.as_.number);
+  }
+
+  inline Value& operator=(const Value& r) noexcept {
+    if (this != &r) {
+      type_ = r.type_;
+      as_.number = r.as_.number;
+    }
+    return *this;
+  }
+
+  inline Value& operator=(Value&& r) noexcept {
+    if (this != &r) {
+      type_ = std::move(r.type_);
+      as_.number = std::move(r.as_.number);
+    }
+    return *this;
+  }
+
+  inline bool operator<(const Value& r) const noexcept { return as_.number < r.as_.number; }
+  inline bool operator<=(const Value& r) const noexcept { return as_.number <= r.as_.number; }
+  inline bool operator>(const Value& r) const noexcept { return as_.number > r.as_.number; }
+  inline bool operator>=(const Value& r) const noexcept { return as_.number >= r.as_.number; }
+
+  inline bool is_boolean() const noexcept { return type_ == ValueType::VAL_BOOL; }
+  inline bool is_nil() const noexcept { return type_ == ValueType::VAL_NIL; }
+  inline bool is_number() const noexcept { return type_ == ValueType::VAL_NUMBER; }
+
+  inline bool as_boolean() const noexcept { return as_.boolean; }
+  inline double as_number() const noexcept { return as_.number; }
+
+  str_t stringfy() const;
 };
 
-using Value = double;
+inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
+  return out << val.stringfy();
+}
 
 }
