@@ -56,8 +56,8 @@ InterpretResult VM::run() noexcept {
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
 #define BINARY_OP(op)\
   do {\
-    double b = pop();\
-    double a = pop();\
+    double b = pop().as_number();\
+    double a = pop().as_number();\
     push(a op b);\
   } while (false)
 
@@ -81,7 +81,7 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
     case OpCode::OP_DIVIDE: BINARY_OP(/); break;
-    case OpCode::OP_NEGATE: push(-pop()); break;
+    case OpCode::OP_NEGATE: push(-pop().as_number()); break;
     case OpCode::OP_RETURN:
       {
         std::cout << pop() << std::endl;
