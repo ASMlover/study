@@ -66,7 +66,7 @@ public:
     return as_type<u8_t>(codes_.size() - 1);
   }
 
-  inline u8_t add_constant(Value value) noexcept {
+  inline u8_t add_constant(const Value& value) noexcept {
     constants_.push_back(value);
     return as_type<u8_t>(constants_.size() -  1);
   }
