@@ -48,8 +48,12 @@ class VM final : private UnCopyable {
   Value* stack_top_;
 
   inline void reset_stack() noexcept { stack_top_ = stack_; }
-  inline void push(Value value) noexcept { *stack_top_++ = value; }
+  inline void push(const Value& value) noexcept { *stack_top_++ = value; }
   inline Value pop() noexcept { return *(--stack_top_); }
+
+  inline Value peek(int distance = 0) const noexcept {
+    return stack_top_[-1 - distance];
+  }
 
   InterpretResult run() noexcept;
 public:
