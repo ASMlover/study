@@ -55,6 +55,8 @@ class VM final : private UnCopyable {
     return stack_top_[-1 - distance];
   }
 
+  void runtime_error(const char* format, ...) noexcept;
+
   InterpretResult run() noexcept;
 public:
   VM() noexcept;
