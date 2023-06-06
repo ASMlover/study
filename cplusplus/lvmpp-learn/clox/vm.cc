@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstdarg>
 #include <iostream>
 #include "chunk.hh"
 #include "vm.hh"
@@ -35,6 +36,20 @@ VM::VM() noexcept {
 }
 
 VM::~VM() noexcept {
+}
+
+void VM::runtime_error(const char* format, ...) noexcept {
+  va_list args;
+  va_start(args, format);
+  std::vfprintf(stderr, format, args);
+  va_end(args);
+  std::cerr << std::endl;
+
+  sz_t instruction = chunk_->offset_from(ip_) - 1; // ip_ - chunk_->codes() - 1
+  int lineno = chunk_->get_line(instruction);
+  std::cerr << "[line " << lineno << "] in script" << std::endl;
+
+  reset_stack();
 }
 
 InterpretResult VM::interpret(Chunk* chunk) noexcept {
@@ -56,6 +71,10 @@ InterpretResult VM::run() noexcept {
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
 #define BINARY_OP(op)\
   do {\
+    if (!peek(0).is_number() || !peek(1).is_number()) {\
+      runtime_error("Operands must be numbers.");\
+      return InterpretResult::INTERPRET_RUNTIME_ERROR;\
+    }\
     double b = pop().as_number();\
     double a = pop().as_number();\
     push(a op b);\
@@ -84,7 +103,7 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_NEGATE:
       {
         if (!peek().is_number()) {
-          // runtime_error()
+          runtime_error("Operand must be a number.");
           return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
         push(-pop().as_number());
