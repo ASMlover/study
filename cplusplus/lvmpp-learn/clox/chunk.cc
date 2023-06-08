@@ -69,6 +69,9 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
 
   switch (auto c = as_type<OpCode>(codes_[offset])) {
   case OpCode::OP_CONSTANT: COMPOUND2(OP_CONSTANT, true);
+  case OpCode::OP_NIL: SIMPLE(OP_NIL);
+  case OpCode::OP_TRUE: SIMPLE(OP_TRUE);
+  case OpCode::OP_FALSE: SIMPLE(OP_FALSE);
   case OpCode::OP_ADD: SIMPLE(OP_ADD);
   case OpCode::OP_SUBTRACT: SIMPLE(OP_SUBTRACT);
   case OpCode::OP_MULTIPLY: SIMPLE(OP_MULTIPLY);
