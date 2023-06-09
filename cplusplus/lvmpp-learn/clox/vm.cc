@@ -96,6 +96,9 @@ InterpretResult VM::run() noexcept {
         Value constant = READ_CONSTANT();
         push(constant);
       } break;
+    case OpCode::OP_NIL: push(nullptr); break;
+    case OpCode::OP_TRUE: push(true); break;
+    case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_ADD: BINARY_OP(+); break;
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
