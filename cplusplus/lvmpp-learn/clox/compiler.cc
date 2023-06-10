@@ -155,6 +155,15 @@ class Parser final : private UnCopyable {
     }
   }
 
+  inline void literal() noexcept {
+    switch (previous_.type()) {
+    case TokenType::KEYWORD_FALSE: emit_byte(OpCode::OP_FALSE); break;
+    case TokenType::KEYWORD_NIL: emit_byte(OpCode::OP_NIL); break;
+    case TokenType::KEYWORD_TRUE: emit_byte(OpCode::OP_TRUE); break;
+    default: return; // unreachable
+    }
+  }
+
   inline void grouping() noexcept {
     expression();
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after expression");
@@ -209,17 +218,17 @@ class Parser final : private UnCopyable {
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(AND, "and")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(CLASS, "class")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(ELSE, "else")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FALSE, "false")
+      {_RULE(literal), nullptr, Precedence::PREC_NONE},       // KEYWORD(FALSE, "false")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FOR, "for")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FUN, "fun")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(IF, "if")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(NIL, "nil")
+      {_RULE(literal), nullptr, Precedence::PREC_NONE},       // KEYWORD(NIL, "nil")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(OR, "or")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(PRINT, "print")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(RETURN, "return")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(SUPER, "super")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(THIS, "this")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(TRUE, "true")
+      {_RULE(literal), nullptr, Precedence::PREC_NONE},       // KEYWORD(TRUE, "true")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(VAR, "var")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(WHILE, "while")
 
