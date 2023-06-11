@@ -42,6 +42,7 @@ enum class OpCode : u8_t {
   OP_SUBTRACT,
   OP_MULTIPLY,
   OP_DIVIDE,
+  OP_NOT,
   OP_NEGATE,
   OP_RETURN,
 };
