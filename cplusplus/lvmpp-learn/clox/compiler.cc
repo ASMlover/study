@@ -182,6 +182,7 @@ class Parser final : private UnCopyable {
 
     // emit the operator instruction
     switch (operator_type) {
+    case TokenType::TOKEN_BANG: emit_byte(OpCode::OP_NOT); break;
     case TokenType::TOKEN_MINUS: emit_byte(OpCode::OP_NEGATE); break;
     default: return; // unreachable
     }
