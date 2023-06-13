@@ -97,6 +97,10 @@ public:
   inline bool as_boolean() const noexcept { return as_.boolean; }
   inline double as_number() const noexcept { return as_.number; }
 
+  inline bool is_falsey() const noexcept {
+    return is_nil() || (is_boolean() && !as_boolean());
+  }
+
   str_t stringfy() const;
 };
 
