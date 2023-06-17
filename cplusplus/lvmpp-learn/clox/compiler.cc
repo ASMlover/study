@@ -203,7 +203,7 @@ class Parser final : private UnCopyable {
       {nullptr, _RULE(binary), Precedence::PREC_FACTOR},      // PUNCTUATOR(SLASH, "/")
       {nullptr, _RULE(binary), Precedence::PREC_FACTOR},      // PUNCTUATOR(STAR, "*")
 
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(BANG, "!")
+      {_RULE(unary), nullptr, Precedence::PREC_NONE},         // PUNCTUATOR(BANG, "!")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(BANG_EQUAL, "!=")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(EQUAL, "=")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(EQUAL_EQUAL, "==")
