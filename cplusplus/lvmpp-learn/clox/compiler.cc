@@ -147,6 +147,12 @@ class Parser final : private UnCopyable {
     parse_precedence(rule.precedence + 1);
 
     switch (operator_type) {
+    case TokenType::TOKEN_BANG_EQUAL: emit_bytes(OpCode::OP_EQUAL, OpCode::OP_NOT); break;
+    case TokenType::TOKEN_EQUAL_EQUAL: emit_byte(OpCode::OP_EQUAL); break;
+    case TokenType::TOKEN_GREATER: emit_byte(OpCode::OP_GREATER); break;
+    case TokenType::TOKEN_GREATER_EQUAL: emit_bytes(OpCode::OP_GREATER, OpCode::OP_NOT); break;
+    case TokenType::TOKEN_LESS: emit_byte(OpCode::OP_LESS); break;
+    case TokenType::TOKEN_LESS_EQUAL: emit_bytes(OpCode::OP_LESS, OpCode::OP_NOT); break;
     case TokenType::TOKEN_PLUS: emit_byte(OpCode::OP_ADD); break;
     case TokenType::TOKEN_MINUS: emit_byte(OpCode::OP_SUBTRACT); break;
     case TokenType::TOKEN_STAR: emit_byte(OpCode::OP_MULTIPLY); break;
@@ -204,13 +210,13 @@ class Parser final : private UnCopyable {
       {nullptr, _RULE(binary), Precedence::PREC_FACTOR},      // PUNCTUATOR(STAR, "*")
 
       {_RULE(unary), nullptr, Precedence::PREC_NONE},         // PUNCTUATOR(BANG, "!")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(BANG_EQUAL, "!=")
+      {nullptr, _RULE(binary), Precedence::PREC_EQUALITY},    // PUNCTUATOR(BANG_EQUAL, "!=")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(EQUAL, "=")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(EQUAL_EQUAL, "==")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(GREATER, ">")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(GREATER_EQUAL, ">=")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(LESS, "<")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(LESS_EQUAL, "<=")
+      {nullptr, _RULE(binary), Precedence::PREC_EQUALITY},    // PUNCTUATOR(EQUAL_EQUAL, "==")
+      {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(GREATER, ">")
+      {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(GREATER_EQUAL, ">=")
+      {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(LESS, "<")
+      {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(LESS_EQUAL, "<=")
 
       {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(IDENTIFIER, "Token-Identifier")
       {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(STRING, "Token-String")
