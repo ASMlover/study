@@ -85,6 +85,9 @@ public:
     return *this;
   }
 
+  inline bool operator==(const Value& x) const noexcept { return is_equal(x); }
+  inline bool operator!=(const Value& x) const noexcept { return !is_equal(x ); }
+
   inline bool operator<(const Value& r) const noexcept { return as_.number < r.as_.number; }
   inline bool operator<=(const Value& r) const noexcept { return as_.number <= r.as_.number; }
   inline bool operator>(const Value& r) const noexcept { return as_.number > r.as_.number; }
@@ -101,6 +104,7 @@ public:
     return is_nil() || (is_boolean() && !as_boolean());
   }
 
+  bool is_equal(const Value& x) const noexcept;
   str_t stringfy() const;
 };
 
