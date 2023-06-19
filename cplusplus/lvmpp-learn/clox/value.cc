@@ -28,6 +28,19 @@
 
 namespace clox {
 
+bool Value::is_equal(const Value& x) const noexcept {
+  if (type_ != x.type_)
+    return false;
+
+  switch (type_) {
+  case ValueType::VAL_BOOL: return as_.boolean == x.as_.boolean;
+  case ValueType::VAL_NIL: return true;
+  case ValueType::VAL_NUMBER: return as_.number == x.as_.number;
+  default: return false; // unreachable
+  }
+  return false;
+}
+
 str_t Value::stringfy() const {
   switch (type_) {
   case ValueType::VAL_BOOL: return as_.boolean ? "true" : "false";
