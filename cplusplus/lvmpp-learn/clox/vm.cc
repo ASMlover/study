@@ -99,6 +99,14 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_NIL: push(nullptr); break;
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
+    case OpCode::OP_EQUAL:
+      {
+        Value b = pop();
+        Value a = pop();
+        push(a == b);
+      } break;
+    case OpCode::OP_GREATER: BINARY_OP(>); break;
+    case OpCode::OP_LESS: BINARY_OP(<); break;
     case OpCode::OP_ADD: BINARY_OP(+); break;
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
