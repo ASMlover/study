@@ -27,6 +27,7 @@
 #pragma once
 
 #include "common.hh"
+#include "object.hh"
 
 namespace clox {
 
@@ -34,13 +35,15 @@ enum class ValueType : u8_t {
   VAL_BOOL,
   VAL_NIL,
   VAL_NUMBER,
+  VAL_OBJ,
 };
 
 class Value final : public Copyable {
   ValueType type_{ValueType::VAL_NIL};
   union {
     bool boolean;
-    double number{};
+    double number;
+    Obj* obj{};
   } as_;
 
   template <typename T> inline void set_number(T x) noexcept { as_.number = as_type<double>(x); }
@@ -58,6 +61,7 @@ public:
   Value(u64_t n) noexcept : type_{ValueType::VAL_NUMBER} { set_number(n); }
   Value(float f) noexcept : type_{ValueType::VAL_NUMBER} { set_number(f); }
   Value(double d) noexcept : type_{ValueType::VAL_NUMBER} { as_.number = d; }
+  Value(Obj* o) noexcept : type_{ValueType::VAL_OBJ} { as_.obj = o; }
 
   Value(const Value& r) noexcept
     : type_{r.type_} {
