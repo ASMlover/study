@@ -36,6 +36,17 @@ enum class ObjType : u8_t {
 
 class Obj : private UnCopyable {
   ObjType type_;
+
+public:
+  Obj(ObjType type) noexcept : type_{type} {}
+  virtual ~Obj() {}
+
+  inline ObjType type() const noexcept { return type_; }
+};
+
+class ObjString final : public Obj {
+  int length_;
+  char* chars_;
 };
 
 }
