@@ -34,6 +34,9 @@ enum class ObjType : u8_t {
   OBJ_STRING,
 };
 
+class Obj;
+class ObjString;
+
 class Obj : private UnCopyable {
   ObjType type_;
 
@@ -42,11 +45,21 @@ public:
   virtual ~Obj() {}
 
   inline ObjType type() const noexcept { return type_; }
+  inline bool is_type(ObjType type) const noexcept { return type_ == type; }
+
+  ObjString* as_string() noexcept;
+  cstr_t as_cstring() noexcept;
 };
 
 class ObjString final : public Obj {
-  int length_;
-  char* chars_;
+  int length_{};
+  char* chars_{};
+public:
+  virtual ~ObjString();
+
+  inline int length() const noexcept { return length_; }
+  inline cstr_t data() const noexcept { return chars_; }
+  inline cstr_t cstr() const noexcept { return chars_; }
 };
 
 }
