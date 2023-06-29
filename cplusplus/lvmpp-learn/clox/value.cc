@@ -45,7 +45,7 @@ str_t Value::stringfy() const {
   switch (type_) {
   case ValueType::VAL_BOOL: return as_.boolean ? "true" : "false";
   case ValueType::VAL_NIL: return "nil";
-  case ValueType::VAL_NUMBER: return as_string(as_.number);
+  case ValueType::VAL_NUMBER: return clox::as_string(as_.number);
   }
   return "<value>";
 }
