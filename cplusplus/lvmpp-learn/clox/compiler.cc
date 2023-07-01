@@ -180,6 +180,10 @@ class Parser final : private UnCopyable {
     emit_constant(value);
   }
 
+  inline void string() noexcept {
+    // TODO:
+  }
+
   inline void unary() noexcept {
     TokenType operator_type = previous_.type();
 
@@ -219,7 +223,7 @@ class Parser final : private UnCopyable {
       {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(LESS_EQUAL, "<=")
 
       {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(IDENTIFIER, "Token-Identifier")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(STRING, "Token-String")
+      {_RULE(string), nullptr, Precedence::PREC_NONE},        // TOKEN(STRING, "Token-String")
       {_RULE(number), nullptr, Precedence::PREC_NONE},        // TOKEN(NUMBER, "Token-Number")
 
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(AND, "and")
