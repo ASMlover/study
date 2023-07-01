@@ -47,6 +47,8 @@ public:
   inline ObjType type() const noexcept { return type_; }
   inline bool is_type(ObjType type) const noexcept { return type_ == type; }
 
+  virtual str_t stringify() const { return "<object>"; }
+
   ObjString* as_string() noexcept;
   cstr_t as_cstring() noexcept;
 };
@@ -55,11 +57,23 @@ class ObjString final : public Obj {
   int length_{};
   char* chars_{};
 public:
+  ObjString(const char* chars, int length) noexcept;
   virtual ~ObjString();
 
   inline int length() const noexcept { return length_; }
-  inline cstr_t data() const noexcept { return chars_; }
-  inline cstr_t cstr() const noexcept { return chars_; }
+  inline const char* data() const noexcept { return chars_; }
+  inline const char* cstr() const noexcept { return chars_; }
+
+  virtual str_t stringify() const override;
+
+  static ObjString* create(const char* chars, int length);
+
+  template <typename N> static ObjString* create(const char* chars, N length) {
+    return create(chars, as_type<int>(length));
+  }
+
+  static ObjString* create(const str_t& s) { return create(s.data(), s.size()); }
+  static ObjString* create(strv_t s) { return create(s.data(), s.size()); }
 };
 
 }
