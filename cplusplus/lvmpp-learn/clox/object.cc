@@ -28,6 +28,11 @@
 
 namespace clox {
 
+template <typename Object, typename... Args> inline Object* make_object(Args&&... args) noexcept {
+  Object* o = new Object(std::forward<Args>(args)...);
+  return o;
+}
+
 ObjString* Obj::as_string() noexcept {
   return as_down<ObjString>(this);
 }
@@ -36,8 +41,24 @@ cstr_t Obj::as_cstring() noexcept {
   return as_down<ObjString>(this)->cstr();
 }
 
+ObjString::ObjString(const char* chars, int length) noexcept
+  : Obj{ObjType::OBJ_STRING}, length_{length} {
+  chars_ = new char[length_ + 1];
+  std::memcpy(chars_, chars, length_);
+  chars_[length_] = 0;
+}
+
 ObjString::~ObjString() {
   delete [] chars_;
+}
+
+str_t ObjString::stringify() const {
+  return chars_;
+}
+
+ObjString* ObjString::create(const char* chars, int length) {
+  auto* o = make_object<ObjString>(chars, length);
+  return o;
 }
 
 }
