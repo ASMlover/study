@@ -118,11 +118,11 @@ public:
   }
 
   bool is_equal(const Value& x) const noexcept;
-  str_t stringfy() const;
+  str_t stringify() const;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const Value& val) noexcept {
-  return out << val.stringfy();
+  return out << val.stringify();
 }
 
 }
