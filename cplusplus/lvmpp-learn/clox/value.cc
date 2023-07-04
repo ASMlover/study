@@ -41,11 +41,12 @@ bool Value::is_equal(const Value& x) const noexcept {
   return false;
 }
 
-str_t Value::stringfy() const {
+str_t Value::stringify() const {
   switch (type_) {
   case ValueType::VAL_BOOL: return as_.boolean ? "true" : "false";
   case ValueType::VAL_NIL: return "nil";
   case ValueType::VAL_NUMBER: return clox::as_string(as_.number);
+  case ValueType::VAL_OBJ: return as_.obj->stringify();
   }
   return "<value>";
 }
