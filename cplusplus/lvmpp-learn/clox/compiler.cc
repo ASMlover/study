@@ -127,7 +127,7 @@ class Parser final : private UnCopyable {
     emit_byte(byte2);
   }
 
-  inline void emit_constant(Value value) noexcept {
+  inline void emit_constant(const Value& value) noexcept {
     emit_bytes(OpCode::OP_CONSTANT, curr_chunk()->add_constant(value));
   }
 
@@ -181,7 +181,7 @@ class Parser final : private UnCopyable {
   }
 
   inline void string() noexcept {
-    // TODO:
+    emit_constant(ObjString::create(previous_.as_string()));
   }
 
   inline void unary() noexcept {
