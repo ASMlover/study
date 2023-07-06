@@ -47,11 +47,15 @@ public:
   inline ObjType type() const noexcept { return type_; }
   inline bool is_type(ObjType type) const noexcept { return type_ == type; }
 
+  virtual bool is_equal(Obj* x) const { return this == x; }
   virtual str_t stringify() const { return "<object>"; }
 
   ObjString* as_string() noexcept;
   cstr_t as_cstring() noexcept;
 };
+
+template <typename T, typename U>
+inline bool is_same_type(T* x, U* y) noexcept { return x->type() == y->type(); }
 
 class ObjString final : public Obj {
   int length_{};
@@ -64,6 +68,12 @@ public:
   inline const char* data() const noexcept { return chars_; }
   inline const char* cstr() const noexcept { return chars_; }
 
+  inline bool is_equal_to(ObjString* s) const noexcept { return this == s || is_equal_to(s->chars_); }
+  inline bool is_equal_to(const str_t& s) const noexcept { return s.compare(chars_) == 0; }
+  inline bool is_equal_to(strv_t s) const noexcept { return s.compare(chars_) == 0; }
+  inline bool is_equal_to(const char* s) const noexcept { return std::memcmp(chars_, s, length_) == 0; }
+
+  virtual bool is_equal(Obj* r) const override;
   virtual str_t stringify() const override;
 
   static ObjString* create(const char* chars, int length);
