@@ -36,6 +36,7 @@ bool Value::is_equal(const Value& x) const noexcept {
   case ValueType::VAL_BOOL: return as_.boolean == x.as_.boolean;
   case ValueType::VAL_NIL: return true;
   case ValueType::VAL_NUMBER: return as_.number == x.as_.number;
+  case ValueType::VAL_OBJ: return as_.obj->is_equal(x.as_.obj);
   default: return false; // unreachable
   }
   return false;
