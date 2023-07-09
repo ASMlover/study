@@ -77,6 +77,7 @@ public:
   virtual str_t stringify() const override;
 
   static ObjString* create(const char* chars, int length);
+  static ObjString* concat(ObjString* a, ObjString* b);
 
   template <typename N> static ObjString* create(const char* chars, N length) {
     return create(chars, as_type<int>(length));
