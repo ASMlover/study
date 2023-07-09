@@ -52,6 +52,12 @@ ObjString::~ObjString() {
   delete [] chars_;
 }
 
+bool ObjString::is_equal(Obj* r) const {
+  if (this == r)
+    return true;
+  return is_same_type(this, r) ? is_equal_to(as_down<ObjString>(r)) : false;
+}
+
 str_t ObjString::stringify() const {
   return chars_;
 }
