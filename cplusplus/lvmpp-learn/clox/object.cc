@@ -67,4 +67,15 @@ ObjString* ObjString::create(const char* chars, int length) {
   return o;
 }
 
+ObjString* ObjString::concat(ObjString* a, ObjString* b) {
+  int length = a->length() + b->length();
+  char* chars = new char[length + 1];
+  std::memcpy(chars, a->data(), a->length());
+  std::memcpy(chars + a->length(), b->data(), b->length());
+  chars[length] = 0;
+
+  auto* o = make_object<ObjString>(chars, length);
+  return o;
+}
+
 }
