@@ -124,4 +124,13 @@ inline str_t as_string(double d) noexcept {
   return ss.str();
 }
 
+inline u32_t hash_string(const char* s, int length) noexcept {
+  u32_t hash = 2166136261u;
+  for (int i = 0; i < length; ++i) {
+    hash ^= as_type<u8_t>(s[i]);
+    hash *= 16777619;
+  }
+  return hash;
+}
+
 }
