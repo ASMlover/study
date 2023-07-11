@@ -60,8 +60,9 @@ inline bool is_same_type(T* x, U* y) noexcept { return x->type() == y->type(); }
 class ObjString final : public Obj {
   int length_{};
   char* chars_{};
+  u32_t hash_{};
 public:
-  ObjString(const char* chars, int length) noexcept;
+  ObjString(const char* chars, int length, u32_t hash) noexcept;
   virtual ~ObjString();
 
   inline int length() const noexcept { return length_; }
