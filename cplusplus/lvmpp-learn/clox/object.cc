@@ -41,8 +41,8 @@ cstr_t Obj::as_cstring() noexcept {
   return as_down<ObjString>(this)->cstr();
 }
 
-ObjString::ObjString(const char* chars, int length) noexcept
-  : Obj{ObjType::OBJ_STRING}, length_{length} {
+ObjString::ObjString(const char* chars, int length, u32_t hash) noexcept
+  : Obj{ObjType::OBJ_STRING}, length_{length}, hash_{hash} {
   chars_ = new char[length_ + 1];
   std::memcpy(chars_, chars, length_);
   chars_[length_] = 0;
@@ -63,7 +63,8 @@ str_t ObjString::stringify() const {
 }
 
 ObjString* ObjString::create(const char* chars, int length) {
-  auto* o = make_object<ObjString>(chars, length);
+  u32_t hash = hash_string(chars, length);
+  ObjString* o = make_object<ObjString>(chars, length, hash);
   return o;
 }
 
@@ -74,7 +75,8 @@ ObjString* ObjString::concat(ObjString* a, ObjString* b) {
   std::memcpy(chars + a->length(), b->data(), b->length());
   chars[length] = 0;
 
-  auto* o = make_object<ObjString>(chars, length);
+  u32_t hash = hash_string(chars, length);
+  ObjString* o = make_object<ObjString>(chars, length, hash);
   return o;
 }
 
