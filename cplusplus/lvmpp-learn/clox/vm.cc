@@ -107,7 +107,25 @@ InterpretResult VM::run() noexcept {
       } break;
     case OpCode::OP_GREATER: BINARY_OP(>); break;
     case OpCode::OP_LESS: BINARY_OP(<); break;
-    case OpCode::OP_ADD: BINARY_OP(+); break;
+    case OpCode::OP_ADD:
+      if (peek(0).is_string() && peek(1).is_string()) {
+        ObjString* b = peek(0).as_string();
+        ObjString* a = peek(1).as_string();
+        ObjString* s = ObjString::concat(a, b);
+        pop();
+        pop();
+        push(s);
+      }
+      else if (peek(0).is_number() && peek(1).is_number()) {
+        double b = pop().as_number();
+        double a = pop().as_number();
+        push(a + b);
+      }
+      else {
+        runtime_error("Operands must be two numbers or two strings.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+      break;
     case OpCode::OP_SUBTRACT: BINARY_OP(-); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(*); break;
     case OpCode::OP_DIVIDE: BINARY_OP(/); break;
