@@ -31,6 +31,25 @@
 
 namespace clox {
 
+static VM* _vm{};
+
+void init_vm() noexcept {
+  _vm = new VM();
+}
+
+void free_vm() noexcept {
+  if (_vm) {
+    delete _vm;
+    _vm = nullptr;
+  }
+}
+
+VM& get_vm() noexcept {
+  if (!_vm)
+    init_vm();
+  return *_vm;
+}
+
 VM::VM() noexcept {
   reset_stack();
 }
@@ -52,6 +71,10 @@ void VM::runtime_error(const char* format, ...) noexcept {
   reset_stack();
 }
 
+void VM::free_object(Obj* o) noexcept {
+  delete o;
+}
+
 InterpretResult VM::interpret(Chunk* chunk) noexcept {
   chunk_ = chunk;
   ip_ = chunk->codes();
@@ -64,6 +87,17 @@ InterpretResult VM::interpret(const str_t& source) noexcept {
   Chunk chunk;
 
   return InterpretResult::INTERPRET_OK;
+}
+
+void VM::append_object(Obj* o) noexcept {
+  objects_.push_back(o);
+}
+
+void VM::free_objects() noexcept {
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    free_object(*it);
+    objects_.erase(it++);
+  }
 }
 
 InterpretResult VM::run() noexcept {

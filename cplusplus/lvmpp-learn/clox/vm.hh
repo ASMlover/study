@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <unordered_map>
+#include <list>
 #include "common.hh"
 #include "value.hh"
 
@@ -47,6 +49,9 @@ class VM final : private UnCopyable {
   Value stack_[kStackMax];
   Value* stack_top_;
 
+  std::unordered_map<u32_t, Obj*> strings_;
+  std::list<Obj*> objects_;
+
   inline void reset_stack() noexcept { stack_top_ = stack_; }
   inline void push(const Value& value) noexcept { *stack_top_++ = value; }
   inline Value pop() noexcept { return *(--stack_top_); }
@@ -56,6 +61,7 @@ class VM final : private UnCopyable {
   }
 
   void runtime_error(const char* format, ...) noexcept;
+  void free_object(Obj* o) noexcept;
 
   InterpretResult run() noexcept;
 public:
@@ -64,6 +70,13 @@ public:
 
   InterpretResult interpret(Chunk* chunk) noexcept;
   InterpretResult interpret(const str_t& source) noexcept;
+
+  void append_object(Obj* o) noexcept;
+  void free_objects() noexcept;
 };
+
+void init_vm() noexcept;
+void free_vm() noexcept;
+VM& get_vm() noexcept;
 
 }
