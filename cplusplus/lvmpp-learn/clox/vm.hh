@@ -49,7 +49,7 @@ class VM final : private UnCopyable {
   Value stack_[kStackMax];
   Value* stack_top_;
 
-  std::unordered_map<u32_t, Obj*> strings_;
+  std::unordered_map<u32_t, ObjString*> strings_;
   std::list<Obj*> objects_;
 
   inline void reset_stack() noexcept { stack_top_ = stack_; }
@@ -73,6 +73,16 @@ public:
 
   void append_object(Obj* o) noexcept;
   void free_objects() noexcept;
+
+  inline void set_interned(u32_t hash, ObjString* str) noexcept {
+    strings_[hash] = str;
+  }
+
+  inline ObjString* get_interned(u32_t hash) const noexcept {
+    if (auto it = strings_.find(hash); it != strings_.end())
+      return it->second;
+    return nullptr;
+  }
 };
 
 void init_vm() noexcept;
