@@ -24,12 +24,14 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include "vm.hh"
 #include "object.hh"
 
 namespace clox {
 
 template <typename Object, typename... Args> inline Object* make_object(Args&&... args) noexcept {
   Object* o = new Object(std::forward<Args>(args)...);
+  get_vm().append_object(o);
   return o;
 }
 
@@ -64,7 +66,11 @@ str_t ObjString::stringify() const {
 
 ObjString* ObjString::create(const char* chars, int length) {
   u32_t hash = hash_string(chars, length);
+  if (ObjString* interned = get_vm().get_interned(hash); interned != nullptr)
+    return interned;
+
   ObjString* o = make_object<ObjString>(chars, length, hash);
+  get_vm().set_interned(hash, o);
   return o;
 }
 
@@ -76,7 +82,13 @@ ObjString* ObjString::concat(ObjString* a, ObjString* b) {
   chars[length] = 0;
 
   u32_t hash = hash_string(chars, length);
+  if (ObjString* interned = get_vm().get_interned(hash); interned != nullptr) {
+    delete [] chars;
+    return interned;
+  }
+
   ObjString* o = make_object<ObjString>(chars, length, hash);
+  get_vm().set_interned(hash, o);
   return o;
 }
 
