@@ -93,6 +93,16 @@ class Parser final : private UnCopyable {
     error_at_current(message);
   }
 
+  inline bool check(TokenType type) const noexcept { return current_.type() == type; }
+
+  bool match(TokenType type) noexcept {
+    if (!check(type))
+      return false;
+
+    advance();
+    return true;
+  }
+
   inline Chunk* curr_chunk() noexcept {
     return &chunk_;
   }
@@ -270,16 +280,33 @@ class Parser final : private UnCopyable {
     }
   }
 
+  void declaration() noexcept {
+    statement();
+  }
+
+  void statement() noexcept {
+    if (match(TokenType::KEYWORD_PRINT))
+      print_statement();
+  }
+
   void expression() noexcept {
     parse_precedence(Precedence::PREC_ASSIGNMENT);
+  }
+
+  void print_statement() noexcept {
+    // TODO:
   }
 public:
   Parser(VM& vm, Scanenr& scanner, Chunk& chunk) noexcept : vm_{vm}, scanner_{scanner}, chunk_{chunk} {}
 
   bool compile() {
     advance();
-    expression();
-    consume(TokenType::TOKEN_EOF, "expect end of expression");
+
+    while (!match(TokenType::TOKEN_EOF)) {
+      declaration();
+    }
+
+    end_compiler();
 
     return !had_error_;
   }
