@@ -81,6 +81,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
   case OpCode::OP_DIVIDE: SIMPLE(OP_DIVIDE);
   case OpCode::OP_NOT: SIMPLE(OP_NOT);
   case OpCode::OP_NEGATE: SIMPLE(OP_NEGATE);
+  case OpCode::OP_PRINT: SIMPLE(OP_PRINT);
   case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
   default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
