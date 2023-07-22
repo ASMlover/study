@@ -32,20 +32,15 @@
 #include "chunk.hh"
 #include "vm.hh"
 
-static clox::VM& get_vm() noexcept {
-  static clox::VM vm;
-  return vm;
-}
-
 static void repl() noexcept {
   clox::str_t line;
   for (;;) {
-    std::cout << "> ";
+    std::cout << ">>> ";
 
     if (!std::getline(std::cin, line))
       break;
 
-    get_vm().interpret(line);
+    clox::get_vm().interpret(line);
   }
 }
 
@@ -59,7 +54,7 @@ static void run_file(const char* filepath) noexcept {
   clox::ss_t ss;
   ss << fp.rdbuf();
 
-  clox::InterpretResult result = get_vm().interpret(ss.str());
+  clox::InterpretResult result = clox::get_vm().interpret(ss.str());
   if (result == clox::InterpretResult::INTERPRET_COMPILE_ERROR)
     std::exit(65);
   if (result == clox::InterpretResult::INTERPRET_RUNTIME_ERROR)
@@ -73,8 +68,7 @@ int main(int argc, char* argv[]) {
   clox::harness::run_all_harness();
 #endif
 
-  clox::VM& vm = get_vm();
-
+  clox::init_vm();
   if (argc == 1) {
     repl();
   }
@@ -85,20 +79,7 @@ int main(int argc, char* argv[]) {
     std::cerr << "Usage: clox [filepath]" << std::endl;
     std::exit(64);
   }
-
-  clox::Chunk chunk;
-
-  // (1.2 + 3.4) / 5.6
-  chunk.write_constant(1.2, 1);
-  chunk.write_constant(3.4, 1);
-  chunk.write(clox::OpCode::OP_ADD, 1);
-  chunk.write_constant(5.6, 1);
-  chunk.write(clox::OpCode::OP_DIVIDE, 1);
-
-  chunk.write(clox::OpCode::OP_NEGATE, 1);
-  chunk.write(clox::OpCode::OP_RETURN, 1);
-
-  vm.interpret(&chunk);
+  clox::free_vm();
 
   return 0;
 }
