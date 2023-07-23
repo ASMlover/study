@@ -27,6 +27,7 @@
 #include <cstdarg>
 #include <iostream>
 #include "chunk.hh"
+#include "compiler.hh"
 #include "vm.hh"
 
 namespace clox {
@@ -51,10 +52,12 @@ VM& get_vm() noexcept {
 }
 
 VM::VM() noexcept {
+  chunk_ = new Chunk();
   reset_stack();
 }
 
 VM::~VM() noexcept {
+  delete chunk_;
 }
 
 void VM::runtime_error(const char* format, ...) noexcept {
@@ -75,18 +78,13 @@ void VM::free_object(Obj* o) noexcept {
   delete o;
 }
 
-InterpretResult VM::interpret(Chunk* chunk) noexcept {
-  chunk_ = chunk;
-  ip_ = chunk->codes();
+InterpretResult VM::interpret(const str_t& source) noexcept {
+  Compiler compiler;
+
+  if (!compiler.compile(*this, source))
+    return InterpretResult::INTERPRET_COMPILE_ERROR;
 
   return run();
-}
-
-InterpretResult VM::interpret(const str_t& source) noexcept {
-  // TODO: compile
-  Chunk chunk;
-
-  return InterpretResult::INTERPRET_OK;
 }
 
 void VM::append_object(Obj* o) noexcept {
@@ -101,6 +99,8 @@ void VM::free_objects() noexcept {
 }
 
 InterpretResult VM::run() noexcept {
+  ip_ = chunk_->codes();
+
 #define READ_BYTE()     (*ip_++)
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
 #define BINARY_OP(op)\
@@ -172,9 +172,12 @@ InterpretResult VM::run() noexcept {
         }
         push(-pop().as_number());
       } break;
-    case OpCode::OP_RETURN:
+    case OpCode::OP_PRINT:
       {
         std::cout << pop() << std::endl;
+      } break;
+    case OpCode::OP_RETURN:
+      {
         return InterpretResult::INTERPRET_OK;
       } break;
     }

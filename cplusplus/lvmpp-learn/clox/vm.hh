@@ -68,11 +68,12 @@ public:
   VM() noexcept;
   ~VM() noexcept;
 
-  InterpretResult interpret(Chunk* chunk) noexcept;
   InterpretResult interpret(const str_t& source) noexcept;
 
   void append_object(Obj* o) noexcept;
   void free_objects() noexcept;
+
+  inline Chunk* get_chunk() const noexcept { return chunk_; }
 
   inline void set_interned(u32_t hash, ObjString* str) noexcept {
     strings_[hash] = str;
