@@ -37,7 +37,7 @@ class Parser;
 class Compiler final : UnCopyable {
   Parser* parser_{};
 public:
-  void compile(VM& vm, const str_t& source) noexcept;
+  bool compile(VM& vm, const str_t& source) noexcept;
 };
 
 }

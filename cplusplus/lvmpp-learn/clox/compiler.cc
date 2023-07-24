@@ -66,7 +66,6 @@ struct ParseRule {
 class Parser final : private UnCopyable {
   VM& vm_;
   Scanenr& scanner_;
-  Chunk& chunk_;
   Token previous_;
   Token current_;
   bool had_error_{};
@@ -104,7 +103,7 @@ class Parser final : private UnCopyable {
   }
 
   inline Chunk* curr_chunk() noexcept {
-    return &chunk_;
+    return vm_.get_chunk();
   }
 
   inline void error_at_current(const str_t& message) noexcept { error_at(current_, message); }
@@ -293,11 +292,18 @@ class Parser final : private UnCopyable {
     parse_precedence(Precedence::PREC_ASSIGNMENT);
   }
 
+  void expression_statement() noexcept {
+    expression();
+    consume(TokenType::TOKEN_SEMICOLON, "expect `;` after expression");
+  }
+
   void print_statement() noexcept {
-    // TODO:
+    expression();
+    consume(TokenType::TOKEN_SEMICOLON, "expect `;` after value");
+    emit_byte(OpCode::OP_PRINT);
   }
 public:
-  Parser(VM& vm, Scanenr& scanner, Chunk& chunk) noexcept : vm_{vm}, scanner_{scanner}, chunk_{chunk} {}
+  Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
 
   bool compile() {
     advance();
@@ -312,15 +318,17 @@ public:
   }
 };
 
-void Compiler::compile(VM& vm, const str_t& source) noexcept {
+bool Compiler::compile(VM& vm, const str_t& source) noexcept {
   Scanenr scanner(source);
-  Chunk chunk;
 
-  if (parser_ = new Parser{vm, scanner, chunk}; parser_ != nullptr) {
+  if (parser_ = new Parser{vm, scanner}; parser_ != nullptr) {
     parser_->compile();
     delete parser_;
     parser_ = nullptr;
+
+    return true;
   }
+  return false;
 }
 
 }
