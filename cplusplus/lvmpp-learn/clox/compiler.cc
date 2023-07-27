@@ -295,6 +295,7 @@ class Parser final : private UnCopyable {
   void expression_statement() noexcept {
     expression();
     consume(TokenType::TOKEN_SEMICOLON, "expect `;` after expression");
+    emit_byte(OpCode::OP_POP);
   }
 
   void print_statement() noexcept {
