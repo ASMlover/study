@@ -281,6 +281,9 @@ class Parser final : private UnCopyable {
 
   void declaration() noexcept {
     statement();
+
+    if (panic_mode_)
+      synchronize();
   }
 
   void statement() noexcept {
@@ -302,6 +305,31 @@ class Parser final : private UnCopyable {
     expression();
     consume(TokenType::TOKEN_SEMICOLON, "expect `;` after value");
     emit_byte(OpCode::OP_PRINT);
+  }
+
+  void synchronize() noexcept {
+    panic_mode_ = false;
+
+    while (current_.type() != TokenType::TOKEN_EOF) {
+      if (previous_.type() == TokenType::TOKEN_SEMICOLON)
+        return;
+
+      switch (current_.type()) {
+      case TokenType::KEYWORD_CLASS:
+      case TokenType::KEYWORD_FUN:
+      case TokenType::KEYWORD_VAR:
+      case TokenType::KEYWORD_FOR:
+      case TokenType::KEYWORD_IF:
+      case TokenType::KEYWORD_WHILE:
+      case TokenType::KEYWORD_PRINT:
+      case TokenType::KEYWORD_RETURN:
+        return;
+      default:
+        break; // Do nothing ...
+      }
+
+      advance();
+    }
   }
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
