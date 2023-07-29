@@ -193,6 +193,15 @@ class Parser final : private UnCopyable {
     emit_constant(ObjString::create(previous_.as_string()));
   }
 
+  inline void named_variable(const Token& name) noexcept {
+    u8_t arg = identifier_constant(name);
+    emit_bytes(OpCode::OP_GET_GLOBAL, arg);
+  }
+
+  inline void variable() noexcept {
+    named_variable(previous_);
+  }
+
   inline void unary() noexcept {
     TokenType operator_type = previous_.type();
 
@@ -231,7 +240,7 @@ class Parser final : private UnCopyable {
       {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(LESS, "<")
       {nullptr, _RULE(binary), Precedence::PREC_COMPARISON},  // PUNCTUATOR(LESS_EQUAL, "<=")
 
-      {nullptr, nullptr, Precedence::PREC_NONE},              // TOKEN(IDENTIFIER, "Token-Identifier")
+      {_RULE(variable), nullptr, Precedence::PREC_NONE},      // TOKEN(IDENTIFIER, "Token-Identifier")
       {_RULE(string), nullptr, Precedence::PREC_NONE},        // TOKEN(STRING, "Token-String")
       {_RULE(number), nullptr, Precedence::PREC_NONE},        // TOKEN(NUMBER, "Token-Number")
 
@@ -279,8 +288,26 @@ class Parser final : private UnCopyable {
     }
   }
 
+  inline u8_t parse_variable(const str_t& error_message) noexcept {
+    consume(TokenType::TOKEN_IDENTIFIER, error_message);
+    return identifier_constant(previous_);
+  }
+
+  inline void define_variable(u8_t global) noexcept {
+    emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
+  }
+
+  inline u8_t identifier_constant(const Token& name) noexcept {
+    return curr_chunk()->add_constant(ObjString::create(name.as_string()));
+  }
+
   void declaration() noexcept {
-    statement();
+    if (match(TokenType::KEYWORD_VAR)) {
+      var_declaration();
+    }
+    else {
+      statement();
+    }
 
     if (panic_mode_)
       synchronize();
@@ -293,6 +320,20 @@ class Parser final : private UnCopyable {
 
   void expression() noexcept {
     parse_precedence(Precedence::PREC_ASSIGNMENT);
+  }
+
+  void var_declaration() noexcept {
+    u8_t global = parse_variable("expect variable name");
+
+    if (match(TokenType::TOKEN_EQUAL)) {
+      expression();
+    }
+    else {
+      emit_byte(OpCode::OP_NIL);
+    }
+    consume(TokenType::TOKEN_SEMICOLON, "expect `;` after variable declaration");
+
+    define_variable(global);
   }
 
   void expression_statement() noexcept {
