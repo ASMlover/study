@@ -49,6 +49,7 @@ class VM final : private UnCopyable {
   Value stack_[kStackMax];
   Value* stack_top_;
 
+  std::unordered_map<str_t, Value> globals_;
   std::unordered_map<u32_t, ObjString*> strings_;
   std::list<Obj*> objects_;
 
