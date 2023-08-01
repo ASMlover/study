@@ -58,6 +58,7 @@ VM::VM() noexcept {
 
 VM::~VM() noexcept {
   delete chunk_;
+  globals_.clear();
 }
 
 void VM::runtime_error(const char* format, ...) noexcept {
@@ -103,6 +104,8 @@ InterpretResult VM::run() noexcept {
 
 #define READ_BYTE()     (*ip_++)
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
+#define READ_STRING()   READ_CONSTANT().as_string()
+#define READ_CSTRING()  READ_CONSTANT().as_cstring()
 #define BINARY_OP(op)\
   do {\
     if (!peek(0).is_number() || !peek(1).is_number()) {\
@@ -134,6 +137,29 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_GET_GLOBAL:
+      {
+        cstr_t name = READ_CSTRING();
+        if (auto it = globals_.find(name); it != globals_.end()) {
+          push(it->second);
+        }
+        else {
+          runtime_error("`%s` is not defined", name);
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+      } break;
+    case OpCode::OP_DEFINE_GLOBAL:
+      {
+        cstr_t name = READ_CSTRING();
+        // globals_[name] = pop();
+        if (auto it = globals_.find(name); it != globals_.end()) {
+          runtime_error("name `%s` is redefined", name);
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        else {
+          globals_[name] = pop();
+        }
+      } break;
     case OpCode::OP_EQUAL:
       {
         Value b = pop();
@@ -185,6 +211,8 @@ InterpretResult VM::run() noexcept {
   }
 
 #undef BINARY_OP
+#undef READ_CSTRING
+#undef READ_STRING
 #undef READ_CONSTANT
 #undef READ_BYTE
   return InterpretResult::INTERPRET_OK;
