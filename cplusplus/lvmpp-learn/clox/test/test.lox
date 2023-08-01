@@ -1,0 +1,3 @@
+var a = "This is xxxx";
+var b = "OOOO!" + a;
+print b;
