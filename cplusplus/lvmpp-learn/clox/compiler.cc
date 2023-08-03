@@ -195,7 +195,14 @@ class Parser final : private UnCopyable {
 
   inline void named_variable(const Token& name) noexcept {
     u8_t arg = identifier_constant(name);
-    emit_bytes(OpCode::OP_GET_GLOBAL, arg);
+
+    if (match(TokenType::TOKEN_EQUAL)) {
+      expression();
+      emit_bytes(OpCode::OP_SET_GLOBAL, arg);
+    }
+    else {
+      emit_bytes(OpCode::OP_GET_GLOBAL, arg);
+    }
   }
 
   inline void variable() noexcept {
