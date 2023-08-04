@@ -151,13 +151,23 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_DEFINE_GLOBAL:
       {
         cstr_t name = READ_CSTRING();
-        // globals_[name] = pop();
         if (auto it = globals_.find(name); it != globals_.end()) {
           runtime_error("name `%s` is redefined", name);
           return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
         else {
           globals_[name] = pop();
+        }
+      } break;
+    case OpCode::OP_SET_GLOBAL:
+      {
+        cstr_t name = READ_CSTRING();
+        if (auto it = globals_.find(name); it != globals_.end()) {
+          globals_[name] = peek();
+        }
+        else {
+          runtime_error("name `%s` is not defined", name);
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
       } break;
     case OpCode::OP_EQUAL:
