@@ -56,7 +56,7 @@ template <typename N> inline Precedence operator+(Precedence a, N b) noexcept {
 class Parser;
 
 struct ParseRule {
-  using ParseFn = std::function<void (Parser& parser)>;
+  using ParseFn = std::function<void (Parser& parser, bool can_assign)>;
 
   ParseFn prefix;
   ParseFn infix;
@@ -149,7 +149,7 @@ class Parser final : private UnCopyable {
 #endif
   }
 
-  inline void binary() noexcept {
+  inline void binary(bool can_assign) noexcept {
     TokenType operator_type = previous_.type();
 
     const ParseRule& rule = get_rule(operator_type);
@@ -170,7 +170,7 @@ class Parser final : private UnCopyable {
     }
   }
 
-  inline void literal() noexcept {
+  inline void literal(bool can_assign) noexcept {
     switch (previous_.type()) {
     case TokenType::KEYWORD_FALSE: emit_byte(OpCode::OP_FALSE); break;
     case TokenType::KEYWORD_NIL: emit_byte(OpCode::OP_NIL); break;
@@ -179,24 +179,24 @@ class Parser final : private UnCopyable {
     }
   }
 
-  inline void grouping() noexcept {
+  inline void grouping(bool can_assign) noexcept {
     expression();
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after expression");
   }
 
-  inline void number() noexcept {
+  inline void number(bool can_assign) noexcept {
     double value = previous_.as_numeric();
     emit_constant(value);
   }
 
-  inline void string() noexcept {
+  inline void string(bool can_assign) noexcept {
     emit_constant(ObjString::create(previous_.as_string()));
   }
 
-  inline void named_variable(const Token& name) noexcept {
+  inline void named_variable(const Token& name, bool can_assign) noexcept {
     u8_t arg = identifier_constant(name);
 
-    if (match(TokenType::TOKEN_EQUAL)) {
+    if (can_assign && match(TokenType::TOKEN_EQUAL)) {
       expression();
       emit_bytes(OpCode::OP_SET_GLOBAL, arg);
     }
@@ -205,11 +205,11 @@ class Parser final : private UnCopyable {
     }
   }
 
-  inline void variable() noexcept {
-    named_variable(previous_);
+  inline void variable(bool can_assign) noexcept {
+    named_variable(previous_, can_assign);
   }
 
-  inline void unary() noexcept {
+  inline void unary(bool can_assign) noexcept {
     TokenType operator_type = previous_.type();
 
     // compile the operand
@@ -224,7 +224,7 @@ class Parser final : private UnCopyable {
   }
 
   const ParseRule& get_rule(TokenType type) const noexcept {
-#define _RULE(fn) [](Parser& p) { p.fn(); }
+#define _RULE(fn) [](Parser& p, bool b) { p.fn(b); }
     static const ParseRule _rules[] = {
       {_RULE(grouping), nullptr, Precedence::PREC_NONE},      // PUNCTUATOR(LEFT_PAREN, "(")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(RIGHT_PAREN, ")")
@@ -284,14 +284,19 @@ class Parser final : private UnCopyable {
       return;
     }
 
-    prefix_rule(*this);
+    bool can_assign = precedence <= Precedence::PREC_ASSIGNMENT;
+    prefix_rule(*this, can_assign);
 
     while (precedence <= get_rule(current_.type()).precedence) {
       advance();
       auto infix_rule = get_rule(previous_.type()).infix;
 
       if (infix_rule)
-        infix_rule(*this);
+        infix_rule(*this, can_assign);
+    }
+
+    if (can_assign && match(TokenType::TOKEN_EQUAL)) {
+      error("invalid assignment target");
     }
   }
 
