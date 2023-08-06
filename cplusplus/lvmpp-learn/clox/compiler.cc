@@ -328,6 +328,8 @@ class Parser final : private UnCopyable {
   void statement() noexcept {
     if (match(TokenType::KEYWORD_PRINT))
       print_statement();
+    else
+      expression_statement();
   }
 
   void expression() noexcept {
