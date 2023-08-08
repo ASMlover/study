@@ -53,6 +53,11 @@ template <typename N> inline Precedence operator+(Precedence a, N b) noexcept {
   return as_type<Precedence>(as_type<int>(a) + as_type<int>(b));
 }
 
+struct Compiler {
+  int local_count;
+  int scope_depth;
+};
+
 class Parser;
 
 struct ParseRule {
@@ -402,7 +407,7 @@ public:
   }
 };
 
-bool Compiler::compile(VM& vm, const str_t& source) noexcept {
+bool GlobalCompiler::compile(VM& vm, const str_t& source) noexcept {
   Scanenr scanner(source);
 
   if (parser_ = new Parser{vm, scanner}; parser_ != nullptr) {

@@ -34,7 +34,7 @@ class VM;
 class Chunk;
 class Parser;
 
-class Compiler final : UnCopyable {
+class GlobalCompiler final : UnCopyable {
   Parser* parser_{};
 public:
   bool compile(VM& vm, const str_t& source) noexcept;
