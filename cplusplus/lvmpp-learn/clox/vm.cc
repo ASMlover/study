@@ -80,7 +80,7 @@ void VM::free_object(Obj* o) noexcept {
 }
 
 InterpretResult VM::interpret(const str_t& source) noexcept {
-  Compiler compiler;
+  GlobalCompiler compiler;
 
   if (!compiler.compile(*this, source))
     return InterpretResult::INTERPRET_COMPILE_ERROR;
