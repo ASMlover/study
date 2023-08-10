@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <iostream>
+#include <vector>
 #include "common.hh"
 #include "vm.hh"
 #include "token.hh"
@@ -53,9 +54,13 @@ template <typename N> inline Precedence operator+(Precedence a, N b) noexcept {
   return as_type<Precedence>(as_type<int>(a) + as_type<int>(b));
 }
 
+struct Local {
+  Token name;
+  int depth;
+};
+
 struct Compiler {
-  int local_count;
-  int scope_depth;
+  std::vector<Local> locals;
 };
 
 class Parser;
