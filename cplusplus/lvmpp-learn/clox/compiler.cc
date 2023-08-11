@@ -61,6 +61,12 @@ struct Local {
 
 struct Compiler {
   std::vector<Local> locals;
+  int scope_depth{};
+
+  inline void set_compiler(int arg_scope_depth = 0) noexcept {
+    locals.clear();
+    scope_depth = arg_scope_depth;
+  }
 };
 
 class Parser;
@@ -80,6 +86,8 @@ class Parser final : private UnCopyable {
   Token current_;
   bool had_error_{};
   bool panic_mode_{};
+
+  Compiler* current_compiler_{};
 
   void advance() {
     previous_ = current_;
@@ -150,6 +158,12 @@ class Parser final : private UnCopyable {
     emit_bytes(OpCode::OP_CONSTANT, curr_chunk()->add_constant(value));
   }
 
+  inline void init_compiler(Compiler* compiler) noexcept {
+    compiler->set_compiler();
+
+    current_compiler_ = compiler;
+  }
+
   inline void end_compiler() noexcept {
     emit_return();
 
@@ -158,6 +172,9 @@ class Parser final : private UnCopyable {
       curr_chunk()->dis("code");
 #endif
   }
+
+  inline void begin_scope() noexcept { current_compiler_->scope_depth++; }
+  inline void end_scope() noexcept { current_compiler_->scope_depth--; }
 
   inline void binary(bool can_assign) noexcept {
     TokenType operator_type = previous_.type();
@@ -336,14 +353,28 @@ class Parser final : private UnCopyable {
   }
 
   void statement() noexcept {
-    if (match(TokenType::KEYWORD_PRINT))
+    if (match(TokenType::KEYWORD_PRINT)) {
       print_statement();
-    else
+    }
+    else if (match(TokenType::TOKEN_LEFT_BRACE)) {
+      begin_scope();
+      block();
+      end_scope();
+    }
+    else {
       expression_statement();
+    }
   }
 
   void expression() noexcept {
     parse_precedence(Precedence::PREC_ASSIGNMENT);
+  }
+
+  void block() noexcept {
+    while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+      declaration();
+    }
+    consume(TokenType::TOKEN_RIGHT_BRACE, "expect `}` after block");
   }
 
   void var_declaration() noexcept {
@@ -400,8 +431,10 @@ public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
 
   bool compile() {
-    advance();
+    Compiler compiler;
+    init_compiler(&compiler);
 
+    advance();
     while (!match(TokenType::TOKEN_EOF)) {
       declaration();
     }
