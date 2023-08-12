@@ -329,15 +329,31 @@ class Parser final : private UnCopyable {
 
   inline u8_t parse_variable(const str_t& error_message) noexcept {
     consume(TokenType::TOKEN_IDENTIFIER, error_message);
+
+    declare_variable();
+    if (current_compiler_->scope_depth > 0)
+      return 0;
     return identifier_constant(previous_);
   }
 
   inline void define_variable(u8_t global) noexcept {
+    if (current_compiler_->scope_depth > 0)
+      return;
     emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
   }
 
   inline u8_t identifier_constant(const Token& name) noexcept {
     return curr_chunk()->add_constant(ObjString::create(name.as_string()));
+  }
+
+  inline void add_local(const Token& name) noexcept {
+  }
+
+  inline void declare_variable() noexcept {
+    if (current_compiler_->scope_depth == 0)
+      return;
+
+    add_local(previous_);
   }
 
   void declaration() noexcept {
