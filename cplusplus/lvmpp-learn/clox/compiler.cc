@@ -57,15 +57,25 @@ template <typename N> inline Precedence operator+(Precedence a, N b) noexcept {
 struct Local {
   Token name;
   int depth;
+
+  Local(const Token& arg_name, int arg_depth = 0) noexcept : name{arg_name}, depth{arg_depth} {}
 };
 
 struct Compiler {
   std::vector<Local> locals;
   int scope_depth{};
 
+  static constexpr sz_t kMaxLocalCount = UINT8_MAX;
+
+  inline bool is_local_count_max() noexcept { return locals.size() >= kMaxLocalCount; }
+
   inline void set_compiler(int arg_scope_depth = 0) noexcept {
     locals.clear();
     scope_depth = arg_scope_depth;
+  }
+
+  inline void append(const Token& name, int depth) noexcept {
+    locals.push_back({name, depth});
   }
 };
 
@@ -347,6 +357,11 @@ class Parser final : private UnCopyable {
   }
 
   inline void add_local(const Token& name) noexcept {
+    if (current_compiler_->is_local_count_max()) {
+      error("too many local variables in function");
+      return;
+    }
+    current_compiler_->append(name, current_compiler_->scope_depth);
   }
 
   inline void declare_variable() noexcept {
