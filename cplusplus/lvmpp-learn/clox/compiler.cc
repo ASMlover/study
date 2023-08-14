@@ -184,7 +184,15 @@ class Parser final : private UnCopyable {
   }
 
   inline void begin_scope() noexcept { current_compiler_->scope_depth++; }
-  inline void end_scope() noexcept { current_compiler_->scope_depth--; }
+  inline void end_scope() noexcept {
+    current_compiler_->scope_depth--;
+
+    while (current_compiler_->locals.size() > 0 &&
+        current_compiler_->locals.back().depth > current_compiler_->scope_depth) {
+      emit_byte(OpCode::OP_POP);
+      current_compiler_->locals.pop_back();
+    }
+  }
 
   inline void binary(bool can_assign) noexcept {
     TokenType operator_type = previous_.type();
@@ -367,6 +375,16 @@ class Parser final : private UnCopyable {
   inline void declare_variable() noexcept {
     if (current_compiler_->scope_depth == 0)
       return;
+
+    const Token& name = previous_;
+    for (auto it = current_compiler_->locals.rbegin(); it != current_compiler_->locals.rend(); ++it) {
+      const Local& local = *it;
+      if (local.depth != -1 && local.depth < current_compiler_->scope_depth)
+        break;
+
+      if (local.name == name)
+        error("already a variable with this name is redefined in this scope");
+    }
 
     add_local(previous_);
   }
