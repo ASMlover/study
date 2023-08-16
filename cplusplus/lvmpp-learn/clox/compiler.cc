@@ -77,6 +77,11 @@ struct Compiler {
   inline void append(const Token& name, int depth) noexcept {
     locals.push_back({name, depth});
   }
+
+  inline int resolve_local(const Token& name) const noexcept {
+    // TODO: NotImplementError
+    return -1;
+  }
 };
 
 class Parser;
@@ -239,14 +244,24 @@ class Parser final : private UnCopyable {
   }
 
   inline void named_variable(const Token& name, bool can_assign) noexcept {
-    u8_t arg = identifier_constant(name);
+    OpCode get_op, set_op;
+    int arg = current_compiler_->resolve_local(name);
+    if (arg != -1) {
+      get_op = OpCode::OP_GET_LOCAL;
+      set_op = OpCode::OP_SET_LOCAL;
+    }
+    else {
+      arg = identifier_constant(name);
+      get_op = OpCode::OP_GET_GLOBAL;
+      set_op = OpCode::OP_SET_GLOBAL;
+    }
 
     if (can_assign && match(TokenType::TOKEN_EQUAL)) {
       expression();
-      emit_bytes(OpCode::OP_SET_GLOBAL, arg);
+      emit_bytes(set_op, arg);
     }
     else {
-      emit_bytes(OpCode::OP_GET_GLOBAL, arg);
+      emit_bytes(get_op, arg);
     }
   }
 
