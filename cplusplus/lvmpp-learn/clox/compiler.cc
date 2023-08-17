@@ -79,7 +79,11 @@ struct Compiler {
   }
 
   inline int resolve_local(const Token& name) const noexcept {
-    // TODO: NotImplementError
+    for (int i = as_type<int>(locals.size()) - 1; i >= 0; --i) {
+      const Local& local = locals[i];
+      if (local.name == name)
+        return i;
+    }
     return -1;
   }
 };
