@@ -73,6 +73,8 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
   case OpCode::OP_TRUE: SIMPLE(OP_TRUE);
   case OpCode::OP_FALSE: SIMPLE(OP_FALSE);
   case OpCode::OP_POP: SIMPLE(OP_POP);
+  case OpCode::OP_GET_LOCAL: COMPOUND(OP_GET_LOCAL);
+  case OpCode::OP_SET_LOCAL: COMPOUND(OP_SET_LOCAL);
   case OpCode::OP_GET_GLOBAL: COMPOUND2(OP_GET_GLOBAL, true);
   case OpCode::OP_DEFINE_GLOBAL: COMPOUND2(OP_DEFINE_GLOBAL, true);
   case OpCode::OP_SET_GLOBAL: COMPOUND2(OP_SET_GLOBAL, true);
