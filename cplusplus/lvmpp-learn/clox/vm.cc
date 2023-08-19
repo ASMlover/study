@@ -137,6 +137,16 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_TRUE: push(true); break;
     case OpCode::OP_FALSE: push(false); break;
     case OpCode::OP_POP: pop(); break;
+    case OpCode::OP_GET_LOCAL:
+      {
+        u8_t slot = READ_BYTE();
+        push(stack_[slot]);
+      } break;
+    case OpCode::OP_SET_LOCAL:
+      {
+        u8_t slot = READ_BYTE();
+        stack_[slot] = peek();
+      } break;
     case OpCode::OP_GET_GLOBAL:
       {
         cstr_t name = READ_CSTRING();
