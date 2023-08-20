@@ -62,6 +62,8 @@ struct Local {
 };
 
 struct Compiler {
+  using ErrorFn = std::function<void (cstr_t)>;
+
   std::vector<Local> locals;
   int scope_depth{};
 
@@ -78,11 +80,15 @@ struct Compiler {
     locals.push_back({name, depth});
   }
 
-  inline int resolve_local(const Token& name) const noexcept {
+  inline int resolve_local(const Token& name, const ErrorFn& error) const noexcept {
     for (int i = as_type<int>(locals.size()) - 1; i >= 0; --i) {
       const Local& local = locals[i];
-      if (local.name == name)
+      if (local.name == name) {
+        if (local.depth == -1)
+          error("Cannot read local variable in its own initializer");
+
         return i;
+      }
     }
     return -1;
   }
@@ -248,8 +254,10 @@ class Parser final : private UnCopyable {
   }
 
   inline void named_variable(const Token& name, bool can_assign) noexcept {
+    auto errfn = [this](cstr_t msg) noexcept { error(msg); };
+
     OpCode get_op, set_op;
-    int arg = current_compiler_->resolve_local(name);
+    int arg = current_compiler_->resolve_local(name, errfn);
     if (arg != -1) {
       get_op = OpCode::OP_GET_LOCAL;
       set_op = OpCode::OP_SET_LOCAL;
@@ -373,9 +381,15 @@ class Parser final : private UnCopyable {
     return identifier_constant(previous_);
   }
 
+  inline void mark_initialized() noexcept {
+    current_compiler_->locals.back().depth = current_compiler_->scope_depth;
+  }
+
   inline void define_variable(u8_t global) noexcept {
-    if (current_compiler_->scope_depth > 0)
+    if (current_compiler_->scope_depth > 0) {
+      mark_initialized();
       return;
+    }
     emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
   }
 
@@ -388,7 +402,7 @@ class Parser final : private UnCopyable {
       error("too many local variables in function");
       return;
     }
-    current_compiler_->append(name, current_compiler_->scope_depth);
+    current_compiler_->append(name, -1);
   }
 
   inline void declare_variable() noexcept {
