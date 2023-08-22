@@ -179,6 +179,13 @@ class Parser final : private UnCopyable {
     emit_byte(byte2);
   }
 
+  template <typename T> inline int emit_jump(T instruction) noexcept {
+    emit_byte(instruction);
+    emit_byte(0xff);
+    emit_byte(0xff);
+    return curr_chunk()->codes_count() - 2;
+  }
+
   inline void emit_constant(const Value& value) noexcept {
     emit_bytes(OpCode::OP_CONSTANT, curr_chunk()->add_constant(value));
   }
