@@ -190,6 +190,17 @@ class Parser final : private UnCopyable {
     emit_bytes(OpCode::OP_CONSTANT, curr_chunk()->add_constant(value));
   }
 
+  inline void patch_jump(int offset) noexcept {
+    // // -2 to adjust for the bytecode for the jump offset itself
+    int jump = curr_chunk()->codes_count() - offset - 2;
+
+    if (jump > UINT16_MAX)
+      error("too much code to jump over");
+
+    curr_chunk()->set_code(offset, (jump >> 8) & 0xff);
+    curr_chunk()->set_code(offset + 1, jump & 0xff);
+  }
+
   inline void init_compiler(Compiler* compiler) noexcept {
     compiler->set_compiler();
 
