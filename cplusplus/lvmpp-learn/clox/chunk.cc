@@ -49,6 +49,12 @@ inline sz_t dis_simple(Chunk* chunk, const char* prompt, sz_t i, int n = 0) noex
   return i + 1;
 }
 
+inline sz_t dis_jump(Chunk* chunk, const char* prompt, int i, int sign) noexcept {
+  u16_t jump = (as_type<u16_t>(chunk->get_code(i + 1)) << 8) | chunk->get_code(i + 2);
+  std::fprintf(stdout, "%-16s %4d -> %d\n", prompt, i, i + 3 + sign * jump);
+  return i + 3;
+}
+
 void Chunk::dis(strv_t prompt) noexcept {
   std::cout << "========= [" << prompt << "] =========" << std::endl;
   for (sz_t offset = 0; offset < codes_count();)
@@ -66,6 +72,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
 #define COMPOUND2(x, b) return dis_compound(this, #x, offset, (b))
 #define SIMPLE(x)       return dis_simple(this, #x, offset)
 #define SIMPLE2(x, n)   return dis_simple(this, #x, offset, (n))
+#define JUMP(x, s)      return dis_jump(this, #x, as_type<int>(offset), (s))
 
   switch (auto c = as_type<OpCode>(codes_[offset])) {
   case OpCode::OP_CONSTANT: COMPOUND2(OP_CONSTANT, true);
@@ -88,6 +95,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
   case OpCode::OP_NOT: SIMPLE(OP_NOT);
   case OpCode::OP_NEGATE: SIMPLE(OP_NEGATE);
   case OpCode::OP_PRINT: SIMPLE(OP_PRINT);
+  case OpCode::OP_JUMP_IF_FALSE: JUMP(OP_JUMP_IF_FALSE, 1);
   case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
   default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
