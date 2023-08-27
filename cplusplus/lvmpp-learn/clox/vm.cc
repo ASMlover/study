@@ -103,6 +103,7 @@ InterpretResult VM::run() noexcept {
   ip_ = chunk_->codes();
 
 #define READ_BYTE()     (*ip_++)
+#define READ_SHORT()    (ip_ += 2, as_type<u16_t>((ip_[-2] << 8) | ip_[-1]))
 #define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
 #define READ_STRING()   READ_CONSTANT().as_string()
 #define READ_CSTRING()  READ_CONSTANT().as_cstring()
@@ -223,6 +224,12 @@ InterpretResult VM::run() noexcept {
       {
         std::cout << pop() << std::endl;
       } break;
+    case OpCode::OP_JUMP_IF_FALSE:
+      {
+        u16_t offset = READ_SHORT();
+        if (peek().is_falsey())
+          ip_ += offset;
+      } break;
     case OpCode::OP_RETURN:
       {
         return InterpretResult::INTERPRET_OK;
@@ -234,6 +241,7 @@ InterpretResult VM::run() noexcept {
 #undef READ_CSTRING
 #undef READ_STRING
 #undef READ_CONSTANT
+#undef READ_SHORT
 #undef READ_BYTE
   return InterpretResult::INTERPRET_OK;
 }
