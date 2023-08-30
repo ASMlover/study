@@ -224,6 +224,11 @@ InterpretResult VM::run() noexcept {
       {
         std::cout << pop() << std::endl;
       } break;
+    case OpCode::OP_JUMP:
+      {
+        u16_t offset = READ_SHORT();
+        ip_ += offset;
+      } break;
     case OpCode::OP_JUMP_IF_FALSE:
       {
         u16_t offset = READ_SHORT();
