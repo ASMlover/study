@@ -31,17 +31,23 @@
 import sys
 sys.path.append("../")
 
-import py_profiler as pprof
 from common import test_common as _tc
+
+import random
+import time
+import latency_tracker
 
 
 def test() -> None:
-	pprof.start_stats()
+	latency_tracker.start_tracker()
 
 	for _ in range(500):
 		_tc.TestEntry().run()
 
-	pprof.stop_stats()
+		if random.randint(0, 100) < 30:
+			time.sleep(0.5)
+
+	latency_tracker.stop_tracker()
 
 if __name__ == "__main__":
 	test()

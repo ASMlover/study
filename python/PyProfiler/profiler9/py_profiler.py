@@ -61,16 +61,16 @@ class Sampler(object):
 		self.reset()
 		signal.setitimer(signal.ITIMER_VIRTUAL, 0)
 
-	def print_stats(self) -> None:
+	def dump_stats(self) -> str:
 		if self.started_ts is None:
-			return
+			return ""
 
 		elapsed = time.time() - self.started_ts
-		print(f"elapsed {elapsed}")
-		print(f"granularity {self.interval}")
+		stats = [f"elapsed {elapsed}", f"granularity {self.interval}"]
 		ordered_stackss = sorted(self.stack_counts.items(), key=lambda x: x[1], reverse=True)
 		for frame, count in ordered_stackss:
-			print(f"{frame} {count}")
+			stats.append(f"{frame} {count}")
+		return "\n".join(stats)
 
 	def _sample(self, signum: int, frame: FrameType) -> None:
 		stack = []
@@ -85,3 +85,38 @@ class Sampler(object):
 	def _format_frame(self, frame: FrameType) -> str:
 		func_code = frame.f_code
 		return f"{func_code.co_name} ({func_code.co_filename}:{func_code.co_firstlineno})"
+
+class PyProfiler(object):
+	_instance = None
+
+	def __init__(self) -> None:
+		self.is_running = False
+		self.sampler = Sampler()
+
+	@classmethod
+	def get_instance(cls):
+		if cls._instance is None:
+			cls._instance = PyProfiler()
+		return cls._instance
+
+	def start(self) -> None:
+		if not self.is_running:
+			self.sampler.start()
+			self.is_running = True
+
+	def stop(self, dump_fname: str = None) -> None:
+		if not self.is_running:
+			return
+
+		self.is_running = False
+		if not dump_fname:
+			dump_fname = f"sampler.{time.strftime('%Y%m%d%H%M%S', time.localtime())}.prof"
+		with open(dump_fname, "w") as fp:
+			fp.write(self.sampler.dump_stats())
+		self.sampler.stop()
+
+def start_stats() -> None:
+	PyProfiler.get_instance().start()
+
+def stop_stats(dump_fname: str = None) -> None:
+	PyProfiler.get_instance().stop(dump_fname)
