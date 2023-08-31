@@ -28,20 +28,50 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import sys
-sys.path.append("../")
+import signal
+import time
+from types import FrameType
+from typing import Any, Callable
 
-import py_profiler as pprof
-from common import test_common as _tc
 
+def timeout(seconds: int = 1, message: str = "Execute Timeout !!!", default: Any = None) -> Callable:
+	def _timeout_wrapper(func) -> Callable:
+		def _timeout_handler(signum: int, frame: FrameType) -> None:
+			raise TimeoutError(message)
 
-def test() -> None:
-	pprof.start_stats()
+		def _caller(*args, **kwds) -> Any:
+			signal.signal(signal.SIGALRM, _timeout_handler)
+			signal.alarm(seconds)
+			try:
+				result = func(*args, **kwds)
+			except TimeoutError as ex:
+				print(f"[timeout][{func.__name__}] {ex}")
+				result = default
+			finally:
+				signal.alarm(0)
+				signal.signal(signal.SIGALRM, signal.SIG_DFL)
+			return result
+		return _caller
+	return _timeout_wrapper
 
-	for _ in range(500):
-		_tc.TestEntry().run()
+def timeout_func() -> float:
+	beg = time.time()
+	time.sleep(5)
+	return time.time() - beg
 
-	pprof.stop_stats()
+@timeout(1)
+def test_with_timeout_decorator() -> float:
+	return timeout_func()
+
+def test_without_timeout_decorator() -> float:
+	return timeout_func()
+
+def main() -> None:
+	r = test_without_timeout_decorator()
+	print(f"[test_without_timeout_decorator] returns: {r}")
+
+	r = test_with_timeout_decorator()
+	print(f"[test_with_timeout_decorator] returns: {r}")
 
 if __name__ == "__main__":
-	test()
+	main()
