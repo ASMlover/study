@@ -183,7 +183,7 @@ class Parser final : private UnCopyable {
     emit_byte(instruction);
     emit_byte(0xff);
     emit_byte(0xff);
-    return curr_chunk()->codes_count() - 2;
+    return as_type<int>(curr_chunk()->codes_count() - 2);
   }
 
   inline void emit_constant(const Value& value) noexcept {
@@ -192,7 +192,7 @@ class Parser final : private UnCopyable {
 
   inline void patch_jump(int offset) noexcept {
     // // -2 to adjust for the bytecode for the jump offset itself
-    int jump = curr_chunk()->codes_count() - offset - 2;
+    int jump = as_type<int>(curr_chunk()->codes_count() - offset - 2);
 
     if (jump > UINT16_MAX)
       error("too much code to jump over");
@@ -508,7 +508,12 @@ class Parser final : private UnCopyable {
     int then_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
     statement();
 
+    int else_jump = emit_jump(OpCode::OP_JUMP);
     patch_jump(then_jump);
+
+    if (match(TokenType::KEYWORD_ELSE))
+      statement();
+    patch_jump(else_jump);
   }
 
   void print_statement() noexcept {
