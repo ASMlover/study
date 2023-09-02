@@ -67,8 +67,8 @@ class Sampler(object):
 
 		elapsed = time.time() - self.started_ts
 		stats = [f"elapsed {elapsed}", f"granularity {self.interval}"]
-		ordered_stackss = sorted(self.stack_counts.items(), key=lambda x: x[1], reverse=True)
-		for frame, count in ordered_stackss:
+		ordered_stacks = sorted(self.stack_counts.items(), key=lambda x: x[1], reverse=True)
+		for frame, count in ordered_stacks:
 			stats.append(f"{frame} {count}")
 		return "\n".join(stats)
 
