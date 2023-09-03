@@ -506,10 +506,12 @@ class Parser final : private UnCopyable {
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after condition");
 
     int then_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    emit_byte(OpCode::OP_POP);
     statement();
 
     int else_jump = emit_jump(OpCode::OP_JUMP);
     patch_jump(then_jump);
+    emit_byte(OpCode::OP_POP);
 
     if (match(TokenType::KEYWORD_ELSE))
       statement();
