@@ -313,6 +313,15 @@ class Parser final : private UnCopyable {
     }
   }
 
+  inline void and_(bool can_assign) noexcept {
+    int end_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+
+    emit_byte(OpCode::OP_POP);
+    parse_precedence(Precedence::PREC_AND);
+
+    patch_jump(end_jump);
+  }
+
   const ParseRule& get_rule(TokenType type) const noexcept {
 #define _RULE(fn) [](Parser& p, bool b) { p.fn(b); }
     static const ParseRule _rules[] = {
@@ -341,7 +350,7 @@ class Parser final : private UnCopyable {
       {_RULE(string), nullptr, Precedence::PREC_NONE},        // TOKEN(STRING, "Token-String")
       {_RULE(number), nullptr, Precedence::PREC_NONE},        // TOKEN(NUMBER, "Token-Number")
 
-      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(AND, "and")
+      {nullptr, _RULE(and_), Precedence::PREC_AND},           // KEYWORD(AND, "and")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(CLASS, "class")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(ELSE, "else")
       {_RULE(literal), nullptr, Precedence::PREC_NONE},       // KEYWORD(FALSE, "false")
