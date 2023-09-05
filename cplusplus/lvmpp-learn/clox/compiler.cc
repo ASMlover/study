@@ -314,11 +314,37 @@ class Parser final : private UnCopyable {
   }
 
   inline void and_(bool can_assign) noexcept {
+    //      left operand expression
+    // .--- OP_JUMP_IF_FALSE
+    // |    OP_POP
+    // |
+    // |    right operand expression
+    // `--> continues ...
+
     int end_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
 
     emit_byte(OpCode::OP_POP);
     parse_precedence(Precedence::PREC_AND);
 
+    patch_jump(end_jump);
+  }
+
+  inline void or_(bool can_assign) noexcept {
+    //        left operand expression
+    //    .-- OP_JUMP_IF_FALSE
+    // .--|-- OP_JUMP
+    // |  `-> OP_POP
+    // |
+    // |      right operand expression
+    // `----> continues ...
+
+    int else_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    int end_jump = emit_jump(OpCode::OP_JUMP);
+
+    patch_jump(else_jump);
+    emit_byte(OpCode::OP_POP);
+
+    parse_precedence(Precedence::PREC_OR);
     patch_jump(end_jump);
   }
 
@@ -358,7 +384,7 @@ class Parser final : private UnCopyable {
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(FUN, "fun")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(IF, "if")
       {_RULE(literal), nullptr, Precedence::PREC_NONE},       // KEYWORD(NIL, "nil")
-      {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(OR, "or")
+      {nullptr, _RULE(or_), Precedence::PREC_OR},             // KEYWORD(OR, "or")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(PRINT, "print")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(RETURN, "return")
       {nullptr, nullptr, Precedence::PREC_NONE},              // KEYWORD(SUPER, "super")
