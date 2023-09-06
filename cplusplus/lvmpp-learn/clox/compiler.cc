@@ -494,6 +494,9 @@ class Parser final : private UnCopyable {
     else if (match(TokenType::KEYWORD_IF)) {
       if_statement();
     }
+    else if (match(TokenType::KEYWORD_WHILE)) {
+      while_statement();
+    }
     else if (match(TokenType::TOKEN_LEFT_BRACE)) {
       begin_scope();
       block();
@@ -557,6 +560,10 @@ class Parser final : private UnCopyable {
     expression();
     consume(TokenType::TOKEN_SEMICOLON, "expect `;` after value");
     emit_byte(OpCode::OP_PRINT);
+  }
+
+  void while_statement() noexcept {
+    // TODO:
   }
 
   void synchronize() noexcept {
