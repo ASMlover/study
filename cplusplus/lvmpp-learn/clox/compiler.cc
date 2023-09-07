@@ -563,7 +563,16 @@ class Parser final : private UnCopyable {
   }
 
   void while_statement() noexcept {
-    // TODO:
+    consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `while` keyword.");
+    expression();
+    consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after condition.");
+
+    int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    emit_byte(OpCode::OP_POP);
+    statement();
+
+    patch_jump(exit_jump);
+    emit_byte(OpCode::OP_POP);
   }
 
   void synchronize() noexcept {
