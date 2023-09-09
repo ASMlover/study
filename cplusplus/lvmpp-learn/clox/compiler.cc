@@ -179,6 +179,17 @@ class Parser final : private UnCopyable {
     emit_byte(byte2);
   }
 
+  inline void emit_loop(int loop_start) noexcept {
+    emit_byte(OpCode::OP_LOOP);
+
+    int offset = as_type<int>(curr_chunk()->codes_count()) - loop_start + 2;
+    if (offset > UINT16_MAX)
+      error("loop body too large");
+
+    emit_byte((offset >> 8) & 0xff);
+    emit_byte(offset & 0xff);
+  }
+
   template <typename T> inline int emit_jump(T instruction) noexcept {
     emit_byte(instruction);
     emit_byte(0xff);
