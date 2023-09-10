@@ -574,6 +574,8 @@ class Parser final : private UnCopyable {
   }
 
   void while_statement() noexcept {
+    int loop_start = as_type<int>(curr_chunk()->codes_count());
+
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `while` keyword.");
     expression();
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after condition.");
@@ -581,6 +583,7 @@ class Parser final : private UnCopyable {
     int exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
     emit_byte(OpCode::OP_POP);
     statement();
+    emit_loop(loop_start);
 
     patch_jump(exit_jump);
     emit_byte(OpCode::OP_POP);
