@@ -550,6 +550,17 @@ class Parser final : private UnCopyable {
   }
 
   void if_statement() noexcept {
+    //        condition expression
+    //    .-- OP_JUMP_IF_FALSE
+    //    |   OP_POP
+    //    |
+    //    |   then branch statement
+    // .--+-- OP_JUMP
+    // |  `-> OP_POP
+    // |
+    // |      else branch statement
+    // `----> continues ...
+
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `if`");
     expression();
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after condition");
@@ -574,6 +585,15 @@ class Parser final : private UnCopyable {
   }
 
   void while_statement() noexcept {
+    //      condition expression <--.
+    // .--- OP_JUMP_IF_FALSE        |
+    // |    OP_POP                  |
+    // |                            |
+    // |    body statement          |
+    // |    OP_LOOP         --------* 
+    // `--> OP_POP
+    //      continues ...
+
     int loop_start = as_type<int>(curr_chunk()->codes_count());
 
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `while` keyword.");
