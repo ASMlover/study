@@ -502,6 +502,9 @@ class Parser final : private UnCopyable {
     if (match(TokenType::KEYWORD_PRINT)) {
       print_statement();
     }
+    else if (match(TokenType::KEYWORD_FOR)) {
+      for_statement();
+    }
     else if (match(TokenType::KEYWORD_IF)) {
       if_statement();
     }
@@ -547,6 +550,18 @@ class Parser final : private UnCopyable {
     expression();
     consume(TokenType::TOKEN_SEMICOLON, "expect `;` after expression");
     emit_byte(OpCode::OP_POP);
+  }
+
+  void for_statement() noexcept {
+    consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `for`.");
+    consume(TokenType::TOKEN_SEMICOLON, "expect `;`.");
+
+    int loop_start = as_type<int>(curr_chunk()->codes_count());
+    consume(TokenType::TOKEN_SEMICOLON, "expect `;`,");
+    consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after for clauses.");
+
+    statement();
+    emit_loop(loop_start);
   }
 
   void if_statement() noexcept {
