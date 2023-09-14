@@ -553,8 +553,17 @@ class Parser final : private UnCopyable {
   }
 
   void for_statement() noexcept {
+    begin_scope();
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `for`.");
-    consume(TokenType::TOKEN_SEMICOLON, "expect `;`.");
+    if (match(TokenType::TOKEN_SEMICOLON)) {
+      // no initializer ...
+    }
+    else if (match(TokenType::KEYWORD_VAR)) {
+      var_declaration();
+    }
+    else {
+      expression_statement();
+    }
 
     int loop_start = as_type<int>(curr_chunk()->codes_count());
     consume(TokenType::TOKEN_SEMICOLON, "expect `;`,");
@@ -562,6 +571,7 @@ class Parser final : private UnCopyable {
 
     statement();
     emit_loop(loop_start);
+    end_scope();
   }
 
   void if_statement() noexcept {
