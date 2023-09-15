@@ -566,11 +566,27 @@ class Parser final : private UnCopyable {
     }
 
     int loop_start = as_type<int>(curr_chunk()->codes_count());
+    int exit_jump = -1;
+    if (!match(TokenType::TOKEN_SEMICOLON)) {
+      expression();
+      consume(TokenType::TOKEN_SEMICOLON, "expect `;` after loop condition.");
+
+      // jump out of the loop if the condition is false
+      exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+      emit_byte(OpCode::OP_POP); // condition
+    }
+
     consume(TokenType::TOKEN_SEMICOLON, "expect `;`,");
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after for clauses.");
 
     statement();
     emit_loop(loop_start);
+
+    if (exit_jump != -1) {
+      patch_jump(exit_jump);
+      emit_byte(OpCode::OP_POP); // condition
+    }
+
     end_scope();
   }
 
