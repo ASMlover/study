@@ -553,6 +553,21 @@ class Parser final : private UnCopyable {
   }
 
   void for_statement() noexcept {
+    //          initializer clause
+    //          condition expression <----.
+    //    .---- OP_JUMP_IF_FALSE          |
+    //    |     OP_POP                    |
+    // .--+---- OP_JUMP                   |
+    // |  |                               |
+    // |  |     increment expression <----+---.
+    // |  |     OP_POP                    |   |
+    // |  |     OP_LOOP              -----*   |
+    // |  |                                   |
+    // `--+---> body statement                |
+    //    |     OP_LOOP              ---------*
+    //    `---> OP_POP
+    //          continues ...
+
     begin_scope();
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `for`.");
     if (match(TokenType::TOKEN_SEMICOLON)) {
@@ -576,8 +591,17 @@ class Parser final : private UnCopyable {
       emit_byte(OpCode::OP_POP); // condition
     }
 
-    consume(TokenType::TOKEN_SEMICOLON, "expect `;`,");
-    consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after for clauses.");
+    if (!match(TokenType::TOKEN_RIGHT_PAREN)) {
+      int body_jump = emit_jump(OpCode::OP_JUMP);
+      int increment_start = as_type<int>(curr_chunk()->codes_count());
+      expression();
+      emit_byte(OpCode::OP_POP);
+      consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after for clauses");
+
+      emit_loop(loop_start);
+      loop_start = increment_start;
+      patch_jump(body_jump);
+    }
 
     statement();
     emit_loop(loop_start);
