@@ -34,8 +34,10 @@ enum class ObjType : u8_t {
   OBJ_STRING,
 };
 
+class Chunk;
 class Obj;
 class ObjString;
+class ObjFunction;
 
 class Obj : private UnCopyable {
   ObjType type_;
@@ -87,5 +89,15 @@ public:
   static ObjString* create(const str_t& s) { return create(s.data(), s.size()); }
   static ObjString* create(strv_t s) { return create(s.data(), s.size()); }
 };
+
+class ObjFunction final : public Obj {
+  int arity_{};
+  Chunk* chunk_{};
+  ObjString* name_{};
+public:
+  ObjFunction() noexcept;
+  virtual ~ObjFunction();
+};
+
 
 }
