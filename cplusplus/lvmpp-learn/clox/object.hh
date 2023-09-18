@@ -31,6 +31,7 @@
 namespace clox {
 
 enum class ObjType : u8_t {
+  OBJ_FUNCTION,
   OBJ_STRING,
 };
 
