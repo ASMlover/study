@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "vm.hh"
 #include "object.hh"
+#include "chunk.hh"
 
 namespace clox {
 
@@ -43,6 +44,7 @@ cstr_t Obj::as_cstring() noexcept {
   return as_down<ObjString>(this)->cstr();
 }
 
+// region <ObjString>
 ObjString::ObjString(const char* chars, int length, u32_t hash) noexcept
   : Obj{ObjType::OBJ_STRING}, length_{length}, hash_{hash} {
   chars_ = new char[length_ + 1];
@@ -91,5 +93,16 @@ ObjString* ObjString::concat(ObjString* a, ObjString* b) {
   get_vm().set_interned(hash, o);
   return o;
 }
+// endregion <ObjString>
+
+// region <ObjFunction>
+ObjFunction::ObjFunction() noexcept : Obj{ObjType::OBJ_FUNCTION} {
+  chunk_ = new Chunk{};
+}
+
+ObjFunction::~ObjFunction() {
+  delete chunk_;
+}
+// endregion <ObjFunction>
 
 }
