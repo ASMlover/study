@@ -55,6 +55,7 @@ public:
 
   ObjString* as_string() noexcept;
   cstr_t as_cstring() noexcept;
+  ObjFunction* as_function() noexcept;
 };
 
 template <typename T, typename U>
@@ -98,6 +99,8 @@ class ObjFunction final : public Obj {
 public:
   ObjFunction() noexcept;
   virtual ~ObjFunction();
+
+  virtual str_t stringify() const override;
 };
 
 
