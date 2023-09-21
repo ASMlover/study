@@ -36,6 +36,7 @@ template <typename Object, typename... Args> inline Object* make_object(Args&&..
   return o;
 }
 
+// region <Obj>
 ObjString* Obj::as_string() noexcept {
   return as_down<ObjString>(this);
 }
@@ -43,6 +44,11 @@ ObjString* Obj::as_string() noexcept {
 cstr_t Obj::as_cstring() noexcept {
   return as_down<ObjString>(this)->cstr();
 }
+
+ObjFunction* Obj::as_function() noexcept {
+  return as_down<ObjFunction>(this);
+}
+// endregion <Obj>
 
 // region <ObjString>
 ObjString::ObjString(const char* chars, int length, u32_t hash) noexcept
@@ -102,6 +108,10 @@ ObjFunction::ObjFunction() noexcept : Obj{ObjType::OBJ_FUNCTION} {
 
 ObjFunction::~ObjFunction() {
   delete chunk_;
+}
+
+str_t ObjFunction::stringify() const {
+  return name_->stringify();
 }
 // endregion <ObjFunction>
 
