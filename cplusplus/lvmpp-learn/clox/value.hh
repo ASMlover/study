@@ -106,12 +106,14 @@ public:
   inline bool is_number() const noexcept { return type_ == ValueType::VAL_NUMBER; }
   inline bool is_obj() const noexcept { return type_ == ValueType::VAL_OBJ; }
   inline bool is_string() const noexcept { return is_obj_type(ObjType::OBJ_STRING); }
+  inline bool is_function() const noexcept { return is_obj_type(ObjType::OBJ_FUNCTION); }
 
   inline bool as_boolean() const noexcept { return as_.boolean; }
   inline double as_number() const noexcept { return as_.number; }
   inline Obj* as_obj() const noexcept { return as_.obj; }
   inline ObjString* as_string() const noexcept { return as_.obj->as_string(); }
   inline cstr_t as_cstring() const noexcept { return as_.obj->as_cstring(); }
+  inline ObjFunction* as_function() const noexcept { return as_.obj->as_function(); }
 
   inline bool is_falsey() const noexcept {
     return is_nil() || (is_boolean() && !as_boolean());
