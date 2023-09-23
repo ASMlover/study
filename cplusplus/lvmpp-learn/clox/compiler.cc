@@ -36,6 +36,8 @@
 
 namespace clox {
 
+class ObjFunction;
+
 enum class Precedence {
   PREC_NONE,
   PREC_ASSIGNMENT,  // =
@@ -61,9 +63,16 @@ struct Local {
   Local(const Token& arg_name, int arg_depth = 0) noexcept : name{arg_name}, depth{arg_depth} {}
 };
 
+enum class FunctionType {
+  TYPE_FUNCTION,
+  TYPE_SCRIPT,
+};
+
 struct Compiler {
   using ErrorFn = std::function<void (cstr_t)>;
 
+  ObjFunction* function_;
+  FunctionType type_;
   std::vector<Local> locals;
   int scope_depth{};
 
