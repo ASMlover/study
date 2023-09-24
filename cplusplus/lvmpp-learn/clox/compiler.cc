@@ -154,7 +154,7 @@ class Parser final : private UnCopyable {
     return true;
   }
 
-  inline Chunk* curr_chunk() noexcept {
+  inline Chunk* current_chunk() noexcept {
     return vm_.get_chunk();
   }
 
@@ -182,7 +182,7 @@ class Parser final : private UnCopyable {
 
   inline void emit_return() noexcept { emit_byte(OpCode::OP_RETURN); }
 
-  template <typename T> inline void emit_byte(T byte) noexcept { curr_chunk()->write(byte, previous_.lineno()); }
+  template <typename T> inline void emit_byte(T byte) noexcept { current_chunk()->write(byte, previous_.lineno()); }
   template <typename T, typename U> inline void emit_bytes(T byte1, U byte2) noexcept {
     emit_byte(byte1);
     emit_byte(byte2);
@@ -191,7 +191,7 @@ class Parser final : private UnCopyable {
   inline void emit_loop(int loop_start) noexcept {
     emit_byte(OpCode::OP_LOOP);
 
-    int offset = as_type<int>(curr_chunk()->codes_count()) - loop_start + 2;
+    int offset = as_type<int>(current_chunk()->codes_count()) - loop_start + 2;
     if (offset > UINT16_MAX)
       error("loop body too large");
 
@@ -203,22 +203,22 @@ class Parser final : private UnCopyable {
     emit_byte(instruction);
     emit_byte(0xff);
     emit_byte(0xff);
-    return as_type<int>(curr_chunk()->codes_count() - 2);
+    return as_type<int>(current_chunk()->codes_count() - 2);
   }
 
   inline void emit_constant(const Value& value) noexcept {
-    emit_bytes(OpCode::OP_CONSTANT, curr_chunk()->add_constant(value));
+    emit_bytes(OpCode::OP_CONSTANT, current_chunk()->add_constant(value));
   }
 
   inline void patch_jump(int offset) noexcept {
     // // -2 to adjust for the bytecode for the jump offset itself
-    int jump = as_type<int>(curr_chunk()->codes_count() - offset - 2);
+    int jump = as_type<int>(current_chunk()->codes_count() - offset - 2);
 
     if (jump > UINT16_MAX)
       error("too much code to jump over");
 
-    curr_chunk()->set_code(offset, (jump >> 8) & 0xff);
-    curr_chunk()->set_code(offset + 1, jump & 0xff);
+    current_chunk()->set_code(offset, (jump >> 8) & 0xff);
+    current_chunk()->set_code(offset + 1, jump & 0xff);
   }
 
   inline void init_compiler(Compiler* compiler) noexcept {
@@ -232,7 +232,7 @@ class Parser final : private UnCopyable {
 
 #if defined(_CLOX_DEBUG_PRINT_CODE)
     if (!had_error_)
-      curr_chunk()->dis("code");
+      current_chunk()->dis("code");
 #endif
   }
 
@@ -467,7 +467,7 @@ class Parser final : private UnCopyable {
   }
 
   inline u8_t identifier_constant(const Token& name) noexcept {
-    return curr_chunk()->add_constant(ObjString::create(name.as_string()));
+    return current_chunk()->add_constant(ObjString::create(name.as_string()));
   }
 
   inline void add_local(const Token& name) noexcept {
@@ -589,7 +589,7 @@ class Parser final : private UnCopyable {
       expression_statement();
     }
 
-    int loop_start = as_type<int>(curr_chunk()->codes_count());
+    int loop_start = as_type<int>(current_chunk()->codes_count());
     int exit_jump = -1;
     if (!match(TokenType::TOKEN_SEMICOLON)) {
       expression();
@@ -602,7 +602,7 @@ class Parser final : private UnCopyable {
 
     if (!match(TokenType::TOKEN_RIGHT_PAREN)) {
       int body_jump = emit_jump(OpCode::OP_JUMP);
-      int increment_start = as_type<int>(curr_chunk()->codes_count());
+      int increment_start = as_type<int>(current_chunk()->codes_count());
       expression();
       emit_byte(OpCode::OP_POP);
       consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after for clauses");
@@ -668,7 +668,7 @@ class Parser final : private UnCopyable {
     // `--> OP_POP
     //      continues ...
 
-    int loop_start = as_type<int>(curr_chunk()->codes_count());
+    int loop_start = as_type<int>(current_chunk()->codes_count());
 
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after `while` keyword.");
     expression();
