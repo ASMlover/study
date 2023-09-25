@@ -101,6 +101,8 @@ public:
   virtual ~ObjFunction();
 
   virtual str_t stringify() const override;
+
+  static ObjFunction* create(ObjString* name = nullptr);
 };
 
 
