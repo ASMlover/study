@@ -113,6 +113,11 @@ ObjFunction::~ObjFunction() {
 str_t ObjFunction::stringify() const {
   return name_->stringify();
 }
+
+ObjFunction* ObjFunction::create(ObjString* name) {
+  ObjFunction* o = make_object<ObjFunction>();
+  return o;
+}
 // endregion <ObjFunction>
 
 }
