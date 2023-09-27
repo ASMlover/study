@@ -32,11 +32,10 @@
 #include "token.hh"
 #include "scanner.hh"
 #include "chunk.hh"
+#include "object.hh"
 #include "compiler.hh"
 
 namespace clox {
-
-class ObjFunction;
 
 enum class Precedence {
   PREC_NONE,
@@ -71,8 +70,8 @@ enum class FunctionType {
 struct Compiler {
   using ErrorFn = std::function<void (cstr_t)>;
 
-  ObjFunction* function_;
-  FunctionType type_;
+  ObjFunction* function{};
+  FunctionType type{FunctionType::TYPE_SCRIPT};
   std::vector<Local> locals;
   int scope_depth{};
 
@@ -80,9 +79,12 @@ struct Compiler {
 
   inline bool is_local_count_max() noexcept { return locals.size() >= kMaxLocalCount; }
 
-  inline void set_compiler(int arg_scope_depth = 0) noexcept {
+  inline void set_compiler(int arg_scope_depth = 0,
+      FunctionType arg_type = FunctionType::TYPE_SCRIPT) noexcept {
+    type = arg_type;
     locals.clear();
     scope_depth = arg_scope_depth;
+    function = ObjFunction::create();
   }
 
   inline void append(const Token& name, int depth) noexcept {
@@ -221,9 +223,8 @@ class Parser final : private UnCopyable {
     current_chunk()->set_code(offset + 1, jump & 0xff);
   }
 
-  inline void init_compiler(Compiler* compiler) noexcept {
-    compiler->set_compiler();
-
+  inline void init_compiler(Compiler* compiler, FunctionType type) noexcept {
+    compiler->set_compiler(0, type);
     current_compiler_ = compiler;
   }
 
@@ -712,7 +713,7 @@ public:
 
   bool compile() {
     Compiler compiler;
-    init_compiler(&compiler);
+    init_compiler(&compiler, FunctionType::TYPE_SCRIPT);
 
     advance();
     while (!match(TokenType::TOKEN_EOF)) {
