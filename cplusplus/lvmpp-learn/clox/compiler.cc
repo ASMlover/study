@@ -228,13 +228,16 @@ class Parser final : private UnCopyable {
     current_compiler_ = compiler;
   }
 
-  inline void end_compiler() noexcept {
+  inline ObjFunction* end_compiler() noexcept {
     emit_return();
+    ObjFunction* function = current_compiler_->function;
 
 #if defined(_CLOX_DEBUG_PRINT_CODE)
     if (!had_error_)
       current_chunk()->dis("code");
 #endif
+
+    return function;
   }
 
   inline void begin_scope() noexcept { current_compiler_->scope_depth++; }
