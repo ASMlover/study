@@ -100,6 +100,9 @@ public:
   ObjFunction() noexcept;
   virtual ~ObjFunction();
 
+  inline ObjString* name() const noexcept { return name_; }
+  inline const char* name_ascstr() const noexcept { return name_ ? name_->cstr() : ""; }
+
   virtual str_t stringify() const override;
 
   static ObjFunction* create(ObjString* name = nullptr);
