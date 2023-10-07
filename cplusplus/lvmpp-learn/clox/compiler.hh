@@ -33,11 +33,12 @@ namespace clox {
 class VM;
 class Chunk;
 class Parser;
+class ObjFunction;
 
 class GlobalCompiler final : UnCopyable {
   Parser* parser_{};
 public:
-  bool compile(VM& vm, const str_t& source) noexcept;
+  ObjFunction* compile(VM& vm, const str_t& source) noexcept;
 };
 
 }
