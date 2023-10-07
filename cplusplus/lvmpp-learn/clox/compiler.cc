@@ -233,8 +233,9 @@ class Parser final : private UnCopyable {
     ObjFunction* function = current_compiler_->function;
 
 #if defined(_CLOX_DEBUG_PRINT_CODE)
-    if (!had_error_)
-      current_chunk()->dis("code");
+    if (!had_error_) {
+      current_chunk()->dis(function->name_ascstr());
+    }
 #endif
 
     return function;
