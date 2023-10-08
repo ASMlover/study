@@ -715,7 +715,7 @@ class Parser final : private UnCopyable {
 public:
   Parser(VM& vm, Scanenr& scanner) noexcept : vm_{vm}, scanner_{scanner} {}
 
-  bool compile() {
+  ObjFunction* compile() {
     Compiler compiler;
     init_compiler(&compiler, FunctionType::TYPE_SCRIPT);
 
@@ -724,23 +724,22 @@ public:
       declaration();
     }
 
-    end_compiler();
-
-    return !had_error_;
+    ObjFunction* function = end_compiler();
+    return had_error_ ? nullptr : function;
   }
 };
 
-bool GlobalCompiler::compile(VM& vm, const str_t& source) noexcept {
+ObjFunction* GlobalCompiler::compile(VM& vm, const str_t& source) noexcept {
   Scanenr scanner(source);
 
   if (parser_ = new Parser{vm, scanner}; parser_ != nullptr) {
-    parser_->compile();
+    ObjFunction* function = parser_->compile();
     delete parser_;
     parser_ = nullptr;
 
-    return true;
+    return function;
   }
-  return false;
+  return nullptr;
 }
 
 }
