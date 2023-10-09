@@ -41,19 +41,29 @@ enum class InterpretResult : u8_t {
 
 class Chunk;
 
+struct CallFrame {
+  ObjFunction* function;
+  u8_t* ip;
+  Value* slots;
+};
+
 class VM final : private UnCopyable {
-  static constexpr sz_t kStackMax = 256;
+  static constexpr sz_t kFramesMax = 64;
+  static constexpr sz_t kStackMax = kFramesMax * 256;
 
   Chunk* chunk_;
   const u8_t* ip_;
   Value stack_[kStackMax];
   Value* stack_top_;
 
+  CallFrame frames_[kFramesMax];
+  int frame_count_{};
+
   std::unordered_map<str_t, Value> globals_;
   std::unordered_map<u32_t, ObjString*> strings_;
   std::list<Obj*> objects_;
 
-  inline void reset_stack() noexcept { stack_top_ = stack_; }
+  inline void reset_stack() noexcept { stack_top_ = stack_; frame_count_ = 0; }
   inline void push(const Value& value) noexcept { *stack_top_++ = value; }
   inline Value pop() noexcept { return *(--stack_top_); }
 
