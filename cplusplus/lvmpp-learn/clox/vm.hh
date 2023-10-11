@@ -39,8 +39,6 @@ enum class InterpretResult : u8_t {
   INTERPRET_RUNTIME_ERROR,
 };
 
-class Chunk;
-
 struct CallFrame {
   ObjFunction* function;
   u8_t* ip;
@@ -51,7 +49,6 @@ class VM final : private UnCopyable {
   static constexpr sz_t kFramesMax = 64;
   static constexpr sz_t kStackMax = kFramesMax * 256;
 
-  Chunk* chunk_;
   const u8_t* ip_;
   Value stack_[kStackMax];
   Value* stack_top_;
@@ -83,8 +80,6 @@ public:
 
   void append_object(Obj* o) noexcept;
   void free_objects() noexcept;
-
-  inline Chunk* get_chunk() const noexcept { return chunk_; }
 
   inline void set_interned(u32_t hash, ObjString* str) noexcept {
     strings_[hash] = str;
