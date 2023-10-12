@@ -52,12 +52,10 @@ VM& get_vm() noexcept {
 }
 
 VM::VM() noexcept {
-  chunk_ = new Chunk();
   reset_stack();
 }
 
 VM::~VM() noexcept {
-  delete chunk_;
   globals_.clear();
 }
 
@@ -68,8 +66,9 @@ void VM::runtime_error(const char* format, ...) noexcept {
   va_end(args);
   std::cerr << std::endl;
 
-  sz_t instruction = chunk_->offset_from(ip_) - 1; // ip_ - chunk_->codes() - 1
-  int lineno = chunk_->get_line(instruction);
+  CallFrame* frame = &frames_[frame_count_ - 1];
+  sz_t instruction = frame->function->chunk()->offset_from(frame->ip) - 1; // frame->ip - frame->function->chunk()->codes() - 1
+  int lineno = frame->function->chunk()->get_line(instruction);
   std::cerr << "[line " << lineno << "] in script" << std::endl;
 
   reset_stack();
@@ -82,8 +81,15 @@ void VM::free_object(Obj* o) noexcept {
 InterpretResult VM::interpret(const str_t& source) noexcept {
   GlobalCompiler compiler;
 
-  if (!compiler.compile(*this, source))
+  ObjFunction* function = compiler.compile(*this, source);
+  if (function == nullptr)
     return InterpretResult::INTERPRET_COMPILE_ERROR;
+
+  push(function);
+  CallFrame* frame = &frames_[frame_count_++];
+  frame->function = function;
+  frame->ip = const_cast<u8_t*>(function->chunk()->codes());
+  frame->slots = stack_;
 
   return run();
 }
@@ -100,11 +106,11 @@ void VM::free_objects() noexcept {
 }
 
 InterpretResult VM::run() noexcept {
-  ip_ = chunk_->codes();
+  CallFrame* frame = &frames_[frame_count_ - 1];
 
-#define READ_BYTE()     (*ip_++)
-#define READ_SHORT()    (ip_ += 2, as_type<u16_t>((ip_[-2] << 8) | ip_[-1]))
-#define READ_CONSTANT() (chunk_->get_constant(READ_BYTE()))
+#define READ_BYTE()     (*frame->ip++)
+#define READ_SHORT()    (frame->ip += 2, as_type<u16_t>((frame->ip[-2] << 8) | frame->ip[-1]))
+#define READ_CONSTANT() (frame->function->chunk()->get_constant(READ_BYTE()))
 #define READ_STRING()   READ_CONSTANT().as_string()
 #define READ_CSTRING()  READ_CONSTANT().as_cstring()
 #define BINARY_OP(op)\
@@ -125,7 +131,7 @@ InterpretResult VM::run() noexcept {
       std::cout << "[ " << *slot << " ]";
     }
     std::cout << std::endl;
-    chunk_->dis_code(as_type<sz_t>(ip_ - chunk_->codes()));
+    frame->function->chunk()->dis_code(as_type<sz_t>(frame->ip - frame->function->chunk()->codes()));
 #endif
 
     switch (OpCode instruction = as_type<OpCode>(READ_BYTE())) {
@@ -141,12 +147,12 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_GET_LOCAL:
       {
         u8_t slot = READ_BYTE();
-        push(stack_[slot]);
+        push(frame->slots[slot]);
       } break;
     case OpCode::OP_SET_LOCAL:
       {
         u8_t slot = READ_BYTE();
-        stack_[slot] = peek();
+        frame->slots[slot] = peek();
       } break;
     case OpCode::OP_GET_GLOBAL:
       {
@@ -227,13 +233,18 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_JUMP:
       {
         u16_t offset = READ_SHORT();
-        ip_ += offset;
+        frame->ip += offset;
       } break;
     case OpCode::OP_JUMP_IF_FALSE:
       {
         u16_t offset = READ_SHORT();
         if (peek().is_falsey())
-          ip_ += offset;
+          frame->ip += offset;
+      } break;
+    case OpCode::OP_LOOP:
+      {
+        u16_t offset = READ_SHORT();
+        frame->ip -= offset;
       } break;
     case OpCode::OP_RETURN:
       {
