@@ -157,7 +157,7 @@ class Parser final : private UnCopyable {
   }
 
   inline Chunk* current_chunk() noexcept {
-    return vm_.get_chunk();
+    return current_compiler_->function->chunk();
   }
 
   inline void error_at_current(const str_t& message) noexcept { error_at(current_, message); }
