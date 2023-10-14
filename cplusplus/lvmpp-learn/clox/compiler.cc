@@ -501,7 +501,10 @@ class Parser final : private UnCopyable {
   }
 
   void declaration() noexcept {
-    if (match(TokenType::KEYWORD_VAR)) {
+    if (match(TokenType::KEYWORD_FUN)) {
+      fun_declaration();
+    }
+    else if (match(TokenType::KEYWORD_VAR)) {
       var_declaration();
     }
     else {
@@ -544,6 +547,9 @@ class Parser final : private UnCopyable {
       declaration();
     }
     consume(TokenType::TOKEN_RIGHT_BRACE, "expect `}` after block");
+  }
+
+  void fun_declaration() noexcept {
   }
 
   void var_declaration() noexcept {
