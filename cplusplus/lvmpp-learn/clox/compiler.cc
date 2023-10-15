@@ -460,6 +460,8 @@ class Parser final : private UnCopyable {
   }
 
   inline void mark_initialized() noexcept {
+    if (current_compiler_->scope_depth == 0)
+      return;
     current_compiler_->locals.back().depth = current_compiler_->scope_depth;
   }
 
@@ -549,7 +551,25 @@ class Parser final : private UnCopyable {
     consume(TokenType::TOKEN_RIGHT_BRACE, "expect `}` after block");
   }
 
+  void function(FunctionType type) noexcept {
+    Compiler compiler;
+    init_compiler(&compiler, type);
+    begin_scope();
+
+    consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after function name");
+    consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after parameters");
+    consume(TokenType::TOKEN_LEFT_BRACE, "expect `{` before function body");
+    block();
+
+    ObjFunction* function = end_compiler();
+    emit_bytes(OpCode::OP_CONSTANT, current_chunk()->add_constant(function));
+  }
+
   void fun_declaration() noexcept {
+    u8_t global = parse_variable("expect function name");
+    mark_initialized();
+    // TODO: function();
+    define_variable(global);
   }
 
   void var_declaration() noexcept {
