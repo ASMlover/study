@@ -568,7 +568,7 @@ class Parser final : private UnCopyable {
   void fun_declaration() noexcept {
     u8_t global = parse_variable("expect function name");
     mark_initialized();
-    // TODO: function();
+    function(FunctionType::TYPE_FUNCTION);
     define_variable(global);
   }
 
