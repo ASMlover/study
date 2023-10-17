@@ -70,6 +70,7 @@ enum class FunctionType {
 struct Compiler {
   using ErrorFn = std::function<void (cstr_t)>;
 
+  Compiler* enclosing{};
   ObjFunction* function{};
   FunctionType type{FunctionType::TYPE_SCRIPT};
   std::vector<Local> locals;
@@ -79,8 +80,9 @@ struct Compiler {
 
   inline bool is_local_count_max() noexcept { return locals.size() >= kMaxLocalCount; }
 
-  inline void set_compiler(int arg_scope_depth = 0,
-      FunctionType arg_type = FunctionType::TYPE_SCRIPT) noexcept {
+  inline void set_compiler(Compiler* arg_enclosing = nullptr,
+      int arg_scope_depth = 0, FunctionType arg_type = FunctionType::TYPE_SCRIPT) noexcept {
+    enclosing = arg_enclosing;
     type = arg_type;
     locals.clear();
     scope_depth = arg_scope_depth;
@@ -224,7 +226,7 @@ class Parser final : private UnCopyable {
   }
 
   inline void init_compiler(Compiler* compiler, FunctionType type) noexcept {
-    compiler->set_compiler(0, type);
+    compiler->set_compiler(current_compiler_, 0, type);
     current_compiler_ = compiler;
   }
 
@@ -238,6 +240,7 @@ class Parser final : private UnCopyable {
     }
 #endif
 
+    current_compiler_ = current_compiler_->enclosing;
     return function;
   }
 
