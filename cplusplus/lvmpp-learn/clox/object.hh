@@ -100,9 +100,11 @@ public:
   ObjFunction() noexcept;
   virtual ~ObjFunction();
 
+  inline int arity() const noexcept { return arity_; }
+  inline int inc_arity() noexcept { return arity_++; }
+  inline Chunk* chunk() const noexcept { return chunk_; }
   inline ObjString* name() const noexcept { return name_; }
   inline const char* name_ascstr() const noexcept { return name_ ? name_->cstr() : ""; }
-  inline Chunk* chunk() const noexcept { return chunk_; }
 
   virtual str_t stringify() const override;
 
