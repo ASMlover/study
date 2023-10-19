@@ -560,6 +560,16 @@ class Parser final : private UnCopyable {
     begin_scope();
 
     consume(TokenType::TOKEN_LEFT_PAREN, "expect `(` after function name");
+    if (!check(TokenType::TOKEN_RIGHT_PAREN)) {
+      do {
+        current_compiler_->function->inc_arity();
+        if (current_compiler_->function->arity() > 255) {
+          error_at_current("cannot have more than 255 parameters");
+        }
+        u8_t constant = parse_variable("expect parameter name");
+        define_variable(constant);
+      } while (match(TokenType::TOKEN_COMMA));
+    }
     consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after parameters");
     consume(TokenType::TOKEN_LEFT_BRACE, "expect `{` before function body");
     block();
