@@ -105,6 +105,7 @@ public:
   inline Chunk* chunk() const noexcept { return chunk_; }
   inline ObjString* name() const noexcept { return name_; }
   inline const char* name_ascstr() const noexcept { return name_ ? name_->cstr() : ""; }
+  inline void set_name(ObjString* name) noexcept { name_ = name; }
 
   virtual str_t stringify() const override;
 
