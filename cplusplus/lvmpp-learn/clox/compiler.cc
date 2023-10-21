@@ -228,6 +228,12 @@ class Parser final : private UnCopyable {
   inline void init_compiler(Compiler* compiler, FunctionType type) noexcept {
     compiler->set_compiler(current_compiler_, 0, type);
     current_compiler_ = compiler;
+
+    if (type != FunctionType::TYPE_SCRIPT) {
+      current_compiler_->function->set_name(ObjString::create(previous_.as_string()));
+    }
+
+    current_compiler_->append(Token::from_literal(""), 0);
   }
 
   inline ObjFunction* end_compiler() noexcept {
