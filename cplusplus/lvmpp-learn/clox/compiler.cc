@@ -89,9 +89,8 @@ struct Compiler {
     function = ObjFunction::create();
   }
 
-  inline void append(const Token& name, int depth) noexcept {
-    locals.push_back({name, depth});
-  }
+  inline void append_default() noexcept { locals.push_back({Token::from_literal(""), 0}); }
+  inline void append(const Token& name, int depth) noexcept { locals.push_back({name, depth}); }
 
   inline int resolve_local(const Token& name, const ErrorFn& error) const noexcept {
     for (int i = as_type<int>(locals.size()) - 1; i >= 0; --i) {
@@ -233,7 +232,7 @@ class Parser final : private UnCopyable {
       current_compiler_->function->set_name(ObjString::create(previous_.as_string()));
     }
 
-    current_compiler_->append(Token::from_literal(""), 0);
+    current_compiler_->append_default();
   }
 
   inline ObjFunction* end_compiler() noexcept {
@@ -280,6 +279,11 @@ class Parser final : private UnCopyable {
     case TokenType::TOKEN_SLASH: emit_byte(OpCode::OP_DIVIDE); break;
     default: return; // unreachable
     }
+  }
+
+  inline void call(bool can_assign) noexcept {
+    u8_t arg_count = argument_list();
+    emit_bytes(OpCode::OP_CALL, arg_count);
   }
 
   inline void literal(bool can_assign) noexcept {
@@ -385,7 +389,7 @@ class Parser final : private UnCopyable {
   const ParseRule& get_rule(TokenType type) const noexcept {
 #define _RULE(fn) [](Parser& p, bool b) { p.fn(b); }
     static const ParseRule _rules[] = {
-      {_RULE(grouping), nullptr, Precedence::PREC_NONE},      // PUNCTUATOR(LEFT_PAREN, "(")
+      {_RULE(grouping), _RULE(call), Precedence::PREC_CALL},  // PUNCTUATOR(LEFT_PAREN, "(")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(RIGHT_PAREN, ")")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(LEFT_BRACE, "{")
       {nullptr, nullptr, Precedence::PREC_NONE},              // PUNCTUATOR(RIGHT_BRACE, "}")
@@ -480,6 +484,18 @@ class Parser final : private UnCopyable {
       return;
     }
     emit_bytes(OpCode::OP_DEFINE_GLOBAL, global);
+  }
+
+  inline u8_t argument_list() noexcept {
+    u8_t arg_count = 0;
+    if (!check(TokenType::TOKEN_RIGHT_PAREN)) {
+      do {
+        expression();
+        ++arg_count;
+      } while (match(TokenType::TOKEN_COMMA));
+    }
+    consume(TokenType::TOKEN_RIGHT_PAREN, "expect `)` after arguments");
+    return arg_count;
   }
 
   inline u8_t identifier_constant(const Token& name) noexcept {
