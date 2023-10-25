@@ -68,6 +68,8 @@ class VM final : private UnCopyable {
     return stack_top_[-1 - distance];
   }
 
+  bool call_value(const Value& callee, int arg_count) noexcept;
+
   void runtime_error(const char* format, ...) noexcept;
   void free_object(Obj* o) noexcept;
 
