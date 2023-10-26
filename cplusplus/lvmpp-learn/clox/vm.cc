@@ -59,6 +59,20 @@ VM::~VM() noexcept {
   globals_.clear();
 }
 
+bool VM::call_value(const Value& callee, int arg_count) noexcept {
+  if (callee.is_obj()) {
+    switch (callee.as_obj()->type()) {
+    case ObjType::OBJ_FUNCTION:
+      // TODO: call method
+      break;
+    default: break; // Non-callable object type.
+    }
+  }
+
+  runtime_error("can only call functions and classes");
+  return false;
+}
+
 void VM::runtime_error(const char* format, ...) noexcept {
   va_list args;
   va_start(args, format);
