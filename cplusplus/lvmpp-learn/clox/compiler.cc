@@ -491,6 +491,8 @@ class Parser final : private UnCopyable {
     if (!check(TokenType::TOKEN_RIGHT_PAREN)) {
       do {
         expression();
+        if (arg_count >= 255)
+          error("cannot have more than 255 arguments");
         ++arg_count;
       } while (match(TokenType::TOKEN_COMMA));
     }
