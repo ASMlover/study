@@ -260,6 +260,13 @@ InterpretResult VM::run() noexcept {
         u16_t offset = READ_SHORT();
         frame->ip -= offset;
       } break;
+    case OpCode::OP_CALL:
+      {
+        int arg_count = READ_BYTE();
+        if (!call_value(peek(arg_count), arg_count)) {
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+      } break;
     case OpCode::OP_RETURN:
       {
         return InterpretResult::INTERPRET_OK;
