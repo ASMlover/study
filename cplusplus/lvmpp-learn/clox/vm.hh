@@ -43,6 +43,12 @@ struct CallFrame {
   ObjFunction* function;
   u8_t* ip;
   Value* slots;
+
+  inline void set_callframe(ObjFunction* arg_fun, u8_t* arg_ip, Value* arg_slots) noexcept {
+    function = arg_fun;
+    ip = arg_ip;
+    slots = arg_slots;
+  }
 };
 
 class VM final : private UnCopyable {
@@ -68,6 +74,7 @@ class VM final : private UnCopyable {
     return stack_top_[-1 - distance];
   }
 
+  bool call(ObjFunction* function, int arg_count) noexcept;
   bool call_value(const Value& callee, int arg_count) noexcept;
 
   void runtime_error(const char* format, ...) noexcept;
