@@ -266,6 +266,7 @@ InterpretResult VM::run() noexcept {
         if (!call_value(peek(arg_count), arg_count)) {
           return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
+        frame = &frames_[frame_count_ - 1];
       } break;
     case OpCode::OP_RETURN:
       {
