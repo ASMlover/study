@@ -59,6 +59,15 @@ VM::~VM() noexcept {
   globals_.clear();
 }
 
+bool VM::call(ObjFunction* function, int arg_count) noexcept {
+  CallFrame* frame = &frames_[frame_count_++];
+  frame->set_callframe(
+      function,
+      const_cast<u8_t*>(function->chunk()->codes()),
+      stack_top_ - arg_count - 1);
+  return true;
+}
+
 bool VM::call_value(const Value& callee, int arg_count) noexcept {
   if (callee.is_obj()) {
     switch (callee.as_obj()->type()) {
@@ -100,10 +109,7 @@ InterpretResult VM::interpret(const str_t& source) noexcept {
     return InterpretResult::INTERPRET_COMPILE_ERROR;
 
   push(function);
-  CallFrame* frame = &frames_[frame_count_++];
-  frame->function = function;
-  frame->ip = const_cast<u8_t*>(function->chunk()->codes());
-  frame->slots = stack_;
+  call(function, 0);
 
   return run();
 }
