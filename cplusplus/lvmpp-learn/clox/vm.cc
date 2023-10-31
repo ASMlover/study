@@ -60,6 +60,11 @@ VM::~VM() noexcept {
 }
 
 bool VM::call(ObjFunction* function, int arg_count) noexcept {
+  if (arg_count != function->arity()) {
+    runtime_error("expect %d arguments but got %d.", function->arity(), arg_count);
+    return false;
+  }
+
   CallFrame* frame = &frames_[frame_count_++];
   frame->set_callframe(
       function,
