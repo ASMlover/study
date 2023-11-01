@@ -65,6 +65,11 @@ bool VM::call(ObjFunction* function, int arg_count) noexcept {
     return false;
   }
 
+  if (frame_count_ >= kFramesMax) {
+    runtime_error("stack overflow");
+    return false;
+  }
+
   CallFrame* frame = &frames_[frame_count_++];
   frame->set_callframe(
       function,
