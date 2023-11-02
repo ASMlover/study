@@ -99,10 +99,18 @@ void VM::runtime_error(const char* format, ...) noexcept {
   va_end(args);
   std::cerr << std::endl;
 
-  CallFrame* frame = &frames_[frame_count_ - 1];
-  sz_t instruction = frame->function->chunk()->offset_from(frame->ip) - 1; // frame->ip - frame->function->chunk()->codes() - 1
-  int lineno = frame->function->chunk()->get_line(instruction);
-  std::cerr << "[line " << lineno << "] in script" << std::endl;
+  for (int i = frame_count_ - 1; i >= 0; --i) {
+    CallFrame* frame = &frames_[i];
+    ObjFunction* function = frame->function;
+    sz_t instruction = function->chunk()->offset_from(frame->ip) - 1; // frame->ip - function->chunk()->codes() - 1
+    std::cerr << "[Line " << function->chunk()->get_line(instruction) << "] in ";
+    if (function->name() == nullptr) {
+      std::cerr << "script" << std::endl;
+    }
+    else {
+      std::cerr << function->name_ascstr() << "()" << std::endl;
+    }
+  }
 
   reset_stack();
 }
