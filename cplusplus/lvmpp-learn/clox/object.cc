@@ -111,6 +111,8 @@ ObjFunction::~ObjFunction() {
 }
 
 str_t ObjFunction::stringify() const {
+  if (name_ == nullptr)
+    return "<script>";
   return name_->stringify();
 }
 
