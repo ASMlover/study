@@ -294,7 +294,16 @@ InterpretResult VM::run() noexcept {
       } break;
     case OpCode::OP_RETURN:
       {
-        return InterpretResult::INTERPRET_OK;
+        Value result = pop();
+        --frame_count_;
+        if (frame_count_ == 0) {
+          pop();
+          return InterpretResult::INTERPRET_OK;
+        }
+
+        stack_top_ = frame->slots;
+        push(result);
+        frame = &frames_[frame_count_ - 1];
       } break;
     }
   }
