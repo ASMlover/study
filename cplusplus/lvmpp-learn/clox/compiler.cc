@@ -183,7 +183,10 @@ class Parser final : private UnCopyable {
     had_error_ = true;
   }
 
-  inline void emit_return() noexcept { emit_byte(OpCode::OP_RETURN); }
+  inline void emit_return() noexcept {
+    emit_byte(OpCode::OP_NIL);
+    emit_byte(OpCode::OP_RETURN);
+  }
 
   template <typename T> inline void emit_byte(T byte) noexcept { current_chunk()->write(byte, previous_.lineno()); }
   template <typename T, typename U> inline void emit_bytes(T byte1, U byte2) noexcept {
