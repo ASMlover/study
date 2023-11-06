@@ -557,6 +557,9 @@ class Parser final : private UnCopyable {
     else if (match(TokenType::KEYWORD_IF)) {
       if_statement();
     }
+    else if (match(TokenType::KEYWORD_RETURN)) {
+      return_statement();
+    }
     else if (match(TokenType::KEYWORD_WHILE)) {
       while_statement();
     }
@@ -727,6 +730,17 @@ class Parser final : private UnCopyable {
     expression();
     consume(TokenType::TOKEN_SEMICOLON, "expect `;` after value");
     emit_byte(OpCode::OP_PRINT);
+  }
+
+  void return_statement() noexcept {
+    if (match(TokenType::TOKEN_SEMICOLON)) {
+      emit_return();
+    }
+    else {
+      expression();
+      consume(TokenType::TOKEN_SEMICOLON, "expect `;` after return value");
+      emit_byte(OpCode::OP_RETURN);
+    }
   }
 
   void while_statement() noexcept {
