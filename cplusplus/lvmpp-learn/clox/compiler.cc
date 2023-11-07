@@ -733,6 +733,10 @@ class Parser final : private UnCopyable {
   }
 
   void return_statement() noexcept {
+    if (current_compiler_->type == FunctionType::TYPE_SCRIPT) {
+      error("Cannot return from top-level code ...");
+    }
+
     if (match(TokenType::TOKEN_SEMICOLON)) {
       emit_return();
     }
