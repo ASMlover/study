@@ -27,18 +27,12 @@
 #pragma once
 
 #include "common.hh"
+#include "object_helper.hh"
+#include "value.hh"
 
 namespace clox {
 
-enum class ObjType : u8_t {
-  OBJ_FUNCTION,
-  OBJ_STRING,
-};
-
 class Chunk;
-class Obj;
-class ObjString;
-class ObjFunction;
 
 class Obj : private UnCopyable {
   ObjType type_;
@@ -112,5 +106,9 @@ public:
   static ObjFunction* create(ObjString* name = nullptr);
 };
 
+using NativeFn = std::function<Value (int arg_count, Value* args)>;
+class ObjNative final : public Obj {
+  NativeFn function_{};
+};
 
 }
