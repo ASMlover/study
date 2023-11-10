@@ -26,8 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <functional>
 #include "common.hh"
-#include "object.hh"
+#include "object_helper.hh"
 
 namespace clox {
 
@@ -48,9 +49,7 @@ class Value final : public Copyable {
 
   template <typename T> inline void set_number(T x) noexcept { as_.number = as_type<double>(x); }
 
-  inline bool is_obj_type(ObjType type) const noexcept {
-    return is_obj() && as_obj()->is_type(type);
-  }
+  bool is_obj_type(ObjType type) const noexcept;
 public:
   Value() noexcept {}
   Value(bool b) noexcept : type_{ValueType::VAL_BOOL} { as_.boolean = b; }
@@ -111,9 +110,10 @@ public:
   inline bool as_boolean() const noexcept { return as_.boolean; }
   inline double as_number() const noexcept { return as_.number; }
   inline Obj* as_obj() const noexcept { return as_.obj; }
-  inline ObjString* as_string() const noexcept { return as_.obj->as_string(); }
-  inline cstr_t as_cstring() const noexcept { return as_.obj->as_cstring(); }
-  inline ObjFunction* as_function() const noexcept { return as_.obj->as_function(); }
+
+  ObjString* as_string() const noexcept;
+  cstr_t as_cstring() const noexcept;
+  ObjFunction* as_function() const noexcept;
 
   inline bool is_falsey() const noexcept {
     return is_nil() || (is_boolean() && !as_boolean());
