@@ -25,8 +25,17 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "value.hh"
+#include "object.hh"
 
 namespace clox {
+
+bool Value::is_obj_type(ObjType type) const noexcept {
+  return is_obj() && as_obj()->is_type(type);
+}
+
+ObjString* Value::as_string() const noexcept { return as_.obj->as_string(); }
+cstr_t Value::as_cstring() const noexcept { return as_.obj->as_cstring(); }
+ObjFunction* Value::as_function() const noexcept { return as_.obj->as_function(); }
 
 bool Value::is_equal(const Value& x) const noexcept {
   if (type_ != x.type_)
