@@ -28,6 +28,7 @@
 #include <iostream>
 #include "chunk.hh"
 #include "compiler.hh"
+#include "object.hh"
 #include "vm.hh"
 
 namespace clox {
