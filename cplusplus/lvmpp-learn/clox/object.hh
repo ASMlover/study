@@ -50,6 +50,7 @@ public:
   ObjString* as_string() noexcept;
   cstr_t as_cstring() noexcept;
   ObjFunction* as_function() noexcept;
+  ObjNative* as_native() noexcept;
 };
 
 template <typename T, typename U>
@@ -109,6 +110,11 @@ public:
 using NativeFn = std::function<Value (int arg_count, Value* args)>;
 class ObjNative final : public Obj {
   NativeFn function_{};
+public:
+  ObjNative(NativeFn&& function) noexcept;
+  virtual ~ObjNative();
+
+  virtual str_t stringify() const override;
 };
 
 }
