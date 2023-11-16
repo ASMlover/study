@@ -33,9 +33,23 @@ bool Value::is_obj_type(ObjType type) const noexcept {
   return is_obj() && as_obj()->is_type(type);
 }
 
-ObjString* Value::as_string() const noexcept { return as_.obj->as_string(); }
-cstr_t Value::as_cstring() const noexcept { return as_.obj->as_cstring(); }
-ObjFunction* Value::as_function() const noexcept { return as_.obj->as_function(); }
+// region - object dynamic typing
+ObjString* Value::as_string() const noexcept {
+  return as_.obj->as_string();
+}
+
+cstr_t Value::as_cstring() const noexcept {
+  return as_.obj->as_cstring();
+}
+
+ObjFunction* Value::as_function() const noexcept {
+  return as_.obj->as_function();
+}
+
+ObjNative* Value::as_native() const noexcept {
+  return as_.obj->as_native();
+}
+// endregion - object dynamic typing
 
 bool Value::is_equal(const Value& x) const noexcept {
   if (type_ != x.type_)
