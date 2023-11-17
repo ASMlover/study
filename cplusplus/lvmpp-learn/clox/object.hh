@@ -114,6 +114,8 @@ public:
   ObjNative(NativeFn&& function) noexcept;
   virtual ~ObjNative();
 
+  inline const NativeFn& function() const noexcept { return function_; }
+
   virtual str_t stringify() const override;
 };
 
