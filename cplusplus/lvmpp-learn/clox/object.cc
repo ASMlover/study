@@ -48,6 +48,10 @@ cstr_t Obj::as_cstring() noexcept {
 ObjFunction* Obj::as_function() noexcept {
   return as_down<ObjFunction>(this);
 }
+
+ObjNative* Obj::as_native() noexcept {
+  return as_down<ObjNative>(this);
+}
 // endregion <Obj>
 
 // region <ObjString>
@@ -121,5 +125,17 @@ ObjFunction* ObjFunction::create(ObjString* name) {
   return o;
 }
 // endregion <ObjFunction>
+
+// region <ObjNative>
+ObjNative::ObjNative(NativeFn&& function) noexcept : Obj{ObjType::OBJ_NATIVE}, function_{function} {
+}
+
+ObjNative::~ObjNative() {
+}
+
+str_t ObjNative::stringify() const {
+  return "<native fn>";
+}
+// endregion <ObjNative>
 
 }
