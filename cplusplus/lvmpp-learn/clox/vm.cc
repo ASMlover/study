@@ -83,8 +83,14 @@ bool VM::call_value(const Value& callee, int arg_count) noexcept {
   if (callee.is_obj()) {
     switch (callee.as_obj()->type()) {
     case ObjType::OBJ_FUNCTION:
-      // TODO: call method
-      break;
+      return call(callee.as_function(), arg_count);
+    case ObjType::OBJ_NATIVE:
+      {
+        NativeFn native = callee.as_native()->function();
+        Value result = native(arg_count, stack_top_ - arg_count);
+        stack_top_ -= arg_count + 1;
+        push(result);
+      } break;
     default: break; // Non-callable object type.
     }
   }
