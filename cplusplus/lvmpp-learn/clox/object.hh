@@ -117,6 +117,8 @@ public:
   inline const NativeFn& function() const noexcept { return function_; }
 
   virtual str_t stringify() const override;
+
+  static ObjNative* create(NativeFn&& function);
 };
 
 }
