@@ -136,6 +136,11 @@ ObjNative::~ObjNative() {
 str_t ObjNative::stringify() const {
   return "<native fn>";
 }
+
+ObjNative* ObjNative::create(NativeFn&& function) {
+  ObjNative* o = make_object<ObjNative>(std::move(function));
+  return o;
+}
 // endregion <ObjNative>
 
 }
