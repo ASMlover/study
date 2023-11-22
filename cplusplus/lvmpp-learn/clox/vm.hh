@@ -30,6 +30,7 @@
 #include <list>
 #include "common.hh"
 #include "value.hh"
+#include "object.hh"
 
 namespace clox {
 
@@ -78,6 +79,8 @@ class VM final : private UnCopyable {
   bool call_value(const Value& callee, int arg_count) noexcept;
 
   void runtime_error(const char* format, ...) noexcept;
+  void define_native(const str_t& name, NativeFn&& function) noexcept;
+
   void free_object(Obj* o) noexcept;
 
   InterpretResult run() noexcept;
