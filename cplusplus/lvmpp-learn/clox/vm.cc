@@ -122,6 +122,14 @@ void VM::runtime_error(const char* format, ...) noexcept {
   reset_stack();
 }
 
+void VM::define_native(const str_t& name, NativeFn&& function) noexcept {
+  push(ObjString::create(name));
+  push(ObjNative::create(std::move(function)));
+  globals_[name] = stack_[1];
+  pop();
+  pop();
+}
+
 void VM::free_object(Obj* o) noexcept {
   delete o;
 }
