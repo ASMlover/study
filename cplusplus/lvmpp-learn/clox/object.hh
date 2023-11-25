@@ -121,4 +121,8 @@ public:
   static ObjNative* create(NativeFn&& function);
 };
 
+class ObjClosure final : public Obj {
+  ObjFunction* function_{};
+};
+
 }
