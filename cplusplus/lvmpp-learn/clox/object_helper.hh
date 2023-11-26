@@ -31,6 +31,7 @@
 namespace clox {
 
 enum class ObjType : u8_t {
+  OBJ_CLOSURE,
   OBJ_FUNCTION,
   OBJ_NATIVE,
   OBJ_STRING,
@@ -40,5 +41,6 @@ class Obj;
 class ObjString;
 class ObjFunction;
 class ObjNative;
+class ObjClosure;
 
 }
