@@ -123,6 +123,11 @@ public:
 
 class ObjClosure final : public Obj {
   ObjFunction* function_{};
+public:
+  ObjClosure(ObjFunction* function) noexcept;
+  virtual ~ObjClosure();
+
+  static ObjClosure* create(ObjFunction* function);
 };
 
 }
