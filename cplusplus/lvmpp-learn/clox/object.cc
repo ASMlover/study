@@ -127,7 +127,8 @@ ObjFunction* ObjFunction::create(ObjString* name) {
 // endregion <ObjFunction>
 
 // region <ObjNative>
-ObjNative::ObjNative(NativeFn&& function) noexcept : Obj{ObjType::OBJ_NATIVE}, function_{function} {
+ObjNative::ObjNative(NativeFn&& function) noexcept
+  : Obj{ObjType::OBJ_NATIVE}, function_{std::move(function)} {
 }
 
 ObjNative::~ObjNative() {
@@ -142,5 +143,19 @@ ObjNative* ObjNative::create(NativeFn&& function) {
   return o;
 }
 // endregion <ObjNative>
+
+// region <ObjClosure>
+ObjClosure::ObjClosure(ObjFunction* function) noexcept
+  : Obj{ObjType::OBJ_CLOSURE}, function_{function} {
+}
+
+ObjClosure::~ObjClosure() {
+}
+
+ObjClosure* ObjClosure::create(ObjFunction* function) {
+  ObjClosure* o = make_object<ObjClosure>(function);
+  return o;
+}
+// endregion <ObjClosure>
 
 }
