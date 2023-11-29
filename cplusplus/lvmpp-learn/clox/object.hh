@@ -51,6 +51,7 @@ public:
   cstr_t as_cstring() noexcept;
   ObjFunction* as_function() noexcept;
   ObjNative* as_native() noexcept;
+  ObjClosure* as_closure() noexcept;
 };
 
 template <typename T, typename U>
