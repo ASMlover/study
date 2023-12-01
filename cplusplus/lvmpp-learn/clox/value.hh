@@ -107,6 +107,7 @@ public:
   inline bool is_string() const noexcept { return is_obj_type(ObjType::OBJ_STRING); }
   inline bool is_function() const noexcept { return is_obj_type(ObjType::OBJ_FUNCTION); }
   inline bool is_native() const noexcept { return is_obj_type(ObjType::OBJ_NATIVE); }
+  inline bool is_closure() const noexcept { return is_obj_type(ObjType::OBJ_CLOSURE); }
 
   inline bool as_boolean() const noexcept { return as_.boolean; }
   inline double as_number() const noexcept { return as_.number; }
@@ -116,6 +117,7 @@ public:
   cstr_t as_cstring() const noexcept;
   ObjFunction* as_function() const noexcept;
   ObjNative* as_native() const noexcept;
+  ObjClosure* as_closure() const noexcept;
 
   inline bool is_falsey() const noexcept {
     return is_nil() || (is_boolean() && !as_boolean());
