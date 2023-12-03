@@ -99,6 +99,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
   case OpCode::OP_JUMP_IF_FALSE: JUMP(OP_JUMP_IF_FALSE, 1);
   case OpCode::OP_LOOP: JUMP(OP_LOOP, -1);
   case OpCode::OP_CALL: SIMPLE(OP_CALL);
+  case OpCode::OP_CLOSURE: COMPOUND2(OP_CLOSURE, true);
   case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
   default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
