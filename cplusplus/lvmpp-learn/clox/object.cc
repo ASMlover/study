@@ -156,6 +156,10 @@ ObjClosure::ObjClosure(ObjFunction* function) noexcept
 ObjClosure::~ObjClosure() {
 }
 
+str_t ObjClosure::stringify() const {
+  return function_->stringify();
+}
+
 ObjClosure* ObjClosure::create(ObjFunction* function) {
   ObjClosure* o = make_object<ObjClosure>(function);
   return o;
