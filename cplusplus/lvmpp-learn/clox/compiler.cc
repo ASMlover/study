@@ -605,7 +605,7 @@ class Parser final : private UnCopyable {
     block();
 
     ObjFunction* function = end_compiler();
-    emit_bytes(OpCode::OP_CONSTANT, current_chunk()->add_constant(function));
+    emit_bytes(OpCode::OP_CLOSURE, current_chunk()->add_constant(function));
   }
 
   void fun_declaration() noexcept {
