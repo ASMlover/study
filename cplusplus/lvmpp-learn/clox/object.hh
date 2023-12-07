@@ -128,6 +128,8 @@ public:
   ObjClosure(ObjFunction* function) noexcept;
   virtual ~ObjClosure();
 
+  inline ObjFunction* function() const noexcept { return function_; }
+
   virtual str_t stringify() const override;
 
   static ObjClosure* create(ObjFunction* function);
