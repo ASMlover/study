@@ -41,12 +41,12 @@ enum class InterpretResult : u8_t {
 };
 
 struct CallFrame {
-  ObjFunction* function;
+  ObjClosure* closure;
   u8_t* ip;
   Value* slots;
 
-  inline void set_callframe(ObjFunction* arg_fun, u8_t* arg_ip, Value* arg_slots) noexcept {
-    function = arg_fun;
+  inline void set_callframe(ObjClosure* arg_closure, u8_t* arg_ip, Value* arg_slots) noexcept {
+    closure = arg_closure;
     ip = arg_ip;
     slots = arg_slots;
   }
@@ -75,7 +75,7 @@ class VM final : private UnCopyable {
     return stack_top_[-1 - distance];
   }
 
-  bool call(ObjFunction* function, int arg_count) noexcept;
+  bool call(ObjClosure* closure, int arg_count) noexcept;
   bool call_value(const Value& callee, int arg_count) noexcept;
 
   void runtime_error(const char* format, ...) noexcept;
