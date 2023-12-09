@@ -70,9 +70,9 @@ VM::~VM() noexcept {
   globals_.clear();
 }
 
-bool VM::call(ObjFunction* function, int arg_count) noexcept {
-  if (arg_count != function->arity()) {
-    runtime_error("expect %d arguments but got %d.", function->arity(), arg_count);
+bool VM::call(ObjClosure* closure, int arg_count) noexcept {
+  if (arg_count != closure->function()->arity()) {
+    runtime_error("expect %d arguments but got %d.", closure->function()->arity(), arg_count);
     return false;
   }
 
@@ -83,8 +83,8 @@ bool VM::call(ObjFunction* function, int arg_count) noexcept {
 
   CallFrame* frame = &frames_[frame_count_++];
   frame->set_callframe(
-      function,
-      const_cast<u8_t*>(function->chunk()->codes()),
+      closure,
+      const_cast<u8_t*>(closure->function()->chunk()->codes()),
       stack_top_ - arg_count - 1);
   return true;
 }
@@ -92,8 +92,7 @@ bool VM::call(ObjFunction* function, int arg_count) noexcept {
 bool VM::call_value(const Value& callee, int arg_count) noexcept {
   if (callee.is_obj()) {
     switch (callee.as_obj()->type()) {
-    case ObjType::OBJ_FUNCTION:
-      return call(callee.as_function(), arg_count);
+    case ObjType::OBJ_CLOSURE: return call(callee.as_closure(), arg_count);
     case ObjType::OBJ_NATIVE:
       {
         NativeFn native = callee.as_native()->function();
@@ -118,7 +117,7 @@ void VM::runtime_error(const char* format, ...) noexcept {
 
   for (int i = frame_count_ - 1; i >= 0; --i) {
     CallFrame* frame = &frames_[i];
-    ObjFunction* function = frame->function;
+    ObjFunction* function = frame->closure->function();
     sz_t instruction = function->chunk()->offset_from(frame->ip) - 1; // frame->ip - function->chunk()->codes() - 1
     std::cerr << "[Line " << function->chunk()->get_line(instruction) << "] in ";
     if (function->name() == nullptr) {
@@ -152,7 +151,10 @@ InterpretResult VM::interpret(const str_t& source) noexcept {
     return InterpretResult::INTERPRET_COMPILE_ERROR;
 
   push(function);
-  call(function, 0);
+  ObjClosure* closure = ObjClosure::create(function);
+  pop();
+  push(closure);
+  call(closure, 0);
 
   return run();
 }
@@ -173,7 +175,7 @@ InterpretResult VM::run() noexcept {
 
 #define READ_BYTE()     (*frame->ip++)
 #define READ_SHORT()    (frame->ip += 2, as_type<u16_t>((frame->ip[-2] << 8) | frame->ip[-1]))
-#define READ_CONSTANT() (frame->function->chunk()->get_constant(READ_BYTE()))
+#define READ_CONSTANT() (frame->closure->function()->chunk()->get_constant(READ_BYTE()))
 #define READ_STRING()   READ_CONSTANT().as_string()
 #define READ_CSTRING()  READ_CONSTANT().as_cstring()
 #define BINARY_OP(op)\
@@ -194,7 +196,8 @@ InterpretResult VM::run() noexcept {
       std::cout << "[ " << *slot << " ]";
     }
     std::cout << std::endl;
-    frame->function->chunk()->dis_code(as_type<sz_t>(frame->ip - frame->function->chunk()->codes()));
+    frame->closure->function()->chunk()->dis_code(
+        as_type<sz_t>(frame->ip - frame->closure->function()->chunk()->codes()));
 #endif
 
     switch (OpCode instruction = as_type<OpCode>(READ_BYTE())) {
@@ -316,6 +319,12 @@ InterpretResult VM::run() noexcept {
           return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
         frame = &frames_[frame_count_ - 1];
+      } break;
+    case OpCode::OP_CLOSURE:
+      {
+        ObjFunction* function = READ_CONSTANT().as_function();
+        ObjClosure* closure = ObjClosure::create(function);
+        push(closure);
       } break;
     case OpCode::OP_RETURN:
       {
