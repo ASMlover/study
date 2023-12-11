@@ -90,14 +90,17 @@ public:
 
 class ObjFunction final : public Obj {
   int arity_{};
+  int upvalue_count_{};
   Chunk* chunk_{};
   ObjString* name_{};
 public:
-  ObjFunction() noexcept;
+  ObjFunction(int upvalue_count = 0) noexcept;
   virtual ~ObjFunction();
 
   inline int arity() const noexcept { return arity_; }
   inline int inc_arity() noexcept { return arity_++; }
+  inline int upvalue_count() const noexcept { return upvalue_count_; }
+  inline int inc_upvalue_count() noexcept { return upvalue_count_++; }
   inline Chunk* chunk() const noexcept { return chunk_; }
   inline ObjString* name() const noexcept { return name_; }
   inline const char* name_ascstr() const noexcept { return name_ ? name_->cstr() : ""; }
