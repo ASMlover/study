@@ -110,7 +110,8 @@ ObjString* ObjString::concat(ObjString* a, ObjString* b) {
 // endregion <ObjString>
 
 // region <ObjFunction>
-ObjFunction::ObjFunction() noexcept : Obj{ObjType::OBJ_FUNCTION} {
+ObjFunction::ObjFunction(int upvalue_count) noexcept
+  : Obj{ObjType::OBJ_FUNCTION}, upvalue_count_{upvalue_count} {
   chunk_ = new Chunk{};
 }
 
