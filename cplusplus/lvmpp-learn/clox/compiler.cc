@@ -62,6 +62,22 @@ struct Local {
   Local(const Token& arg_name, int arg_depth = 0) noexcept : name{arg_name}, depth{arg_depth} {}
 };
 
+struct Upvalue {
+  u8_t index;
+  bool is_local;
+
+  Upvalue(u8_t arg_index = 0, bool arg_is_local = false) noexcept
+    : index{arg_index}, is_local{arg_is_local} {
+  }
+
+  inline bool operator==(Upvalue r) const noexcept { return index == r.index && is_local == r.is_local; }
+  inline bool operator!=(Upvalue r) const noexcept { return !(*this == r); }
+
+  inline bool is_equal(u8_t arg_index, bool arg_is_local) const noexcept {
+    return index == arg_index && is_local == arg_is_local;
+  }
+};
+
 enum class FunctionType {
   TYPE_FUNCTION,
   TYPE_SCRIPT,
@@ -74,6 +90,7 @@ struct Compiler {
   ObjFunction* function{};
   FunctionType type{FunctionType::TYPE_SCRIPT};
   std::vector<Local> locals;
+  std::vector<Upvalue> upvalues;
   int scope_depth{};
 
   static constexpr sz_t kMaxLocalCount = UINT8_MAX;
@@ -102,6 +119,26 @@ struct Compiler {
         return i;
       }
     }
+    return -1;
+  }
+
+  inline int add_upvalue(u8_t index, bool is_local) noexcept {
+    int upvalue_count = function->upvalue_count();
+    for (int i = 0; i < upvalue_count; ++i) {
+      if (upvalues[i].is_equal(index, is_local))
+        return i;
+    }
+
+    upvalues.push_back({index, is_local});
+    return function->inc_upvalue_count();
+  }
+
+  inline int resolve_upvalue(const Token& name, const ErrorFn& error) noexcept {
+    if (enclosing == nullptr)
+      return -1;
+
+    if (int local = enclosing->resolve_local(name, error); local != -1)
+      return add_upvalue(as_type<u8_t>(local), true);
     return -1;
   }
 };
@@ -320,6 +357,10 @@ class Parser final : private UnCopyable {
     if (arg != -1) {
       get_op = OpCode::OP_GET_LOCAL;
       set_op = OpCode::OP_SET_LOCAL;
+    }
+    else if (arg = current_compiler_->resolve_upvalue(name, errfn); arg != -1) {
+      get_op = OpCode::OP_GET_UPVALUE;
+      set_op = OpCode::OP_SET_UPVALUE;
     }
     else {
       arg = identifier_constant(name);
