@@ -93,7 +93,9 @@ struct Compiler {
   std::vector<Upvalue> upvalues;
   int scope_depth{};
 
-  static constexpr sz_t kMaxLocalCount = UINT8_MAX;
+  static constexpr sz_t kUint8Count = UINT8_MAX + 1;
+  static constexpr sz_t kMaxLocalCount = kUint8Count;
+  static constexpr sz_t kMaxUpvalueCount = kUint8Count;
 
   inline bool is_local_count_max() noexcept { return locals.size() >= kMaxLocalCount; }
 
