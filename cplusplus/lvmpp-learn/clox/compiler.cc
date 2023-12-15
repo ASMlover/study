@@ -124,11 +124,16 @@ struct Compiler {
     return -1;
   }
 
-  inline int add_upvalue(u8_t index, bool is_local) noexcept {
+  inline int add_upvalue(u8_t index, bool is_local, const ErrorFn& error) noexcept {
     int upvalue_count = function->upvalue_count();
     for (int i = 0; i < upvalue_count; ++i) {
       if (upvalues[i].is_equal(index, is_local))
         return i;
+    }
+
+    if (upvalue_count >= kMaxUpvalueCount) {
+      error("Too many closure variables in function");
+      return 0;
     }
 
     upvalues.push_back({index, is_local});
@@ -140,7 +145,7 @@ struct Compiler {
       return -1;
 
     if (int local = enclosing->resolve_local(name, error); local != -1)
-      return add_upvalue(as_type<u8_t>(local), true);
+      return add_upvalue(as_type<u8_t>(local), true, error);
     return -1;
   }
 };
