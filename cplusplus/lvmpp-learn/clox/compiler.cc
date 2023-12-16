@@ -146,6 +146,9 @@ struct Compiler {
 
     if (int local = enclosing->resolve_local(name, error); local != -1)
       return add_upvalue(as_type<u8_t>(local), true, error);
+    if (int upvalue = enclosing->resolve_upvalue(name, error); upvalue != -1)
+      return add_upvalue(as_type<u8_t>(upvalue), false, error);
+
     return -1;
   }
 };
