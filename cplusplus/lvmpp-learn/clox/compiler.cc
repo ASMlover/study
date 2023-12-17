@@ -657,6 +657,12 @@ class Parser final : private UnCopyable {
 
     ObjFunction* function = end_compiler();
     emit_bytes(OpCode::OP_CLOSURE, current_chunk()->add_constant(function));
+
+    for (int i = 0; i < function->upvalue_count(); ++i) {
+      const auto& upvalue = compiler.upvalues[i];
+      emit_byte(upvalue.is_local ? 1 : 0);
+      emit_byte(upvalue.index);
+    }
   }
 
   void fun_declaration() noexcept {
