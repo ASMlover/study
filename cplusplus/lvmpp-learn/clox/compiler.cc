@@ -108,6 +108,21 @@ struct Compiler {
     function = ObjFunction::create();
   }
 
+  inline Compiler* get_enclosing() const noexcept { return enclosing; }
+  inline ObjFunction* get_function() const noexcept { return function; }
+  inline FunctionType get_function_type() const noexcept { return type; }
+  inline int get_scope_depth() const noexcept { return scope_depth; }
+  inline void set_scope_depth(int depth) noexcept { scope_depth = depth; }
+  inline int locals_count() const noexcept { return as_type<int>(locals.size()); }
+  inline Local& get_local(int i) noexcept { return locals[i]; }
+  inline const Local& get_local(int i) const noexcept { return locals[i]; }
+  inline Local& get_peek_local() noexcept { return locals.back(); }
+  inline const Local& get_peek_local() const noexcept { return locals.back(); }
+  inline void append_local(const Local& local) noexcept { locals.push_back(local); }
+  inline Upvalue& get_upvalue(int i) noexcept { return upvalues[i]; }
+  inline const Upvalue& get_upvalue(int i) const noexcept { return upvalues[i]; }
+  inline void append_upvalue(const Upvalue& upval) noexcept { upvalues.push_back(upval); }
+
   inline void append_default() noexcept { locals.push_back({Token::from_literal(""), 0}); }
   inline void append(const Token& name, int depth) noexcept { locals.push_back({name, depth}); }
 
