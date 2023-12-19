@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "chunk.hh"
+#include "object.hh"
 
 namespace clox {
 
@@ -99,7 +100,22 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
   case OpCode::OP_JUMP_IF_FALSE: JUMP(OP_JUMP_IF_FALSE, 1);
   case OpCode::OP_LOOP: JUMP(OP_LOOP, -1);
   case OpCode::OP_CALL: SIMPLE(OP_CALL);
-  case OpCode::OP_CLOSURE: COMPOUND2(OP_CLOSURE, true);
+  case OpCode::OP_CLOSURE:
+    {
+      offset++;
+      auto c = get_code(offset++);
+      std::fprintf(stdout, "%-16s %4d", "OP_CLOSURE", c);
+      std::cout << " `" << get_constant(c) << "`" << std::endl;
+
+      ObjFunction* function = get_constant(c).as_function();
+      for (int j = 0; j < function->upvalue_count(); ++j) {
+        int is_local = get_code(offset++);
+        int index = get_code(offset++);
+        std::fprintf(stdout, "%04d      |                     %s %d\n",
+            as_type<int>(offset - 2), is_local ? "local" : "upvalue", index);
+      }
+      return offset;
+    } break;
   case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
   default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
