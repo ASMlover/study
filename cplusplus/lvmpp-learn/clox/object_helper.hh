@@ -35,6 +35,7 @@ enum class ObjType : u8_t {
   OBJ_FUNCTION,
   OBJ_NATIVE,
   OBJ_STRING,
+  OBJ_UPVALUE,
 };
 
 class Obj;
@@ -42,5 +43,6 @@ class ObjString;
 class ObjFunction;
 class ObjNative;
 class ObjClosure;
+class ObjUpvalue;
 
 }
