@@ -138,4 +138,8 @@ public:
   static ObjClosure* create(ObjFunction* function);
 };
 
+class ObjUpvalue final : public Obj {
+  Value* location_{};
+};
+
 }
