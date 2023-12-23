@@ -140,6 +140,11 @@ public:
 
 class ObjUpvalue final : public Obj {
   Value* location_{};
+public:
+  ObjUpvalue(Value* slot) noexcept;
+  virtual ~ObjUpvalue();
+
+  static ObjUpvalue* create(Value* slot);
 };
 
 }
