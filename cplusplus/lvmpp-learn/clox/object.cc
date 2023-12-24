@@ -167,4 +167,18 @@ ObjClosure* ObjClosure::create(ObjFunction* function) {
 }
 // endregion <ObjClosure>
 
+// region <ObjUpvalue>
+ObjUpvalue::ObjUpvalue(Value* slot) noexcept
+  : Obj{ObjType::OBJ_UPVALUE}, location_{slot} {
+}
+
+ObjUpvalue::~ObjUpvalue() {
+}
+
+ObjUpvalue* ObjUpvalue::create(Value* slot) {
+  ObjUpvalue* o = make_object<ObjUpvalue>(slot);
+  return o;
+}
+// endregion <ObjUpvalue>
+
 }
