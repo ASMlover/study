@@ -175,6 +175,10 @@ ObjUpvalue::ObjUpvalue(Value* slot) noexcept
 ObjUpvalue::~ObjUpvalue() {
 }
 
+str_t ObjUpvalue::stringify() const {
+  return "<upvalue>";
+}
+
 ObjUpvalue* ObjUpvalue::create(Value* slot) {
   ObjUpvalue* o = make_object<ObjUpvalue>(slot);
   return o;
