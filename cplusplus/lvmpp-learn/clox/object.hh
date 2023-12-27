@@ -127,6 +127,8 @@ public:
 
 class ObjClosure final : public Obj {
   ObjFunction* function_{};
+  ObjUpvalue** upvalues_{};
+  int upvalue_count_{};
 public:
   ObjClosure(ObjFunction* function) noexcept;
   virtual ~ObjClosure();
