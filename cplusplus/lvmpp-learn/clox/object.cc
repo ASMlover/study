@@ -152,9 +152,17 @@ ObjNative* ObjNative::create(NativeFn&& function) {
 // region <ObjClosure>
 ObjClosure::ObjClosure(ObjFunction* function) noexcept
   : Obj{ObjType::OBJ_CLOSURE}, function_{function} {
+  if (int n = function->upvalue_count(); n > 0) {
+    upvalues_ = new ObjUpvalue*[n];
+    for (int i = 0; i < n; ++i)
+      upvalues_[i] = nullptr;
+    upvalue_count_ = n;
+  }
 }
 
 ObjClosure::~ObjClosure() {
+  if (upvalues_ != nullptr)
+    delete [] upvalues_;
 }
 
 str_t ObjClosure::stringify() const {
