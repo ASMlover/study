@@ -78,6 +78,8 @@ class VM final : private UnCopyable {
   bool call(ObjClosure* closure, int arg_count) noexcept;
   bool call_value(const Value& callee, int arg_count) noexcept;
 
+  ObjUpvalue* capture_upvalue(Value* local) noexcept;
+
   void runtime_error(const char* format, ...) noexcept;
   void define_native(const str_t& name, NativeFn&& function) noexcept;
 
