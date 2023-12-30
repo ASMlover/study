@@ -108,6 +108,11 @@ bool VM::call_value(const Value& callee, int arg_count) noexcept {
   return false;
 }
 
+ObjUpvalue* VM::capture_upvalue(Value* local) noexcept {
+  ObjUpvalue* created_upvalue = ObjUpvalue::create(local);
+  return created_upvalue;
+}
+
 void VM::runtime_error(const char* format, ...) noexcept {
   va_list args;
   va_start(args, format);
