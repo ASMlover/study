@@ -134,6 +134,7 @@ public:
   virtual ~ObjClosure();
 
   inline ObjFunction* function() const noexcept { return function_; }
+  inline int upvalue_count() const noexcept { return upvalue_count_; }
 
   virtual str_t stringify() const override;
 
