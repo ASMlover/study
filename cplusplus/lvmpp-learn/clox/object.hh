@@ -135,6 +135,8 @@ public:
 
   inline ObjFunction* function() const noexcept { return function_; }
   inline int upvalue_count() const noexcept { return upvalue_count_; }
+  inline ObjUpvalue* get_upvalue(int i) const noexcept { return upvalues_[i]; }
+  inline void set_upvalue(int i, ObjUpvalue* upvalue) noexcept { upvalues_[i] = upvalue; }
 
   virtual str_t stringify() const override;
 
