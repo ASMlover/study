@@ -330,6 +330,17 @@ InterpretResult VM::run() noexcept {
         ObjFunction* function = READ_CONSTANT().as_function();
         ObjClosure* closure = ObjClosure::create(function);
         push(closure);
+
+        for (int i = 0; i < closure->upvalue_count(); ++i) {
+          u8_t is_local = READ_BYTE();
+          u8_t index = READ_BYTE();
+          if (is_local) {
+            closure->set_upvalue(i, capture_upvalue(frame->slots + index));
+          }
+          else {
+            closure->set_upvalue(i, frame->closure->get_upvalue(index));
+          }
+        }
       } break;
     case OpCode::OP_RETURN:
       {
