@@ -149,6 +149,8 @@ public:
   ObjUpvalue(Value* slot) noexcept;
   virtual ~ObjUpvalue();
 
+  inline Value* location() const noexcept { return location_; }
+
   virtual str_t stringify() const override;
 
   static ObjUpvalue* create(Value* slot);
