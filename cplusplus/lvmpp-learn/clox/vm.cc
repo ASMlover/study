@@ -258,6 +258,11 @@ InterpretResult VM::run() noexcept {
           return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
       } break;
+    case OpCode::OP_GET_UPVALUE:
+      {
+        u8_t slot = READ_BYTE();
+        push(*frame->closure->get_upvalue(slot)->location());
+      } break;
     case OpCode::OP_EQUAL:
       {
         Value b = pop();
