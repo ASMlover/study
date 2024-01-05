@@ -150,6 +150,7 @@ public:
   virtual ~ObjUpvalue();
 
   inline Value* location() const noexcept { return location_; }
+  inline void set_location(const Value& location) noexcept { *location_ = location; }
 
   virtual str_t stringify() const override;
 
