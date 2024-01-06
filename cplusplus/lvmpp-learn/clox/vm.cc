@@ -263,6 +263,11 @@ InterpretResult VM::run() noexcept {
         u8_t slot = READ_BYTE();
         push(*frame->closure->get_upvalue(slot)->location());
       } break;
+    case OpCode::OP_SET_UPVALUE:
+      {
+        u8_t slot = READ_BYTE();
+        frame->closure->get_upvalue(slot)->set_location(peek(0));
+      } break;
     case OpCode::OP_EQUAL:
       {
         Value b = pop();
