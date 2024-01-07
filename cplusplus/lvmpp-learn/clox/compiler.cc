@@ -58,8 +58,11 @@ template <typename N> inline Precedence operator+(Precedence a, N b) noexcept {
 struct Local {
   Token name;
   int depth;
+  bool is_captured{};
 
-  Local(const Token& arg_name, int arg_depth = 0) noexcept : name{arg_name}, depth{arg_depth} {}
+  Local(const Token& arg_name, int arg_depth = 0, bool arg_is_captured = false) noexcept
+    : name{arg_name}, depth{arg_depth}, is_captured{arg_is_captured} {
+  }
 };
 
 struct Upvalue {
@@ -123,8 +126,8 @@ struct Compiler {
   inline const Upvalue& get_upvalue(int i) const noexcept { return upvalues[i]; }
   inline void append_upvalue(const Upvalue& upval) noexcept { upvalues.push_back(upval); }
 
-  inline void append_default() noexcept { locals.push_back({Token::from_literal(""), 0}); }
-  inline void append(const Token& name, int depth) noexcept { locals.push_back({name, depth}); }
+  inline void append_default() noexcept { locals.push_back({Token::from_literal(""), 0, false}); }
+  inline void append(const Token& name, int depth, bool is_captured) noexcept { locals.push_back({name, depth, is_captured}); }
 
   inline int resolve_local(const Token& name, const ErrorFn& error) const noexcept {
     for (int i = as_type<int>(locals.size()) - 1; i >= 0; --i) {
@@ -578,7 +581,7 @@ class Parser final : private UnCopyable {
       error("too many local variables in function");
       return;
     }
-    current_compiler_->append(name, -1);
+    current_compiler_->append(name, -1, false);
   }
 
   inline void declare_variable() noexcept {
