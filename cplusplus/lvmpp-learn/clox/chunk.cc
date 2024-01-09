@@ -118,6 +118,7 @@ sz_t Chunk::dis_code(sz_t offset) noexcept {
       }
       return offset;
     } break;
+  case OpCode::OP_CLOSE_UPVALUE: SIMPLE(OP_CLOSE_UPVALUE);
   case OpCode::OP_RETURN: SIMPLE(OP_RETURN);
   default: std::cerr << "<Invalid `OpCode`>" << std::endl;
   }
