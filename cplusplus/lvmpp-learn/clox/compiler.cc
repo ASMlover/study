@@ -63,6 +63,8 @@ struct Local {
   Local(const Token& arg_name, int arg_depth = 0, bool arg_is_captured = false) noexcept
     : name{arg_name}, depth{arg_depth}, is_captured{arg_is_captured} {
   }
+
+  inline void set_captured(bool arg_is_captured = false) noexcept { is_captured =  arg_is_captured; }
 };
 
 struct Upvalue {
@@ -162,8 +164,10 @@ struct Compiler {
     if (enclosing == nullptr)
       return -1;
 
-    if (int local = enclosing->resolve_local(name, error); local != -1)
+    if (int local = enclosing->resolve_local(name, error); local != -1) {
+      enclosing->locals[local].set_captured(true);
       return add_upvalue(as_type<u8_t>(local), true, error);
+    }
     if (int upvalue = enclosing->resolve_upvalue(name, error); upvalue != -1)
       return add_upvalue(as_type<u8_t>(upvalue), false, error);
 
