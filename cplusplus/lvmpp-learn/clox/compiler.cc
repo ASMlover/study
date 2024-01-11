@@ -327,7 +327,12 @@ class Parser final : private UnCopyable {
 
     while (current_compiler_->locals.size() > 0 &&
         current_compiler_->locals.back().depth > current_compiler_->scope_depth) {
-      emit_byte(OpCode::OP_POP);
+      if (current_compiler_->locals.back().is_captured) {
+        emit_byte(OpCode::OP_CLOSE_UPVALUE);
+      }
+      else {
+        emit_byte(OpCode::OP_POP);
+      }
       current_compiler_->locals.pop_back();
     }
   }
