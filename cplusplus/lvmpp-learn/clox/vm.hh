@@ -65,6 +65,7 @@ class VM final : private UnCopyable {
 
   std::unordered_map<str_t, Value> globals_;
   std::unordered_map<u32_t, ObjString*> strings_;
+  ObjUpvalue* open_upvalues_{};
   std::list<Obj*> objects_;
 
   inline void reset_stack() noexcept { stack_top_ = stack_; frame_count_ = 0; }
