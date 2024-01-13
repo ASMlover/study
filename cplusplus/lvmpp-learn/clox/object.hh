@@ -145,6 +145,7 @@ public:
 
 class ObjUpvalue final : public Obj {
   Value* location_{};
+  ObjUpvalue* next_{};
 public:
   ObjUpvalue(Value* slot) noexcept;
   virtual ~ObjUpvalue();
