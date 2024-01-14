@@ -152,6 +152,7 @@ public:
 
   inline Value* location() const noexcept { return location_; }
   inline void set_location(const Value& location) noexcept { *location_ = location; }
+  inline ObjUpvalue* next() const noexcept { return next_; }
 
   virtual str_t stringify() const override;
 
