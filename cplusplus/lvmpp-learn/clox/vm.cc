@@ -109,6 +109,16 @@ bool VM::call_value(const Value& callee, int arg_count) noexcept {
 }
 
 ObjUpvalue* VM::capture_upvalue(Value* local) noexcept {
+  ObjUpvalue* prev_upvalue = nullptr;
+  ObjUpvalue* upvalue = open_upvalues_;
+  while (upvalue != nullptr && upvalue->location() > local) {
+    prev_upvalue = upvalue;
+    upvalue = upvalue->next();
+  }
+
+  if (upvalue != nullptr && upvalue->location() == local)
+    return upvalue;
+
   ObjUpvalue* created_upvalue = ObjUpvalue::create(local);
   return created_upvalue;
 }
