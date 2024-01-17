@@ -50,7 +50,14 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS_${BUILD_TYPE}}")
 
-file(GLOB CLOX_SOURCES main.c scanner.c scanner_test.c)
+file(GLOB CLOX_SOURCES
+	main.c
+	scanner.c
+	scanner_test.c
+	chunk.c
+	value.c
+	memory.c
+)
 message(STATUS "`${PROJECT_NAME}` CLOX_SOURCES: ${CLOX_SOURCES}")
 
 add_executable(${PROJECT_NAME} ${CLOX_SOURCES})

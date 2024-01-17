@@ -1,2 +1,14 @@
+// Just for clox language testing ...
 var a = 34;
 print(a);
+
+// class declaration of Demo
+class Demo {
+	ctor() {
+		print("Demo::ctor");
+	}
+
+	show() {
+		print("Demo::show");
+	}
+}
