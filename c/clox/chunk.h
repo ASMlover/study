@@ -97,4 +97,7 @@ void freeChunk(Chunk* chunk);
 void writeChunk(Chunk* chunk, uint8_t byte, int lineno);
 int addConstant(Chunk* chunk, Value value);
 
+void disassembleChunk(Chunk* chunk, const char* name);
+int disassembleInstruction(Chunk* chunk, int offset);
+
 #endif

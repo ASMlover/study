@@ -30,6 +30,9 @@
 #include "memory.h"
 #include "value.h"
 
+bool valuesEqual(Value a, Value b) { return false; }
+void printValue(Value value) {}
+
 void initValueArray(ValueArray* array) {
 	array->count = 0;
 	array->capacity = 0 ;
