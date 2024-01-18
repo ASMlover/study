@@ -120,6 +120,13 @@ ObjUpvalue* VM::capture_upvalue(Value* local) noexcept {
     return upvalue;
 
   ObjUpvalue* created_upvalue = ObjUpvalue::create(local);
+  created_upvalue->set_next(upvalue);
+
+  if (prev_upvalue == nullptr)
+    open_upvalues_ = created_upvalue;
+  else
+    prev_upvalue->set_next(created_upvalue);
+
   return created_upvalue;
 }
 
