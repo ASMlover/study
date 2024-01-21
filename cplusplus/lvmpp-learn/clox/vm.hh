@@ -68,7 +68,12 @@ class VM final : private UnCopyable {
   ObjUpvalue* open_upvalues_{};
   std::list<Obj*> objects_;
 
-  inline void reset_stack() noexcept { stack_top_ = stack_; frame_count_ = 0; }
+  inline void reset_stack() noexcept {
+    stack_top_ = stack_;
+    frame_count_ = 0;
+    open_upvalues_ = nullptr;
+  }
+
   inline void push(const Value& value) noexcept { *stack_top_++ = value; }
   inline Value pop() noexcept { return *(--stack_top_); }
 
@@ -80,6 +85,7 @@ class VM final : private UnCopyable {
   bool call_value(const Value& callee, int arg_count) noexcept;
 
   ObjUpvalue* capture_upvalue(Value* local) noexcept;
+  void close_upvalues(Value* last) noexcept;
 
   void runtime_error(const char* format, ...) noexcept;
   void define_native(const str_t& name, NativeFn&& function) noexcept;
