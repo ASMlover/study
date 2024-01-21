@@ -145,6 +145,7 @@ public:
 
 class ObjUpvalue final : public Obj {
   Value* location_{};
+  Value closed_{};
   ObjUpvalue* next_{};
 public:
   ObjUpvalue(Value* slot) noexcept;
@@ -152,6 +153,11 @@ public:
 
   inline Value* location() const noexcept { return location_; }
   inline void set_location(const Value& location) noexcept { *location_ = location; }
+  inline const Value& closed() const noexcept { return closed_; }
+  inline Value* closed_asptr() const noexcept { return const_cast<Value*>(&closed_); }
+  inline const Value& closed_ref() const noexcept { return closed_; }
+  inline void set_closed(const Value& closed) noexcept { closed_ = closed; }
+  inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
   inline ObjUpvalue* next() const noexcept { return next_; }
   inline void set_next(ObjUpvalue* upvalue) noexcept { next_ = upvalue; }
 
