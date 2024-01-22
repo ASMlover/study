@@ -130,6 +130,15 @@ ObjUpvalue* VM::capture_upvalue(Value* local) noexcept {
   return created_upvalue;
 }
 
+void VM::close_upvalues(Value* last) noexcept {
+  while (open_upvalues_ != nullptr && open_upvalues_->location() >= last) {
+    ObjUpvalue* upvalue = open_upvalues_;
+    upvalue->set_closed(*upvalue->location());
+    upvalue->set_location(&upvalue->closed());
+    open_upvalues_ = upvalue->next();
+  }
+}
+
 void VM::runtime_error(const char* format, ...) noexcept {
   va_list args;
   va_start(args, format);
@@ -369,9 +378,15 @@ InterpretResult VM::run() noexcept {
           }
         }
       } break;
+    case OpCode::OP_CLOSE_UPVALUE:
+      {
+        close_upvalues(stack_top_ - 1);
+        pop();
+      } break;
     case OpCode::OP_RETURN:
       {
         Value result = pop();
+        close_upvalues(frame->slots);
         --frame_count_;
         if (frame_count_ == 0) {
           pop();
