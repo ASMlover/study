@@ -55,6 +55,7 @@ struct CallFrame {
 class VM final : private UnCopyable {
   static constexpr sz_t kFramesMax = 64;
   static constexpr sz_t kStackMax = kFramesMax * 256;
+  static constexpr sz_t kGCThreshold = 1 << 3;
 
   const u8_t* ip_;
   Value stack_[kStackMax];
@@ -67,6 +68,7 @@ class VM final : private UnCopyable {
   std::unordered_map<u32_t, ObjString*> strings_;
   ObjUpvalue* open_upvalues_{};
   std::list<Obj*> objects_;
+  sz_t gc_threshold_{kGCThreshold};
 
   inline void reset_stack() noexcept {
     stack_top_ = stack_;
@@ -100,6 +102,7 @@ public:
   InterpretResult interpret(const str_t& source) noexcept;
 
   void append_object(Obj* o) noexcept;
+  void collect_garbage() noexcept;
   void free_objects() noexcept;
 
   inline void set_interned(u32_t hash, ObjString* str) noexcept {
