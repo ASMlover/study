@@ -57,6 +57,7 @@ file(GLOB CLOX_SOURCES
 	chunk.c
 	value.c
 	memory.c
+	object.c
 )
 message(STATUS "`${PROJECT_NAME}` CLOX_SOURCES: ${CLOX_SOURCES}")
 

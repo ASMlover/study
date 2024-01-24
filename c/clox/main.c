@@ -26,12 +26,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include "common.h"
+
 extern void scannerTest();
 
 int main(int argc, char* argv[]) {
-	(void)argc, (void)argv;
+	CLOX_UNUSED(argc), CLOX_UNUSED(argv);
 
 	scannerTest();
-
 	return 0;
 }

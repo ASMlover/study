@@ -43,16 +43,16 @@ void scannerTest() {
 	size_t fileSize = ftell(fp);
 	rewind(fp);
 
-	char* sourceBytes = (char*)malloc(fileSize + 1);
-	if (sourceBytes == NULL)
+	char* sourceCode = (char*)malloc(fileSize + 1);
+	if (sourceCode == NULL)
 		goto cleanUp;
 
-	size_t bytesRead = fread(sourceBytes, sizeof(char), fileSize, fp);
+	size_t bytesRead = fread(sourceCode, sizeof(char), fileSize, fp);
 	if (bytesRead < fileSize)
 		goto cleanUp;
 
-	sourceBytes[fileSize] = 0;
-	initScanner(sourceBytes);
+	sourceCode[fileSize] = 0;
+	initScanner(sourceCode);
 	do {
 		Token token = scanToken();
 		if (token.type == TOKEN_EOF)
@@ -62,8 +62,8 @@ void scannerTest() {
 				tokenTypeAsString(token.type), token.length, token.start, token.lineno);
 	} while (true);
 cleanUp:
-	if (sourceBytes != NULL)
-		free(sourceBytes);
+	if (sourceCode != NULL)
+		free(sourceCode);
 	if (fp != NULL)
 		fclose(fp);
 }

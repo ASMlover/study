@@ -42,7 +42,7 @@ Scanner scanner;
 
 static const char* kNames[] = {
 #undef TOKENDEF
-#define TOKENDEF(k, s) s,
+#define TOKENDEF(k, s) #k,
 #include "token_defs.h"
 #undef TOKENDEF
 	NULL,
@@ -54,9 +54,9 @@ const char* tokenTypeAsString(TokenType type) {
 	return "<UNKNOWN>";
 }
 
-void initScanner(const char* sourceBytes) {
-	scanner.start = sourceBytes;
-	scanner.current = sourceBytes;
+void initScanner(const char* sourceCode) {
+	scanner.start = sourceCode;
+	scanner.current = sourceCode;
 	scanner.lineno = 1;
 }
 
@@ -77,8 +77,7 @@ static bool isAtEnd() {
 }
 
 static char advance() {
-	++scanner.current;
-	return scanner.current[-1];
+	return *scanner.current++;
 }
 
 static char peek() {

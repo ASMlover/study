@@ -29,6 +29,10 @@
 #ifndef CLOX_COMMON_H
 #define CLOX_COMMON_H
 
+#if !defined(CLOX_UNUSED)
+#	define CLOX_UNUSED(x) ((void)x)
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
