@@ -191,7 +191,16 @@ InterpretResult VM::interpret(const str_t& source) noexcept {
 }
 
 void VM::append_object(Obj* o) noexcept {
+  if (objects_.size() > gc_threshold_) {
+#if defined(_CLOX_DEBUG_STRESS_GC)
+    collect_garbage();
+#endif
+  }
+
   objects_.push_back(o);
+}
+
+void VM::collect_garbage() noexcept {
 }
 
 void VM::free_objects() noexcept {
