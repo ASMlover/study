@@ -171,6 +171,10 @@ void VM::define_native(const str_t& name, NativeFn&& function) noexcept {
 }
 
 void VM::free_object(Obj* o) noexcept {
+#if defined(_CLOX_DEBUG_LOG_GC)
+  std::cout << o << " free type " << o->type() << std::endl;
+#endif
+
   delete o;
 }
 
@@ -201,6 +205,13 @@ void VM::append_object(Obj* o) noexcept {
 }
 
 void VM::collect_garbage() noexcept {
+#if defined(_CLOX_DEBUG_LOG_GC)
+  std::cout << "----- gc begin -----" << std::endl;
+#endif
+
+#if defined(_CLOX_DEBUG_LOG_GC)
+  std::cout << "----- gc end -----" << std::endl;
+#endif
 }
 
 void VM::free_objects() noexcept {
