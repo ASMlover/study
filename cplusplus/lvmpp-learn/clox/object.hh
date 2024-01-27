@@ -36,6 +36,7 @@ class Chunk;
 
 class Obj : private UnCopyable {
   ObjType type_;
+  bool is_marked_{};
 
 public:
   Obj(ObjType type) noexcept : type_{type} {}
@@ -43,6 +44,8 @@ public:
 
   inline ObjType type() const noexcept { return type_; }
   inline bool is_type(ObjType type) const noexcept { return type_ == type; }
+  inline bool is_marked() const noexcept { return is_marked_; }
+  inline void set_marked(bool is_marked = true) noexcept { is_marked_ = is_marked; }
 
   virtual bool is_equal(Obj* x) const { return this == x; }
   virtual str_t stringify() const { return "<object>"; }
