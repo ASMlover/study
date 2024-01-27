@@ -92,6 +92,10 @@ class VM final : private UnCopyable {
   void runtime_error(const char* format, ...) noexcept;
   void define_native(const str_t& name, NativeFn&& function) noexcept;
 
+  void mark_roots() noexcept;
+  void mark_object(Obj* object) noexcept;
+  void mark_value(const Value& value) noexcept;
+
   void free_object(Obj* o) noexcept;
 
   InterpretResult run() noexcept;
