@@ -170,6 +170,19 @@ void VM::define_native(const str_t& name, NativeFn&& function) noexcept {
   pop();
 }
 
+void VM::mark_roots() noexcept {
+}
+
+void VM::mark_object(Obj* object) noexcept {
+  if (object == nullptr)
+    return;
+
+  object->set_marked(true);
+}
+
+void VM::mark_value(const Value& value) noexcept {
+}
+
 void VM::free_object(Obj* o) noexcept {
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << o << " free type " << o->type() << std::endl;
