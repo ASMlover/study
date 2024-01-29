@@ -181,6 +181,8 @@ void VM::mark_object(Obj* object) noexcept {
 }
 
 void VM::mark_value(const Value& value) noexcept {
+  if (value.is_obj())
+    mark_object(value.as_obj());
 }
 
 void VM::free_object(Obj* o) noexcept {
