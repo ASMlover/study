@@ -94,7 +94,7 @@ class VM final : private UnCopyable {
 
   void mark_roots() noexcept;
   void mark_object(Obj* object) noexcept;
-  void mark_value(const Value& value) noexcept;
+  void mark_value(Value& value) noexcept;
 
   void free_object(Obj* o) noexcept;
 
