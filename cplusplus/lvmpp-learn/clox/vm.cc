@@ -171,16 +171,25 @@ void VM::define_native(const str_t& name, NativeFn&& function) noexcept {
 }
 
 void VM::mark_roots() noexcept {
+  for (Value* slot = stack_; slot < stack_top_; ++slot)
+    mark_value(*slot);
+
+  for (auto it : globals_)
+    mark_value(it.second);
 }
 
 void VM::mark_object(Obj* object) noexcept {
   if (object == nullptr)
     return;
 
+#if defined(_CLOX_DEBUG_LOG_GC)
+  std::cout << (void*)object << " mark " << object->stringify() << std::endl;
+#endif
+
   object->set_marked(true);
 }
 
-void VM::mark_value(const Value& value) noexcept {
+void VM::mark_value(Value& value) noexcept {
   if (value.is_obj())
     mark_object(value.as_obj());
 }
