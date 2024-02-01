@@ -174,8 +174,16 @@ void VM::mark_roots() noexcept {
   for (Value* slot = stack_; slot < stack_top_; ++slot)
     mark_value(*slot);
 
+  for (int i = 0; i < frame_count_; ++i)
+    mark_object(frames_[i].closure);
+
+  for (ObjUpvalue* upvalue = open_upvalues_; upvalue != nullptr; upvalue = upvalue->next())
+    mark_object(upvalue);
+
   for (auto it : globals_)
     mark_value(it.second);
+
+  // TODO: mark compiler roots
 }
 
 void VM::mark_object(Obj* object) noexcept {
