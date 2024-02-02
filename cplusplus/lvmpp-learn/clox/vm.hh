@@ -52,11 +52,14 @@ struct CallFrame {
   }
 };
 
+class GlobalCompiler;
+
 class VM final : private UnCopyable {
   static constexpr sz_t kFramesMax = 64;
   static constexpr sz_t kStackMax = kFramesMax * 256;
   static constexpr sz_t kGCThreshold = 1 << 3;
 
+  GlobalCompiler* gcompiler_{};
   const u8_t* ip_;
   Value stack_[kStackMax];
   Value* stack_top_;
@@ -93,9 +96,6 @@ class VM final : private UnCopyable {
   void define_native(const str_t& name, NativeFn&& function) noexcept;
 
   void mark_roots() noexcept;
-  void mark_object(Obj* object) noexcept;
-  void mark_value(Value& value) noexcept;
-
   void free_object(Obj* o) noexcept;
 
   InterpretResult run() noexcept;
@@ -107,6 +107,8 @@ public:
 
   void append_object(Obj* o) noexcept;
   void collect_garbage() noexcept;
+  void mark_object(Obj* object) noexcept;
+  void mark_value(Value& value) noexcept;
   void free_objects() noexcept;
 
   inline void set_interned(u32_t hash, ObjString* str) noexcept {
