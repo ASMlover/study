@@ -39,6 +39,7 @@ class GlobalCompiler final : UnCopyable {
   Parser* parser_{};
 public:
   ObjFunction* compile(VM& vm, const str_t& source) noexcept;
+  void mark_compiler_roots() noexcept;
 };
 
 }
