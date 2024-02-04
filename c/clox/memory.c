@@ -28,10 +28,19 @@
  */
 #include <stdlib.h>
 #include "memory.h"
+#include "vm.h"
+
+#define GC_HEAP_GROW_FACTOR (2)
 
 void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
+	vm.bytesAllocated += newSize - oldSize;
 	if (newSize > oldSize) {
-		// TODO: collect
+#if defined(DEBUG_STRESS_GC)
+		collectGarbage();
+#endif
+
+		if (vm.bytesAllocated >= vm.nextGC)
+			collectGarbage();
 	}
 
 	if (pointer != NULL && newSize <= 0) {
@@ -44,3 +53,29 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 		exit(1);
 	return result;
 }
+
+void markObject(Obj* object) {
+	if (object == NULL || object->isMarked)
+		return;
+
+#if defined(DEBUG_LOG_GC)
+	fprintf(stdout, "%p mark ", (void*)object);
+	printValue(OBJ_VAL(object));
+	fprintf(stdout, "\n");
+#endif
+
+	object->isMarked = true;
+	if (vm.grayCapacity < vm.grayCount + 1) {
+		vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
+		vm.grayStack = (Obj**)realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
+
+		if (vm.grayStack == NULL)
+			exit(1);
+	}
+	vm.grayStack[vm.grayCount++] = object;
+}
+
+// TODO:
+void markValue(Value value) {}
+void collectGarbage() {}
+void freeObjects() {}
