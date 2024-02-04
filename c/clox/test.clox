@@ -9,6 +9,6 @@ class Demo {
 	}
 
 	show() {
-		print("Demo::show");
+		print("Demo::show - Hello, world!");
 	}
 }

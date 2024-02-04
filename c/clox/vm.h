@@ -26,43 +26,57 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#include <stdio.h>
-#include "memory.h"
+#ifndef CLOX_VM_H
+#define CLOX_VM_H
+
 #include "object.h"
+#include "table.h"
 #include "value.h"
 
-bool valuesEqual(Value a, Value b) {
-	if (a.type != b.type)
-		return false;
-	switch (a.type) {
-	case VAL_BOOL: return AS_BOOL(a) == AS_BOOL(b);
-	case VAL_NIL: return true;
-	case VAL_NUMBER: return AS_NUMBER(a) == AS_NUMBER(b);
-	case VAL_OBJ: return AS_OBJ(a) == AS_OBJ(b);
-	default: break;
-	}
-	return false;
-}
+#define FRAMES_MAX (64)
+#define STACK_MAX  (FRAMES_MAX * UINT8_COUNT)
 
-void printValue(Value value) {
-	switch (value.type) {
-	case VAL_BOOL: fprintf(stdout, AS_BOOL(value) ? "true" : "false"); break;
-	case VAL_NIL: fprintf(stdout, "nil"); break;
-	case VAL_NUMBER: fprintf(stdout, "%g", AS_NUMBER(value)); break;
-	case VAL_OBJ: printObject(value); break;
-	}
-}
+typedef struct {
+	ObjClosure* closure;
+	uint8_t* ip;
+	Value* slots;
+} CallFrame;
 
-void initValueArray(ValueArray* array) {
-	array->count = 0;
-	array->capacity = 0 ;
-	array->values = NULL;
-}
+typedef struct {
+	CallFrame frames[FRAMES_MAX];
+	int frameCount;
 
-void freeValueArray(ValueArray* array) {
-	FREE_ARRAY(Value, array->values, array->capacity);
-	initValueArray(array);
-}
+	Value stack[STACK_MAX];
+	Value* stackTop;
 
-void writeValueArray(ValueArray* array, Value value) {
-}
+	Table globals;
+	Table strings;
+
+	ObjString* initString;
+	ObjUpvalue* openUpvalues;
+
+	size_t bytesAllocated;
+	size_t nextGC;
+
+	Obj* objects;
+	int grayCount;
+	int grayCapacity;
+	Obj** grayStack;
+} VM;
+
+typedef enum {
+	INTERPRET_OK,
+	INTERPRET_COMPILE_ERROR,
+	INTERPRET_RUNTIME_ERROR,
+} InterpretResult;
+
+extern VM vm;
+
+void initVM();
+void freeVM();
+
+InterpretResult interpret(const char* sourceCode);
+void push(Value value);
+Value pop();
+
+#endif
