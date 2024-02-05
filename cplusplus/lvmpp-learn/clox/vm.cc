@@ -54,6 +54,7 @@ VM& get_vm() noexcept {
 }
 
 VM::VM() noexcept {
+  gcompiler_ = new GlobalCompiler();
   reset_stack();
 
   define_native("time", [](int arg_count, Value* args) -> Value {
@@ -67,6 +68,7 @@ VM::VM() noexcept {
 }
 
 VM::~VM() noexcept {
+  delete gcompiler_;
   globals_.clear();
 }
 
@@ -183,23 +185,7 @@ void VM::mark_roots() noexcept {
   for (auto it : globals_)
     mark_value(it.second);
 
-  // TODO: mark compiler roots
-}
-
-void VM::mark_object(Obj* object) noexcept {
-  if (object == nullptr)
-    return;
-
-#if defined(_CLOX_DEBUG_LOG_GC)
-  std::cout << (void*)object << " mark " << object->stringify() << std::endl;
-#endif
-
-  object->set_marked(true);
-}
-
-void VM::mark_value(Value& value) noexcept {
-  if (value.is_obj())
-    mark_object(value.as_obj());
+  gcompiler_->mark_compiler_roots();
 }
 
 void VM::free_object(Obj* o) noexcept {
@@ -211,9 +197,7 @@ void VM::free_object(Obj* o) noexcept {
 }
 
 InterpretResult VM::interpret(const str_t& source) noexcept {
-  GlobalCompiler compiler;
-
-  ObjFunction* function = compiler.compile(*this, source);
+  ObjFunction* function = gcompiler_->compile(*this, source);
   if (function == nullptr)
     return InterpretResult::INTERPRET_COMPILE_ERROR;
 
@@ -244,6 +228,22 @@ void VM::collect_garbage() noexcept {
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << "----- gc end -----" << std::endl;
 #endif
+}
+
+void VM::mark_object(Obj* object) noexcept {
+  if (object == nullptr)
+    return;
+
+#if defined(_CLOX_DEBUG_LOG_GC)
+  std::cout << (void*)object << " mark " << object->stringify() << std::endl;
+#endif
+
+  object->set_marked(true);
+}
+
+void VM::mark_value(Value& value) noexcept {
+  if (value.is_obj())
+    mark_object(value.as_obj());
 }
 
 void VM::free_objects() noexcept {
