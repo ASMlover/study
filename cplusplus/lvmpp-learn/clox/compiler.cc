@@ -895,6 +895,14 @@ public:
     ObjFunction* function = end_compiler();
     return had_error_ ? nullptr : function;
   }
+
+  void mark_compiler_roots() noexcept {
+    Compiler* compiler = current_compiler_;
+    while (compiler != nullptr) {
+      vm_.mark_object(compiler->function);
+      compiler = compiler->enclosing;
+    }
+  }
 };
 
 ObjFunction* GlobalCompiler::compile(VM& vm, const str_t& source) noexcept {
@@ -908,6 +916,11 @@ ObjFunction* GlobalCompiler::compile(VM& vm, const str_t& source) noexcept {
     return function;
   }
   return nullptr;
+}
+
+void GlobalCompiler::mark_compiler_roots() noexcept {
+  if (parser_ != nullptr)
+    parser_->mark_compiler_roots();
 }
 
 }
