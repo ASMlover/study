@@ -118,6 +118,10 @@ template <typename N> inline str_t as_string(N n) noexcept {
   return std::to_string(n);
 }
 
+template <typename N> inline N grow_capacity(N capacity) noexcept {
+  return (capacity < 8 ? 8 : capacity * 2);
+}
+
 inline str_t as_string(double d) noexcept {
   ss_t ss;
   ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
