@@ -72,9 +72,7 @@ class VM final : private UnCopyable {
   ObjUpvalue* open_upvalues_{};
   std::list<Obj*> objects_;
   sz_t gc_threshold_{kGCThreshold};
-  sz_t gray_count_{};
-  sz_t gray_capacity_{};
-  Obj** gray_stack_{};
+  std::vector<Obj*> gray_stack_;
 
   inline void reset_stack() noexcept {
     stack_top_ = stack_;
