@@ -239,6 +239,7 @@ void VM::mark_object(Obj* object) noexcept {
 #endif
 
   object->set_marked(true);
+  gray_stack_.push_back(object);
 }
 
 void VM::mark_value(Value& value) noexcept {
