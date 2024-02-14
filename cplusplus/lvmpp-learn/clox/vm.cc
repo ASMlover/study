@@ -188,6 +188,9 @@ void VM::mark_roots() noexcept {
   gcompiler_->mark_compiler_roots();
 }
 
+void VM::trace_references() noexcept {
+}
+
 void VM::free_object(Obj* o) noexcept {
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << o << " free type " << o->type() << std::endl;
@@ -224,6 +227,8 @@ void VM::collect_garbage() noexcept {
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << "----- gc begin -----" << std::endl;
 #endif
+
+  mark_roots();
 
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << "----- gc end -----" << std::endl;
