@@ -98,6 +98,7 @@ class VM final : private UnCopyable {
 
   void mark_roots() noexcept;
   void trace_references() noexcept;
+  void blacken_object(Obj* object) noexcept;
   void free_object(Obj* o) noexcept;
 
   InterpretResult run() noexcept;
