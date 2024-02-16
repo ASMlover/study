@@ -191,6 +191,14 @@ void VM::mark_roots() noexcept {
 void VM::trace_references() noexcept {
 }
 
+void VM::blacken_object(Obj* object) noexcept {
+  switch (object->type()) {
+  case ObjType::OBJ_NATIVE:
+  case ObjType::OBJ_STRING:
+    break;
+  }
+}
+
 void VM::free_object(Obj* o) noexcept {
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << o << " free type " << o->type() << std::endl;
