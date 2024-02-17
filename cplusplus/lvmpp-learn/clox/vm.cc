@@ -189,6 +189,12 @@ void VM::mark_roots() noexcept {
 }
 
 void VM::trace_references() noexcept {
+  while (!gray_stack_.empty()) {
+    Obj* object = gray_stack_.back();
+    gray_stack_.pop_back();
+
+    blacken_object(object);
+  }
 }
 
 void VM::blacken_object(Obj* object) noexcept {
