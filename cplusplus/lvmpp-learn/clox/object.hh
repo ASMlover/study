@@ -55,6 +55,7 @@ public:
   ObjFunction* as_function() noexcept;
   ObjNative* as_native() noexcept;
   ObjClosure* as_closure() noexcept;
+  ObjUpvalue* as_upvalue() noexcept;
 };
 
 template <typename T, typename U>
@@ -156,8 +157,10 @@ public:
 
   inline Value* location() const noexcept { return location_; }
   inline void set_location(const Value& location) noexcept { *location_ = location; }
+  inline Value& closed() noexcept { return closed_; }
   inline const Value& closed() const noexcept { return closed_; }
   inline Value* closed_asptr() const noexcept { return const_cast<Value*>(&closed_); }
+  inline Value& closed_ref() noexcept { return closed_; }
   inline const Value& closed_ref() const noexcept { return closed_; }
   inline void set_closed(const Value& closed) noexcept { closed_ = closed; }
   inline void set_closed(Value* closed) noexcept { closed_ = *closed; }
