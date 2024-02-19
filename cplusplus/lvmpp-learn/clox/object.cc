@@ -56,6 +56,10 @@ ObjNative* Obj::as_native() noexcept {
 ObjClosure* Obj::as_closure() noexcept {
   return as_down<ObjClosure>(this);
 }
+
+ObjUpvalue* Obj::as_upvalue() noexcept {
+  return as_down<ObjUpvalue>(this);
+}
 // endregion <Obj>
 
 // region <ObjString>
