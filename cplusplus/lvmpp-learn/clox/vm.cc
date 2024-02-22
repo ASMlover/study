@@ -200,6 +200,7 @@ void VM::trace_references() noexcept {
 void VM::blacken_object(Obj* object) noexcept {
   switch (object->type()) {
   case ObjType::OBJ_NATIVE:
+    mark_value(object->as_upvalue()->closed()); break;
   case ObjType::OBJ_STRING:
     break;
   }
