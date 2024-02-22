@@ -53,6 +53,10 @@ ObjNative* Value::as_native() const noexcept {
 ObjClosure* Value::as_closure() const noexcept {
   return as_.obj->as_closure();
 }
+
+ObjUpvalue* Value::as_upvalue() const noexcept {
+  return as_.obj->as_upvalue();
+}
 // endregion - object dynamic typing
 
 bool Value::is_equal(const Value& x) const noexcept {
