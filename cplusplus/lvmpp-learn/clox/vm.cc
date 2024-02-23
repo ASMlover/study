@@ -199,6 +199,14 @@ void VM::trace_references() noexcept {
 
 void VM::blacken_object(Obj* object) noexcept {
   switch (object->type()) {
+  case ObjType::OBJ_FUNCTION:
+    {
+      ObjFunction* function = object->as_function();
+      mark_object(function->name());
+      function->chunk()->iter_constants([this](Value& value) {
+            mark_value(value);
+          });
+    } break;
   case ObjType::OBJ_NATIVE:
     mark_value(object->as_upvalue()->closed()); break;
   case ObjType::OBJ_STRING:
