@@ -49,6 +49,7 @@ public:
 
   virtual bool is_equal(Obj* x) const { return this == x; }
   virtual str_t stringify() const { return "<object>"; }
+  virtual void blacken() {}
 
   ObjString* as_string() noexcept;
   cstr_t as_cstring() noexcept;
@@ -111,6 +112,7 @@ public:
   inline void set_name(ObjString* name) noexcept { name_ = name; }
 
   virtual str_t stringify() const override;
+  virtual void blacken() override;
 
   static ObjFunction* create(ObjString* name = nullptr);
 };
