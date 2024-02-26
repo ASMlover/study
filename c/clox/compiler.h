@@ -26,30 +26,12 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef CLOX_SCANNER_H
-#define CLOX_SCANNER_H
+#ifndef CLOX_COMPILER_H
+#define CLOX_COMPILER_H
 
-typedef enum {
-#undef TOKENDEF
-#define TOKENDEF(k, s) k,
-#include "token_defs.h"
-#undef TOKENDEF
+#include "object.h"
 
-	TOKEN_COUNT
-} TokenType;
-
-const char* tokenTypeAsString(TokenType type);
-
-typedef struct {
-	TokenType type;
-	const char* start;
-	int length;
-	int lineno;
-} Token;
-
-void initScanner(const char* sourceCode);
-Token scanToken();
-
-bool identifiersEqual(Token* a, Token* b);
+ObjFunction* compile(const char* sourceCode);
+void markCompilerRoots();
 
 #endif

@@ -60,6 +60,7 @@ file(GLOB CLOX_SOURCES
 	object.c
 	table.c
 	vm.c
+	compiler.c
 )
 message(STATUS "`${PROJECT_NAME}` CLOX_SOURCES: ${CLOX_SOURCES}")
 
