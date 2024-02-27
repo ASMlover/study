@@ -129,6 +129,13 @@ str_t ObjFunction::stringify() const {
   return name_->stringify();
 }
 
+void ObjFunction::blacken() {
+  get_vm().mark_object(name_);
+  chunk_->iter_constants([](Value& value) {
+        get_vm().mark_value(value);
+      });
+}
+
 ObjFunction* ObjFunction::create(ObjString* name) {
   ObjFunction* o = make_object<ObjFunction>();
   return o;
