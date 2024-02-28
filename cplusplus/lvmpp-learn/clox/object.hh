@@ -127,7 +127,6 @@ public:
   inline const NativeFn& function() const noexcept { return function_; }
 
   virtual str_t stringify() const override;
-  virtual void blacken() override;
 
   static ObjNative* create(NativeFn&& function);
 };
@@ -171,6 +170,7 @@ public:
   inline void set_next(ObjUpvalue* upvalue) noexcept { next_ = upvalue; }
 
   virtual str_t stringify() const override;
+  virtual void blacken() override;
 
   static ObjUpvalue* create(Value* slot);
 };
