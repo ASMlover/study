@@ -198,6 +198,10 @@ str_t ObjUpvalue::stringify() const {
   return "<upvalue>";
 }
 
+void ObjUpvalue::blacken() {
+  get_vm().mark_value(closed_);
+}
+
 ObjUpvalue* ObjUpvalue::create(Value* slot) {
   ObjUpvalue* o = make_object<ObjUpvalue>(slot);
   return o;
