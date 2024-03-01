@@ -207,8 +207,9 @@ void VM::blacken_object(Obj* object) noexcept {
             mark_value(value);
           });
     } break;
-  case ObjType::OBJ_NATIVE:
+  case ObjType::OBJ_UPVALUE:
     mark_value(object->as_upvalue()->closed()); break;
+  case ObjType::OBJ_NATIVE:
   case ObjType::OBJ_STRING:
     break;
   }
