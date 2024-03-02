@@ -145,6 +145,7 @@ public:
   inline void set_upvalue(int i, ObjUpvalue* upvalue) noexcept { upvalues_[i] = upvalue; }
 
   virtual str_t stringify() const override;
+  virtual void blacken() override;
 
   static ObjClosure* create(ObjFunction* function);
 };
