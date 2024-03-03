@@ -180,6 +180,12 @@ str_t ObjClosure::stringify() const {
   return function_->stringify();
 }
 
+void ObjClosure::blacken() {
+  get_vm().mark_object(function_);
+  for (int i = 0; i < upvalue_count_; ++i)
+    get_vm().mark_object(upvalues_[i]);
+}
+
 ObjClosure* ObjClosure::create(ObjFunction* function) {
   ObjClosure* o = make_object<ObjClosure>(function);
   return o;
