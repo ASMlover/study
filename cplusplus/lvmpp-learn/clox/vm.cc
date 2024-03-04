@@ -262,6 +262,8 @@ void VM::collect_garbage() noexcept {
 void VM::mark_object(Obj* object) noexcept {
   if (object == nullptr)
     return;
+  if (object->is_marked())
+    return;
 
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << (void*)object << " mark " << object->stringify() << std::endl;
