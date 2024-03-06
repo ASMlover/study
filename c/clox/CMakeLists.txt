@@ -44,8 +44,15 @@ if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 	set(CMAKE_C_FLAGS_DEBUG "-g -ggdb -O0")
 	set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3")
 else()
-	message(FATAL_ERROR "`${PROJECT_NAME}` not support this compiler !!!")
-	return()
+	add_definitions(
+		/DUNICODE
+		/D_UNICODE
+		/D_CRT_SECURE_NO_WARNINGS
+		/D_CRT_NONSTDC_NO_WARNINGS
+	)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3 /GF /GS /Gs /Zi")
+	set(CMAKE_C_FLAGS_DEBUG "/D_DEBUG /MDd /Od")
+	set(CMAKE_C_FLAGS_RELEASE "/DNDEBUG /MD /Ox")
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS_${BUILD_TYPE}}")
