@@ -257,3 +257,10 @@ bool identifiersEqual(Token* a, Token* b) {
 		return false;
 	return memcmp(a->start, b->start, a->length) == 0;
 }
+
+Token syntheticToken(const char* text) {
+	Token token;
+	token.start = text;
+	token.length = (int)strlen(text);
+	return token;
+}
