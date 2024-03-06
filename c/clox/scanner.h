@@ -50,4 +50,7 @@ typedef struct {
 void initScanner(const char* sourceCode);
 Token scanToken();
 
+bool identifiersEqual(Token* a, Token* b);
+Token syntheticToken(const char* text);
+
 #endif

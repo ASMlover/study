@@ -33,6 +33,7 @@
 #include "common.h"
 #include "object.h"
 #include "memory.h"
+#include "compiler.h"
 #include "vm.h"
 
 VM vm;
@@ -552,5 +553,15 @@ static InterpretResult run() {
 }
 
 InterpretResult interpret(const char* sourceCode) {
+	ObjFunction* function = compile(sourceCode);
+	if (function == NULL)
+		return INTERPRET_COMPILE_ERROR;
+
+	push(OBJ_VAL(function));
+	ObjClosure* closure = newClosure(function);
+	pop();
+	push(OBJ_VAL(closure));
+	call(closure, 0);
+
 	return run();
 }
