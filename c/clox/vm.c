@@ -271,7 +271,6 @@ void freeVM() {
 
 void push(Value value) {
 	*vm.stackTop++ = value;
-	vm.stackTop;
 }
 
 Value pop() {
