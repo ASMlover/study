@@ -30,6 +30,8 @@
 #include "memory.h"
 #include "value.h"
 #include "chunk.h"
+#include "vm.h"
+#include "object.h"
 
 void initChunk(Chunk* chunk) {
 	chunk->count = 0;
@@ -62,9 +64,9 @@ void writeChunk(Chunk* chunk, uint8_t byte, int lineno) {
 }
 
 int addConstant(Chunk* chunk, Value value) {
-	// TODO: GC push
+	push(value);
 	writeValueArray(&chunk->constants, value);
-	// TODO: GC pop
+	pop();
 
 	return chunk->constants.count - 1;
 }
@@ -155,8 +157,21 @@ int disassembleInstruction(Chunk* chunk, int offset) {
 	case OP_SUPER_INVOKE: return invokeInstruction(chunk, "OP_SUPER_INVOKE", offset);
 	case OP_CLOSURE:
 		{
-			// TODO:
-		}
+			++offset;
+			uint8_t constant = chunk->code[offset++];
+			fprintf(stdout, "%-16s %4d ", "OP_CLOSURE", constant);
+			printValue(chunk->constants.values[constant]);
+			fprintf(stdout, "\n");
+
+			ObjFunction* function = AS_FUNCTION(chunk->constants.values[constant]);
+			for (int j = 0; j < function->upvalueCount; ++j) {
+				int isLocal = chunk->code[offset++];
+				int index = chunk->code[offset++];
+				fprintf(stdout, "%04d      |                     %s %d\n",
+						offset - 2, isLocal ? "local" : "upvalue", index);
+			}
+			return offset;
+		} break;
 	case OP_CLOSE_UPVALUE: return simpleInstruction("OP_CLOSE_UPVALUE", offset);
 	case OP_RETURN: return simpleInstruction("OP_RETURN", offset);
 	case OP_CLASS: return constantInstruction(chunk, "OP_CLASS", offset);
