@@ -247,6 +247,7 @@ void VM::collect_garbage() noexcept {
 
   mark_roots();
   trace_references();
+  sweep();
 
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << "----- gc end -----" << std::endl;
