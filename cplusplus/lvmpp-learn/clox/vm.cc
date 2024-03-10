@@ -198,6 +198,17 @@ void VM::trace_references() noexcept {
 }
 
 void VM::sweep() noexcept {
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    Obj* object = *it;
+    if (!object->is_marked()) {
+      free_object(object);
+      objects_.erase(it++);
+    }
+    else {
+      object->set_marked(false);
+      ++it;
+    }
+  }
 }
 
 void VM::blacken_object(Obj* object) noexcept {
