@@ -26,16 +26,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef WREN_H
-#define WREN_H
+#include "vm.h"
 
-#include "common.h"
-
-typedef struct WrenVM WrenVM;
-typedef struct WrenHandle WrenHandle;
-
-typedef void* (*WrenReallocateFn)(void* memory, sz_t newSize);
-typedef void  (*WrenForeignMethodFn)(WrenVM* vm);
-typedef void  (*WrenFinalizerFn)(void* data);
-
-#endif
+void* wrenReallocate(WrenVM* vm, void* memory, sz_t oldSize, sz_t newSize) { return NULL; }
+void wrenFinalizeForeign(WrenVM* vm, ObjForeign* foreign) {}
+WrenHandle* wrenMakeHandle(WrenVM* vm, Value value) { return NULL; }
+ObjClosure* wrenCompileSource(WrenVM* vm,
+		const char* module, const char* sourceCode, bool isExpression, bool printErrors) { return NULL; }
+Value wrenGetModuleVariable(WrenVM* vm, Value moduleName, Value variableName) {
+	Value v; v.type = VAL_UNDEFINED; return v;
+}
+Value wrenFindVariable(WrenVM* vm, ObjModule* module, const char* name) {
+	Value v; v.type = VAL_UNDEFINED; return v;
+}
+int wrenDeclareVariable(WrenVM* vm, ObjModule* module, const char* name, sz_t length, int lineno) { return 0; }
+int wrenDefineVariable(WrenVM* vm, ObjModule* module, const char* name, sz_t length, Value value) { return 0; }
+void wrenPushRoot(WrenVM* vm, Obj* obj) {}
+void wrenPopRoot(WrenVM* vm) {}

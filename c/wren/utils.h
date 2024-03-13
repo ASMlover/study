@@ -73,4 +73,19 @@ DECLARE_BUFFER(Byte, u8_t);
 DECLARE_BUFFER(Int, int);
 DECLARE_BUFFER(String, ObjString*);
 
+typedef StringBuffer SymbolTable;
+
+void wrenSymbolTableInit(SymbolTable* symbols);
+void wrenSymbolTableClear(WrenVM* vm, SymbolTable* symbols);
+void wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length);
+int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length);
+void wrenBlackenSymbolTable(WrenVM* vm, SymbolTable* symbols);
+
+int wrenUtf8EncodeNumBytes(int value);
+int wrenUtf8Encode(int value, u8_t* bytes);
+int wrenUtf8DecodeNumBytes(u8_t byte);
+int wrenUtf8Decode(const u8_t* bytes, u32_t length);
+
+int wrenPowerOf2Ceil(int n);
+
 #endif

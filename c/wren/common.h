@@ -80,8 +80,16 @@
 	((type*)wrenReallocate(vm, NULL, 0, sizeof(type)))
 #define ALLOCATE_FLEX(vm, mainType, arrayType, count)\
 	((mainType*)wrenReallocate(vm, NULL, 0, sizeof(mainType) + sizeof(arrayType) * (count)))
+#define ALLOCATE_ARRAY(vm, type, count)\
+	((type*)wrenReallocate(vm, NULL, 0, sizeof(type) * (count)))
 #define DEALLOCATE(vm, pointer)\
 	wrenReallocate(vm, pointer, 0, 0)
+
+#if __STDC_VERSION__ >= 199901L
+#	define WREN_FLEXIBLE_ARRAY
+#else
+#	define WREN_FLEXIBLE_ARRAY 0
+#endif
 
 #if defined(DEBUG)
 #	include <stdio.h>
@@ -113,6 +121,7 @@
 #	endif
 #endif
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
