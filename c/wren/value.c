@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "value.h"
+#include "debug.h"
 #include "vm.h"
 
 #define WREN_MIN_CAPACITY               (16)
@@ -182,6 +183,175 @@ static void hashString(ObjString* string) {
 		hash *= 16777619;
 	}
 	string->hash = hash;
+}
+
+static void blackenClass(WrenVM* vm, ObjClass* classObj) {
+	wrenGrayObj(vm, (Obj*)classObj->obj.classObj);
+	wrenGrayObj(vm, (Obj*)classObj->superclass);
+
+	for (int i = 0; i < classObj->methods.count; ++i) {
+		if (classObj->methods.data[i].type == METHOD_BLOCK)
+			wrenGrayObj(vm, (Obj*)classObj->methods.data[i].as.closure);
+	}
+	wrenGrayObj(vm, (Obj*)classObj->name);
+
+	vm->bytesAllocated += sizeof(ObjClass);
+	vm->bytesAllocated += classObj->methods.capacity * sizeof(Method);
+}
+
+static void blackenClosure(WrenVM* vm, ObjClosure* closure) {
+	wrenGrayObj(vm, (Obj*)closure->fn);
+
+	for (int i = 0; i < closure->fn->numUpvalues; ++i)
+		wrenGrayObj(vm, (Obj*)closure->upvalues[i]);
+
+	vm->bytesAllocated += sizeof(ObjClosure);
+	vm->bytesAllocated += sizeof(ObjUpvalue*) * closure->fn->numUpvalues;
+}
+
+static void blackenFiber(WrenVM* vm, ObjFiber* fiber) {
+	for (int i = 0; i < fiber->numFrames; ++i)
+		wrenGrayObj(vm, (Obj*)fiber->frames[i].closure);
+
+	for (Value* slot = fiber->stack; slot < fiber->stackTop; ++slot)
+		wrenGrayValue(vm, *slot);
+
+	ObjUpvalue* upvalue = fiber->openUpvalues;
+	while (upvalue != NULL) {
+		wrenGrayObj(vm, (Obj*)upvalue);
+		upvalue = upvalue->next;
+	}
+
+	wrenGrayObj(vm, (Obj*)fiber->caller);
+	wrenGrayValue(vm, fiber->error);
+
+	vm->bytesAllocated += sizeof(ObjFiber);
+	vm->bytesAllocated += fiber->frameCapacity * sizeof(CallFrame);
+	vm->bytesAllocated += fiber->stackCapacity * sizeof(Value);
+}
+
+static void blackenFn(WrenVM* vm, ObjFn* fn) {
+	wrenGrayBuffer(vm, &fn->constants);
+
+	vm->bytesAllocated += sizeof(ObjFn);
+	vm->bytesAllocated += sizeof(u8_t) * fn->code.capacity;
+	vm->bytesAllocated += sizeof(Value) * fn->constants.capacity;
+	vm->bytesAllocated += sizeof(int) * fn->code.capacity;
+}
+
+static void blackenForeign(WrenVM* vm, ObjForeign* foreign) {}
+
+static void blackenInstance(WrenVM* vm, ObjInstance* instance) {
+	wrenGrayObj(vm, (Obj*)instance->obj.classObj);
+
+	for (int i = 0; i < instance->obj.classObj->numFields; ++i)
+		wrenGrayValue(vm, instance->fields[i]);
+
+	vm->bytesAllocated += sizeof(ObjInstance);
+	vm->bytesAllocated += sizeof(Value) * instance->obj.classObj->numFields;
+}
+
+static void blackenList(WrenVM* vm, ObjList* list) {
+	wrenGrayBuffer(vm, &list->elements);
+
+	vm->bytesAllocated += sizeof(ObjList);
+	vm->bytesAllocated += sizeof(Value) * list->elements.capacity;
+}
+
+static void blackenMap(WrenVM* vm, ObjMap* map) {
+	for (u32_t i = 0; i < map->capacity; ++i) {
+		MapEntry* entry = &map->entries[i];
+		if (IS_UNDEFINED(entry->key))
+			continue;
+
+		wrenGrayValue(vm, entry->key);
+		wrenGrayValue(vm, entry->value);
+	}
+
+	vm->bytesAllocated += sizeof(ObjMap);
+	vm->bytesAllocated += sizeof(MapEntry) * map->capacity;
+}
+
+static void blackenModule(WrenVM* vm, ObjModule* module) {
+	for (int i = 0; i < module->variables.count; ++i)
+		wrenGrayValue(vm, module->variables.data[i]);
+
+	wrenBlackenSymbolTable(vm, &module->variableNames);
+	wrenGrayObj(vm, (Obj*)module->name);
+
+	vm->bytesAllocated += sizeof(ObjModule);
+}
+
+static void blackenRange(WrenVM* vm, ObjRange* range) {
+	vm->bytesAllocated += sizeof(ObjRange);
+}
+
+static void blackenString(WrenVM* vm, ObjString* string) {
+	vm->bytesAllocated += sizeof(ObjString) + string->length + 1;
+}
+
+static void blackenUpvalue(WrenVM* vm, ObjUpvalue* upvalue) {
+	wrenGrayValue(vm, upvalue->closed);
+
+	vm->bytesAllocated += sizeof(ObjUpvalue);
+}
+
+static void blackenObject(WrenVM* vm, Obj* obj) {
+#if WREN_DEBUG_TRACE_MEMORY
+	fprintf(stdout, "mark ");
+	wrenDumpValue(OBJ_VAL(obj));
+	fprintf(stdout, " @ %p\b", obj);
+#endif
+
+	switch (obj->type) {
+	case OBJ_CLASS:    blackenClass(vm, (ObjClass*)obj); break;
+	case OBJ_CLOSURE:  blackenClosure(vm, (ObjClosure*)obj); break;
+	case OBJ_FIBER:    blackenFiber(vm, (ObjFiber*)obj); break;
+	case OBJ_FN:       blackenFn(vm, (ObjFn*)obj); break;
+	case OBJ_FOREIGN:  blackenForeign(vm, (ObjForeign*)obj); break;
+	case OBJ_INSTANCE: blackenInstance(vm, (ObjInstance*)obj); break;
+	case OBJ_LIST:     blackenList(vm, (ObjList*)obj); break;
+	case OBJ_MAP:      blackenMap(vm, (ObjMap*)obj); break;
+	case OBJ_MODULE:   blackenModule(vm, (ObjModule*)obj); break;
+	case OBJ_RANGE:    blackenRange(vm, (ObjRange*)obj); break;
+	case OBJ_STRING:   blackenString(vm, (ObjString*)obj); break;
+	case OBJ_UPVALUE:  blackenUpvalue(vm, (ObjUpvalue*)obj); break;
+	default: break;
+	}
+}
+
+static inline void freeClass(WrenVM* vm, ObjClass* classObj) {
+	wrenMethodBufferClear(vm, &classObj->methods);
+}
+
+static inline void freeFiber(WrenVM* vm, ObjFiber* fiber) {
+	DEALLOCATE(vm, fiber->frames);
+	DEALLOCATE(vm, fiber->stack);
+}
+
+static inline void freeFn(WrenVM* vm, ObjFn* fn) {
+	wrenValueBufferClear(vm, &fn->constants);
+	wrenByteBufferClear(vm, &fn->code);
+	wrenIntBufferClear(vm, &fn->debug->sourceLines);
+	DEALLOCATE(vm, fn->debug->name);
+	DEALLOCATE(vm, fn->debug);
+}
+
+static inline void freeForeign(WrenVM* vm, ObjForeign* foreign) {
+	wrenFinalizeForeign(vm, foreign);
+}
+
+static inline void freeList(WrenVM* vm, ObjList* list) {
+	wrenValueBufferClear(vm, &list->elements);
+}
+
+static inline void freeMap(WrenVM* vm, ObjMap* map) {
+	DEALLOCATE(vm, map->entries);
+}
+
+static inline void freeModule(WrenVM* vm, ObjModule* module) {
+	wrenSymbolTableClear(vm, &module->variableNames);
+	wrenValueBufferClear(vm, &module->variables);
 }
 
 ObjClass* wrenNewSingleClass(WrenVM* vm, int numFields, ObjString* name) {
@@ -656,10 +826,98 @@ ObjUpvalue* wrenNewUpvalue(WrenVM* vm, Value* value) {
 	return upvalue;
 }
 
-void wrenGrayObj(WrenVM* vm, Obj* obj) {}
-void wrenGrayValue(WrenVM* vm, Value value) {}
-void wrenGrayBuffer(WrenVM* vm, ValueBuffer* buffer) {}
-void wrenBlackenObjects(WrenVM* vm) {}
-void wrenFreeObj(WrenVM* vm, Obj* obj) {}
-ObjClass* wrenGetClass(WrenVM* vm, Value value) { return NULL; }
-bool wrenValuesEqual(Value a, Value b) { return false; }
+void wrenGrayObj(WrenVM* vm, Obj* obj) {
+	if (obj == NULL)
+		return;
+	if (obj->isDark)
+		return;
+	obj->isDark = true;
+
+	if (vm->grayCount >= vm->grayCapacity) {
+		vm->grayCapacity = vm->grayCount * 2;
+		vm->gray = (Obj**)vm->config.reallocateFn(vm->gray, vm->grayCapacity * sizeof(Obj*));
+	}
+
+	vm->gray[vm->grayCount++] = obj;
+}
+
+void wrenGrayValue(WrenVM* vm, Value value) {
+	if (!IS_OBJ(value))
+		return;
+	wrenGrayObj(vm, AS_OBJ(value));
+}
+
+void wrenGrayBuffer(WrenVM* vm, ValueBuffer* buffer) {
+	for (int i = 0; i < buffer->count; ++i)
+		wrenGrayValue(vm, buffer->data[i]);
+}
+
+void wrenBlackenObjects(WrenVM* vm) {
+	while (vm->grayCount > 0) {
+		Obj* obj = vm->gray[--vm->grayCount];
+		blackenObject(vm, obj);
+	}
+}
+
+void wrenFreeObj(WrenVM* vm, Obj* obj) {
+#if WREN_DEBUG_TRACE_MEMORY
+	fprintf(stdout, "free ");
+	wrenDumpValue(OBJ_VAL(obj));
+	fprintf(stdout, " @ %p\n", obj);
+#endif
+
+	switch (obj->type) {
+	case OBJ_CLASS:   freeClass(vm, (ObjClass*)obj); break;
+	case OBJ_FIBER:   freeFiber(vm, (ObjFiber*)obj); break;
+	case OBJ_FN:      freeFn(vm, (ObjFn*)obj); break;
+	case OBJ_FOREIGN: freeForeign(vm, (ObjForeign*)obj); break;
+	case OBJ_LIST:    freeList(vm, (ObjList*)obj); break;
+	case OBJ_MAP:     freeMap(vm, (ObjMap*)obj); break;
+	case OBJ_MODULE:  freeModule(vm, (ObjModule*)obj); break;
+
+	case OBJ_CLOSURE:
+	case OBJ_INSTANCE:
+	case OBJ_RANGE:
+	case OBJ_STRING:
+	case OBJ_UPVALUE:
+	default: break;
+	}
+
+	DEALLOCATE(vm, obj);
+}
+
+ObjClass* wrenGetClass(WrenVM* vm, Value value) {
+	return wrenGetClassInline(vm, value);
+}
+
+bool wrenValuesEqual(Value a, Value b) {
+	if (wrenValuesSame(a, b))
+		return true;
+
+	if (!IS_OBJ(a) || !IS_OBJ(b))
+		return false;
+
+	Obj* aObj = AS_OBJ(a);
+	Obj* bObj = AS_OBJ(b);
+	if (aObj->type != bObj->type)
+		return false;
+
+	switch (aObj->type) {
+	case OBJ_RANGE:
+		{
+			ObjRange* aRange = (ObjRange*)aObj;
+			ObjRange* bRange = (ObjRange*)bObj;
+			return aRange->from == bRange->from && aRange->to == bRange->to &&
+				aRange->isInclusive == bRange->isInclusive;
+		} break;
+	case OBJ_STRING:
+		{
+			ObjString* aString = (ObjString*)aObj;
+			ObjString* bString = (ObjString*)bObj;
+			return aString->hash == bString->hash &&
+				wrenStringEqualsCString(aString, bString->value, bString->length);
+		} break;
+	default: break;
+	}
+	return false;
+}

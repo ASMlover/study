@@ -62,7 +62,9 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS_${BUILD_TYPE}}"
 file(GLOB WREN_SOURCES
 	main.c
 	utils.c
+	debug.c
 	value.c
+	compiler.c
 	vm.c
 )
 message(STATUS "`${PROJECT_NAME}` WREN_SOURCES: ${WREN_SOURCES}")

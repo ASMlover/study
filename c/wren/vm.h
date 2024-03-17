@@ -32,6 +32,7 @@
 #include "common.h"
 #include "utils.h"
 #include "value.h"
+#include "compiler.h"
 
 #define WREN_MAX_TEMP_ROOTS (5)
 
@@ -73,7 +74,9 @@ struct WrenVM {
 	WrenHandle* handles;
 	Value* apiStack;
 
-	// TODO: add config and compiler
+	WrenConfiguration config;
+	Compiler* compiler;
+	SymbolTable methodNames;
 };
 
 void* wrenReallocate(WrenVM* vm, void* memory, sz_t oldSize, sz_t newSize);
