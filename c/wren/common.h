@@ -68,7 +68,7 @@
 #define WREN_DEBUG_TRACE_MEMORY        0
 #define WREN_DEBUG_TRACE_GC            0
 #define WREN_DEBUG_DUMP_COMPILED_CODE  0
-#define WREN_DEBUG_TRACE_INStrucZTIONS 0
+#define WREN_DEBUG_TRACE_INSTRUCTIONS  0
 #define WREN_MAX_MODULE_VARS           65536
 #define WREN_MAX_PARAMETERS            16
 #define WREN_MAX_METHOD_NAME           64
@@ -80,8 +80,16 @@
 	((type*)wrenReallocate(vm, NULL, 0, sizeof(type)))
 #define ALLOCATE_FLEX(vm, mainType, arrayType, count)\
 	((mainType*)wrenReallocate(vm, NULL, 0, sizeof(mainType) + sizeof(arrayType) * (count)))
+#define ALLOCATE_ARRAY(vm, type, count)\
+	((type*)wrenReallocate(vm, NULL, 0, sizeof(type) * (count)))
 #define DEALLOCATE(vm, pointer)\
 	wrenReallocate(vm, pointer, 0, 0)
+
+#if __STDC_VERSION__ >= 199901L
+#	define WREN_FLEXIBLE_ARRAY
+#else
+#	define WREN_FLEXIBLE_ARRAY 0
+#endif
 
 #if defined(DEBUG)
 #	include <stdio.h>
@@ -113,6 +121,7 @@
 #	endif
 #endif
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
