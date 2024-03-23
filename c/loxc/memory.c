@@ -27,9 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "memory.h"
+#include "vm.h"
 
+#define LOXC_GC_HEAP_GROW_FACTOR            (2)
 
 void* reallocate(void* pointer, sz_t oldSize, sz_t newSize) { return NULL; }
+
 void markObject(Obj* object) {}
 void markValue(Value value) {}
 void collectGarbage() {}
