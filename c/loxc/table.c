@@ -26,6 +26,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdlib.h>
+#include <string.h>
 #include "memory.h"
 #include "object.h"
 #include "table.h"
@@ -120,8 +122,59 @@ bool tableSet(Table* table, ObjString* key, Value value) {
   return isNewKey;
 }
 
-bool tableDelete(Table* table, ObjString* key) { return false; }
-void tableAddAll(Table* from, Table* to) {}
-ObjString* tableFindString(Table* table, const char* chars, int length, u32_t hash) { return NULL; }
-void tableRemoveWhite(Table* table) {}
-void markTable(Table* table) {}
+bool tableDelete(Table* table, ObjString* key) {
+  if (table->count == 0)
+    return false;
+
+  Entry* entry = findEntry(table->entries, table->capacity, key);
+  if (entry->key == NULL)
+    return false;
+
+  entry->key = NULL;
+  entry->value = BOOL_VAL(true);
+  return true;
+}
+
+void tableAddAll(Table* from, Table* to) {
+  for (int i = 0; i < from->capacity; ++i) {
+    Entry* entry = &from->entries[i];
+    if (entry->key != NULL)
+      tableSet(to, entry->key, entry->value);
+  }
+}
+
+ObjString* tableFindString(Table* table, const char* chars, int length, u32_t hash) {
+  if (table->count == 0)
+    return NULL;
+
+  u32_t index = hash & (table->capacity - 1);
+  for (;;) {
+    Entry* entry = &table->entries[index];
+    if (entry->key == NULL) {
+      if (IS_NIL(entry->value))
+        return NULL;
+    }
+    else if (entry->key->length == length &&
+        entry->key->hash == hash && memcmp(entry->key->chars, chars, length) == 0) {
+      return entry->key;
+    }
+
+    index = (index + 1) & (table->capacity - 1);
+  }
+}
+
+void tableRemoveWhite(Table* table) {
+  for (int i = 0; i < table->capacity; ++i) {
+    Entry* entry = &table->entries[i];
+    if (entry->key != NULL && !entry->key->obj.isMarked)
+      tableDelete(table, entry->key);
+  }
+}
+
+void markTable(Table* table) {
+  for (int i = 0; i < table->capacity; ++i) {
+    Entry* entry = &table->entries[i];
+    markObject((Obj*)entry->key);
+    markValue(entry->value);
+  }
+}
