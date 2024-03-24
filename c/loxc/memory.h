@@ -39,6 +39,9 @@
 #define GROW_ARRAY(type, pointer, oldCount, newCount) (type*)reallocate((pointer), sizeof(type) * (oldCount), sizeof(type) * (newCount))
 #define FREE_ARRAY(type, pointer, oldCount)           reallocate((pointer), sizeof(type) * (oldCount), 0)
 
+#define MARK_OBJ(obj)                                 markObject((Obj*)(obj))
+#define MARK_VAL(value)                               markValue((value))
+
 void* reallocate(void* pointer, sz_t oldSize, sz_t newSize);
 
 void markObject(Obj* object);
