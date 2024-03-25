@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include "memory.h"
 #include "value.h"
+#include "compiler.h"
 #include "vm.h"
 
 #define LOXC_GC_HEAP_GROW_FACTOR            (2)
@@ -92,7 +93,104 @@ static inline void freeBoundMethod(Obj* object) {
   FREE(ObjBoundMethod, object);
 }
 
+static inline void freeClass(Obj* object) {
+  ObjClass* klass = (ObjClass*)object;
+  freeTable(&klass->methods);
+  FREE(ObjClass, object);
+}
+
+static inline void freeClosure(Obj* object) {
+  ObjClosure* closure = (ObjClosure*)object;
+  FREE_ARRAY(ObjUpvalue*, closure->upvalues, closure->upvalueCount);
+  FREE(ObjClosure, object);
+}
+
+static inline void freeFunction(Obj* object) {
+  ObjFunction* function = (ObjFunction*)object;
+  freeChunk(&function->chunk);
+  FREE(ObjFunction, object);
+}
+
+static inline void freeInstance(Obj* object) {
+  ObjInstance* instance = (ObjInstance*)object;
+  freeTable(&instance->fields);
+  FREE(ObjInstance, object);
+}
+
+static inline void freeNative(Obj* object) {
+  FREE(ObjNative, object);
+}
+
+static inline void freeString(Obj* object) {
+  ObjString* string = (ObjString*)object;
+  FREE_ARRAY(char, string->chars, string->length + 1);
+  FREE(ObjString, object);
+}
+
+static inline void freeUpvalue(Obj* object) {
+  FREE(ObjUpvalue, object);
+}
+
 static void freeObject(Obj* object) {
+#if defined(LOXC_DEBUG_LOG_GC)
+  fprintf(stdout, "%p free type %d\n", (void*)object, object->type);
+#endif
+
+  switch (object->type) {
+  case OBJ_BOUND_METHOD:  freeBoundMethod(object); break;
+  case OBJ_CLASS:         freeClass(object); break;
+  case OBJ_CLOSURE:       freeClosure(object); break;
+  case OBJ_FUNCTION:      freeFunction(object); break;
+  case OBJ_INSTANCE:      freeInstance(object); break;
+  case OBJ_NATIVE:        freeNative(object); break;
+  case OBJ_STRING:        freeString(object); break;
+  case OBJ_UPVALUE:       freeUpvalue(object); break;
+  default: break;
+  }
+}
+
+static void markRoots() {
+  for (Value* slot = vm.stack; slot < vm.stackTop; ++slot)
+    MARK_VAL(*slot);
+
+  for (int i = 0; i < vm.frameCount; ++i)
+    MARK_OBJ(vm.frames[i].closure);
+
+  for (ObjUpvalue* upvalue = vm.openValues; upvalue != NULL; upvalue = upvalue->next)
+    MARK_OBJ(upvalue);
+
+  markTable(&vm.globals);
+  markCompilerRoots();
+  MARK_OBJ(vm.initString);
+}
+
+static void traceReferences() {
+  while (vm.grayCount > 0) {
+    Obj* object = vm.grayStack[--vm.grayCount] ;
+    blackenObject(object);
+  }
+}
+
+static void sweep() {
+  Obj* previous = NULL;
+  Obj* object = vm.objects;
+  while (object != NULL) {
+    if (object->isMarked) {
+      object->isMarked = false;
+      previous = object;
+      object = object->next;
+    }
+    else {
+      Obj* unreached = object;
+      object = object->next;
+      if (previous != NULL)
+        previous->next = object;
+      else
+        vm.objects = object;
+
+      freeObject(unreached);
+    }
+  }
 }
 
 void* reallocate(void* pointer, sz_t oldSize, sz_t newSize) {
