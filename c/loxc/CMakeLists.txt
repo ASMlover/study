@@ -55,6 +55,13 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS_${BUILD_TYPE}}"
 file(GLOB LOXC_SOURCES
   main.c
   scanner.c
+  memory.c
+  table.c
+  chunk.c
+  value.c
+  object.c
+  vm.c
 )
+message(STATUS "`${PROJECT_NAME}` LOXC_SOURCES: ${LOXC_SOURCES}")
 
 add_executable(${PROJECT_NAME} ${LOXC_SOURCES})
