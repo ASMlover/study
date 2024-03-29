@@ -26,6 +26,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include "memory.h"
 #include "value.h"
@@ -245,5 +246,33 @@ void markValue(Value value) {
     markObject(AS_OBJ(value));
 }
 
-void collectGarbage() {}
-void freeObjects() {}
+void collectGarbage() {
+#if defined(LOXC_DEBUG_LOG_GC)
+  fprintf(stdout, "--------- gc begin\n");
+  sz_t before = vm.bytesAllocated;
+#endif
+
+  markRoots();
+  traceReferences();
+  tableRemoveWhite(&vm.strings);
+  sweep();
+
+  vm.nextGC = vm.bytesAllocated * LOXC_GC_HEAP_GROW_FACTOR;
+
+#if defined(LOXC_DEBUG_LOG_GC)
+  fprintf(stdout, "--------- gc end\n");
+  fprintf(stdout, "  collected %zu bytes (from %zu to %zu) next at %zu\n",
+      before - vm.bytesAllocated, before, vm.bytesAllocated, vm.nextGC);
+#endif
+}
+
+void freeObjects() {
+  Obj* object = vm.objects;
+  while (object != NULL) {
+    Obj* next = object->next;
+    freeObject(object);
+    object = next;
+  }
+
+  free(vm.grayStack);
+}
