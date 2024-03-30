@@ -60,6 +60,7 @@ file(GLOB LOXC_SOURCES
   chunk.c
   value.c
   object.c
+  compiler.c
   vm.c
 )
 message(STATUS "`${PROJECT_NAME}` LOXC_SOURCES: ${LOXC_SOURCES}")
