@@ -81,11 +81,11 @@ typedef enum {
 } OpCode;
 
 typedef struct {
-  int count;
-  int capacity;
-  u8_t* code;
-  int* lines;
-  ValueArray constants;
+  int                   count;
+  int                   capacity;
+  u8_t*                 code;
+  int*                  lines;
+  ValueArray            constants;
 } Chunk;
 
 void initChunk(Chunk* chunk);
@@ -93,5 +93,8 @@ void freeChunk(Chunk* chunk);
 
 void writeChunk(Chunk* chunk, u8_t byte, int lineno);
 void addConstant(Chunk* chunk, Value value);
+
+void disassembleChunk(Chunk* chunk, const char* name);
+int disassebleInstruction(Chunk* chunk, int offset);
 
 #endif

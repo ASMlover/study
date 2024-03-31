@@ -26,9 +26,42 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
 #include "memory.h"
 #include "chunk.h"
 #include "vm.h"
+
+static int constantInstruction(Chunk* chunk, const char* name, int offset) {
+  u8_t constant = chunk->code[offset + 1];
+  fprintf(stdout, "%-16s %4d `", name, constant);
+  printValue(chunk->constants.values[constant]);
+  fprintf(stdout, "`\n");
+
+  return offset + 2;
+}
+
+static int invokeInstruction(Chunk* chunk, const char* name, int offset) {
+  u8_t constant = chunk->code[offset + 1];
+  u8_t argCount = chunk->code[offset + 2];
+  fprintf(stdout, "%-16s (%d args) %4d `", name, argCount, constant);
+  printValue(chunk->constants.values[constant]);
+  fprintf(stdout, "`\n");
+
+  return offset + 3;
+}
+
+static inline simpleInstruction(const char* name, int offset) {
+  fprintf(stdout, "%s\n", name);
+  return offset + 1;
+}
+
+static int jumpInstruction(Chunk* chunk, const char* name, int sign, int offset) {
+  u16_t jump = (u16_t)(chunk->code[offset + 1] << 8);
+  jump |= chunk->code[offset + 2];
+  fprintf(stdout, "%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+
+  return offset + 3;
+}
 
 void initChunk(Chunk* chunk) {
   chunk->count = 0;
@@ -63,4 +96,27 @@ void addConstant(Chunk* chunk, Value value) {
   push(value);
   writeValueArray(&chunk->constants, value);
   pop();
+}
+
+void disassembleChunk(Chunk* chunk, const char* name) {
+  fprintf(stdout, "========= %s =========\n", name);
+
+  for (int offset = 0; offset < chunk->count;)
+    offset = disassebleInstruction(chunk, offset);
+}
+
+int disassebleInstruction(Chunk* chunk, int offset) {
+  fprintf(stdout, "%04d ", offset);
+  if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1])
+    fprintf(stdout, "   | ");
+  else
+    fprintf(stdout, "%04d ", chunk->lines[offset]);
+
+  u8_t instruction = chunk->code[offset];
+  switch (instruction) {
+  case OP_CONSTANT: return constantInstruction(chunk, "OP_CONSTANT", offset);
+  default: fprintf(stdout, "Unknown opcode %d\n", instruction); break;
+  }
+
+  return offset + 1;
 }
