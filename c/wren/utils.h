@@ -77,8 +77,9 @@ typedef StringBuffer SymbolTable;
 
 void wrenSymbolTableInit(SymbolTable* symbols);
 void wrenSymbolTableClear(WrenVM* vm, SymbolTable* symbols);
-void wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length);
+int wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length);
 int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length);
+int wrenSymbolTableFind(const SymbolTable* symbols, const char* name, sz_t length);
 void wrenBlackenSymbolTable(WrenVM* vm, SymbolTable* symbols);
 
 int wrenUtf8EncodeNumBytes(int value);

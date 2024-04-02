@@ -64,17 +64,19 @@
 #	define WREN_OPT_RANDOM 1
 #endif
 
-#define WREN_DEBUG_GC_STRESS           0
-#define WREN_DEBUG_TRACE_MEMORY        0
-#define WREN_DEBUG_TRACE_GC            0
-#define WREN_DEBUG_DUMP_COMPILED_CODE  0
-#define WREN_DEBUG_TRACE_INSTRUCTIONS  0
-#define WREN_MAX_MODULE_VARS           65536
-#define WREN_MAX_PARAMETERS            16
-#define WREN_MAX_METHOD_NAME           64
-#define WREN_MAX_METHOD_SIGNATURE      (WREN_MAX_METHOD_NAME * (WREN_MAX_PARAMETERS * 2) + 6)
-#define WREN_MAX_VARIABLE_NAME         64
-#define WREN_MAX_FIELDS                255
+#define WREN_DEBUG_GC_STRESS                0
+#define WREN_DEBUG_TRACE_MEMORY             0
+#define WREN_DEBUG_TRACE_GC                 0
+#define WREN_DEBUG_DUMP_COMPILED_CODE       0
+#define WREN_DEBUG_TRACE_INSTRUCTIONS       0
+#define WREN_MAX_MODULE_VARS                65536
+#define WREN_MAX_PARAMETERS                 16
+#define WREN_MAX_METHOD_NAME                64
+#define WREN_MAX_METHOD_SIGNATURE           (WREN_MAX_METHOD_NAME * (WREN_MAX_PARAMETERS * 2) + 6)
+#define WREN_MAX_VARIABLE_NAME              64
+#define WREN_MAX_FIELDS                     255
+#define WREN_UTF8BOM                        "\xEF\xBB\xBF"
+#define WREN_UTF8BOM_LEN                    3
 
 #define ALLOCATE(vm, type)\
 	((type*)wrenReallocate(vm, NULL, 0, sizeof(type)))

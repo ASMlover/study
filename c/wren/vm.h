@@ -34,7 +34,14 @@
 #include "value.h"
 #include "compiler.h"
 
-#define WREN_MAX_TEMP_ROOTS (5)
+#define WREN_MAX_TEMP_ROOTS                 (5)
+
+typedef enum {
+#undef WREN_OPCODE
+#define WREN_OPCODE(name, _) CODE_##name,
+#include "opcodes.h"
+#undef WREN_OPCODE
+} Code;
 
 struct WrenHandle {
 	Value value;

@@ -33,11 +33,45 @@ DEFINE_BUFFER(Byte, u8_t);
 DEFINE_BUFFER(Int, int);
 DEFINE_BUFFER(String, ObjString*);
 
-void wrenSymbolTableInit(SymbolTable* symbols) {}
-void wrenSymbolTableClear(WrenVM* vm, SymbolTable* symbols) {}
-void wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length) {}
-int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length) { return 0; }
-void wrenBlackenSymbolTable(WrenVM* vm, SymbolTable* symbols) {}
+void wrenSymbolTableInit(SymbolTable* symbols) {
+	wrenStringBufferInit(symbols);
+}
+
+void wrenSymbolTableClear(WrenVM* vm, SymbolTable* symbols) {
+	wrenStringBufferClear(vm, symbols);
+}
+
+int wrenSymbolTableAdd(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length) {
+	ObjString* symbol = AS_STRING(wrenNewStringLength(vm, name, length));
+
+	wrenPushRoot(vm, (Obj*)symbol);
+	wrenStringBufferWrite(vm, symbols, symbol);
+	wrenPopRoot(vm);
+
+	return symbols->count - 1;
+}
+
+int wrenSymbolTableEnsure(WrenVM* vm, SymbolTable* symbols, const char* name, sz_t length) {
+	int existing = wrenSymbolTableFind(symbols, name, length);
+	if (-1 != existing)
+		return existing;
+
+	return wrenSymbolTableAdd(vm, symbols, name, length);
+}
+
+int wrenSymbolTableFind(const SymbolTable* symbols, const char* name, sz_t length) {
+	for (int i = 0; i < symbols->count; ++i) {
+		if (wrenStringEqualsCString(symbols->data[i], name, length))
+			return i;
+	}
+	return -1;
+}
+
+void wrenBlackenSymbolTable(WrenVM* vm, SymbolTable* symbols) {
+	for (int i = 0; i < symbols->count; ++i)
+		wrenGrayObj(vm, (Obj*)&symbols->data[i]);
+	vm->bytesAllocated += symbols->capacity * sizeof(*symbols->data);
+}
 
 int wrenUtf8EncodeNumBytes(int value) {
 	ASSERT(value >= 0, "Cannot encode a negative value.");
