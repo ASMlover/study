@@ -35,10 +35,10 @@
 #include "debug.h"
 #include "vm.h"
 
-#define WREN_MIN_CAPACITY               (16)
-#define WREN_GROW_FACTOR                (2)
-#define WREN_MAP_LOAD_PERCENT           (75)
-#define WREN_INITIAL_CALL_FRAMES        (4)
+#define WREN_MIN_CAPACITY                   (16)
+#define WREN_GROW_FACTOR                    (2)
+#define WREN_MAP_LOAD_PERCENT               (75)
+#define WREN_INITIAL_CALL_FRAMES            (4)
 
 DEFINE_BUFFER(Value, Value);
 DEFINE_BUFFER(Method, Method);
@@ -107,11 +107,11 @@ static bool findEntry(MapEntry* entries, u32_t capacity, Value key, MapEntry** r
 		MapEntry* entry = &entries[index];
 		if (IS_UNDEFINED(entry->key)) {
 			if (IS_FALSE(entry->value)) {
-				*result = tombstone != NULL ? tombstone : entry;
+				*result = NULL != tombstone ? tombstone : entry;
 				return false;
 			}
 			else {
-				if (tombstone == NULL)
+				if (NULL == tombstone)
 					tombstone = entry;
 			}
 		}
@@ -123,13 +123,13 @@ static bool findEntry(MapEntry* entries, u32_t capacity, Value key, MapEntry** r
 		index = (index + 1) % capacity;
 	} while (index != startIndex);
 
-	ASSERT(tombstone != NULL, "Map should have tombstones or empty entries.");
+	ASSERT(NULL != tombstone, "Map should have tombstones or empty entries.");
 	*result = tombstone;
 	return false;
 }
 
 static bool insertEntry(MapEntry* entries, u32_t capacity, Value key, Value value) {
-	ASSERT(entries != NULL, "Should ensure capacity before inserting.");
+	ASSERT(NULL != entries, "Should ensure capacity before inserting.");
 
 	MapEntry* entry;
 	if (findEntry(entries, capacity, key, &entry)) {
@@ -217,7 +217,7 @@ static void blackenFiber(WrenVM* vm, ObjFiber* fiber) {
 		wrenGrayValue(vm, *slot);
 
 	ObjUpvalue* upvalue = fiber->openUpvalues;
-	while (upvalue != NULL) {
+	while (NULL != upvalue) {
 		wrenGrayObj(vm, (Obj*)upvalue);
 		upvalue = upvalue->next;
 	}
@@ -369,7 +369,7 @@ ObjClass* wrenNewSingleClass(WrenVM* vm, int numFields, ObjString* name) {
 }
 
 void wrenBindSuperclass(WrenVM* vm, ObjClass* subclass, ObjClass* superclass) {
-	ASSERT(superclass != NULL, "Must have superclass.");
+	ASSERT(NULL != superclass, "Must have superclass.");
 
 	subclass->superclass = superclass;
 	if (subclass->numFields != -1)
@@ -424,7 +424,7 @@ ObjClosure* wrenNewClosure(WrenVM* vm, ObjFn* fn) {
 ObjFiber* wrenNewFiber(WrenVM* vm, ObjClosure* closure) {
 	CallFrame* frames = ALLOCATE_ARRAY(vm, CallFrame, WREN_INITIAL_CALL_FRAMES);
 
-	int stackCapacity = closure == NULL ? 1 : wrenPowerOf2Ceil(closure->fn->maxSlots + 1);
+	int stackCapacity = NULL == closure ? 1 : wrenPowerOf2Ceil(closure->fn->maxSlots + 1);
 	Value* stack = ALLOCATE_ARRAY(vm, Value, stackCapacity);
 
 	ObjFiber* fiber = ALLOCATE(vm, ObjFiber);
@@ -443,7 +443,7 @@ ObjFiber* wrenNewFiber(WrenVM* vm, ObjClosure* closure) {
 	fiber->error = NULL_VAL;
 	fiber->state = FIBER_OTHER;
 
-	if (closure != NULL) {
+	if (NULL != closure) {
 		wrenAppendCallFrame(vm, fiber, closure, fiber->stack);
 		*fiber->stackTop++ = OBJ_VAL(closure);
 	}
@@ -470,7 +470,7 @@ void wrenEnsureStack(WrenVM* vm, ObjFiber* fiber, int needed) {
 			frame->stackStart = fiber->stack + (frame->stackStart - oldStack);
 		}
 
-		for (ObjUpvalue* upvalue = fiber->openUpvalues; upvalue != NULL; upvalue = upvalue->next)
+		for (ObjUpvalue* upvalue = fiber->openUpvalues; NULL != upvalue; upvalue = upvalue->next)
 			upvalue->value = fiber->stack + (upvalue->value - oldStack);
 		fiber->stackTop = fiber->stack + (fiber->stackTop - oldStack);
 	}
@@ -664,10 +664,10 @@ Value wrenNewString(WrenVM* vm, const char* text) {
 }
 
 Value wrenNewStringLength(WrenVM* vm, const char* text, sz_t length) {
-	ASSERT(length == 0 || text != NULL, "Unexpected NULL string.");
+	ASSERT(length == 0 || NULL != text, "Unexpected NULL string.");
 
 	ObjString* string = allocateString(vm, length);
-	if (length > 0 && text != NULL)
+	if (length > 0 && NULL != text)
 		memcpy(string->value, text, length);
 	hashString(string);
 
@@ -827,7 +827,7 @@ ObjUpvalue* wrenNewUpvalue(WrenVM* vm, Value* value) {
 }
 
 void wrenGrayObj(WrenVM* vm, Obj* obj) {
-	if (obj == NULL)
+	if (NULL == obj)
 		return;
 	if (obj->isDark)
 		return;

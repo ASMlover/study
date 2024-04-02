@@ -37,9 +37,11 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 	add_definitions(
-		-Wno-unused-function
-		-Wno-pedantic
+		-Wno-array-bounds
 		-Wno-maybe-uninitialized
+		-Wno-pedantic
+		-Wno-stringop-overflow
+		-Wno-unused-function
 	)
 
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ansi -pedantic -Wall -std=c11")

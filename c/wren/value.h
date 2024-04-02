@@ -46,7 +46,7 @@
 #define AS_NUM(value)                   (wrenValueToNum(value))                 // double
 #define AS_RANGE(value)                 ((ObjRange*)AS_OBJ(value))              // ObjRange*
 #define AS_STRING(value)                ((ObjString*)AS_OBJ(value))             // ObjString*
-#define AS_CSTRING(value)               (AS_STRING(value)->value)               // const char*
+#define AS_CSTRING(str)                 (AS_STRING(str)->value)                 // const char*
 #define AS_UPVALUE(value)               ((ObjUpvalue*)AS_OBJ(value))            // ObjUpvalue*
 
 #define BOOL_VAL(boolean)               ((boolean) ? TRUE_VAL : FALSE_VAL)      // boolean
@@ -57,7 +57,7 @@
 #define IS_CLASS(value)                 (wrenIsObjType(value, OBJ_CLASS))       // ObjClass
 #define IS_CLOSURE(vlaue)               (wrenIsObjType(value, OBJ_CLOSURE))     // ObjClosure
 #define IS_FIBER(value)                 (wrenIsObjType(value, OBJ_FIBER))       // ObjFiber
-#define IS_FN(value)                    (wrenIsObjType(value, OBJ_FN))
+#define IS_FN(value)                    (wrenIsObjType(value, OBJ_FN))          // ObjFn
 #define IS_FOREIGN(value)               (wrenIsObjType(value, OBJ_FOREIGN))     // ObjForeign
 #define IS_INSTANCE(value)              (wrenIsObjType(value, OBJ_INSTANCE))    // ObjInstance
 #define IS_LIST(value)                  (wrenIsObjType(value, OBJ_LIST))        // ObjList
