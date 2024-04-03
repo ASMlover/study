@@ -68,7 +68,16 @@ static int dumpInstruction(WrenVM* vm, ObjFn* fn, int i, int* lastLine) {
 #define READ_SHORT()                        (i += 2, (bytecode[i - 2] << 8) | bytecode[i - 1])
 #define BYTE_INSTRUCTION(name)              fprintf(stdout, "%-16s %5d\n", #name, READ_BYTE()); break
 #define OPCODE_DISPLAY(name)                fprintf(stdout, #name "\n"); break
-#define VALUE_DISPLAY(name, slot, val)      fprintf(stdout, "%-16s %5d `%s`\n", #name, (slot), (val)); break
+#define VALUE_DISPLAY(name)\
+	{\
+		int slot = READ_SHORT();\
+		fprintf(stdout, "%-16s %5d `%s`\n", #name, slot, fn->module->variableNames.data[slot]->value);\
+	} break
+#define JUMP_DISPLAY(name, op)\
+	{\
+		int offset = READ_SHORT();\
+		fprintf(stdout, "%-16s %5d to %d\n", #name, (offset), i op offset);\
+	} break
 
 	switch (code) {
 	case CODE_CONSTANT:
@@ -97,16 +106,8 @@ static int dumpInstruction(WrenVM* vm, ObjFn* fn, int i, int* lastLine) {
 	case CODE_LOAD_UPVALUE:  BYTE_INSTRUCTION(LOAD_UPVALUE);
 	case CODE_STORE_UPVALUE: BYTE_INSTRUCTION(STORE_UPVALUE);
 
-	case CODE_LOAD_MODULE_VAR:
-		{
-			int slot = READ_SHORT();
-			VALUE_DISPLAY(LOAD_MODULE_VAR, slot, fn->module->variableNames.data[slot]->value);
-		}
-	case CODE_STORE_MODULE_VAR:
-		{
-			int slot = READ_SHORT();
-			VALUE_DISPLAY(STORE_MODULE_VAR, slot, fn->module->variableNames.data[slot]->value);
-		}
+	case CODE_LOAD_MODULE_VAR:  VALUE_DISPLAY(LOAD_MODULE_VAR);
+	case CODE_STORE_MODULE_VAR: VALUE_DISPLAY(STORE_MODULE_VAR);
 
 	case CODE_LOAD_FIELD_THIS:  BYTE_INSTRUCTION(LOAD_FIELD_THIS);
 	case CODE_STORE_FIELD_THIS: BYTE_INSTRUCTION(STORE_FIELD_THIS);
@@ -162,8 +163,22 @@ static int dumpInstruction(WrenVM* vm, ObjFn* fn, int i, int* lastLine) {
 					numArgs, symbol, vm->methodNames.data[symbol]->value, superclass);
 		} break;
 
+	case CODE_JUMP:    JUMP_DISPLAY(JUMP, +);
+	case CODE_LOOP:    JUMP_DISPLAY(LOOP, -);
+	case CODE_JUMP_IF: JUMP_DISPLAY(JUMP_IF, +);
+	case CODE_AND:     JUMP_DISPLAY(AND, +);
+	case CODE_OR:      JUMP_DISPLAY(OR, +);
+
+	case CODE_CLOSE_UPVALUE: OPCODE_DISPLAY(CLOSE_UPVALUE);
+	case CODE_RETURN:        OPCODE_DISPLAY(RETURN);
+
+	case CODE_CLOSURE:
+		{
+		} break;
+
 	default: fprintf(stdout, "UNKNOWN! [%d]\n", bytecode[i - 1]); break;
 	}
+#undef JUMP_DISPLAY
 #undef VALUE_DISPLAY
 #undef OPCODE_DISPLAY
 #undef BYTE_INSTRUCTION
