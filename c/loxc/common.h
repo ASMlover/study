@@ -63,23 +63,32 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define UINT8_COUNT       (UINT8_MAX + 1)
+#define UINT8_COUNT                         (UINT8_MAX + 1)
 
-typedef uint8_t           byte_t;
-typedef int8_t            i8_t;
-typedef uint8_t           u8_t;
-typedef int16_t           i16_t;
-typedef uint16_t          u16_t;
-typedef int32_t           i32_t;
-typedef uint32_t          u32_t;
-typedef int64_t           i64_t;
-typedef uint64_t          u64_t;
-typedef size_t            sz_t;
+typedef uint8_t         byte_t;
+typedef int8_t          i8_t;
+typedef uint8_t         u8_t;
+typedef int16_t         i16_t;
+typedef uint16_t        u16_t;
+typedef int32_t         i32_t;
+typedef uint32_t        u32_t;
+typedef int64_t         i64_t;
+typedef uint64_t        u64_t;
+typedef size_t          sz_t;
 #if defined(LOXC_ARCH64)
-  typedef int64_t         ssz_t;
+  typedef int64_t       ssz_t;
 #else
-  typedef int32_t         ssz_t;
+  typedef int32_t       ssz_t;
 #endif
-typedef const char*       cstr_t;
+typedef const char*     cstr_t;
+
+static inline u32_t hashString(const char* str, int len) {
+  u32_t hash = 2166136261u;
+  for (int i = 0; i < len; ++i) {
+    hash ^= (u8_t)str[i];
+    hash *= 16777619;
+  }
+  return hash;
+}
 
 #endif
