@@ -41,10 +41,10 @@ typedef enum {
 const char* tokenTypeAsString(TokenType type);
 
 typedef struct {
-  TokenType type;
-  const char* start;
-  int length;
-  int lineno;
+  TokenType             type;
+  const char*           start;
+  int                   length;
+  int                   lineno;
 } Token;
 
 void initScanner(const char* sourceCode);
