@@ -93,7 +93,7 @@ void initChunk(Chunk* chunk);
 void freeChunk(Chunk* chunk);
 
 void writeChunk(Chunk* chunk, u8_t byte, int lineno);
-void addConstant(Chunk* chunk, Value value);
+int addConstant(Chunk* chunk, Value value);
 
 void disassembleChunk(Chunk* chunk, const char* name);
 int disassebleInstruction(Chunk* chunk, int offset);
