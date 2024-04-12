@@ -68,9 +68,9 @@ bool valuesEqual(Value a, Value b) {
 
 void printValue(Value value) {
   switch (value.type) {
-    case VAL_BOOL:   fprintf(stdout, AS_BOOL(value) ? "true" : "false"); break;
-    case VAL_NIL:    fprintf(stdout, "nil"); break;
-    case VAL_NUMBER: fprintf(stdout, "%g", AS_NUMBER(value)); break;
-    case VAL_OBJ:    printObject(value); break;
+  case VAL_BOOL:   fprintf(stdout, AS_BOOL(value) ? "true" : "false"); break;
+  case VAL_NIL:    fprintf(stdout, "nil"); break;
+  case VAL_NUMBER: fprintf(stdout, "%g", AS_NUMBER(value)); break;
+  case VAL_OBJ:    printObject(value); break;
   }
 }
