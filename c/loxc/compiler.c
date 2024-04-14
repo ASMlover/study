@@ -99,6 +99,12 @@ Parser         parser;
 Compiler*      current      = NULL;
 ClassCompiler* currentClass = NULL;
 
+static void expression();
+static void statement();
+static void declaration();
+static ParseRule* getRule(TokenType type);
+static void parsePrecedence(Precedence precedence);
+
 static inline Chunk* currentChunk() {
   return &current->function->chunk;
 }
@@ -247,6 +253,103 @@ static void initCompiler(Compiler* compiler, FunctionType type) {
 }
 
 static ObjFunction* endCompiler() {
+  emitReturn();
+  ObjFunction* function = current->function;
+
+#if defined(LOXC_DEBUG_PRINT_CODE)
+  if (!parser.hadError)
+    disassembleChunk(currentChunk(), NULL != function->name ? function->name->chars : "<script>");
+#endif
+
+  current = current->enclosing;
+  return function;
+}
+
+static void beginScope() {
+  ++current->scopeDepth;
+}
+
+static void endScope() {
+  --current->scopeDepth;
+
+  while (current->localCount > 0 && current->locals[current->localCount - 1].depth > current->scopeDepth) {
+    if (current->locals[current->localCount - 1].isCaptured)
+      emitByte(OP_CLOSE_UPVALUE);
+    else
+      emitByte(OP_POP);
+
+    --current->localCount;
+  }
+}
+
+static inline u8_t identifierConstant(Token* name) {
+  return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+}
+
+static inline bool identifiersEqual(Token* a, Token* b) {
+  if (a->length != b->length)
+    return false;
+  return 0 == memcmp(a->start, b->start, a->length);
+}
+
+static int resolveLocal(Compiler* compiler, Token* name) {
+  for (int i = compiler->localCount - 1; i >= 0; --i) {
+    Local* local = &compiler->locals[i];
+    if (identifiersEqual(name, &local->name)) {
+      if (-1 == local->depth)
+        error("Cannot read local variable in its own initializer.");
+
+      return i;
+    }
+  }
+  return -1;
+}
+
+static int addUpvalue(Compiler* compiler, u8_t index, bool isLocal) {
+  int upvalueCount = compiler->function->upvalueCount;
+  for (int i = 0; i < upvalueCount; ++i) {
+    Upvalue* Upvalue = &compiler->upvalues[i];
+    if (Upvalue->index == index && Upvalue->isLocal == isLocal)
+      return i;
+  }
+
+  if (UINT8_COUNT == upvalueCount) {
+    error("Too many closure variables in function.");
+    return 0;
+  }
+
+  compiler->upvalues[upvalueCount].isLocal = isLocal;
+  compiler->upvalues[upvalueCount].index = index;
+  return compiler->function->upvalueCount++;
+}
+
+static int resolveUpvalue(Compiler* compiler, Token* name) {
+  if (NULL == compiler->enclosing)
+    return -1;
+
+  int local = resolveLocal(compiler->enclosing, name);
+  if (-1 != local) {
+    compiler->enclosing->locals[local].isCaptured = true;
+    return addUpvalue(compiler, (u8_t)local, true);
+  }
+
+  int upvalue = resolveUpvalue(compiler->enclosing, name);
+  if (-1 != upvalue)
+    return addUpvalue(compiler, (u8_t)upvalue, false);
+
+  return -1;
+}
+
+static void addLocal(Token name) {
+  if (UINT8_COUNT == current->localCount) {
+    error("Too many local variables in function.");
+    return;
+  }
+
+  Local* local = &current->locals[current->localCount++];
+  local->name = name;
+  local->depth = -1;
+  local->isCaptured = false;
 }
 
 ObjFunction* compile(const char* sourceCode) { return NULL; }
