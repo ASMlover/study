@@ -352,5 +352,103 @@ static void addLocal(Token name) {
   local->isCaptured = false;
 }
 
+static void declareVariable() {
+  if (0 == current->scopeDepth)
+    return;
+
+  Token* name = &parser.previous;
+  for (int i = current->localCount - 1; i >= 0; --i) {
+    Local* local = &current->locals[i];
+    if (-1 != local->depth && local->depth < current->scopeDepth)
+      break;
+
+    if (identifiersEqual(name, &local->name))
+      error("Already a variable with this name in this scope.");
+  }
+
+  addLocal(*name);
+}
+
+static u8_t parseVariable(const char* errorMessage) {
+  consume(TOKEN_IDENTIFIER, errorMessage);
+
+  declareVariable();
+  if (current->scopeDepth > 0)
+    return 0;
+
+  return identifierConstant(&parser.previous);
+}
+
+static void markInitialized() {
+  if (0 == current->scopeDepth)
+    return;
+  current->locals[current->localCount - 1].depth = current->scopeDepth;
+}
+
+static void defineVariable(u8_t global) {
+  if (current->scopeDepth > 0) {
+    markInitialized();
+    return;
+  }
+
+  emitBytes(OP_DEFINE_GLOBAL, global);
+}
+
+static u8_t argumentList() {
+  u8_t argCount = 0;
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      expression();
+
+      if (argCount >= 255)
+        error("Cannot have more than 255 arguments.");
+
+      ++argCount;
+    } while (match(TOKEN_COMMA));
+  }
+  consume(TOKEN_RIGHT_PAREN, "Expect `)` after arguments.");
+  return argCount;
+}
+
+static void and_(bool canAssign) {
+  int endJump = emitJump(OP_JUMP_IF_FALSE);
+
+  emitByte(OP_POP);
+  parsePrecedence(PREC_AND);
+
+  patchJump(endJump);
+}
+
+static void binary(bool canAssign) {
+  TokenType operatorType = parser.previous.type;
+  ParseRule* rule = getRule(operatorType);
+  parsePrecedence((Precedence)(rule->precedence + 1));
+
+  switch (operatorType) {
+  case TOKEN_BANG_EQUAL:    emitBytes(OP_EQUAL, OP_NOT); break;
+  case TOKEN_EQUAL_EQUAL:   emitByte(OP_EQUAL); break;
+  case TOKEN_GREATER:       emitByte(OP_GREATER); break;
+  case TOKEN_GREATER_EQUAL: emitBytes(OP_LESS, OP_NOT); break;
+  case TOKEN_LESS:          emitByte(OP_LESS); break;
+  case TOKEN_LESS_EQUAL:    emitBytes(OP_GREATER, OP_NOT); break;
+  case TOKEN_PLUS:          emitByte(OP_ADD); break;
+  case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
+  case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
+  case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
+  default:                  break;
+  }
+}
+
+static void call(bool canAssign) {
+  u8_t argCount = argumentList();
+  emitBytes(OP_CALL, argCount);
+}
+
+static void expression() {}
+static void statement() {}
+static void declaration() {}
+static ParseRule* getRule(TokenType type) { return NULL; }
+static void parsePrecedence(Precedence precedence) {}
+
 ObjFunction* compile(const char* sourceCode) { return NULL; }
 void markCompilerRoots() {}
