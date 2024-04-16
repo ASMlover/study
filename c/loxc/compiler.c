@@ -444,6 +444,58 @@ static void call(bool canAssign) {
   emitBytes(OP_CALL, argCount);
 }
 
+static void dot(bool canAssign) {
+  consume(TOKEN_IDENTIFIER, "Expect property name after `.`.");
+  u8_t name = identifierConstant(&parser.previous);
+
+  if (canAssign && match(TOKEN_EQUAL)) {
+    expression();
+    emitBytes(OP_SET_PROPERTY, name);
+  }
+  else if (match(TOKEN_LEFT_PAREN)) {
+    u8_t argCount = argumentList();
+    emitBytes(OP_INVOKE, name);
+    emitByte(argCount);
+  }
+  else {
+    emitBytes(OP_GET_PROPERTY, name);
+  }
+}
+
+static void literal(bool canAssign) {
+  switch (parser.previous.type) {
+  case KEYWORD_FALSE: emitByte(OP_FALSE); break;
+  case KEYWORD_NIL:   emitByte(OP_NIL); break;
+  case KEYWORD_TRUE:  emitByte(OP_TRUE); break;
+  default:            return;
+  }
+}
+
+static void grouping(bool canAssign) {
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect `)` after expression.");
+}
+
+static void number(bool canAssign) {
+  double value = strtod(parser.previous.start, NULL);
+  emitConstant(NUMBER_VAL(value));
+}
+
+static void or_(bool canAssign) {
+  int elseJump = emitJump(OP_JUMP_IF_FALSE);
+  int endJump = emitJump(OP_JUMP);
+
+  patchJump(elseJump);
+  emitByte(OP_POP);
+
+  parsePrecedence(PREC_OR);
+  patchJump(endJump);
+}
+
+static void string(bool canAssign) {
+  emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
+}
+
 static void expression() {}
 static void statement() {}
 static void declaration() {}
