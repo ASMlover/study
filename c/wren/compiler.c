@@ -60,49 +60,49 @@ typedef enum {
 } TokenType;
 
 typedef struct {
-	TokenType type;
-	const char* start;
-	int length;
-	int lineno;
-	Value value;
+	TokenType           type;
+	const char*         start;
+	int                 length;
+	int                 lineno;
+	Value               value;
 } Token;
 
 typedef struct {
-	WrenVM* vm;
-	ObjModule* module;
-	const char* sourceCode;
-	const char* tokenStart;
-	const char* currentChar;
-	int currentLine;
-	Token current;
-	Token previous;
+	WrenVM*             vm;
+	ObjModule*          module;
+	const char*         sourceCode;
+	const char*         tokenStart;
+	const char*         currentChar;
+	int                 currentLine;
+	Token               current;
+	Token               previous;
 
-	int parens[WREN_MAX_INTERPOLATION_NESTING];
-	int numParens;
+	int                 parens[WREN_MAX_INTERPOLATION_NESTING];
+	int                 numParens;
 
-	bool skipNewlines;
-	bool printErrors;
-	bool hasError;
+	bool                skipNewlines;
+	bool                printErrors;
+	bool                hasError;
 } Parser;
 
 typedef struct {
-	const char* name;
-	int length;
-	int depth;
-	bool isUpvalue;
+	const char*         name;
+	int                 length;
+	int                 depth;
+	bool                isUpvalue;
 } Local;
 
 typedef struct {
-	bool isLocal;
-	int index;
+	bool                isLocal;
+	int                 index;
 } CompilerUpvalue;
 
 typedef struct Loop {
-	int start;
-	int exitJump;
-	int body;
-	int scopeDepth;
-	struct Loop* enclosing;
+	int                 start;
+	int                 exitJump;
+	int                 body;
+	int                 scopeDepth;
+	struct Loop*        enclosing;
 } Loop;
 
 typedef enum {
@@ -115,36 +115,36 @@ typedef enum {
 } SignatureType;
 
 typedef struct {
-	const char* name;
-	int length;
-	SignatureType type;
-	int arity;
+	const char*         name;
+	int                 length;
+	SignatureType       type;
+	int                 arity;
 } Signature;
 
 typedef struct {
-	ObjString* name;
-	SymbolTable fields;
-	IntBuffer methods;
-	IntBuffer staticMethods;
-	bool isForeign;
-	bool inStatic;
-	Signature* signature;
+	ObjString*          name;
+	SymbolTable         fields;
+	IntBuffer           methods;
+	IntBuffer           staticMethods;
+	bool                isForeign;
+	bool                inStatic;
+	Signature*          signature;
 } ClassInfo;
 
 struct Compiler {
-	Parser* parser;
-	struct Compiler* parent;
+	Parser*             parser;
+	struct Compiler*    parent;
 
-	Local locals[WREN_MAX_LOCALS];
-	int numLocals;
-	CompilerUpvalue upvalues[WREN_MAX_UPVALUES];
+	Local               locals[WREN_MAX_LOCALS];
+	int                 numLocals;
+	CompilerUpvalue     upvalues[WREN_MAX_UPVALUES];
 
-	int scopeDepth;
-	int numSlots;
-	Loop* loop;
-	ClassInfo* enclosingClass;
-	ObjFn* fn;
-	ObjMap* constants;
+	int                 scopeDepth;
+	int                 numSlots;
+	Loop*               loop;
+	ClassInfo*          enclosingClass;
+	ObjFn*              fn;
+	ObjMap*             constants;
 };
 
 typedef enum {
@@ -154,14 +154,14 @@ typedef enum {
 } Scope;
 
 typedef struct {
-	int index;
-	Scope scope;
+	int                 index;
+	Scope               scope;
 } Variable;
 
 typedef struct {
-	const char* identifier;
-	sz_t length;
-	TokenType tokenType;
+	const char*         identifier;
+	sz_t                length;
+	TokenType           tokenType;
 } Keyword;
 
 typedef enum {
@@ -190,11 +190,11 @@ typedef void (*GrammarFn)(Compiler* compiler, bool canAssign);
 typedef void (*SignatureFn)(Compiler* compiler, Signature* signature);
 
 typedef struct {
-	GrammarFn prefix;
-	GrammarFn infix;
-	SignatureFn method;
-	Precedence precedence;
-	const char* name;
+	GrammarFn           prefix;
+	GrammarFn           infix;
+	SignatureFn         method;
+	Precedence          precedence;
+	const char*         name;
 } GrammarRule;
 
 static const int stackEffects[] = {

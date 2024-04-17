@@ -174,7 +174,56 @@ static int dumpInstruction(WrenVM* vm, ObjFn* fn, int i, int* lastLine) {
 
 	case CODE_CLOSURE:
 		{
+			int constant = READ_SHORT();
+			fprintf(stdout, "%-16s %5d ", "CLOSURE", constant);
+			wrenDumpValue(fn->constants.data[constant]);
+			fprintf(stdout, " ");
+			ObjFn* loadedFn = AS_FN(fn->constants.data[constant]);
+			for (int j = 0; j < loadedFn->numUpvalues; ++j) {
+				int isLocal = READ_BYTE();
+				int index = READ_BYTE();
+				if (j > 0)
+					fprintf(stdout, ", ");
+				fprintf(stdout, "%s %d", isLocal ? "local" : "upvalue", index);
+			}
+			fprintf(stdout, "\n");
 		} break;
+
+	case CODE_CONSTRUCT:         OPCODE_DISPLAY(CONSTRUCT);
+	case CODE_FOREIGN_CONSTRUCT: OPCODE_DISPLAY(FOREIGN_CONSTRUCT);
+
+	case CODE_CLASS:
+		{
+			int numFields = READ_BYTE();
+			fprintf(stdout, "%-16s %5d fields\n", "CLASS", numFields);
+		} break;
+	case CODE_FOREIGN_CLASS: OPCODE_DISPLAY(FOREIGN_CLASS);
+	case CODE_METHOD_INSTANCE:
+		{
+			int symbol = READ_SHORT();
+			fprintf(stdout, "%-16s %5d `%s`\n", "METHOD_INSTANCE", symbol, vm->methodNames.data[symbol]->value);
+		} break;
+	case CODE_METHOD_STATIC:
+		{
+			int symbol = READ_SHORT();
+			fprintf(stdout, "%-16s %5d `%s`\n", "METHOD_STATIC", symbol, vm->methodNames.data[symbol]->value);
+		} break;
+	case CODE_END_MODULE: OPCODE_DISPLAY(END_MODULE);
+	case CODE_IMPORT_MODULE:
+		{
+			int name = READ_SHORT();
+			fprintf(stdout, "%-16s %5d `", "IMPORT_MODULE", name);
+			wrenDumpValue(fn->constants.data[name]);
+			fprintf(stdout, "`\n");
+		} break;
+	case CODE_IMPORT_VARIABLE:
+		{
+			int variable = READ_SHORT();
+			fprintf(stdout, "%-16s %5d `", "IMPORT_VARIABLE", variable);
+			wrenDumpValue(fn->constants.data[variable]);
+			fprintf(stdout, "`\n");
+		} break;
+	case CODE_END: OPCODE_DISPLAY(END);
 
 	default: fprintf(stdout, "UNKNOWN! [%d]\n", bytecode[i - 1]); break;
 	}
@@ -225,6 +274,29 @@ void wrenDumpValue(Value value) {
 	}
 }
 
-int wrenDumpInstruction(WrenVM* vm, ObjFn* fn, int i) { return 0; }
-void wrenDumpCode(WrenVM* vm, ObjFn* fn) {}
-void wrenDumpStack(ObjFiber* fiber) {}
+int wrenDumpInstruction(WrenVM* vm, ObjFn* fn, int i) {
+	return dumpInstruction(vm, fn, i, NULL);
+}
+
+void wrenDumpCode(WrenVM* vm, ObjFn* fn) {
+	fprintf(stdout, "%s: %s\n", NULL == fn->module->name ? "<core>" : fn->module->name->value, fn->debug->name);
+
+	int i = 0;
+	int lastLine = -1;
+	for (;;) {
+		int offset = dumpInstruction(vm, fn, i, &lastLine);
+		if (-1 == offset)
+			break;
+		i += offset;
+	}
+	fprintf(stdout, "\n");
+}
+
+void wrenDumpStack(ObjFiber* fiber) {
+	fprintf(stdout, "(fiber %p)i ", fiber);
+	for (Value* slot = fiber->stack; slot < fiber->stackTop; ++slot) {
+		wrenDumpValue(*slot);
+		fprintf(stdout, " | ");
+	}
+	fprintf(stdout, "\n");
+}
