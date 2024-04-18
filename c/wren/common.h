@@ -127,20 +127,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef int8_t      i8_t;
-typedef uint8_t     u8_t;
-typedef int16_t     i16_t;
-typedef uint16_t    u16_t;
-typedef int32_t     i32_t;
-typedef uint32_t    u32_t;
-typedef int64_t     i64_t;
-typedef uint64_t    u64_t;
-typedef size_t      sz_t;
+typedef int8_t          i8_t;
+typedef uint8_t         u8_t;
+typedef int16_t         i16_t;
+typedef uint16_t        u16_t;
+typedef int32_t         i32_t;
+typedef uint32_t        u32_t;
+typedef int64_t         i64_t;
+typedef uint64_t        u64_t;
+typedef size_t          sz_t;
 #if defined(WREN_ARCH64)
-	typedef int64_t ssz_t;
+	typedef int64_t     ssz_t;
 #else
-	typedef int32_t ssz_t;
+	typedef int32_t     ssz_t;
 #endif
-typedef const char* cstr_t;
+typedef const char*     cstr_t;
 
 #endif

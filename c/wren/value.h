@@ -34,40 +34,40 @@
 #include "common.h"
 #include "utils.h"
 
-#define AS_CLASS(value)                 ((ObjClass*)AS_OBJ(value))              // ObjClass*
-#define AS_CLOSURE(value)               ((ObjClosure*)AS_OBJ(value))            // ObjClosure*
-#define AS_FIBER(value)                 ((ObjFiber*)AS_OBJ(value))              // ObjFiber*
-#define AS_FN(value)                    ((ObjFn*)AS_OBJ(value))                 // ObjFn*
-#define AS_FOREIGN(value)               ((ObjForeign*)AS_OBJ(value))            // ObjForeign*
-#define AS_INSTANCE(value)              ((ObjInstance*)AS_OBJ(value))           // ObjInstance*
-#define AS_LIST(value)                  ((ObjList*)AS_OBJ(value))               // ObjList*
-#define AS_MAP(value)                   ((ObjMap*)AS_OBJ(value))                // ObjMap*
-#define AS_MODULE(value)                ((ObjModule*)AS_OBJ(value))             // ObjModule*
-#define AS_NUM(value)                   (wrenValueToNum(value))                 // double
-#define AS_RANGE(value)                 ((ObjRange*)AS_OBJ(value))              // ObjRange*
-#define AS_STRING(value)                ((ObjString*)AS_OBJ(value))             // ObjString*
-#define AS_CSTRING(str)                 (AS_STRING(str)->value)                 // const char*
-#define AS_UPVALUE(value)               ((ObjUpvalue*)AS_OBJ(value))            // ObjUpvalue*
+#define AS_CLASS(value)                     ((ObjClass*)AS_OBJ(value))              // ObjClass*
+#define AS_CLOSURE(value)                   ((ObjClosure*)AS_OBJ(value))            // ObjClosure*
+#define AS_FIBER(value)                     ((ObjFiber*)AS_OBJ(value))              // ObjFiber*
+#define AS_FN(value)                        ((ObjFn*)AS_OBJ(value))                 // ObjFn*
+#define AS_FOREIGN(value)                   ((ObjForeign*)AS_OBJ(value))            // ObjForeign*
+#define AS_INSTANCE(value)                  ((ObjInstance*)AS_OBJ(value))           // ObjInstance*
+#define AS_LIST(value)                      ((ObjList*)AS_OBJ(value))               // ObjList*
+#define AS_MAP(value)                       ((ObjMap*)AS_OBJ(value))                // ObjMap*
+#define AS_MODULE(value)                    ((ObjModule*)AS_OBJ(value))             // ObjModule*
+#define AS_NUM(value)                       (wrenValueToNum(value))                 // double
+#define AS_RANGE(value)                     ((ObjRange*)AS_OBJ(value))              // ObjRange*
+#define AS_STRING(value)                    ((ObjString*)AS_OBJ(value))             // ObjString*
+#define AS_CSTRING(str)                     (AS_STRING(str)->value)                 // const char*
+#define AS_UPVALUE(value)                   ((ObjUpvalue*)AS_OBJ(value))            // ObjUpvalue*
 
-#define BOOL_VAL(boolean)               ((boolean) ? TRUE_VAL : FALSE_VAL)      // boolean
-#define NUM_VAL(num)                    (wrenNumToValue(num))                   // double
-#define OBJ_VAL(obj)                    (wrenObjectToValue((Obj*)(obj)))        // Any Objxxx*
+#define BOOL_VAL(boolean)                   ((boolean) ? TRUE_VAL : FALSE_VAL)      // boolean
+#define NUM_VAL(num)                        (wrenNumToValue(num))                   // double
+#define OBJ_VAL(obj)                        (wrenObjectToValue((Obj*)(obj)))        // Any Objxxx*
 
-#define IS_BOOL(value)                  (wrenIsBool(value))                     // Bool
-#define IS_CLASS(value)                 (wrenIsObjType(value, OBJ_CLASS))       // ObjClass
-#define IS_CLOSURE(vlaue)               (wrenIsObjType(value, OBJ_CLOSURE))     // ObjClosure
-#define IS_FIBER(value)                 (wrenIsObjType(value, OBJ_FIBER))       // ObjFiber
-#define IS_FN(value)                    (wrenIsObjType(value, OBJ_FN))          // ObjFn
-#define IS_FOREIGN(value)               (wrenIsObjType(value, OBJ_FOREIGN))     // ObjForeign
-#define IS_INSTANCE(value)              (wrenIsObjType(value, OBJ_INSTANCE))    // ObjInstance
-#define IS_LIST(value)                  (wrenIsObjType(value, OBJ_LIST))        // ObjList
-#define IS_MAP(value)                   (wrenIsObjType(value, OBJ_MAP))         // ObjMap
-#define IS_MODULE(value)                (wrenIsObjType(value, OBJ_MODULE))      // ObjModule
-#define IS_RANGE(value)                 (wrenIsObjType(value, OBJ_RANGE))       // ObjRange
-#define IS_STRING(value)                (wrenIsObjType(value, OBJ_STRING))      // ObjString
-#define IS_UPVALUE(value)               (wrenIsObjType(value, OBJ_UPVALUE))     // ObjUpvalue
+#define IS_BOOL(value)                      (wrenIsBool(value))                     // Bool
+#define IS_CLASS(value)                     (wrenIsObjType(value, OBJ_CLASS))       // ObjClass
+#define IS_CLOSURE(vlaue)                   (wrenIsObjType(value, OBJ_CLOSURE))     // ObjClosure
+#define IS_FIBER(value)                     (wrenIsObjType(value, OBJ_FIBER))       // ObjFiber
+#define IS_FN(value)                        (wrenIsObjType(value, OBJ_FN))          // ObjFn
+#define IS_FOREIGN(value)                   (wrenIsObjType(value, OBJ_FOREIGN))     // ObjForeign
+#define IS_INSTANCE(value)                  (wrenIsObjType(value, OBJ_INSTANCE))    // ObjInstance
+#define IS_LIST(value)                      (wrenIsObjType(value, OBJ_LIST))        // ObjList
+#define IS_MAP(value)                       (wrenIsObjType(value, OBJ_MAP))         // ObjMap
+#define IS_MODULE(value)                    (wrenIsObjType(value, OBJ_MODULE))      // ObjModule
+#define IS_RANGE(value)                     (wrenIsObjType(value, OBJ_RANGE))       // ObjRange
+#define IS_STRING(value)                    (wrenIsObjType(value, OBJ_STRING))      // ObjString
+#define IS_UPVALUE(value)                   (wrenIsObjType(value, OBJ_UPVALUE))     // ObjUpvalue
 
-#define CONST_STRING(vm, text)          wrenNewStringLength((vm), (text), sizeof(text) - 1)
+#define CONST_STRING(vm, text)              wrenNewStringLength((vm), (text), sizeof(text) - 1)
 
 typedef enum {
 	OBJ_CLASS,
@@ -88,10 +88,10 @@ typedef struct ObjClass ObjClass;
 typedef struct Obj Obj;
 
 struct Obj {
-	ObjType type;
-	bool isDark;
-	ObjClass* classObj;
-	struct Obj* next;
+	ObjType             type;
+	bool                isDark;
+	ObjClass*           classObj;
+	struct Obj*         next;
 };
 
 typedef enum {
@@ -104,68 +104,68 @@ typedef enum {
 } ValueType;
 
 typedef struct {
-	ValueType type;
+	ValueType           type;
 	union {
-		double num;
-		Obj* obj;
+		double          num;
+		Obj*            obj;
 	} as;
 } Value;
 DECLARE_BUFFER(Value, Value);
 
 struct ObjString {
-	Obj obj;
+	Obj                 obj;
 
-	u32_t length;
-	u32_t hash;
-	char value[WREN_FLEXIBLE_ARRAY];
+	u32_t               length;
+	u32_t               hash;
+	char                value[WREN_FLEXIBLE_ARRAY];
 };
 
 typedef struct ObjUpvalue {
-	Obj obj;
+	Obj                 obj;
 
-	Value* value;
-	Value closed;
-	struct ObjUpvalue* next;
+	Value*              value;
+	Value               closed;
+	struct ObjUpvalue*  next;
 } ObjUpvalue;
 
 typedef bool (*Primitive)(WrenVM* vm, Value* args);
 
 typedef struct {
-	char* name;
-	IntBuffer sourceLines;
+	char*               name;
+	IntBuffer           sourceLines;
 } FnDebug;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	ValueBuffer variables;
-	SymbolTable variableNames;
-	ObjString* name;
+	ValueBuffer         variables;
+	SymbolTable         variableNames;
+	ObjString*          name;
 } ObjModule;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	ByteBuffer code;
-	ValueBuffer constants;
-	ObjModule* module;
-	int maxSlots;
-	int numUpvalues;
-	int arity;
-	FnDebug* debug;
+	ByteBuffer          code;
+	ValueBuffer         constants;
+	ObjModule*          module;
+	int                 maxSlots;
+	int                 numUpvalues;
+	int                 arity;
+	FnDebug*            debug;
 } ObjFn;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	ObjFn* fn;
-	ObjUpvalue* upvalues[WREN_FLEXIBLE_ARRAY];
+	ObjFn*              fn;
+	ObjUpvalue*         upvalues[WREN_FLEXIBLE_ARRAY];
 } ObjClosure;
 
 typedef struct {
-	u8_t* ip;
-	ObjClosure* closure;
-	Value* stackStart;
+	u8_t*               ip;
+	ObjClosure*         closure;
+	Value*              stackStart;
 } CallFrame;
 
 typedef enum {
@@ -175,18 +175,18 @@ typedef enum {
 } FiberState;
 
 typedef struct ObjFiber {
-	Obj obj;
+	Obj                 obj;
 
-	Value* stack;
-	Value* stackTop;
-	int stackCapacity;
-	CallFrame* frames;
-	int numFrames;
-	int frameCapacity;
-	ObjUpvalue* openUpvalues;
-	struct ObjFiber* caller;
-	Value error;
-	FiberState state;
+	Value*              stack;
+	Value*              stackTop;
+	int                 stackCapacity;
+	CallFrame*          frames;
+	int                 numFrames;
+	int                 frameCapacity;
+	ObjUpvalue*         openUpvalues;
+	struct ObjFiber*    caller;
+	Value               error;
+	FiberState          state;
 } ObjFiber;
 
 typedef enum {
@@ -197,81 +197,81 @@ typedef enum {
 } MethodType;
 
 typedef struct {
-	MethodType type;
+	MethodType              type;
 	union {
-		Primitive primitive;
+		Primitive           primitive;
 		WrenForeignMethodFn foreign;
-		ObjClosure* closure;
+		ObjClosure*         closure;
 	} as;
 } Method;
 DECLARE_BUFFER(Method, Method);
 
 struct ObjClass {
-	Obj obj;
+	Obj                 obj;
 
-	ObjClass* superclass;
-	int numFields;
-	MethodBuffer methods;
-	ObjString* name;
+	ObjClass*           superclass;
+	int                 numFields;
+	MethodBuffer        methods;
+	ObjString*          name;
 };
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	u8_t data[WREN_FLEXIBLE_ARRAY];
+	u8_t                data[WREN_FLEXIBLE_ARRAY];
 } ObjForeign;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	Value fields[WREN_FLEXIBLE_ARRAY];
+	Value               fields[WREN_FLEXIBLE_ARRAY];
 } ObjInstance;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	ValueBuffer elements;
+	ValueBuffer         elements;
 } ObjList;
 
 typedef struct {
-	Value key;
-	Value value;
+	Value               key;
+	Value               value;
 } MapEntry;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	u32_t count;
-	u32_t capacity;
-	MapEntry* entries;
+	u32_t               count;
+	u32_t               capacity;
+	MapEntry*           entries;
 } ObjMap;
 
 typedef struct {
-	Obj obj;
+	Obj                 obj;
 
-	double from;
-	double to;
-	bool isInclusive;
+	double              from;
+	double              to;
+	bool                isInclusive;
 } ObjRange;
 
-#define AS_BOOL(value)                  ((value).type == VAL_TRUE)
-#define AS_OBJ(value)                   ((value).as.obj)
+#define AS_BOOL(value)                      ((value).type == VAL_TRUE)
+#define AS_OBJ(value)                       ((value).as.obj)
 
-#define IS_OBJ(value)                   ((value).type == VAL_OBJ)
-#define IS_FALSE(value)                 ((value).type == VAL_FALSE)
-#define IS_NULL(value)                  ((value).type == VAL_NULL)
-#define IS_NUM(value)                   ((value).type == VAL_NUM)
-#define IS_UNDEFINED(value)             ((value).type == VAL_UNDEFINED)
+#define IS_OBJ(value)                       ((value).type == VAL_OBJ)
+#define IS_FALSE(value)                     ((value).type == VAL_FALSE)
+#define IS_NULL(value)                      ((value).type == VAL_NULL)
+#define IS_NUM(value)                       ((value).type == VAL_NUM)
+#define IS_UNDEFINED(value)                 ((value).type == VAL_UNDEFINED)
 
-#define FALSE_VAL                       ((Value){VAL_FALSE, {0}})
-#define NULL_VAL                        ((Value){VAL_NULL, {0}})
-#define TRUE_VAL                        ((Value){VAL_TRUE, {0}})
-#define UNDEFINED_VAL                   ((Value){VAL_UNDEFINED, {0}})
+#define FALSE_VAL                           ((Value){VAL_FALSE, {0}})
+#define NULL_VAL                            ((Value){VAL_NULL, {0}})
+#define TRUE_VAL                            ((Value){VAL_TRUE, {0}})
+#define UNDEFINED_VAL                       ((Value){VAL_UNDEFINED, {0}})
 
 typedef union {
-	u64_t bits64;
-	u32_t bits32[2];
-	double num;
+	u64_t               bits64;
+	u32_t               bits32[2];
+	double              num;
 } DoubleBits;
 
 ObjClass* wrenNewSingleClass(WrenVM* vm, int numFields, ObjString* name);

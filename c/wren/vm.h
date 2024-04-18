@@ -44,46 +44,46 @@ typedef enum {
 } Code;
 
 struct WrenHandle {
-	Value value;
+	Value               value;
 
-	WrenHandle* prev;
-	WrenHandle* next;
+	WrenHandle*         prev;
+	WrenHandle*         next;
 };
 
 struct WrenVM {
-	ObjClass* boolClass;
-	ObjClass* classClass;
-	ObjClass* fiberClass;
-	ObjClass* fnClass;
-	ObjClass* listClass;
-	ObjClass* mapClass;
-	ObjClass* nullClass;
-	ObjClass* numClass;
-	ObjClass* objectClass;
-	ObjClass* rangeClass;
-	ObjClass* stringClass;
+	ObjClass*           boolClass;
+	ObjClass*           classClass;
+	ObjClass*           fiberClass;
+	ObjClass*           fnClass;
+	ObjClass*           listClass;
+	ObjClass*           mapClass;
+	ObjClass*           nullClass;
+	ObjClass*           numClass;
+	ObjClass*           objectClass;
+	ObjClass*           rangeClass;
+	ObjClass*           stringClass;
 
-	ObjFiber* fiber;
-	ObjMap* modules;
-	ObjModule* lastModule;
+	ObjFiber*           fiber;
+	ObjMap*             modules;
+	ObjModule*          lastModule;
 
-	sz_t bytesAllocated;
-	sz_t nextGC;
+	sz_t                bytesAllocated;
+	sz_t                nextGC;
 
-	Obj* first;
-	Obj** gray;
-	int grayCount;
-	int grayCapacity;
+	Obj*                first;
+	Obj**               gray;
+	int                 grayCount;
+	int                 grayCapacity;
 
-	Obj* tempRoots[WREN_MAX_TEMP_ROOTS];
-	int numTempRoots;
+	Obj*                tempRoots[WREN_MAX_TEMP_ROOTS];
+	int                 numTempRoots;
 
-	WrenHandle* handles;
-	Value* apiStack;
+	WrenHandle*         handles;
+	Value*              apiStack;
 
-	WrenConfiguration config;
-	Compiler* compiler;
-	SymbolTable methodNames;
+	WrenConfiguration   config;
+	Compiler*           compiler;
+	SymbolTable         methodNames;
 };
 
 void* wrenReallocate(WrenVM* vm, void* memory, sz_t oldSize, sz_t newSize);

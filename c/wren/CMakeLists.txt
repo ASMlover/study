@@ -64,7 +64,10 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS_${BUILD_TYPE}}"
 file(GLOB WREN_SOURCES
 	main.c
 	compiler.c
+	core.c
 	debug.c
+	opt_meta.c
+	opt_random.c
 	utils.c
 	value.c
 	vm.c
