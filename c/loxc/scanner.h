@@ -49,5 +49,6 @@ typedef struct {
 
 void initScanner(const char* sourceCode);
 Token scanToken();
+Token syntheticToken(const char* text);
 
 #endif

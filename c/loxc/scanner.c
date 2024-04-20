@@ -252,3 +252,10 @@ Token scanToken() {
 
   return errorToken("Unexpected character.");
 }
+
+Token syntheticToken(const char* text) {
+  Token token;
+  token.start = text;
+  token.length = (int)strlen(text);
+  return token;
+}
