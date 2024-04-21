@@ -496,6 +496,69 @@ static void string(bool canAssign) {
   emitConstant(OBJ_VAL(copyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
+static void namedVariable(Token name, bool canAssign) {
+  u8_t getOp, setOp;
+  int arg = resolveLocal(current, &name);
+  if (-1 != arg) {
+    getOp = OP_GET_LOCAL;
+    setOp = OP_SET_LOCAL;
+  }
+  else if (-1 != (arg = resolveUpvalue(current, &name))) {
+    getOp = OP_GET_UPVALUE;
+    setOp = OP_SET_UPVALUE;
+  }
+  else {
+    arg = identifierConstant(&name);
+    getOp = OP_GET_GLOBAL;
+    setOp = OP_SET_GLOBAL;
+  }
+
+  if (canAssign && match(TOKEN_EQUAL)) {
+    expression();
+    emitBytes(setOp, (u8_t)arg);
+  }
+  else {
+    emitBytes(getOp, (u8_t)arg);
+  }
+}
+
+static void variable(bool canAssign) {
+  namedVariable(parser.previous, canAssign);
+}
+
+static void super_(bool canAssign) {
+  if (NULL == currentClass)
+    error("Cannot use `super` outside of a class.");
+  else if (!currentClass->hasSuperclass)
+    error("Cannot use `super` in a class with no superclass.");
+
+  consume(TOKEN_DOT, "Expect `.` after `super`.");
+  consume(TOKEN_IDENTIFIER, "Expect superclass method name.");
+  u8_t name = identifierConstant(&parser.previous);
+
+  namedVariable(syntheticToken("this"), false);
+
+  if (match(TOKEN_LEFT_PAREN)) {
+    u8_t argCount = argumentList();
+    namedVariable(syntheticToken("super"), false);
+    emitBytes(OP_SUPER_INVOKE, name);
+    emitByte(argCount);
+  }
+  else {
+    namedVariable(syntheticToken("super"), false);
+    emitBytes(OP_GET_SUPER, name);
+  }
+}
+
+static void this_(bool canAssign) {
+  if (NULL == currentClass) {
+    error("Cannot use `this` outside of a class.");
+    return;
+  }
+
+  variable(false);
+}
+
 static void expression() {}
 static void statement() {}
 static void declaration() {}
