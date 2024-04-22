@@ -49,7 +49,7 @@ typedef enum {
   PREC_EQUALITY,        // == !=
   PREC_COMPARISON,      // < > <= >=
   PREC_TERM,            // + -
-  PERC_FACTOR,          // * /
+  PREC_FACTOR,          // * /
   PREC_UNARY,           // ! -
   PREC_CALL,            // . ()
   PREC_PRIMARY,
@@ -558,6 +558,64 @@ static void this_(bool canAssign) {
 
   variable(false);
 }
+
+static void unary(bool canAssign) {
+  TokenType operatorType = parser.previous.type;
+
+  parsePrecedence(PREC_UNARY);
+  switch (operatorType) {
+  case TOKEN_BANG:  emitByte(OP_NOT); break;
+  case TOKEN_MINUS: emitByte(OP_NEGATE); break;
+  default:          return; // Unreachable
+  }
+}
+
+static ParseRule rules[] = {
+  [TOKEN_LEFT_PAREN]    = {grouping, call, PREC_CALL},  // PUNCTUATOR(LEFT_PAREN, "(")
+  [TOKEN_RIGHT_PAREN]   = {NULL, NULL, PREC_NONE},      // PUNCTUATOR(RIGHT_PAREN, ")")
+  [TOKEN_LEFT_BRACE]    = {NULL, NULL, PREC_NONE},      // PUNCTUATOR(LEFT_BRACE, "{")
+  [TOKEN_RIGHT_BRACE]   = {NULL, NULL, PREC_NONE},      // PUNCTUATOR(RIGHT_BRACE, "}")
+  [TOKEN_COMMA]         = {NULL, NULL, PREC_NONE},      // PUNCTUATOR(COMMA, ",")
+  [TOKEN_DOT]           = {NULL, dot, PREC_CALL},       // PUNCTUATOR(DOT, ".")
+  [TOKEN_MINUS]         = {unary, binary, PREC_TERM},   // PUNCTUATOR(MINUS, "-")
+  [TOKEN_PLUS]          = {NULL, binary, PREC_TERM},    // PUNCTUATOR(PLUS, "+")
+  [TOKEN_SEMICOLON]     = {NULL, NULL, PREC_NONE},      // PUNCTUATOR(SEMICOLON, ";")
+  [TOKEN_SLASH]         = {NULL, binary, PREC_FACTOR},  // PUNCTUATOR(SLASH, "/")
+  [TOKEN_STAR]          = {NULL, binary, PREC_FACTOR},  // PUNCTUATOR(STAR, "*")
+
+  [TOKEN_BANG]          = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(BANG, "!")
+  [TOKEN_BANG_EQUAL]    = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(BANG_EQUAL, "!=")
+  [TOKEN_EQUAL]         = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(EQUAL, "=")
+  [TOKEN_EQUAL_EQUAL]   = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(EQUAL_EQUAL, "==")
+  [TOKEN_GREATER]       = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(GREATER, ">")
+  [TOKEN_GREATER_EQUAL] = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(GREATER_EQUAL, ">=")
+  [TOKEN_LESS]          = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(LESS, "<")
+  [TOKEN_LESS_EQUAL]    = {NULL, NULL, PREC_NONE}, // PUNCTUATOR(LESS_EQUAL, "<=")
+
+  [TOKEN_IDENTIFIER]    = {NULL, NULL, PREC_NONE}, // TOKEN(IDENTIFIER, "Identifier")
+  [TOKEN_STRING]        = {NULL, NULL, PREC_NONE}, // TOKEN(STRING, "String")
+  [TOKEN_NUMBER]        = {NULL, NULL, PREC_NONE}, // TOKEN(NUMBER, "Number")
+
+  [KEYWORD_AND]         = {NULL, NULL, PREC_NONE}, // KEYWORD(AND, "and")
+  [KEYWORD_CLASS]       = {NULL, NULL, PREC_NONE}, // KEYWORD(CLASS, "class")
+  [KEYWORD_ELSE]        = {NULL, NULL, PREC_NONE}, // KEYWORD(ELSE, "else")
+  [KEYWORD_FALSE]       = {NULL, NULL, PREC_NONE}, // KEYWORD(FALSE, "false")
+  [KEYWORD_FOR]         = {NULL, NULL, PREC_NONE}, // KEYWORD(FOR, "for")
+  [KEYWORD_FUN]         = {NULL, NULL, PREC_NONE}, // KEYWORD(FUN, "fun")
+  [KEYWORD_IF]          = {NULL, NULL, PREC_NONE}, // KEYWORD(IF, "if")
+  [KEYWORD_NIL]         = {NULL, NULL, PREC_NONE}, // KEYWORD(NIL, "nil")
+  [KEYWORD_OR]          = {NULL, NULL, PREC_NONE}, // KEYWORD(OR, "or")
+  [KEYWORD_PRINT]       = {NULL, NULL, PREC_NONE}, // KEYWORD(PRINT, "print")
+  [KEYWORD_RETURN]      = {NULL, NULL, PREC_NONE}, // KEYWORD(RETURN, "return")
+  [KEYWORD_SUPER]       = {NULL, NULL, PREC_NONE}, // KEYWORD(SUPER, "super")
+  [KEYWORD_THIS]        = {NULL, NULL, PREC_NONE}, // KEYWORD(THIS, "this")
+  [KEYWORD_TRUE]        = {NULL, NULL, PREC_NONE}, // KEYWORD(TRUE, "true")
+  [KEYWORD_VAR]         = {NULL, NULL, PREC_NONE}, // KEYWORD(VAR, "var")
+  [KEYWORD_WHILE]       = {NULL, NULL, PREC_NONE}, // KEYWORD(WHILE, "while")
+
+  [TOKEN_ERROR]         = {NULL, NULL, PREC_NONE}, // TOKEN(ERROR, "Error")
+  [TOKEN_EOF]           = {NULL, NULL, PREC_NONE}, // TOKEN(EOF, "Eof")
+};
 
 static void expression() {}
 static void statement() {}
