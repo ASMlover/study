@@ -596,32 +596,67 @@ static ParseRule rules[] = {
   [TOKEN_STRING]        = {string, NULL, PREC_NONE},        // TOKEN(STRING, "String")
   [TOKEN_NUMBER]        = {number, NULL, PREC_NONE},        // TOKEN(NUMBER, "Number")
 
-  [KEYWORD_AND]         = {NULL, NULL, PREC_NONE}, // KEYWORD(AND, "and")
-  [KEYWORD_CLASS]       = {NULL, NULL, PREC_NONE}, // KEYWORD(CLASS, "class")
-  [KEYWORD_ELSE]        = {NULL, NULL, PREC_NONE}, // KEYWORD(ELSE, "else")
-  [KEYWORD_FALSE]       = {NULL, NULL, PREC_NONE}, // KEYWORD(FALSE, "false")
-  [KEYWORD_FOR]         = {NULL, NULL, PREC_NONE}, // KEYWORD(FOR, "for")
-  [KEYWORD_FUN]         = {NULL, NULL, PREC_NONE}, // KEYWORD(FUN, "fun")
-  [KEYWORD_IF]          = {NULL, NULL, PREC_NONE}, // KEYWORD(IF, "if")
-  [KEYWORD_NIL]         = {NULL, NULL, PREC_NONE}, // KEYWORD(NIL, "nil")
-  [KEYWORD_OR]          = {NULL, NULL, PREC_NONE}, // KEYWORD(OR, "or")
-  [KEYWORD_PRINT]       = {NULL, NULL, PREC_NONE}, // KEYWORD(PRINT, "print")
-  [KEYWORD_RETURN]      = {NULL, NULL, PREC_NONE}, // KEYWORD(RETURN, "return")
-  [KEYWORD_SUPER]       = {NULL, NULL, PREC_NONE}, // KEYWORD(SUPER, "super")
-  [KEYWORD_THIS]        = {NULL, NULL, PREC_NONE}, // KEYWORD(THIS, "this")
-  [KEYWORD_TRUE]        = {NULL, NULL, PREC_NONE}, // KEYWORD(TRUE, "true")
-  [KEYWORD_VAR]         = {NULL, NULL, PREC_NONE}, // KEYWORD(VAR, "var")
-  [KEYWORD_WHILE]       = {NULL, NULL, PREC_NONE}, // KEYWORD(WHILE, "while")
+  [KEYWORD_AND]         = {NULL, and_, PREC_AND},           // KEYWORD(AND, "and")
+  [KEYWORD_CLASS]       = {NULL, NULL, PREC_NONE},          // KEYWORD(CLASS, "class")
+  [KEYWORD_ELSE]        = {NULL, NULL, PREC_NONE},          // KEYWORD(ELSE, "else")
+  [KEYWORD_FALSE]       = {literal, NULL, PREC_NONE},       // KEYWORD(FALSE, "false")
+  [KEYWORD_FOR]         = {NULL, NULL, PREC_NONE},          // KEYWORD(FOR, "for")
+  [KEYWORD_FUN]         = {NULL, NULL, PREC_NONE},          // KEYWORD(FUN, "fun")
+  [KEYWORD_IF]          = {NULL, NULL, PREC_NONE},          // KEYWORD(IF, "if")
+  [KEYWORD_NIL]         = {literal, NULL, PREC_NONE},       // KEYWORD(NIL, "nil")
+  [KEYWORD_OR]          = {NULL, or_, PREC_OR},             // KEYWORD(OR, "or")
+  [KEYWORD_PRINT]       = {NULL, NULL, PREC_NONE},          // KEYWORD(PRINT, "print")
+  [KEYWORD_RETURN]      = {NULL, NULL, PREC_NONE},          // KEYWORD(RETURN, "return")
+  [KEYWORD_SUPER]       = {super_, NULL, PREC_NONE},        // KEYWORD(SUPER, "super")
+  [KEYWORD_THIS]        = {this_, NULL, PREC_NONE},         // KEYWORD(THIS, "this")
+  [KEYWORD_TRUE]        = {literal, NULL, PREC_NONE},       // KEYWORD(TRUE, "true")
+  [KEYWORD_VAR]         = {NULL, NULL, PREC_NONE},          // KEYWORD(VAR, "var")
+  [KEYWORD_WHILE]       = {NULL, NULL, PREC_NONE},          // KEYWORD(WHILE, "while")
 
-  [TOKEN_ERROR]         = {NULL, NULL, PREC_NONE}, // TOKEN(ERROR, "Error")
-  [TOKEN_EOF]           = {NULL, NULL, PREC_NONE}, // TOKEN(EOF, "Eof")
+  [TOKEN_ERROR]         = {NULL, NULL, PREC_NONE},          // TOKEN(ERROR, "Error")
+  [TOKEN_EOF]           = {NULL, NULL, PREC_NONE},          // TOKEN(EOF, "Eof")
 };
 
-static void expression() {}
+static void parsePrecedence(Precedence precedence) {
+  advance();
+  ParseFn prefixRule = getRule(parser.previous.type)->prefix;
+  if (NULL == prefixRule) {
+    error("Expect expression.");
+    return;
+  }
+
+  bool canAssign = precedence <= PREC_ASSIGNMENT;
+  prefixRule(canAssign);
+
+  while (precedence <= getRule(parser.current.type)->precedence) {
+    advance();
+    ParseFn infixRule = getRule(parser.previous.type)->infix;
+
+    if (NULL != infixRule)
+      infixRule(canAssign);
+  }
+
+  if (canAssign && match(TOKEN_EQUAL))
+    error("Invalid assignment target.");
+}
+
+static ParseRule* getRule(TokenType type) {
+  return &rules[type];
+}
+
+static void expression() {
+  parsePrecedence(PREC_ASSIGNMENT);
+}
+
+static void block() {
+  while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF))
+    declaration();
+
+  consume(TOKEN_RIGHT_BRACE, "Expect `}` after block.");
+}
+
 static void statement() {}
 static void declaration() {}
-static ParseRule* getRule(TokenType type) { return NULL; }
-static void parsePrecedence(Precedence precedence) {}
 
 ObjFunction* compile(const char* sourceCode) { return NULL; }
 void markCompilerRoots() {}
