@@ -655,6 +655,40 @@ static void block() {
   consume(TOKEN_RIGHT_BRACE, "Expect `}` after block.");
 }
 
+static void function(FunctionType type) {
+  Compiler compiler;
+  initCompiler(&compiler, type);
+
+  beginScope();
+
+  consume(TOKEN_LEFT_PAREN, "Expect `(` after function name.");
+  if (!check(TOKEN_RIGHT_PAREN)) {
+    do {
+      ++current->function->arity;
+      if (current->function->arity > 255)
+        errorAtCurrent("Cannot have more than 255 parameters.");
+
+      u8_t constant = parseVariable("Expect parameter name.");
+      defineVariable(constant);
+    } while (match(TOKEN_COMMA));
+  }
+  consume(TOKEN_RIGHT_PAREN, "Expect `)` after parameters.");
+
+  consume(TOKEN_LEFT_BRACE, "Expect `{` before function body.");
+  block();
+
+  ObjFunction* function = endCompiler();
+  emitBytes(OP_CLOSURE, makeConstant(OBJ_VAL(function)));
+
+  for (int i = 0; i < function->upvalueCount; ++i) {
+    emitByte(compiler.upvalues[i].isLocal ? 1 : 0);
+    emitJump(compiler.upvalues[i].index);
+  }
+}
+
+static void method() {
+}
+
 static void statement() {}
 static void declaration() {}
 
