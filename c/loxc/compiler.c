@@ -687,6 +687,65 @@ static void function(FunctionType type) {
 }
 
 static void method() {
+  consume(TOKEN_IDENTIFIER, "Expect method name.");
+  u8_t constant = identifierConstant(&parser.previous);
+
+  FunctionType type = TYPE_METHOD;
+  if (4 == parser.previous.length && 0 == memcmp(parser.previous.start, "init", 4))
+    type = TYPE_INITIALIZER;
+
+  function(type);
+  emitBytes(OP_METHOD, constant);
+}
+
+static void classDeclaration() {
+  consume(TOKEN_IDENTIFIER, "Expect class name.");
+  Token className = parser.previous;
+  u8_t nameConstant = identifierConstant(&parser.previous);
+  declareVariable();
+
+  emitBytes(OP_CLASS, nameConstant);
+  defineVariable(nameConstant);
+
+  ClassCompiler classCompiler;
+  classCompiler.hasSuperclass = false;
+  classCompiler.enclosing = currentClass;
+  currentClass = &classCompiler;
+
+  if (match(TOKEN_LESS)) {
+    consume(TOKEN_IDENTIFIER, "Expect superclass name.");
+    variable(false);
+
+    if (identifiersEqual(&className, &parser.previous))
+      error("A class cannot inherit from itself.");
+
+    beginScope();
+    addLocal(syntheticToken("super"));
+    defineVariable(0);
+
+    namedVariable(className,false);
+    emitByte(OP_INHERIT);
+    classCompiler.hasSuperclass = true;
+  }
+
+  namedVariable(className, false);
+  consume(TOKEN_LEFT_BRACE, "Expect `{` before class body.");
+  while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF))
+    method();
+  consume(TOKEN_RIGHT_BRACE, "Expect `}` after class body.");
+  emitByte(OP_POP);
+
+  if (classCompiler.hasSuperclass)
+    endScope();
+
+  currentClass = currentClass->enclosing;
+}
+
+static void funcDeclaration() {
+  u8_t global = parseVariable("Expect function name.");
+  markInitialized();
+  function(TYPE_FUNCTION);
+  defineVariable(global);
 }
 
 static void statement() {}
