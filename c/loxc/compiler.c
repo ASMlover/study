@@ -748,6 +748,24 @@ static void funcDeclaration() {
   defineVariable(global);
 }
 
+static void varDeclaration() {
+  u8_t global = parseVariable("Expect variable name.");
+
+  if (match(TOKEN_EQUAL))
+    expression();
+  else
+    emitByte(OP_NIL);
+  consume(TOKEN_SEMICOLON, "Expect `;` after variable declaration.");
+
+  defineVariable(global);
+}
+
+static void expressionStatement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "Expect `;` after expression.");
+  emitByte(OP_POP);
+}
+
 static void statement() {}
 static void declaration() {}
 
