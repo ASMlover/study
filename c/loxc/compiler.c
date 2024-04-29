@@ -811,6 +811,25 @@ static void forStatement() {
   endScope();
 }
 
+static void ifStatement() {
+  consume(TOKEN_LEFT_PAREN, "Expect `(` after `if`.");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect `)` after condition.");
+
+  int thenJump = emitJump(OP_JUMP_IF_FALSE);
+  emitByte(OP_POP);
+  statement();
+
+  int elseJump = emitJump(OP_JUMP);
+
+  patchJump(thenJump);
+  emitByte(OP_POP);
+
+  if (match(KEYWORD_ELSE))
+    statement();
+  patchJump(elseJump);
+}
+
 static void statement() {}
 static void declaration() {}
 
