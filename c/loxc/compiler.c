@@ -830,6 +830,12 @@ static void ifStatement() {
   patchJump(elseJump);
 }
 
+static void printStatement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "Expect `;` after value.");
+  emitByte(OP_PRINT);
+}
+
 static void statement() {}
 static void declaration() {}
 
