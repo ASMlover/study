@@ -836,6 +836,23 @@ static void printStatement() {
   emitByte(OP_PRINT);
 }
 
+static void returnStatement() {
+  if (TYPE_SCRIPT == current->type)
+    error("Cannot return from top-level code.");
+
+  if (match(TOKEN_SEMICOLON)) {
+    emitReturn();
+  }
+  else {
+    if (TYPE_INITIALIZER == current->type)
+      error("Cannot return a value from an initializer.");
+
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect `;` after return value.");
+    emitByte(OP_RETURN);
+  }
+}
+
 static void statement() {}
 static void declaration() {}
 
