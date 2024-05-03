@@ -853,6 +853,22 @@ static void returnStatement() {
   }
 }
 
+static void whileStatement() {
+  int loopStart = currentChunk()->count;
+  consume(TOKEN_LEFT_PAREN, "Expect `(` after `while`.");
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect `)` after condition.");
+
+  int exitJump = emitJump(OP_JUMP_IF_FALSE);
+  emitByte(OP_POP);
+  statement();
+
+  emitLoop(loopStart);
+
+  patchJump(exitJump);
+  emitByte(OP_POP);
+}
+
 static void statement() {}
 static void declaration() {}
 
