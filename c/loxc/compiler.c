@@ -869,6 +869,31 @@ static void whileStatement() {
   emitByte(OP_POP);
 }
 
+static void synchronize() {
+  parser.panicMode = false;
+
+  while (TOKEN_EOF != parser.current.type) {
+    if (TOKEN_SEMICOLON == parser.previous.type)
+      return;
+
+    switch (parser.current.type) {
+    case KEYWORD_CLASS:
+    case KEYWORD_FUN:
+    case KEYWORD_VAR:
+    case KEYWORD_FOR:
+    case KEYWORD_IF:
+    case KEYWORD_WHILE:
+    case KEYWORD_PRINT:
+    case KEYWORD_RETURN:
+      return;
+
+    default: break;
+    }
+
+    advance();
+  }
+}
+
 static void statement() {}
 static void declaration() {}
 
