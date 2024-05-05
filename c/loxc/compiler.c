@@ -894,8 +894,21 @@ static void synchronize() {
   }
 }
 
+static void declaration() {
+  if (match(KEYWORD_CLASS))
+    classDeclaration();
+  else if (matchN(KEYWORD_FUN))
+    funcDeclaration();
+  else if (match(KEYWORD_VAR))
+    varDeclaration();
+  else
+    statement();
+
+  if (parser.panicMode)
+    synchronize();
+}
+
 static void statement() {}
-static void declaration() {}
 
 ObjFunction* compile(const char* sourceCode) { return NULL; }
 void markCompilerRoots() {}
