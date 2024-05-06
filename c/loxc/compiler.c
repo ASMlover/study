@@ -897,7 +897,7 @@ static void synchronize() {
 static void declaration() {
   if (match(KEYWORD_CLASS))
     classDeclaration();
-  else if (matchN(KEYWORD_FUN))
+  else if (match(KEYWORD_FUN))
     funcDeclaration();
   else if (match(KEYWORD_VAR))
     varDeclaration();
@@ -908,7 +908,31 @@ static void declaration() {
     synchronize();
 }
 
-static void statement() {}
+static void statement() {
+  if (match(KEYWORD_PRINT)) {
+    printStatement();
+  }
+  else if (match(KEYWORD_FOR)) {
+    forStatement();
+  }
+  else if (match(KEYWORD_IF)) {
+    ifStatement();
+  }
+  else if (match(KEYWORD_RETURN)) {
+    returnStatement();
+  }
+  else if (match(KEYWORD_WHILE)) {
+    whileStatement();
+  }
+  else if (match(TOKEN_LEFT_PAREN)) {
+    beginScope();
+    block();
+    endScope();
+  }
+  else {
+    expressionStatement();
+  }
+}
 
 ObjFunction* compile(const char* sourceCode) { return NULL; }
 void markCompilerRoots() {}
