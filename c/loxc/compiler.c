@@ -934,5 +934,20 @@ static void statement() {
   }
 }
 
-ObjFunction* compile(const char* sourceCode) { return NULL; }
+ObjFunction* compile(const char* sourceCode) {
+  initScanner(sourceCode);
+  Compiler compiler;
+  initCompiler(&compiler, TYPE_SCRIPT);
+
+  parser.hadError = false;
+  parser.panicMode = false;
+
+  advance();
+  while (!match(TOKEN_EOF))
+    declaration();
+
+  ObjFunction* function = endCompiler();
+  return parser.hadError ? NULL : function;
+}
+
 void markCompilerRoots() {}
