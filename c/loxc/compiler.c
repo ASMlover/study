@@ -950,4 +950,10 @@ ObjFunction* compile(const char* sourceCode) {
   return parser.hadError ? NULL : function;
 }
 
-void markCompilerRoots() {}
+void markCompilerRoots() {
+  Compiler* compiler = current;
+   while (NULL != compiler) {
+     markObject((Obj*)compiler->function);
+     compiler = compiler->enclosing;
+   }
+}
