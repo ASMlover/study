@@ -39,6 +39,41 @@ static Value clockNative(int argCount, Value* args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
 }
 
+static void resetStack() {
+  vm.stackTop = vm.stack;
+  vm.frameCount = 0;
+  vm.openValues = NULL;
+}
+
+static void runtimeError(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+  fprintf(stderr, "\n");
+
+  for (int i = vm.frameCount - 1; i >= 0; --i) {
+    CallFrame* frame = &vm.frames[i];
+    ObjFunction* function = frame->closure->function;
+    sz_t instruction = frame->ip - function->chunk.code - 1;
+    fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
+    if (NULL == function->name)
+      fprintf(stderr, "script\n");
+    else
+      fprintf(stderr, "%s(...)\n", function->name->chars);
+  }
+
+  resetStack();
+}
+
+static void defineNative(const char* name, NativeFn function) {
+  push(OBJ_VAL(copyString(name, (int)strlen(name))));
+  push(OBJ_VAL(newNative(function)));
+  tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+  pop();
+  pop();
+}
+
 void initVM() {}
 void freeVM() {}
 
