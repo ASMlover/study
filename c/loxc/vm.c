@@ -31,6 +31,7 @@
 #include <string.h>
 #include <time.h>
 #include "object.h"
+#include "memory.h"
 #include "vm.h"
 
 VM vm;
@@ -74,10 +75,42 @@ static void defineNative(const char* name, NativeFn function) {
   pop();
 }
 
-void initVM() {}
-void freeVM() {}
+static Value peek(int distance) {
+  return vm.stackTop[-1 - distance];
+}
+
+void initVM() {
+  resetStack();
+
+  vm.objects = NULL;
+  vm.bytesAllocated = 0;
+  vm.nextGC = 1048576;  // 1024 * 1024;
+  vm.grayCount = 0;
+  vm.grayCapacity = 0;
+  vm.grayStack = NULL;
+
+  initTable(&vm.globals);
+  initTable(&vm.strings);
+
+  vm.initString = copyString("init", 4);
+
+  defineNative("clock", clockNative);
+}
+
+void freeVM() {
+  freeTable(&vm.globals);
+  freeTable(&vm.strings);
+  vm.initString = NULL;
+
+  freeObjects();
+}
 
 InterpretResult interpret(const char* sourceCode) { return INTERPRET_OK; }
 
-void push(Value value) {}
-Value pop() { return NIL_VAL; }
+void push(Value value) {
+  *vm.stackTop++ = value;
+}
+
+Value pop() {
+  return *(--vm.stackTop);
+}
