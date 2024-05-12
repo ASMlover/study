@@ -79,6 +79,28 @@ static Value peek(int distance) {
   return vm.stackTop[-1 - distance];
 }
 
+static bool call(ObjClosure* closure, int argCount) {
+  if (argCount != closure->function->arity) {
+    runtimeError("Expect %d arguments but got %d.", closure->function->arity, argCount);
+    return false;
+  }
+
+  if (vm.frameCount >= LOXC_FRAMES_MAX) {
+    runtimeError("Stack overflow.");
+    return false;
+  }
+
+  CallFrame* frame = &vm.frames[vm.frameCount++];
+  frame->closure = closure;
+  frame->ip = closure->function->chunk.code;
+  frame->slots = vm.stackTop - argCount - 1;
+  return true;
+}
+
+static bool callValue(Value callee, int argCount) {
+  return false;
+}
+
 void initVM() {
   resetStack();
 
