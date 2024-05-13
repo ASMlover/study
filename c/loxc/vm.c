@@ -98,6 +98,46 @@ static bool call(ObjClosure* closure, int argCount) {
 }
 
 static bool callValue(Value callee, int argCount) {
+  if (IS_OBJ(callee)) {
+    switch (OBJ_TYPE(callee)) {
+    case OBJ_BOUND_METHOD:
+    {
+      ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
+      vm.stackTop[-argCount - 1] = bound->receiver;
+      return call(bound->method, argCount);
+    } break;
+    case OBJ_CLASS:
+    {
+      ObjClass* klass = AS_CLASS(callee);
+      vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
+      Value initializer;
+      if (tableGet(&klass->methods, vm.initString, &initializer)) {
+        return call(AS_CLOSURE(initializer), argCount);
+      }
+      else if (0 != argCount) {
+        runtimeError("Expect 0 arguments but got %d.", argCount);
+        return false;
+      }
+      return true;
+    } break;
+    case OBJ_CLOSURE: return call(AS_CLOSURE(callee), argCount);
+    case OBJ_NATIVE:
+    {
+      NativeFn native = AS_NATIVE(callee);
+      Value result = native(argCount, vm.stackTop - argCount);
+      vm.stackTop -= argCount + 1;
+      push(result);
+      return true;
+    } break;
+    default: break;
+    }
+  }
+
+  runtimeError("Can only call functions and classes.");
+  return false;
+}
+
+static bool invokeFromClass(ObjClass* klass, ObjString* methodName, int argCount) {
   return false;
 }
 
