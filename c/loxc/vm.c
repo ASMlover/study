@@ -138,7 +138,12 @@ static bool callValue(Value callee, int argCount) {
 }
 
 static bool invokeFromClass(ObjClass* klass, ObjString* methodName, int argCount) {
-  return false;
+  Value method;
+  if (!tableGet(&klass->methods, methodName, &method)) {
+    runtimeError("Undefined property `%s`.", methodName->chars);
+    return false;
+  }
+  return call(AS_CLOSURE(method), argCount);
 }
 
 void initVM() {
