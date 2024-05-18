@@ -146,6 +146,38 @@ static bool invokeFromClass(ObjClass* klass, ObjString* methodName, int argCount
   return call(AS_CLOSURE(method), argCount);
 }
 
+static bool invoke(ObjString* methodName, int argCount) {
+  Value receiver = peek(argCount);
+  if (!IS_INSTANCE(receiver)) {
+    runtimeError("Only instances have methods.");
+    return false;
+  }
+
+  ObjInstance* instance = AS_INSTANCE(receiver);
+
+  Value method;
+  if (tableGet(&instance->fields, methodName, &method)) {
+    vm.stackTop[-argCount - 1] = method;
+    return callValue(method, argCount);
+  }
+
+  return invokeFromClass(instance->klass, methodName, argCount);
+}
+
+static bool bindMethod(ObjClass* klass, ObjString* methodName) {
+  Value method;
+  if (!tableGet(&klass->methods, methodName, &method)) {
+    runtimeError("Undefined property `%s`.", methodName->chars);
+    return false;
+  }
+
+  ObjBoundMethod* boundMethod = newBoundMethod(peek(0), AS_CLOSURE(method));
+
+  pop();
+  push(OBJ_VAL(boundMethod));
+  return true;
+}
+
 void initVM() {
   resetStack();
 
