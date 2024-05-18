@@ -50,7 +50,7 @@ typedef struct {
   Table                 globals;
   Table                 strings;
   ObjString*            initString;
-  ObjUpvalue*           openValues;
+  ObjUpvalue*           openUpvalues;
 
   sz_t                  bytesAllocated;
   sz_t                  nextGC;
