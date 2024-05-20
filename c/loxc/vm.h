@@ -76,5 +76,4 @@ InterpretResult interpret(const char* sourceCode);
 void push(Value value);
 Value pop();
 
-
 #endif

@@ -43,7 +43,7 @@ static Value clockNative(int argCount, Value* args) {
 static void resetStack() {
   vm.stackTop = vm.stack;
   vm.frameCount = 0;
-  vm.openValues = NULL;
+  vm.openUpvalues = NULL;
 }
 
 static void runtimeError(const char* format, ...) {
@@ -176,6 +176,27 @@ static bool bindMethod(ObjClass* klass, ObjString* methodName) {
   pop();
   push(OBJ_VAL(boundMethod));
   return true;
+}
+
+static ObjUpvalue* captureUpvalue(Value* local) {
+  ObjUpvalue* prevUpvalue = NULL;
+  ObjUpvalue* upvalue = vm.openUpvalues;
+  while (NULL != upvalue && upvalue->location > local) {
+    prevUpvalue = upvalue;
+    upvalue = upvalue->next;
+  }
+
+  if (NULL != upvalue && upvalue->location == local)
+    return upvalue;
+
+  ObjUpvalue* createdUpvalue = newUpvalue(local);
+  createdUpvalue->next = upvalue;
+
+  if (NULL != prevUpvalue)
+    vm.openUpvalues = createdUpvalue;
+  else
+    prevUpvalue->next = createdUpvalue;
+  return createdUpvalue;
 }
 
 void initVM() {
