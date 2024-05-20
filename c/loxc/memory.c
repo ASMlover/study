@@ -157,7 +157,7 @@ static void markRoots() {
   for (int i = 0; i < vm.frameCount; ++i)
     MARK_OBJ(vm.frames[i].closure);
 
-  for (ObjUpvalue* upvalue = vm.openValues; upvalue != NULL; upvalue = upvalue->next)
+  for (ObjUpvalue* upvalue = vm.openUpvalues; upvalue != NULL; upvalue = upvalue->next)
     MARK_OBJ(upvalue);
 
   markTable(&vm.globals);
