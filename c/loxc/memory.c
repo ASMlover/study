@@ -157,7 +157,7 @@ static void markRoots() {
   for (int i = 0; i < vm.frameCount; ++i)
     MARK_OBJ(vm.frames[i].closure);
 
-  for (ObjUpvalue* upvalue = vm.openUpvalues; upvalue != NULL; upvalue = upvalue->next)
+  for (ObjUpvalue* upvalue = vm.openUpvalues; NULL != upvalue; upvalue = upvalue->next)
     MARK_OBJ(upvalue);
 
   markTable(&vm.globals);
@@ -175,7 +175,7 @@ static void traceReferences() {
 static void sweep() {
   Obj* previous = NULL;
   Obj* object = vm.objects;
-  while (object != NULL) {
+  while (NULL != object) {
     if (object->isMarked) {
       object->isMarked = false;
       previous = object;
@@ -184,7 +184,7 @@ static void sweep() {
     else {
       Obj* unreached = object;
       object = object->next;
-      if (previous != NULL)
+      if (NULL != previous)
         previous->next = object;
       else
         vm.objects = object;
@@ -211,14 +211,14 @@ void* reallocate(void* pointer, sz_t oldSize, sz_t newSize) {
   }
 
   void* result = realloc(pointer, newSize);
-  if (result == NULL)
+  if (NULL == result)
     exit(-1);
 
   return result;
 }
 
 void markObject(Obj* object) {
-  if (object == NULL)
+  if (NULL == object)
     return;
   if (object->isMarked)
     return;
@@ -235,7 +235,7 @@ void markObject(Obj* object) {
     vm.grayCapacity = GROW_CAPACITY(vm.grayCapacity);
     vm.grayStack = (Obj**)realloc(vm.grayStack, sizeof(Obj*) * vm.grayCapacity);
 
-    if (vm.grayStack == NULL)
+    if (NULL == vm.grayStack)
       exit(-1);
   }
   vm.grayStack[vm.grayCount++] = object;
@@ -268,7 +268,7 @@ void collectGarbage() {
 
 void freeObjects() {
   Obj* object = vm.objects;
-  while (object != NULL) {
+  while (NULL != object) {
     Obj* next = object->next;
     freeObject(object);
     object = next;
