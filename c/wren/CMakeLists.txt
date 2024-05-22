@@ -68,6 +68,7 @@ file(GLOB WREN_SOURCES
 	debug.c
 	opt_meta.c
 	opt_random.c
+	primitive.c
 	utils.c
 	value.c
 	vm.c
