@@ -55,7 +55,7 @@
 
 #define IS_BOOL(value)                      (wrenIsBool(value))                     // Bool
 #define IS_CLASS(value)                     (wrenIsObjType(value, OBJ_CLASS))       // ObjClass
-#define IS_CLOSURE(vlaue)                   (wrenIsObjType(value, OBJ_CLOSURE))     // ObjClosure
+#define IS_CLOSURE(value)                   (wrenIsObjType(value, OBJ_CLOSURE))     // ObjClosure
 #define IS_FIBER(value)                     (wrenIsObjType(value, OBJ_FIBER))       // ObjFiber
 #define IS_FN(value)                        (wrenIsObjType(value, OBJ_FN))          // ObjFn
 #define IS_FOREIGN(value)                   (wrenIsObjType(value, OBJ_FOREIGN))     // ObjForeign
