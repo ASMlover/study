@@ -75,6 +75,7 @@ void writeValueArray(ValueArray* array, Value value);
 void freeValueArray(ValueArray* array);
 
 bool valuesEqual(Value a, Value b);
+bool isFalsey(Value value);
 void printValue(Value value);
 
 #endif

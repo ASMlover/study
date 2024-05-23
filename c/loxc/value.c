@@ -66,6 +66,10 @@ bool valuesEqual(Value a, Value b) {
   return false;
 }
 
+bool isFalsey(Value value) {
+  return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
 void printValue(Value value) {
   switch (value.type) {
   case VAL_BOOL:   fprintf(stdout, AS_BOOL(value) ? "true" : "false"); break;
