@@ -35,6 +35,8 @@
 #include "compiler.h"
 
 #define WREN_MAX_TEMP_ROOTS                 (5)
+#define WREN_PUSH_ROOT(vm, obj)             wrenPushRoot((vm), (Obj*)(obj))
+#define WREN_POP_ROOT(vm)                   wrenPopRoot((vm))
 
 typedef enum {
 #undef WREN_OPCODE
