@@ -199,6 +199,15 @@ static ObjUpvalue* captureUpvalue(Value* local) {
   return createdUpvalue;
 }
 
+static void closeUpvalues(Value* last) {
+  while (NULL != vm.openUpvalues && vm.openUpvalues->location >= last) {
+    ObjUpvalue* upvalue = vm.openUpvalues;
+    upvalue->closed = *upvalue->location;
+    upvalue->location = &upvalue->closed;
+    vm.openUpvalues = upvalue->next;
+  }
+}
+
 void initVM() {
   resetStack();
 
