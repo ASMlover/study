@@ -208,6 +208,13 @@ static void closeUpvalues(Value* last) {
   }
 }
 
+static void defineMethod(ObjString* methodName) {
+  Value method = peek(0);
+  ObjClass* klass = AS_CLASS(peek(1));
+  tableSet(&klass->methods, methodName, method);
+  pop();
+}
+
 void initVM() {
   resetStack();
 
