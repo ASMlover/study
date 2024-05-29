@@ -215,6 +215,27 @@ static void defineMethod(ObjString* methodName) {
   pop();
 }
 
+static void concatenate() {
+  ObjString* b = AS_STRING(peek(0));
+  ObjString* a = AS_STRING(peek(1));
+
+  int length = a->length + b->length;
+  char* chars = ALLOCATE(char, length + 1);
+  memcpy(chars, a->chars, a->length);
+  memcpy(chars + a->length, b->chars, b->length);
+  chars[length] = 0;
+
+  ObjString* result = takeString(chars, length);
+  pop();
+  pop();
+
+  push(OBJ_VAL(result));
+}
+
+static InterpretResult run() {
+  return INTERPRET_OK;
+}
+
 void initVM() {
   resetStack();
 
