@@ -76,3 +76,6 @@ file(GLOB WREN_SOURCES
 message(STATUS "`${PROJECT_NAME}` WREN_SOURCES: ${WREN_SOURCES}")
 
 add_executable(${PROJECT_NAME} ${WREN_SOURCES})
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+	target_link_libraries(${PROJECT_NAME} m)
+endif()
