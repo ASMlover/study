@@ -233,6 +233,66 @@ static void concatenate() {
 }
 
 static InterpretResult run() {
+  CallFrame* frame = &vm.frames[vm.frameCount - 1];
+
+#define READ_BYTE()                         (*frame->ip++)
+#define READ_SHORT()                        (frame->ip += 2, (u16_t)((frame->ip[-2] << 8) | fram->ip[-1]))
+#define READ_CONSTANT()                     (frame->closure->function->chunk.constants.values[READ_BYTE()])
+#define READ_STRING()                       AS_STRING(READ_CONSTANT())
+#define BINARY_OP(valueType, op)\
+  do {\
+    if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {\
+      runtimeError("Operands must be numbers.");\
+      return INTERPRET_RUNTIME_ERROR;\
+    }\
+    double b = AS_NUMBER(pop());\
+    double a = AS_NUMBER(pop());\
+    push(valueType(a op b));\
+  } while (false)
+
+  for (;;) {
+#ifdef LOXC_DEBUG_TRACE_EXECUTION
+    fprintf(stdout, "          ");
+    for (Value* slot = vm.stack; slot < vm.stackTop; ++slot) {
+      fprintf(stdout, "[ ");
+      printValue(*slot);
+      fprintf(stdout, " ]");
+    }
+    fprintf(stdout, "\n");
+
+    disassebleInstruction(&frame->closure->function->chunk, (int)(frame->ip - frame->closure->function->chunk.code));
+#endif
+
+    u8_t instruction;
+    switch (instruction = READ_BYTE()) {
+    case OP_CONSTANT:
+      {
+        Value constant = READ_CONSTANT();
+        push(constant);
+      } break;
+    case OP_NIL: push(NIL_VAL); break;
+    case OP_TRUE: push(BOOL_VAL(true)); break;
+    case OP_FALSE: push(BOOL_VAL(false)); break;
+    case OP_POP: pop(); break;
+    case OP_GET_LOCAL:
+      {
+        u8_t slot = READ_BYTE();
+        push(frame->slots[slot]);
+      } break;
+    case OP_SET_LOCAL:
+      {
+        u8_t slot = READ_BYTE();
+        frame->slots[slot] = peek(0);
+      } break;
+    }
+  }
+
+#undef BINARY_OP
+#undef READ_STRING
+#undef READ_CONSTANT
+#undef READ_SHORT
+#undef READ_BYTE
+
   return INTERPRET_OK;
 }
 
