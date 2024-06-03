@@ -309,6 +309,16 @@ static InterpretResult run() {
           return INTERPRET_RUNTIME_ERROR;
         }
       } break;
+    case OP_GET_UPVALUE:
+      {
+        u8_t slot = READ_BYTE();
+        push(*frame->closure->upvalues[slot]->location);
+      } break;
+    case OP_SET_UPVALUE:
+      {
+        u8_t slot = READ_BYTE();
+        *frame->closure->upvalues[slot]->location = peek(0);
+      } break;
     }
   }
 
