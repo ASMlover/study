@@ -53,13 +53,17 @@ def main() -> None:
 	parser = argparse.ArgumentParser(description="Convert a Wren library to a C string literal.")
 	parser.add_argument("-o", "--output", help="The output file to write.")
 	parser.add_argument("-i", "--input", help="The source wren file")
+	parser.add_argument("--module", help="The module name to convert, default by filename,", default='')
 
 	args = parser.parse_args()
 
 	with open(args.input, "rb") as fp:
 		wren_source_lines = fp.readlines()
 
-	module = os.path.splitext(os.path.basename(args.input))[0]
+	if args.module:
+		module = args.module
+	else:
+		module = os.path.splitext(os.path.basename(args.input))[0]
 	c_source = wren_to_c_string(args.input, wren_source_lines, module)
 
 	with open(args.output, "w") as fp:
