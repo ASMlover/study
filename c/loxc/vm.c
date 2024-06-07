@@ -400,6 +400,11 @@ static InterpretResult run() {
         printValue(pop());
         fprintf(stdout, "\n");
       } break;
+    case OP_JUMP:
+      {
+        u16_t offset = READ_SHORT();
+        frame->ip += offset;
+      } break;
     }
   }
 
