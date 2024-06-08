@@ -38,6 +38,8 @@
 #include "primitive.h"
 #include "value.h"
 
+#include "core.wren.inc"
+
 #define DEF_FN_CALL(numArgs)\
 	DEF_PRIMITIVE(fn_call##numArgs) {\
 		call(vm, args, numArgs);\
@@ -104,6 +106,17 @@ static void call(WrenVM* vm, Value* args, int numArgs) {
 	}
 
 	wrenCallFunction(vm, vm->fiber, AS_CLOSURE(args[0]), numArgs + 1);
+}
+
+static ObjClass* defineClass(WrenVM* vm, ObjModule* module, const char* name) {
+	ObjString* nameString = AS_STRING(wrenNewString(vm, name));
+	WREN_PUSH_ROOT(vm, nameString);
+
+	ObjClass* classObj = wrenNewSingleClass(vm, 0, nameString);
+	wrenDefineVariable(vm, module, name, nameString->length, OBJ_VAL(classObj));
+
+	WREN_POP_ROOT(vm);
+	return classObj;
 }
 
 DEF_PRIMITIVE(bool_not) {
@@ -541,6 +554,7 @@ DEF_NUM_FN(ceil,                            ceil)
 DEF_NUM_FN(cos,                             cos)
 DEF_NUM_FN(floor,                           floor)
 DEF_NUM_FN(negate,                          -)
+DEF_NUM_FN(round,                           round)
 DEF_NUM_FN(sin,                             sin)
 DEF_NUM_FN(sqrt,                            sqrt)
 DEF_NUM_FN(tan,                             tan)
@@ -928,4 +942,234 @@ DEF_PRIMITIVE(string_plus) {
 	RETURN_VAL(wrenStringFormat(vm, "@@", args[0], args[1]));
 }
 
-void wrenInitializeCore(WrenVM* vm) {}
+DEF_PRIMITIVE(string_subscript) {
+	ObjString* string = AS_STRING(args[0]);
+	if (IS_NUM(args[1])) {
+		int index = validateIndex(vm, args[1], string->length, "Subscript");
+		if (-1 == index)
+			return false;
+
+		RETURN_VAL(wrenStringCodePointAt(vm, string, index));
+	}
+
+	if (!IS_RANGE(args[1]))
+		RETURN_ERROR("Subscript must be a number or a range.");
+
+	int step;
+	u32_t count = string->length;
+	int start = calculateRange(vm, AS_RANGE(args[1]), &count, &step);
+	if (-1 == start)
+		return false;
+
+	RETURN_VAL(wrenNewStringFromRange(vm, string, start, count, step));
+}
+
+DEF_PRIMITIVE(string_toString) {
+	RETURN_VAL(args[0]);
+}
+
+DEF_PRIMITIVE(system_clock) {
+	RETURN_NUM((double)clock() / CLOCKS_PER_SEC);
+}
+
+DEF_PRIMITIVE(system_gc) {
+	wrenCollectGrabage(vm);
+	RETURN_NULL;
+}
+
+DEF_PRIMITIVE(system_writeString) {
+	if (NULL != vm->config.writeFn)
+		vm->config.writeFn(vm, AS_CSTRING(args[1]));
+
+	RETURN_VAL(args[1]);
+}
+
+void wrenInitializeCore(WrenVM* vm) {
+	ObjModule* coreModule = wrenNewModule(vm, NULL);
+
+	WREN_PUSH_ROOT(vm, coreModule);
+	wrenMapSet(vm, vm->modules, NULL_VAL, OBJ_VAL(coreModule));
+	WREN_POP_ROOT(vm);
+
+	vm->objectClass = defineClass(vm, coreModule, "Object");
+	PRIMITIVE(vm->objectClass, "!", object_not);
+	PRIMITIVE(vm->objectClass, "==(_)", object_eqeq);
+	PRIMITIVE(vm->objectClass, "!=(_)", object_bangeq);
+	PRIMITIVE(vm->objectClass, "is(_)", object_is);
+	PRIMITIVE(vm->objectClass, "toString", object_toString);
+	PRIMITIVE(vm->objectClass, "type", object_type);
+
+	vm->classClass = defineClass(vm, coreModule, "Class");
+	wrenBindSuperclass(vm, vm->classClass, vm->objectClass);
+	PRIMITIVE(vm->classClass, "name", class_name);
+	PRIMITIVE(vm->classClass, "supertype", class_supertype);
+	PRIMITIVE(vm->classClass, "toString", class_toString);
+
+	ObjClass* objectMetaClass = defineClass(vm, coreModule, "Object metaclass");
+	vm->objectClass->obj.classObj = objectMetaClass;
+	objectMetaClass->obj.classObj = vm->classClass;
+	vm->classClass->obj.classObj = vm->classClass;
+
+	wrenBindSuperclass(vm, objectMetaClass, vm->classClass);
+	PRIMITIVE(objectMetaClass, "same(_,_)", object_same);
+
+	wrenInterpret(vm, NULL, coreModuleSource);
+
+	vm->boolClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Bool"));
+	PRIMITIVE(vm->boolClass, "toString", bool_toString);
+	PRIMITIVE(vm->boolClass, "!", bool_not);
+
+	vm->fiberClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Fiber"));
+	PRIMITIVE(vm->fiberClass->obj.classObj, "new(_)", fiber_new);
+	PRIMITIVE(vm->fiberClass->obj.classObj, "abort(_)", fiber_abort);
+	PRIMITIVE(vm->fiberClass->obj.classObj, "current", fiber_current);
+	PRIMITIVE(vm->fiberClass->obj.classObj, "suspend()", fiber_suspend);
+	PRIMITIVE(vm->fiberClass->obj.classObj, "yield()", fiber_yield);
+	PRIMITIVE(vm->fiberClass->obj.classObj, "yield(_)", fiber_yield1);
+	PRIMITIVE(vm->fiberClass, "call()", fiber_call);
+	PRIMITIVE(vm->fiberClass, "call(_)", fiber_call1);
+	PRIMITIVE(vm->fiberClass, "error", fiber_error);
+	PRIMITIVE(vm->fiberClass, "isDone", fiber_isDone);
+	PRIMITIVE(vm->fiberClass, "transfer()", fiber_transfer);
+	PRIMITIVE(vm->fiberClass, "transfer(_)", fiber_transfer1);
+	PRIMITIVE(vm->fiberClass, "transferError(_)", fiber_transferError);
+	PRIMITIVE(vm->fiberClass, "try()", fiber_try);
+
+	vm->fnClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Fn"));
+	PRIMITIVE(vm->fnClass->obj.classObj, "new(_)", fn_new);
+
+	PRIMITIVE(vm->fnClass, "arity", fn_arity);
+	PRIMITIVE(vm->fnClass, "call()", fn_call0);
+	PRIMITIVE(vm->fnClass, "call(_)", fn_call1);
+	PRIMITIVE(vm->fnClass, "call(_,_)", fn_call2);
+	PRIMITIVE(vm->fnClass, "call(_,_,_)", fn_call3);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_)", fn_call4);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_)", fn_call5);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_)", fn_call6);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_)", fn_call7);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_)", fn_call8);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_)", fn_call9);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_)", fn_call10);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_,_)", fn_call11);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_,_,_)", fn_call12);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_,_,_,_)", fn_call13);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_)", fn_call14);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", fn_call15);
+	PRIMITIVE(vm->fnClass, "call(_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_)", fn_call16);
+	PRIMITIVE(vm->fnClass, "toString", fn_toString);
+
+	vm->nullClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Null"));
+	PRIMITIVE(vm->nullClass, "!", null_not);
+	PRIMITIVE(vm->nullClass, "toString", null_toString);
+
+	vm->numClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Num"));
+	PRIMITIVE(vm->numClass->obj.classObj, "fromString(_)", num_fromString);
+	PRIMITIVE(vm->numClass->obj.classObj, "pi", num_pi);
+	PRIMITIVE(vm->numClass->obj.classObj, "largest", num_largest);
+	PRIMITIVE(vm->numClass->obj.classObj, "smallest", num_smallest);
+	PRIMITIVE(vm->numClass, "-(_)", num_minus);
+	PRIMITIVE(vm->numClass, "+(_)", num_plus);
+	PRIMITIVE(vm->numClass, "*(_)", num_multiply);
+	PRIMITIVE(vm->numClass, "/(_)", num_divide);
+	PRIMITIVE(vm->numClass, "<(_)", num_lt);
+	PRIMITIVE(vm->numClass, ">(_)", num_gt);
+	PRIMITIVE(vm->numClass, "<=(_)", num_lte);
+	PRIMITIVE(vm->numClass, ">=(_)", num_gte);
+	PRIMITIVE(vm->numClass, "&(_)", num_bitwiseAnd);
+	PRIMITIVE(vm->numClass, "|(_)", num_bitwiseOr);
+	PRIMITIVE(vm->numClass, "^(_)", num_bitwiseXor);
+	PRIMITIVE(vm->numClass, "<<(_)", num_bitwiseLeftShift);
+	PRIMITIVE(vm->numClass, ">>(_)", num_bitwiseRightShift);
+	PRIMITIVE(vm->numClass, "abs", num_abs);
+	PRIMITIVE(vm->numClass, "acos", num_acos);
+	PRIMITIVE(vm->numClass, "asin", num_asin);
+	PRIMITIVE(vm->numClass, "atan", num_atan);
+	PRIMITIVE(vm->numClass, "ceil", num_ceil);
+	PRIMITIVE(vm->numClass, "cos", num_cos);
+	PRIMITIVE(vm->numClass, "floor", num_floor);
+	PRIMITIVE(vm->numClass, "-", num_negate);
+	PRIMITIVE(vm->numClass, "round", num_round);
+	PRIMITIVE(vm->numClass, "sin", num_sin);
+	PRIMITIVE(vm->numClass, "sqrt", num_sqrt);
+	PRIMITIVE(vm->numClass, "tan", num_tan);
+	PRIMITIVE(vm->numClass, "log", num_log);
+	PRIMITIVE(vm->numClass, "%(_)", num_mod);
+	PRIMITIVE(vm->numClass, "~", num_bitwiseNot);
+	PRIMITIVE(vm->numClass, "..(_)", num_dotDot);
+	PRIMITIVE(vm->numClass, "...(_)", num_dotDotDot);
+	PRIMITIVE(vm->numClass, "atan(_)", num_atan2);
+	PRIMITIVE(vm->numClass, "fraction", num_fraction);
+	PRIMITIVE(vm->numClass, "isInfinity", num_isInfinity);
+	PRIMITIVE(vm->numClass, "isInteger", num_isInteger);
+	PRIMITIVE(vm->numClass, "isNan", num_isNan);
+	PRIMITIVE(vm->numClass, "sign", num_sign);
+	PRIMITIVE(vm->numClass, "toString", num_toString);
+	PRIMITIVE(vm->numClass, "truncate", num_truncate);
+	PRIMITIVE(vm->numClass, "==(_)", num_eqeq);
+	PRIMITIVE(vm->numClass, "!=(_)", num_bangeq);
+
+	vm->stringClass = AS_CLASS(wrenFindVariable(vm, coreModule, "String"));
+	PRIMITIVE(vm->stringClass->obj.classObj, "fromCodePoint(_)", string_fromCodePoint);
+	PRIMITIVE(vm->stringClass->obj.classObj, "fromByte(_)", string_fromByte);
+	PRIMITIVE(vm->stringClass, "+(_)", string_plus);
+	PRIMITIVE(vm->stringClass, "[_]", string_subscript);
+	PRIMITIVE(vm->stringClass, "byteAt_(_)", string_byteAt);
+	PRIMITIVE(vm->stringClass, "byteCount_", string_byteCount);
+	PRIMITIVE(vm->stringClass, "codePointAt_(_)", string_codePointAt);
+	PRIMITIVE(vm->stringClass, "contains(_)", string_contains);
+	PRIMITIVE(vm->stringClass, "endsWith(_)", string_endsWith);
+	PRIMITIVE(vm->stringClass, "indexOf(_)", string_indexOf1);
+	PRIMITIVE(vm->stringClass, "indexOf(_,_)", string_indexOf2);
+	PRIMITIVE(vm->stringClass, "iterate(_)", string_iterate);
+	PRIMITIVE(vm->stringClass, "iterateByte_(_)", string_iterateByte);
+	PRIMITIVE(vm->stringClass, "iteratorValue(_)", string_iteratorValue);
+	PRIMITIVE(vm->stringClass, "startsWith(_)", string_startsWith);
+	PRIMITIVE(vm->stringClass, "toString", string_toString);
+
+	vm->listClass = AS_CLASS(wrenFindVariable(vm, coreModule, "List"));
+	PRIMITIVE(vm->listClass->obj.classObj, "filled(_,_)", list_filled);
+	PRIMITIVE(vm->listClass->obj.classObj, "new()", list_new);
+	PRIMITIVE(vm->listClass, "[_]", list_subscript);
+	PRIMITIVE(vm->listClass, "[_]=(_)", list_subscriptSetter);
+	PRIMITIVE(vm->listClass, "add(_)", list_add);
+	PRIMITIVE(vm->listClass, "addCore_(_)", list_addCore);
+	PRIMITIVE(vm->listClass, "clear()", list_clear);
+	PRIMITIVE(vm->listClass, "count", list_count);
+	PRIMITIVE(vm->listClass, "insert(_,_)", list_insert);
+	PRIMITIVE(vm->listClass, "iterate(_)", list_iterate);
+	PRIMITIVE(vm->listClass, "iteratorValue(_)", list_iteratorValue);
+	PRIMITIVE(vm->listClass, "removeAt(_)", list_removeAt);
+
+	vm->mapClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Map"));
+	PRIMITIVE(vm->mapClass->obj.classObj, "new()", map_new);
+	PRIMITIVE(vm->mapClass, "[_]", map_subscript);
+	PRIMITIVE(vm->mapClass, "[_]=(_)", map_subscriptSetter);
+	PRIMITIVE(vm->mapClass, "addCore_(_)", map_addCore);
+	PRIMITIVE(vm->mapClass, "clear()", map_clear);
+	PRIMITIVE(vm->mapClass, "containsKey(_)", map_containsKey);
+	PRIMITIVE(vm->mapClass, "count", map_count);
+	PRIMITIVE(vm->mapClass, "remove(_)", map_remove);
+	PRIMITIVE(vm->mapClass, "iterate(_)", map_iterate);
+	PRIMITIVE(vm->mapClass, "keyIteratorValue_(_)", map_keyIteratorValue);
+	PRIMITIVE(vm->mapClass, "valueIteratorValue_(_)", map_valueIteratorValue);
+
+	vm->rangeClass = AS_CLASS(wrenFindVariable(vm, coreModule, "Range"));
+	PRIMITIVE(vm->rangeClass, "from", range_from);
+	PRIMITIVE(vm->rangeClass, "to", range_to);
+	PRIMITIVE(vm->rangeClass, "min", range_min);
+	PRIMITIVE(vm->rangeClass, "max", range_max);
+	PRIMITIVE(vm->rangeClass, "isInclusive", range_isInclusive);
+	PRIMITIVE(vm->rangeClass, "iterate(_)", range_iterate);
+	PRIMITIVE(vm->rangeClass, "iteratorValue(_)", range_iteratorValue);
+	PRIMITIVE(vm->rangeClass, "toString", range_toString);
+
+	ObjClass* systemClass = AS_CLASS(wrenFindVariable(vm, coreModule, "System"));
+	PRIMITIVE(systemClass->obj.classObj, "clock", system_clock);
+	PRIMITIVE(systemClass->obj.classObj, "gc()", system_gc);
+	PRIMITIVE(systemClass->obj.classObj, "writeString_(_)", system_writeString);
+
+	for (Obj* obj = vm->first; NULL != obj; obj = obj->next) {
+		if (OBJ_STRING == obj->type)
+			obj->classObj = vm->stringClass;
+	}
+}
