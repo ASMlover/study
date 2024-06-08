@@ -27,9 +27,59 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "opt_meta.h"
+#include "vm.h"
+#include "opt_meta.wren.inc"
 
-const char* wrenMetaSource() {}
+static void metaCompile(WrenVM* vm) {
+	const char* sourceCode = wrenGetSlotString(vm, 1);
+	bool isExpression = wrenGetSlotBool(vm, 2);
+	bool printErrors = wrenGetSlotBool(vm, 3);
+
+	ObjFiber* currentFiber = vm->fiber;
+	ObjFn* fn = currentFiber->frames[currentFiber->numFrames - 2].closure->fn;
+	ObjString* moduleName = fn->module->name;
+
+	ObjClosure* closure = wrenCompileSource(vm, moduleName->value, sourceCode, isExpression, printErrors);
+
+	if (NULL == closure)
+		vm->apiStack[0] = NULL_VAL;
+	else
+		vm->apiStack[0] = OBJ_VAL(closure);
+}
+
+static void metaGetModuleVariables(WrenVM* vm) {
+	wrenEnsureSlots(vm, 3);
+
+	Value moduleValue = wrenMapGet(vm->modules, vm->apiStack[1]);
+	if (IS_UNDEFINED(moduleValue)) {
+		vm->apiStack[0] = NULL_VAL;
+		return;
+	}
+
+	ObjModule* module = AS_MODULE(moduleValue);
+	ObjList* names = wrenNewList(vm, module->variableNames.count);
+	vm->apiStack[0] = OBJ_VAL(names);
+
+	for (int i = 0; i < names->elements.count; ++i)
+		names->elements.data[i] = NULL_VAL;
+	for (int i = 0; i < names->elements.count; ++i)
+		names->elements.data[i] = OBJ_VAL(module->variableNames.data[i]);
+}
+
+const char* wrenMetaSource() {
+	return metaModuleSource;
+}
+
 WrenForeignMethodFn wrenMetaBindForeignMethod(WrenVM* vm,
 		const char* className, bool isStatic, const char* signature) {
+	ASSERT(0 == strcmp(className, "Meta"), "Should be in Meta class.");
+	ASSERT(isStatic, "Should be static.");
+
+	if (0 == strcmp(signature, "compile_(_,_,_)"))
+		return metaCompile;
+	else if (0 == strcmp(signature, "metaGetModuleVariables_(_)"))
+		return metaGetModuleVariables;
+
+	ASSERT(false, "Unknown method.");
 	return NULL;
 }
