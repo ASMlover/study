@@ -236,7 +236,7 @@ static InterpretResult run() {
   CallFrame* frame = &vm.frames[vm.frameCount - 1];
 
 #define READ_BYTE()                         (*frame->ip++)
-#define READ_SHORT()                        (frame->ip += 2, (u16_t)((frame->ip[-2] << 8) | fram->ip[-1]))
+#define READ_SHORT()                        (frame->ip += 2, (u16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 #define READ_CONSTANT()                     (frame->closure->function->chunk.constants.values[READ_BYTE()])
 #define READ_STRING()                       AS_STRING(READ_CONSTANT())
 #define BINARY_OP(valueType, op)\
@@ -404,6 +404,17 @@ static InterpretResult run() {
       {
         u16_t offset = READ_SHORT();
         frame->ip += offset;
+      } break;
+    case OP_JUMP_IF_FALSE:
+      {
+        u16_t offset = READ_SHORT();
+        if (isFalsey(peek(0)))
+          frame->ip += offset;
+      } break;
+    case OP_LOOP:
+      {
+        u16_t offset = READ_SHORT();
+        frame->ip -= offset;
       } break;
     }
   }
