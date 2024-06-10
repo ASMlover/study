@@ -416,6 +416,14 @@ static InterpretResult run() {
         u16_t offset = READ_SHORT();
         frame->ip -= offset;
       } break;
+    case OP_CALL:
+      {
+        int argCount = READ_BYTE();
+        if (!callValue(peek(argCount), argCount))
+          return INTERPRET_RUNTIME_ERROR;
+
+        frame = &vm.frames[vm.frameCount - 1];
+      } break;
     }
   }
 
