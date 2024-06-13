@@ -441,6 +441,25 @@ static InterpretResult run() {
           return INTERPRET_RUNTIME_ERROR;
         frame = &vm.frames[vm.frameCount - 1];
       } break;
+    case OP_CLOSURE:
+      {
+        ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
+        ObjClosure* closure = newClosure(function);
+        push(OBJ_VAL(closure));
+
+        for (int i = 0; i < closure->upvalueCount; ++i) {
+          u8_t isLocal = READ_BYTE();
+          u8_t index = READ_BYTE();
+          if (isLocal)
+            closure->upvalues[i] = captureUpvalue(frame->slots + index);
+          else
+            closure->upvalues[i] = frame->closure->upvalues[index];
+        }
+      } break;
+    case OP_CLOSE_UPVALUE:
+      closeUpvalues(vm.stackTop - 1);
+      pop();
+      break;
     }
   }
 
