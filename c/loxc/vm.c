@@ -32,6 +32,7 @@
 #include <time.h>
 #include "object.h"
 #include "memory.h"
+#include "compiler.h"
 #include "vm.h"
 
 VM vm;
@@ -532,7 +533,20 @@ void freeVM() {
   freeObjects();
 }
 
-InterpretResult interpret(const char* sourceCode) { return INTERPRET_OK; }
+InterpretResult interpret(const char* sourceCode) {
+  ObjFunction* function = compile(sourceCode);
+  if (NULL == function)
+    return INTERPRET_COMPILE_ERROR;
+
+  push(OBJ_VAL(function));
+  ObjClosure* closure = newClosure(function);
+  pop();
+
+  push(OBJ_VAL(closure));
+  call(closure, 0);
+
+  return run();
+}
 
 void push(Value value) {
   *vm.stackTop++ = value;
