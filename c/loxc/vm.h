@@ -32,6 +32,7 @@
 #include "common.h"
 #include "table.h"
 #include "value.h"
+#include "object.h"
 
 #define LOXC_FRAMES_MAX                     (64)
 #define LOXC_STACK_MAX                      (LOXC_FRAMES_MAX * UINT8_COUNT)
