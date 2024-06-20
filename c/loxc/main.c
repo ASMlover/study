@@ -26,7 +26,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "common.h"
+#include "chunk.h"
+#include "vm.h"
+
+static void repl() {
+  char line[1024];
+  for (;;) {
+    fprintf(stdout, ">>> ");
+    if (!fgets(line, sizeof(line), stdin)) {
+      fprintf(stdout, "\n");
+      break;
+    }
+
+    interpret(line);
+  }
+}
 
 int main(int argc, char* argv[]) {
   LOXC_UNUSED(argc), LOXC_UNUSED(argv);
