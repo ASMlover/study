@@ -75,6 +75,17 @@ static void repl() {
   }
 }
 
+static void runFile(const char* path) {
+  char* sourceCode = readFile(path);
+  InterpretResult result = interpret(sourceCode);
+  free(sourceCode);
+
+  if (INTERPRET_COMPILE_ERROR == result)
+    exit(-1);
+  if (INTERPRET_RUNTIME_ERROR == result)
+    exit(-1);
+}
+
 int main(int argc, char* argv[]) {
   LOXC_UNUSED(argc), LOXC_UNUSED(argv);
 
