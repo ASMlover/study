@@ -271,10 +271,10 @@ static InterpretResult run() {
         Value constant = READ_CONSTANT();
         push(constant);
       } break;
-    case OP_NIL: push(NIL_VAL); break;
-    case OP_TRUE: push(BOOL_VAL(true)); break;
-    case OP_FALSE: push(BOOL_VAL(false)); break;
-    case OP_POP: pop(); break;
+    case OP_NIL:                  push(NIL_VAL); break;
+    case OP_TRUE:                 push(BOOL_VAL(true)); break;
+    case OP_FALSE:                push(BOOL_VAL(false)); break;
+    case OP_POP:                  pop(); break;
     case OP_GET_LOCAL:
       {
         u8_t slot = READ_BYTE();
@@ -367,8 +367,8 @@ static InterpretResult run() {
         Value a = pop();
         push(BOOL_VAL(valuesEqual(a, b)));
       } break;
-    case OP_GREATER:  BINARY_OP(BOOL_VAL, >); break;
-    case OP_LESS:     BINARY_OP(BOOL_VAL, <); break;
+    case OP_GREATER:              BINARY_OP(BOOL_VAL, >); break;
+    case OP_LESS:                 BINARY_OP(BOOL_VAL, <); break;
     case OP_ADD:
       {
         if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
@@ -384,10 +384,10 @@ static InterpretResult run() {
           return INTERPRET_RUNTIME_ERROR;
         }
       } break;
-    case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
-    case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
-    case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
-    case OP_NOT:      push(BOOL_VAL(isFalsey(pop()))); break;
+    case OP_SUBTRACT:             BINARY_OP(NUMBER_VAL, -); break;
+    case OP_MULTIPLY:             BINARY_OP(NUMBER_VAL, *); break;
+    case OP_DIVIDE:               BINARY_OP(NUMBER_VAL, /); break;
+    case OP_NOT:                  push(BOOL_VAL(isFalsey(pop()))); break;
     case OP_NEGATE:
       {
         if (!IS_NUMBER(peek(0))) {
@@ -457,8 +457,7 @@ static InterpretResult run() {
             closure->upvalues[i] = frame->closure->upvalues[index];
         }
       } break;
-    case OP_CLOSE_UPVALUE:
-      closeUpvalues(vm.stackTop - 1);
+    case OP_CLOSE_UPVALUE:        closeUpvalues(vm.stackTop - 1);
       pop();
       break;
     case OP_RETURN:
@@ -476,9 +475,7 @@ static InterpretResult run() {
         push(result);
         frame = &vm.frames[vm.frameCount - 1];
       } break;
-    case OP_CLASS:
-      push(OBJ_VAL(newClass(READ_STRING())));
-      break;
+    case OP_CLASS:                push(OBJ_VAL(newClass(READ_STRING()))); break;
     case OP_INHERIT:
       {
         Value superclass = peek(1);
@@ -491,9 +488,7 @@ static InterpretResult run() {
         tableAddAll(&AS_CLASS(superclass)->methods, &subclass->methods);
         pop();
       } break;
-    case OP_METHOD:
-      defineMethod(READ_STRING());
-      break;
+    case OP_METHOD:               defineMethod(READ_STRING()); break;
     default: break;
     }
   }
