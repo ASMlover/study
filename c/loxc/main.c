@@ -33,7 +33,7 @@
 #include "chunk.h"
 #include "vm.h"
 
-static char* readFile(const char* path) {
+static char* readFile(const char* path) {
   FILE* file = fopen(path, "rb");
   if (NULL == file) {
     fprintf(stderr, "Could not open file `%s`.\n", path);
@@ -88,6 +88,21 @@ static void runFile(const char* path) {
 
 int main(int argc, char* argv[]) {
   LOXC_UNUSED(argc), LOXC_UNUSED(argv);
+
+  initVM();
+
+  if (1 == argc) {
+    repl();
+  }
+  else if (2 == argc) {
+    runFile(argv[1]);
+  }
+  else {
+    fprintf(stderr, "Usage: loxc [path]\n");
+    exit(-1);
+  }
+
+  freeVM();
 
   return 0;
 }
