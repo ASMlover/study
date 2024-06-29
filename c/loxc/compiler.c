@@ -953,7 +953,7 @@ ObjFunction* compile(const char* sourceCode) {
 void markCompilerRoots() {
   Compiler* compiler = current;
    while (NULL != compiler) {
-     markObject((Obj*)compiler->function);
+     MARK_OBJ(compiler->function);
      compiler = compiler->enclosing;
    }
 }
