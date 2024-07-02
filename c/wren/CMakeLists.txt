@@ -38,6 +38,7 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 	add_definitions(
 		-Wno-array-bounds
+		-Wno-implicit-function-declaration
 		-Wno-maybe-uninitialized
 		-Wno-pedantic
 		-Wno-stringop-overflow
@@ -72,6 +73,8 @@ file(GLOB WREN_SOURCES
 	utils.c
 	value.c
 	vm.c
+	io.c
+	os.c
 )
 message(STATUS "`${PROJECT_NAME}` WREN_SOURCES: ${WREN_SOURCES}")
 
