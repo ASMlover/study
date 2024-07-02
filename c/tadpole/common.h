@@ -84,6 +84,33 @@ typedef const char*                         cstr_t;
 
 #define AS_TYPE(T, x)                       ((T)(x))
 
+#if defined(DEBUG)
+# include <stdio.h>
+# define ASSERT(condition, message)\
+  do {\
+    if (!(condition)) {\
+      fprintf(stderr, "[%s:%s] Assert failed in %s(): %s\n", __FILE__, __LINE__, __func__, (message));\
+      abort();\
+    }\
+  } while (false)
+
+# define UNREACHABLE()\
+  do {\
+    fprintf(stderr, "[%s:%s] This code should not be reached in %s()\n", __FILE__, __LINE__, __func__);\
+    abort();\
+  } while (false)
+#else
+# define ASSERT(condition, message)
+
+# if defined(_MSC_VER)
+#   define UNREACHABLE()                    __assume(0)
+# elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
+#   define UNREACHABLE()                    __builtin_unreachable()
+# else
+#   define UNREACHABLE()
+# endif
+#endif
+
 static inline u32_t hash_string(const char* string, int length) {
   u32_t hash = 2166136261u;
   for (int i = 0; i < length; ++i) {
