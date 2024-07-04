@@ -52,8 +52,12 @@ endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${BUILD_TYPE}}")
 
+include_directories(${PROJECT_SOURCE_DIR})
+
 file(GLOB TADPOLE_SOURCES
   main.c
+  lex/token.c
+  lex/lexer.c
 )
 message(STATUS "`${PROJECT_NAME}` TADPOLE_SOURCES: ${TADPOLE_SOURCES}")
 
