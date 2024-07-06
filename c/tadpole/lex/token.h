@@ -29,11 +29,15 @@
 #ifndef TADPOLE_TOKEN_H
 #define TADPOLE_LEXER_H
 
+#include <common/common.h>
+
 typedef enum {
 #undef TOKENDEF
 #define TOKENDEF(k, s)            k,
-#include <lex/lexer.h>
+#include <lex/kinds_def.h>
 #undef TOKENDEF
+
+  COUNT_OF_TOKEN,
 } TokenKind;
 
 typedef struct {
