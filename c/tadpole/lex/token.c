@@ -44,8 +44,29 @@ const char* get_kind_name(TokenKind kind) {
   return "<UNKNOWN>";
 }
 
-Token make_token(TokenKind kind, const char* literal, sz_t length, int lineno) { return make_synthetic_token(""); }
-Token make_error_token(const char* message, int lineno) { return make_synthetic_token(""); }
+TokenKind get_keyword_kind(const char* text) {
+  return TOKEN_IDENTIFIER;
+}
+
+Token make_token(TokenKind kind, const char* literal, sz_t length, int lineno) {
+  Token token;
+  token.kind = kind;
+  token.start = literal;
+  token.length = length;
+  token.lineno = lineno;
+
+  return token;
+}
+
+Token make_error_token(const char* message, int lineno) {
+  Token token;
+  token.kind = TOKEN_ERR;
+  token.start = message;
+  token.length = strlen(message);
+  token.lineno = lineno;
+
+  return token;
+}
 
 Token make_synthetic_token(const char* text) {
   Token token;

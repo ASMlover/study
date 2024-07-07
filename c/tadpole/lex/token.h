@@ -48,6 +48,8 @@ typedef struct {
 } Token;
 
 const char* get_kind_name(TokenKind kind);
+TokenKind get_keyword_kind(const char* text);
+
 Token make_token(TokenKind kind, const char* literal, sz_t length, int lineno);
 Token make_error_token(const char* message, int lineno);
 Token make_synthetic_token(const char* text);
