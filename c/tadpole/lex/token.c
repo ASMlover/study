@@ -27,10 +27,23 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <string.h>
-#include <common/common.h>
 #include <lex/token.h>
 
-const char* get_kind_name(TokenKind kind) { return NULL; }
+static const char* kNames[] = {
+#undef TOKENDEF
+#define TOKENDEF(k, s)            #k,
+#include <lex/kinds_def.h>
+#undef TOKENDEF
+
+  NULL,
+};
+
+const char* get_kind_name(TokenKind kind) {
+  if (kind >= TOKEN_LPAREN && kind < COUNT_OF_TOKEN)
+    return kNames[kind];
+  return "<UNKNOWN>";
+}
+
 Token make_token(TokenKind kind, const char* literal, sz_t length, int lineno) { return make_synthetic_token(""); }
 Token make_error_token(const char* message, int lineno) { return make_synthetic_token(""); }
 
