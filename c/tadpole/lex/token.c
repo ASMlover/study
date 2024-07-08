@@ -38,6 +38,12 @@ static const char* kNames[] = {
   NULL,
 };
 
+static TokenKind check_keyword(const char* text, sz_t start, sz_t length, const char* rest, TokenKind kind) {
+  if (0 == memcmp(text + start, rest, length))
+    return kind;
+  return TOKEN_IDENTIFIER;
+}
+
 const char* get_kind_name(TokenKind kind) {
   if (kind >= TOKEN_LPAREN && kind < COUNT_OF_TOKEN)
     return kNames[kind];
@@ -45,6 +51,21 @@ const char* get_kind_name(TokenKind kind) {
 }
 
 TokenKind get_keyword_kind(const char* text) {
+  if (NULL == text)
+    return TOKEN_IDENTIFIER;
+
+  switch (text[0]) {
+  case 'a': return check_keyword(text, 1, 2, "nd", KEYWORD_AND);
+  case 'c': return check_keyword(text, 1, 4, "lass", KEYWORD_CLASS);
+  case 'e': return check_keyword(text, 1, 3, "lse", KEYWORD_ELSE);
+  case 'f':
+    switch (text[1]) {
+    case 'a': return check_keyword(text, 2, 3, "lse", KEYWORD_FALSE);
+    case 'o': return check_keyword(text, 2, 1, "r", KEYWORD_FOR);
+    case 'n': return KEYWORD_FN;
+    }
+    break;
+  }
   return TOKEN_IDENTIFIER;
 }
 
