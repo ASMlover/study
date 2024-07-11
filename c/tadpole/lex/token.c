@@ -71,6 +71,14 @@ TokenKind get_keyword_kind(const char* text) {
   case 'p': return check_keyword(text, 1, 4, "rint", KEYWORD_PRINT);
   case 'r': return check_keyword(text, 1, 5, "return", KEYWORD_RETURN);
   case 's': return check_keyword(text, 1, 4, "uper", KEYWORD_SUPER);
+  case 't':
+    switch (text[1]) {
+    case 'h': return check_keyword(text, 2, 2, "is", KEYWORD_THIS);
+    case 'r': return check_keyword(text, 2, 2, "ue", KEYWORD_TRUE);
+    }
+    break;
+  case 'v': return check_keyword(text, 1, 2, "ar", KEYWORD_VAR);
+  case 'w': return check_keyword(text, 1, 4, "hile", KEYWORD_WHILE);
   }
   return TOKEN_IDENTIFIER;
 }
