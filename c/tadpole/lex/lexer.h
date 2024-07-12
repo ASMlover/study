@@ -29,4 +29,9 @@
 #ifndef TADPOLE_LEXER_H
 #define TADPOLE_LEXER_H
 
+#include <lex/token.h>
+
+void init_lexer(const char* source_code);
+Token next_token();
+
 #endif
