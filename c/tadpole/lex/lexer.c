@@ -27,4 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <ctype.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #include <lex/lexer.h>
+
+typedef struct {
+  const char*                     start;
+  const char*                     current;
+  int                             lineno;
+} Lexer;
+
+Lexer lexer;
