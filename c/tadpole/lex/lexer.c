@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <lex/token.h>
 #include <lex/lexer.h>
 
 typedef struct {
@@ -38,4 +39,26 @@ typedef struct {
   int                             lineno;
 } Lexer;
 
-Lexer lexer;
+static Lexer lexer;
+
+static inline bool is_alpha(char c) {
+  return isalpha(c) || c == '_';
+}
+
+static inline bool is_alnum(char c) {
+  return isalnum(c) || c == '_';
+}
+
+static inline bool is_digit(char c) {
+  return isdigit(c);
+}
+
+void init_lexer(const char* source_code) {
+  lexer.start = source_code;
+  lexer.current = source_code;
+  lexer.lineno = 1;
+}
+
+Token next_token() {
+  return make_error_token("Error", 0);
+}
