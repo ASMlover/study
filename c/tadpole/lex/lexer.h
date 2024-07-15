@@ -31,7 +31,11 @@
 
 #include <lex/token.h>
 
-void init_lexer(const char* source_code);
-Token next_token();
+typedef struct Lexer Lexer;
+
+Lexer* lexer_init(const char* source_code);
+void lexer_destroy(Lexer* lexer);
+
+Token lexer_next_token(Lexer* lexer);
 
 #endif
