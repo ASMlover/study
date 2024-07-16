@@ -29,17 +29,16 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <lex/token.h>
 #include <lex/lexer.h>
 
-typedef struct {
+typedef struct Lexer {
   const char*                     start;
   const char*                     current;
   int                             lineno;
 } Lexer;
-
-static Lexer lexer;
 
 static inline bool is_alpha(char c) {
   return isalpha(c) || c == '_';
@@ -53,12 +52,50 @@ static inline bool is_digit(char c) {
   return isdigit(c);
 }
 
-void init_lexer(const char* source_code) {
-  lexer.start = source_code;
-  lexer.current = source_code;
-  lexer.lineno = 1;
+static inline bool is_at_end(Lexer* lexer) {
+  return *lexer->current == 0;
 }
 
-Token next_token() {
+static inline char advance(Lexer* lexer) {
+  return *lexer->current++;
+}
+
+static inline char peek(Lexer* lexer) {
+  return *lexer->current;
+}
+
+static inline char peek_next(Lexer* lexer) {
+  if (is_at_end(lexer))
+    return 0;
+  return lexer->current[1];
+}
+
+static inline bool match(Lexer* lexer, char expected) {
+  if (is_at_end(lexer))
+    return false;
+
+  if (*lexer->current == expected) {
+    ++lexer->current;
+    return true;
+  }
+  return false;
+}
+
+Lexer* lexer_init(const char* source_code) {
+  Lexer* lexer = (Lexer*)malloc(sizeof(Lexer));
+  if (NULL != lexer) {
+    lexer->start = source_code;
+    lexer->current = source_code;
+    lexer->lineno = 1;
+  }
+  return lexer;
+}
+
+void lexer_destroy(Lexer* lexer) {
+  if (NULL != lexer)
+    free(lexer);
+}
+
+Token lexer_next_token(Lexer* lexer) {
   return make_error_token("Error", 0);
 }
