@@ -81,6 +81,33 @@ static inline bool match(Lexer* lexer, char expected) {
   return false;
 }
 
+static void skip_whitespace(Lexer* lexer) {
+  for (;;) {
+    char c = peek(lexer);
+    switch (c) {
+    case ' ': case '\r': case '\t': advance(lexer); break;
+    case '\n': ++lexer->lineno; advance(lexer); break;
+    case '/':
+      if ('/' == peek_next(lexer)) {
+        while ('\n' != peek(lexer) && !is_at_end(lexer))
+          advance(lexer);
+      }
+      else {
+        return;
+      }
+      break;
+    default: return;
+    }
+  }
+}
+
+static Token identifier(Lexer* lexer) {
+  while (is_alpha(peek(lexer)) || is_digit(peek(lexer)))
+    advance(lexer);
+
+  return make_token(get_keyword_kind(lexer->start), lexer->start, (sz_t)(lexer->current - lexer->start), lexer->lineno);
+}
+
 Lexer* lexer_init(const char* source_code) {
   Lexer* lexer = (Lexer*)malloc(sizeof(Lexer));
   if (NULL != lexer) {
