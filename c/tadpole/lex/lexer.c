@@ -108,6 +108,20 @@ static Token identifier(Lexer* lexer) {
   return make_token(get_keyword_kind(lexer->start), lexer->start, (sz_t)(lexer->current - lexer->start), lexer->lineno);
 }
 
+static Token number(Lexer* lexer) {
+  while (is_digit(peek(lexer)))
+    advance(lexer);
+
+  if ('.' == peek(lexer) && is_digit(peek_next(lexer))) {
+    advance(lexer);
+
+    while (is_digit(peek(lexer)))
+      advance(lexer);
+  }
+
+  return make_token(TOKEN_NUMBER, lexer->start, (sz_t)(lexer->current - lexer->start), lexer->lineno);
+}
+
 Lexer* lexer_init(const char* source_code) {
   Lexer* lexer = (Lexer*)malloc(sizeof(Lexer));
   if (NULL != lexer) {
