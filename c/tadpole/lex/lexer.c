@@ -40,6 +40,8 @@ typedef struct Lexer {
   int                             lineno;
 } Lexer;
 
+#define LEXER_LITERIAL_LEN()      (sz_t)(lexer->current - lexer->start)
+
 static inline bool is_alpha(char c) {
   return isalpha(c) || c == '_';
 }
@@ -53,7 +55,7 @@ static inline bool is_digit(char c) {
 }
 
 static inline bool is_at_end(Lexer* lexer) {
-  return *lexer->current == 0;
+  return 0 == *lexer->current;
 }
 
 static inline char advance(Lexer* lexer) {
@@ -105,7 +107,8 @@ static Token identifier(Lexer* lexer) {
   while (is_alpha(peek(lexer)) || is_digit(peek(lexer)))
     advance(lexer);
 
-  return make_token(get_keyword_kind(lexer->start), lexer->start, (sz_t)(lexer->current - lexer->start), lexer->lineno);
+  const char* literal = lexer->start;
+  return make_token(get_keyword_kind(literal), literal, LEXER_LITERIAL_LEN(), lexer->lineno);
 }
 
 static Token number(Lexer* lexer) {
@@ -119,7 +122,23 @@ static Token number(Lexer* lexer) {
       advance(lexer);
   }
 
-  return make_token(TOKEN_NUMBER, lexer->start, (sz_t)(lexer->current - lexer->start), lexer->lineno);
+  return make_token(TOKEN_NUMBER, lexer->start, LEXER_LITERIAL_LEN(), lexer->lineno);
+}
+
+static Token string(Lexer* lexer) {
+  while ('"' == peek(lexer) && !is_at_end(lexer)) {
+    if ('\n' == peek(lexer))
+      ++lexer->lineno;
+
+    advance(lexer);
+  }
+
+  int lineno = lexer->lineno;
+  if (is_at_end(lexer))
+    return make_error_token("Unterminated string.", lineno);
+
+  advance(lexer);
+  return make_token(TOKEN_STRING, lexer->start, LEXER_LITERIAL_LEN(), lineno);
 }
 
 Lexer* lexer_init(const char* source_code) {
