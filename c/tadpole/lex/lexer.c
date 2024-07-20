@@ -41,13 +41,14 @@ typedef struct Lexer {
 } Lexer;
 
 #define LEXER_LITERIAL_LEN()      (sz_t)(lexer->current - lexer->start)
+#define MAKE_TOKEN(t)             make_token((t), lexer->start, LEXER_LITERIAL_LEN(), lexer->lineno)
 
 static inline bool is_alpha(char c) {
-  return isalpha(c) || c == '_';
+  return isalpha(c) || '_' == c;
 }
 
 static inline bool is_alnum(char c) {
-  return isalnum(c) || c == '_';
+  return isalnum(c) || '_' == c;
 }
 
 static inline bool is_digit(char c) {
@@ -122,7 +123,7 @@ static Token number(Lexer* lexer) {
       advance(lexer);
   }
 
-  return make_token(TOKEN_NUMBER, lexer->start, LEXER_LITERIAL_LEN(), lexer->lineno);
+  return MAKE_TOKEN(TOKEN_NUMBER);
 }
 
 static Token string(Lexer* lexer) {
@@ -138,7 +139,7 @@ static Token string(Lexer* lexer) {
     return make_error_token("Unterminated string.", lineno);
 
   advance(lexer);
-  return make_token(TOKEN_STRING, lexer->start, LEXER_LITERIAL_LEN(), lineno);
+  return MAKE_TOKEN(TOKEN_STRING);
 }
 
 Lexer* lexer_init(const char* source_code) {
@@ -157,5 +158,37 @@ void lexer_destroy(Lexer* lexer) {
 }
 
 Token lexer_next_token(Lexer* lexer) {
-  return make_error_token("Error", 0);
+  skip_whitespace(lexer);
+  lexer->start = lexer->current;
+
+  if (is_at_end(lexer))
+    return MAKE_TOKEN(TOKEN_EOF);
+
+  char c = advance(lexer);
+  if (is_alpha(c))
+    return identifier(lexer);
+  if (is_digit(c))
+    return number(lexer);
+
+  switch (c) {
+  case '(': return MAKE_TOKEN(TOKEN_LPAREN);
+  case ')': return MAKE_TOKEN(TOKEN_RPAREN);
+  case '{': return MAKE_TOKEN(TOKEN_LBRACE);
+  case '}': return MAKE_TOKEN(TOKEN_LBRACE);
+  case ';': return MAKE_TOKEN(TOKEN_SEMI);
+  case ',': return MAKE_TOKEN(TOKEN_COMMA);
+  case '.': return MAKE_TOKEN(TOKEN_DOT);
+  case '-': return MAKE_TOKEN(TOKEN_MINUS);
+  case '+': return MAKE_TOKEN(TOKEN_PLUS);
+  case '/': return MAKE_TOKEN(TOKEN_SLASH);
+  case '*': return MAKE_TOKEN(TOKEN_STAR);
+  case '!': return MAKE_TOKEN(match(lexer, '=') ? TOKEN_BANGEQ : TOKEN_BANG);
+  case '=': return MAKE_TOKEN(match(lexer, '=') ? TOKEN_EQEQ : TOKEN_EQ);
+  case '<': return MAKE_TOKEN(match(lexer, '=') ? TOKEN_LE : TOKEN_LT);
+  case '>': return MAKE_TOKEN(match(lexer, '=') ? TOKEN_GE : TOKEN_GT);
+  case '"': return string(lexer);
+  default: break;
+  }
+
+  return make_error_token("Unexpected character.", 0);
 }
