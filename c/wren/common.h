@@ -52,7 +52,7 @@
 #	if defined(_MSC_VER)
 #		define WREN_COMPUTED_GOTO 0
 #	else
-#		define WREN_COMPUTED_GOTO 1
+#		define WREN_COMPUTED_GOTO 0
 #	endif
 #endif
 
