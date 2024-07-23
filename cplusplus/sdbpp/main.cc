@@ -24,10 +24,23 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <iostream>
 #include "common.hh"
 
 int main(int argc, char* argv[]) {
   SDB_UNUSED(argc), SDB_UNUSED(argv);
+
+  sdb::str_t line;
+  for (;;) {
+    std::cout << "db > ";
+    if (!std::getline(std::cin, line))
+      break;
+
+    if (line == ".exit")
+      break;
+    else
+      std::cerr << "Unrecognized command `" << line << "`" << std::endl;
+  }
 
   return 0;
 }

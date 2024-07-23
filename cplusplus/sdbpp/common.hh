@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -59,6 +61,9 @@ using strv_t            = std::string_view;
 using ss_t              = std::stringstream;
 using safe_t            = _Safe;
 using unsafe_t          = _Unsafe;
+
+static constexpr sz_t kALIGNMENT  = 8;
+static constexpr safe_t kSafePlaceholder{};
 
 class Copyable {
 protected:
@@ -107,6 +112,31 @@ template <typename T> inline T* as_ptr(void* p) noexcept {
 
 template <typename T, typename PTR> inline T* get_rawptr(const PTR& p) noexcept {
   return p.get();
+}
+
+inline sz_t as_align(sz_t bytes, sz_t align = kALIGNMENT) noexcept {
+  return (bytes + align - 1) & ~(align - 1);
+}
+
+inline str_t as_string(double d) noexcept {
+  ss_t ss;
+  ss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
+  return ss.str();
+}
+
+template <typename T, typename... Args> inline str_t as_string(T&& x, Args&&... args) noexcept {
+  ss_t ss;
+  ss << std::forward<T>(x);
+  ((ss << std::forward<Args>(args)), ...);
+
+  return ss.str();
+}
+
+template <typename... Args> inline str_t from_fmt(strv_t fmt, const Args&... args) noexcept {
+  int sz = std::snprintf(nullptr, 0, fmt.data(), args...);
+  std::unique_ptr<char []> buf{new char[sz + 1]};
+  std::snprintf(buf.get(), sz, fmt.data(), args...);
+  return str_t(buf.get(), buf.get() + sz);
 }
 
 }
