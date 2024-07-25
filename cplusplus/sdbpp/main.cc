@@ -27,19 +27,88 @@
 #include <iostream>
 #include "common.hh"
 
+enum class MetaCommandResult {
+  META_COMMAND_SUCCESS,
+  META_COMMAND_UNRECOGNIZED_COMMAND,
+};
+
+class SQLCompiler final : private sdb::UnCopyable {
+public:
+  enum class PrepareRet : int {
+    SUCCESS,
+    UNRECONGNIZED_STATEMENT,
+  };
+
+  enum class StatementType : int {
+    INSERT,
+    SELECT,
+  };
+private:
+  StatementType type_;
+public:
+  PrepareRet prepare(const sdb::str_t& command) noexcept {
+    if (command.starts_with("insert")) {
+      type_ = StatementType::INSERT;
+      return PrepareRet::SUCCESS;
+    }
+    else if (command.starts_with("select")) {
+      type_ = StatementType::SELECT;
+      return PrepareRet::SUCCESS;
+    }
+
+    return PrepareRet::UNRECONGNIZED_STATEMENT;
+  }
+
+  void execute() noexcept {
+    switch (type_) {
+    case StatementType::INSERT:
+      std::cout << "This is where we would do an insert" << std::endl;
+      break;
+    case StatementType::SELECT:
+      std::cout << "This is where we would do a select" << std::endl;
+      break;
+    default: break;
+    }
+  }
+};
+
+static MetaCommandResult do_meta_command(const sdb::str_t& command) {
+  if (command == ".exit")
+    exit(EXIT_SUCCESS);
+  else
+    return MetaCommandResult::META_COMMAND_UNRECOGNIZED_COMMAND;
+}
+
 int main(int argc, char* argv[]) {
   SDB_UNUSED(argc), SDB_UNUSED(argv);
 
-  sdb::str_t line;
+  sdb::str_t command;
   for (;;) {
     std::cout << "db > ";
-    if (!std::getline(std::cin, line))
+    if (!std::getline(std::cin, command))
       break;
 
-    if (line == ".exit")
+    if (command[0] == '.') {
+      switch (do_meta_command(command)) {
+      case MetaCommandResult::META_COMMAND_SUCCESS:
+        continue;
+      case MetaCommandResult::META_COMMAND_UNRECOGNIZED_COMMAND:
+        std::cerr << "Unrecognized command `" << command << "`" << std::endl;
+        continue;
+      }
+    }
+
+    SQLCompiler compiler;
+    switch (compiler.prepare(command)) {
+    case SQLCompiler::PrepareRet::SUCCESS:
       break;
-    else
-      std::cerr << "Unrecognized command `" << line << "`" << std::endl;
+    case SQLCompiler::PrepareRet::UNRECONGNIZED_STATEMENT:
+      std::cerr << "Unrecognized keyword at start of `" << command << "`" << std::endl;
+      continue;
+    }
+
+    compiler.execute();
+    std::cout << "Executed" <<  std::endl;
   }
 
   return 0;
