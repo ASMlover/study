@@ -63,7 +63,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define UINT8_COUNT                         (UINT8_MAX + 1)
+#define UINT8_COUNT     (UINT8_MAX + 1)
 
 typedef uint8_t         byte_t;
 typedef int8_t          i8_t;
