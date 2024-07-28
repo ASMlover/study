@@ -29,26 +29,13 @@
 #ifndef LOXC_SCANNER_H
 #define LOXC_SCANNER_H
 
-typedef enum {
-#undef TOKENDEF
-#define TOKENDEF(k, s) k,
-#include "token_defs.h"
-#undef TOKENDEF
+#include "token.h"
 
-  COUNTER_OF_TOKEN,
-} TokenType;
+typedef struct Scanner Scanner;
 
-const char* tokenTypeAsString(TokenType type);
+Scanner* initScanner(const char* sourceCode);
+void freeScanner(Scanner* scanner);
 
-typedef struct {
-  TokenType             type;
-  const char*           start;
-  int                   length;
-  int                   lineno;
-} Token;
-
-void initScanner(const char* sourceCode);
-Token scanToken();
-Token syntheticToken(const char* text);
+Token scanToken(Scanner* scanner);
 
 #endif
