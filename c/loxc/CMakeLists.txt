@@ -54,6 +54,7 @@ message(STATUS "`${PROJECT_NAME}` CMAKE_C_FLAGS: ${CMAKE_C_FLAGS_${BUILD_TYPE}}"
 
 file(GLOB LOXC_SOURCES
   main.c
+  token.c
   scanner.c
   memory.c
   table.c
