@@ -35,6 +35,7 @@
 #include "scanner.h"
 
 typedef struct {
+  Scanner*              scanner;
   Token                 current;
   Token                 previous;
   bool                  hadError;
@@ -141,7 +142,7 @@ static void advance() {
   parser.previous = parser.current;
 
   for (;;) {
-    parser.current = scanToken();
+    parser.current = scanToken(parser.scanner);
     if (TOKEN_ERROR != parser.current.type)
       break;
 
@@ -935,7 +936,10 @@ static void statement() {
 }
 
 ObjFunction* compile(const char* sourceCode) {
-  initScanner(sourceCode);
+  Scanner* scanner = initScanner(sourceCode);
+  if (NULL != scanner)
+    parser.scanner = scanner;
+
   Compiler compiler;
   initCompiler(&compiler, TYPE_SCRIPT);
 
@@ -947,6 +951,8 @@ ObjFunction* compile(const char* sourceCode) {
     declaration();
 
   ObjFunction* function = endCompiler();
+  freeScanner(scanner);
+
   return parser.hadError ? NULL : function;
 }
 
