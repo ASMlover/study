@@ -41,8 +41,6 @@ struct Scanner {
   int                   lineno;
 };
 
-Scanner scanner;
-
 static inline bool isAlpha(char c) {
   return isalpha(c) || '_' == c;
 }
@@ -174,25 +172,33 @@ static Token string(Scanner* scanner) {
   }
 
   if (isAtEnd(scanner))
-    return errorToken(scanner, "Unterminated string.");
+    return errorToken("Unterminated string.", scanner->lineno);
 
   advance(scanner);
   return MAKE_TOKEN(TOKEN_STRING);
 }
 
-Scanner* initScanner(const char* sourceCode) {
+Scanner* allocScanner(const char* sourceCode) {
   Scanner* scanner = ALLOCATE(Scanner, 1);
-  if (NULL != scanner) {
-    scanner->start = sourceCode;
-    scanner->current = sourceCode;
-    scanner->lineno = 1;
-  }
+  if (NULL != scanner)
+    initScanner(scanner, sourceCode);
   return scanner;
 }
 
-void freeScanner(Scanner* scanner) {
-  if (NULL != scanner)
-    FREE(Scanner, scanner);
+void deallocScanner(Scanner* scanner) {
+  FREE(Scanner, scanner);
+}
+
+void initScanner(Scanner* scanner, const char* sourceCode) {
+  scanner->start = sourceCode;
+  scanner->current = sourceCode;
+  scanner->lineno = 1;
+}
+
+void destroyScanner(Scanner* scanner) {
+  scanner->start = NULL;
+  scanner->current = NULL;
+  scanner->lineno = 0;
 }
 
 Token scanToken(Scanner* scanner) {
@@ -228,5 +234,5 @@ Token scanToken(Scanner* scanner) {
   default: break;
   }
 
-  return errorToken(scanner, "Unexpected character.");
+  return errorToken("Unexpected character.", scanner->lineno);
 }

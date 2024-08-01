@@ -33,8 +33,11 @@
 
 typedef struct Scanner Scanner;
 
-Scanner* initScanner(const char* sourceCode);
-void freeScanner(Scanner* scanner);
+Scanner* allocScanner(const char* sourceCode);
+void deallocScanner(Scanner* scanner);
+
+void initScanner(Scanner* scanner, const char* sourceCode);
+void destroyScanner(Scanner* scanner);
 
 Token scanToken(Scanner* scanner);
 

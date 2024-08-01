@@ -56,7 +56,7 @@
 #endif
 
 #if !defined(LOXC_UNUSED)
-# define LOXC_UNUSED(x)   ((void)x)
+# define LOXC_UNUSED(x) ((void)x)
 #endif
 
 #include <stdbool.h>
