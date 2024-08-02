@@ -69,6 +69,18 @@ static inline int jumpInstruction(Chunk* chunk, const char* name, int sign, int 
   return offset + 3;
 }
 
+Chunk* allocChunk() {
+  Chunk* chunk = ALLOCATE(Chunk, 1);
+  if (NULL != chunk)
+    initChunk(chunk);
+  return chunk;
+}
+
+void deallocChunk(Chunk* chunk) {
+  destroyChunk(chunk);
+  FREE(Chunk, chunk);
+}
+
 void initChunk(Chunk* chunk) {
   chunk->count = 0;
   chunk->capacity = 0;
@@ -77,7 +89,7 @@ void initChunk(Chunk* chunk) {
   initValueArray(&chunk->constants);
 }
 
-void freeChunk(Chunk* chunk) {
+void destroyChunk(Chunk* chunk) {
   FREE_ARRAY(u8_t, chunk->code, chunk->capacity);
   FREE_ARRAY(int, chunk->lines, chunk->capacity);
   freeValueArray(&chunk->constants);

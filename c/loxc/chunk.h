@@ -89,8 +89,10 @@ typedef struct {
   ValueArray            constants;
 } Chunk;
 
+Chunk* allocChunk();
+void deallocChunk(Chunk* chunk);
 void initChunk(Chunk* chunk);
-void freeChunk(Chunk* chunk);
+void destroyChunk(Chunk* chunk);
 
 void writeChunk(Chunk* chunk, u8_t byte, int lineno);
 int addConstant(Chunk* chunk, Value value);
