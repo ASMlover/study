@@ -108,7 +108,7 @@ static inline void freeClosure(Obj* object) {
 
 static inline void freeFunction(Obj* object) {
   ObjFunction* function = (ObjFunction*)object;
-  freeChunk(&function->chunk);
+  destroyChunk(&function->chunk);
   FREE(ObjFunction, object);
 }
 
