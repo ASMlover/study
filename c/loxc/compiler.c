@@ -936,7 +936,7 @@ static void statement() {
 }
 
 ObjFunction* compile(const char* sourceCode) {
-  Scanner* scanner = initScanner(sourceCode);
+  Scanner* scanner = allocScanner(sourceCode);
   if (NULL != scanner)
     parser.scanner = scanner;
 
@@ -951,7 +951,7 @@ ObjFunction* compile(const char* sourceCode) {
     declaration();
 
   ObjFunction* function = endCompiler();
-  freeScanner(scanner);
+  deallocScanner(scanner);
 
   return parser.hadError ? NULL : function;
 }
