@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include <vector>
+#include <sstream>
 #include "common.hh"
 
 enum class MetaCommandResult {
@@ -39,8 +41,8 @@ enum class MetaCommandResult {
 
 struct Row {
   sdb::u32_t                                id;
-  char                                      username[COLUMN_USERNAME_SIZE];
-  char                                      email[COLUMN_EMAIL_SIZE];
+  char                                      username[COLUMN_USERNAME_SIZE + 1];
+  char                                      email[COLUMN_EMAIL_SIZE + 1];
 
   inline void print() noexcept {
     std::cout << "(" << id << ", " << username << ", " << email << ")" << std::endl;
@@ -100,6 +102,23 @@ struct Table {
     sdb::u32_t byte_offset = row_offset * ROW_SIZE;
     return (sdb::byte_t*)page + byte_offset;
   }
+
+  inline bool insert(Row& row) noexcept {
+    if (num_rows >= TABLE_MAX_ROWS)
+      return false;
+
+    row.serialize(row_slot(num_rows));
+    num_rows += 1;
+    return true;
+  }
+
+  inline void select() noexcept {
+    Row row;
+    for (sdb::u32_t i = 0; i < num_rows; ++i) {
+      row.deserialize(row_slot(i));
+      row.print();
+    }
+  }
 };
 
 
@@ -112,6 +131,8 @@ public:
 
   enum class PrepareRet : int {
     SUCCESS,
+    NEGATIVE_ID,
+    STRING_TOO_LONG,
     SYNTAX_ERROR,
     UNRECONGNIZED_STATEMENT,
   };
@@ -124,32 +145,55 @@ private:
   StatementType type_;
 
   inline ExecuteRet _insert(Table& table, Row& row) noexcept {
-    if (table.num_rows >= TABLE_MAX_ROWS)
-      return ExecuteRet::TABLE_FULL;
-
-    row.serialize(table.row_slot(table.num_rows));
-    table.num_rows += 1;
-
-    return ExecuteRet::SUCCESS;
+    return (!table.insert(row)) ? ExecuteRet::TABLE_FULL : ExecuteRet::SUCCESS;
   }
 
   inline ExecuteRet _select(Table& table) noexcept {
-    Row row;
-    for (sdb::u32_t i = 0; i < table.num_rows; ++i) {
-      row.deserialize(table.row_slot(i));
-      row.print();
-    }
-
+    table.select();
     return ExecuteRet::SUCCESS;
+  }
+
+  PrepareRet prepare_insert(const sdb::str_t& command, Row& row) noexcept {
+    type_ = StatementType::INSERT;
+
+    std::vector<sdb::str_t> tokens;
+    split(command, tokens);
+
+    if (4 != tokens.size())
+      return PrepareRet::SYNTAX_ERROR;
+
+    sdb::str_t keyword = tokens[0];
+    sdb::str_t id_string = tokens[1];
+    sdb::str_t username = tokens[2];
+    sdb::str_t email = tokens[3];
+
+    int id = std::atoi(id_string.data());
+    if (id < 0)
+      return PrepareRet::NEGATIVE_ID;
+    if (username.size() > COLUMN_USERNAME_SIZE)
+      return PrepareRet::STRING_TOO_LONG;
+    if (email.size() > COLUMN_EMAIL_SIZE)
+      return PrepareRet::STRING_TOO_LONG;
+
+    row.id = sdb::as_type<sdb::u32_t>(id);
+    std::strncpy(row.username, username.data(), username.size() + 1);
+    std::strncpy(row.email, email.data(), email.size() + 1);
+
+    std::cout << id << " " << username << " " << email << std::endl;
+
+    return PrepareRet::SUCCESS;
+  }
+
+  void split(const sdb::str_t& s, std::vector<sdb::str_t>& tokens) noexcept {
+    tokens.clear();
+
+    std::istringstream iss(s);
+    std::copy(std::istream_iterator<sdb::str_t>(iss), std::istream_iterator<sdb::str_t>(), std::back_inserter(tokens));
   }
 public:
   PrepareRet prepare(const sdb::str_t& command, Row& row) noexcept {
     if (command.starts_with("insert")) {
-      type_ = StatementType::INSERT;
-      int args_assigned = sscanf(command.data(), "insert %u %s %s", &row.id, row.username, row.email);
-      if (args_assigned < 3)
-        return PrepareRet::SYNTAX_ERROR;
-      return PrepareRet::SUCCESS;
+      return prepare_insert(command, row);
     }
     else if (command.starts_with("select")) {
       type_ = StatementType::SELECT;
@@ -200,6 +244,9 @@ int main(int argc, char* argv[]) {
     switch (compiler.prepare(command, row)) {
     case SQLCompiler::PrepareRet::SUCCESS:
       break;
+    case SQLCompiler::PrepareRet::STRING_TOO_LONG:
+      std::cerr << "String is too long." << std::endl;
+      continue;
     case SQLCompiler::PrepareRet::SYNTAX_ERROR:
       std::cerr << "Syntax error. Could not parse statement." << std::endl;
       continue;
