@@ -72,6 +72,31 @@ public:
   inline str_t to_string() const noexcept {
     return str_t(data_, size_);
   }
+
+  inline bool operator==(const Slice& x) const noexcept {
+    return (size_ == x.size_ && 0 == std::memcmp(data_, x.data_, x.size_));
+  }
+
+  inline bool operator!=(const Slice& x) const noexcept {
+    return !(*this == x);
+  }
+
+  inline bool operator<(const Slice& x) const noexcept {
+    return compare(x) < 0;
+  }
+
+  inline int compare(const Slice& x) const noexcept {
+    const sz_t min_len = (size_ < x.size_) ? size_ : x.size_;
+    int r = std::memcmp(data_, x.data_, min_len);
+
+    if (0 == r) {
+      if (size_ < x.size_)
+        r = -1;
+      else if (size_ > x.size_)
+        r = 1;
+    }
+    return r;
+  }
 };
 
 }
