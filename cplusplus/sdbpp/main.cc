@@ -157,7 +157,7 @@ private:
     type_ = StatementType::INSERT;
 
     std::vector<sdb::str_t> tokens;
-    split(command, tokens);
+    sdb::string_split(command, " ", 4, tokens);
 
     if (4 != tokens.size())
       return PrepareRet::SYNTAX_ERROR;
