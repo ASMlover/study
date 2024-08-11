@@ -75,9 +75,28 @@ inline void Row::deserialize(const void* source) noexcept {
   memcpy(&email, (sdb::byte_t*)source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
+struct Pager {
+  int                                       file_descriptor;
+  sdb::u32_t                                file_length;
+  void*                                     pages[TABLE_MAX_PAGES];
+
+  Pager(int fd, sdb::u32_t flen) noexcept
+    : file_descriptor{fd}, file_length{flen} {
+    for (int i = 0; i < TABLE_MAX_PAGES; ++i)
+      pages[i] = NULL;
+  }
+
+  ~Pager() noexcept {
+    for (int i = 0; i < TABLE_MAX_PAGES; ++i) {
+      if (NULL != pages[i])
+        free(pages[i]);
+    }
+  }
+};
+
 struct Table {
   sdb::u32_t                                num_rows{};
-  void*                                     pages[TABLE_MAX_PAGES];
+  Pager*                                    pager;
 
   Table() noexcept {
     for (int i = 0; i < TABLE_MAX_PAGES; ++i)
