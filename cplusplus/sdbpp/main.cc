@@ -24,10 +24,19 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <iostream>
 #include <vector>
 #include <sstream>
 #include "common.hh"
+
+#if defined(SDB_WINDOWS)
+# include <io.h>
+#else
+# include <unistd.h>
+#endif
 
 enum class MetaCommandResult {
   META_COMMAND_SUCCESS,
@@ -92,6 +101,26 @@ struct Pager {
         free(pages[i]);
     }
   }
+
+  static Pager* pager_open(const char* filename) {
+#if defined(SDB_WINDOWS)
+    int fd = _open(filename, _O_RDWR | _O_CREAT, _S_IREAD | _S_IWRITE);
+#else
+    int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
+#endif
+    if (-1 == fd) {
+      std::cerr << "Unable to open file" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+#if defined(SDB_WINDOWS)
+    off_t file_length = _lseek(fd, 0, SEEK_END);
+#else
+    off_t file_length = lseek(fd, 0, SEEK_END);
+#endif
+
+    return new Pager(fd, sdb::as_type<sdb::u32_t>(file_length));
+  }
 };
 
 struct Table {
@@ -99,15 +128,9 @@ struct Table {
   Pager*                                    pager;
 
   Table() noexcept {
-    for (int i = 0; i < TABLE_MAX_PAGES; ++i)
-      pages[i] = NULL;
   }
 
   ~Table() noexcept {
-    for (int i = 0; i < TABLE_MAX_PAGES; ++i) {
-      if (NULL != pages[i])
-        free(pages[i]);
-    }
   }
 
   inline void* row_slot(sdb::u32_t row_num) noexcept {
