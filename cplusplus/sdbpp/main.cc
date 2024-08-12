@@ -102,7 +102,7 @@ struct Pager {
     }
   }
 
-  static Pager* pager_open(const char* filename) {
+  static Pager* pager_open(const char* filename) noexcept {
 #if defined(SDB_WINDOWS)
     int fd = _open(filename, _O_RDWR | _O_CREAT, _S_IREAD | _S_IWRITE);
 #else
@@ -127,10 +127,17 @@ struct Table {
   sdb::u32_t                                num_rows{};
   Pager*                                    pager;
 
-  Table() noexcept {
+  Table(sdb::u32_t rows, Pager* p) noexcept
+    : num_rows{rows}, pager{p} {
   }
 
-  ~Table() noexcept {
+  ~Table() noexcept {}
+
+  static Table* db_open(const char* filename) noexcept {
+    Pager* pager = Pager::pager_open(filename);
+    sdb::u32_t num_rows = pager->file_length / ROW_SIZE;
+
+    return new Table(num_rows, pager);
   }
 
   inline void* row_slot(sdb::u32_t row_num) noexcept {
