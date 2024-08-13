@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cerrno>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -138,6 +139,38 @@ struct Table {
     sdb::u32_t num_rows = pager->file_length / ROW_SIZE;
 
     return new Table(num_rows, pager);
+  }
+
+  void* get_page(Pager* pager, sdb::u32_t page_num) noexcept {
+    if (page_num > TABLE_MAX_PAGES) {
+      std::cerr << "Tried to fetch page number out of bounds. " << TABLE_MAX_PAGES << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    if (NULL == pager->pages[page_num]) {
+      void* page = malloc(PAGE_SIZE);
+      sdb::u32_t num_pages = pager->file_length / PAGE_SIZE;
+
+      if (pager->file_length % PAGE_SIZE)
+        num_pages += 1;
+
+      if (page_num <= num_pages) {
+#if defined(SDB_WINDOWS)
+        _lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        sdb::ssz_t bytes_read = _read(pager->file_descriptor, page, PAGE_SIZE);
+#else
+        lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        sdb::ssz_t bytes_read = read(pager->file_descriptor, page, PAGE_SIZE);
+#endif
+        if (-1 == bytes_read) {
+          std::cerr << "Error reading file: " << errno << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+      }
+      pager->pages[page_num] = page;
+    }
+
+    return pager->pages[page_num];
   }
 
   inline void* row_slot(sdb::u32_t row_num) noexcept {
