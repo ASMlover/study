@@ -132,4 +132,34 @@ public:
 template <std::ptrdiff_t N> struct Sizer { char elements[N]; };
 template <typename T, std::ptrdiff_t N> Sizer<N> __countof_impl(T (&array)[N]);
 
+template <typename StringVector, typename StringType, typename DelimType>
+inline void string_split(const StringType& str, const DelimType& delims, u32_t max_splits, StringVector& ret) noexcept {
+  if (str.empty())
+    return;
+
+  u32_t num_splits = 0;
+  sz_t start = 0;
+  sz_t pos;
+
+  do {
+    pos = str.find_first_of(delims, start);
+
+    if (pos == start) {
+      ret.push_back(StringType());
+      start = pos + 1;
+    }
+    else if (StringType::npos == pos || (max_splits && num_splits + 1 >= max_splits)) {
+      ret.emplace_back(StringType());
+      *(ret.rbegin()) = StringType(str.data() + start, str.size() - start);
+      break;
+    }
+    else {
+      ret.push_back(StringType());
+      *(ret.rbegin()) = StringType(str.data() + start, pos - start);
+      start = pos + 1;
+    }
+    ++num_splits;
+  } while (StringType::npos != pos);
+}
+
 }
