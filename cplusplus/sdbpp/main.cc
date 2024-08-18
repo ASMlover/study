@@ -141,6 +141,9 @@ struct Table {
     return new Table(num_rows, pager);
   }
 
+  static void db_close(Table* table) noexcept {
+  }
+
   void* get_page(Pager* pager, sdb::u32_t page_num) noexcept {
     if (page_num > TABLE_MAX_PAGES) {
       std::cerr << "Tried to fetch page number out of bounds. " << TABLE_MAX_PAGES << std::endl;
