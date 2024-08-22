@@ -142,6 +142,15 @@ struct Table {
   }
 
   static void db_close(Table* table) noexcept {
+    Pager* pager = table->pager;
+    sdb::u32_t num_full_pages = table->num_rows / ROWS_PER_PAGE;
+
+    for (sdb::u32_t i = 0; i < num_full_pages; ++i) {
+      if (NULL == pager->pages[i])
+        continue;
+
+      // TODO:
+    }
   }
 
   void* get_page(Pager* pager, sdb::u32_t page_num) noexcept {
