@@ -103,6 +103,33 @@ struct Pager {
     }
   }
 
+  void flush(sdb::u32_t page_num, sdb::u32_t size) noexcept {
+    if (NULL == pages[page_num]) {
+      std::cerr << "Tried to flush null page" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+#if defined(SDB_WINDOWS)
+    off_t offset = _lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+#else
+    off_t offset = lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+#endif
+    if (-1 == offset) {
+      std::cerr << "Error seeling: " << errno << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+#if defined(SDB_WINDOWS)
+    sdb::ssz_t bytes_written = _write(file_descriptor, pages[page_num], size);
+#else
+    sdb::ssz_t bytes_written = write(file_descriptor, pages[page_num], size);
+#endif
+    if (-1 == bytes_written) {
+      std::cerr << "Error writing: " << errno << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  }
+
   static Pager* pager_open(const char* filename) noexcept {
 #if defined(SDB_WINDOWS)
     int fd = _open(filename, _O_RDWR | _O_CREAT, _S_IREAD | _S_IWRITE);
@@ -149,7 +176,9 @@ struct Table {
       if (NULL == pager->pages[i])
         continue;
 
-      // TODO:
+      pager->flush(i, PAGE_SIZE);
+      free(pager->pages[i]);
+      pager->pages[i] = NULL;
     }
   }
 
