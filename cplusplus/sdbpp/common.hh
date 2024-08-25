@@ -140,7 +140,7 @@ template <typename... Args> inline str_t from_fmt(strv_t fmt, const Args&... arg
 }
 
 template <typename StringVector, typename StringType, typename DelimType>
-inline bool string_split(const StringType& str, const DelimType& delims, u32_t max_splits, StringVector& ret) noexcept {
+inline void string_split(const StringType& str, const DelimType& delims, u32_t max_splits, StringVector& ret) noexcept {
   if (str.empty())
     return;
 
