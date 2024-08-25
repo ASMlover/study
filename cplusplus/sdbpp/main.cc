@@ -180,6 +180,25 @@ struct Table {
       free(pager->pages[i]);
       pager->pages[i] = NULL;
     }
+
+#if defined(SDB_WINDOWS)
+    int result = _close(file_descriptor);
+#else
+    int result = close(file_descriptor);
+#endif
+    if (-1 == result) {
+      std::cerr << "Error closing db file" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    for (sdb::u32_t i = 0; i < TABLE_MAX_PAGES; ++i) {
+      void* page = pager->pages[i];
+      if (NULL != page) {
+        free(page);
+        pager->pages[i] = NULL;
+      }
+    }
+    delete pager;
+    delete table;
   }
 
   void* get_page(Pager* pager, sdb::u32_t page_num) noexcept {
