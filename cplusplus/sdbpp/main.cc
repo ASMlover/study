@@ -182,9 +182,9 @@ struct Table {
     }
 
 #if defined(SDB_WINDOWS)
-    int result = _close(file_descriptor);
+    int result = _close(pager->file_descriptor);
 #else
-    int result = close(file_descriptor);
+    int result = close(pager->file_descriptor);
 #endif
     if (-1 == result) {
       std::cerr << "Error closing db file" << std::endl;
@@ -235,11 +235,8 @@ struct Table {
 
   inline void* row_slot(sdb::u32_t row_num) noexcept {
     sdb::u32_t page_num = row_num / ROWS_PER_PAGE;
-    void* page = pages[page_num];
-    if (NULL == page) {
-      page = pages[page_num] = malloc(PAGE_SIZE);
-    }
 
+    void* page = get_page(pager, page_num);
     sdb::u32_t row_offset = row_num % ROWS_PER_PAGE;
     sdb::u32_t byte_offset = row_offset * ROW_SIZE;
     return (sdb::byte_t*)page + byte_offset;
@@ -354,17 +351,27 @@ public:
   }
 };
 
-static MetaCommandResult do_meta_command(const sdb::str_t& command) {
-  if (command == ".exit")
+static MetaCommandResult do_meta_command(const sdb::str_t& command, Table* table) {
+  if (command == ".exit") {
+    Table::db_close(table);
     exit(EXIT_SUCCESS);
-  else
+  }
+  else {
     return MetaCommandResult::META_COMMAND_UNRECOGNIZED_COMMAND;
+  }
 }
 
 int main(int argc, char* argv[]) {
   SDB_UNUSED(argc), SDB_UNUSED(argv);
 
-  Table table;
+  if (argc < 2) {
+    std::cerr << "Must supply a database filename" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  char* filename = argv[1];
+  Table* table = Table::db_open(filename);
+
   sdb::str_t command;
   for (;;) {
     std::cout << "db > ";
@@ -372,7 +379,7 @@ int main(int argc, char* argv[]) {
       break;
 
     if (command[0] == '.') {
-      switch (do_meta_command(command)) {
+      switch (do_meta_command(command, table)) {
       case MetaCommandResult::META_COMMAND_SUCCESS:
         continue;
       case MetaCommandResult::META_COMMAND_UNRECOGNIZED_COMMAND:
@@ -397,7 +404,7 @@ int main(int argc, char* argv[]) {
       continue;
     }
 
-    compiler.execute(table, row);
+    compiler.execute(*table, row);
     std::cout << "Executed" <<  std::endl;
   }
 
