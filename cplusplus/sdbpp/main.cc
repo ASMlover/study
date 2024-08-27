@@ -260,6 +260,12 @@ struct Table {
   }
 };
 
+struct Cursor {
+  Table*                                    table;
+  sdb::u32_t                                row_num;
+  bool                                      end_of_table;
+};
+
 
 class SQLCompiler final : private sdb::UnCopyable {
 public:
