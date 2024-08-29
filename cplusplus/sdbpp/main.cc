@@ -264,6 +264,18 @@ struct Cursor {
   Table*                                    table;
   sdb::u32_t                                row_num;
   bool                                      end_of_table;
+
+  Cursor(Table* tb, sdb::u32_t rnum, bool is_end) noexcept
+    : table{tb}, row_num{rnum}, end_of_table{is_end} {
+  }
+
+  static Cursor* start(Table* table) noexcept {
+    return new Cursor(table, 0, 0 == table->num_rows);
+  }
+
+  static Cursor* end(Table* table) noexcept {
+    return new Cursor(table, table->num_rows, true);
+  }
 };
 
 
