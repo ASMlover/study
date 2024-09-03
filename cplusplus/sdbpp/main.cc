@@ -276,6 +276,12 @@ struct Cursor {
   static Cursor* end(Table* table) noexcept {
     return new Cursor(table, table->num_rows, true);
   }
+
+  inline void advance() noexcept {
+    row_num += 1;
+    if (row_num >= table->num_rows)
+      end_of_table = true;
+  }
 };
 
 
