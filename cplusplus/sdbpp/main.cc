@@ -261,12 +261,12 @@ struct Table {
 };
 
 struct Cursor {
-  Table*                                    table;
-  sdb::u32_t                                row_num;
-  bool                                      end_of_table;
+  Table*                                    _table;
+  sdb::u32_t                                _row_num;
+  bool                                      _end_of_table;
 
   Cursor(Table* tb, sdb::u32_t rnum, bool is_end) noexcept
-    : table{tb}, row_num{rnum}, end_of_table{is_end} {
+    : _table{tb}, _row_num{rnum}, _end_of_table{is_end} {
   }
 
   static Cursor* start(Table* table) noexcept {
@@ -278,9 +278,18 @@ struct Cursor {
   }
 
   inline void advance() noexcept {
-    row_num += 1;
-    if (row_num >= table->num_rows)
-      end_of_table = true;
+    _row_num += 1;
+    if (_row_num >= _table->num_rows)
+      _end_of_table = true;
+  }
+
+  void* value() noexcept {
+    sdb::u32_t row_num = _row_num;
+    sdb::u32_t page_num = row_num / ROWS_PER_PAGE;
+    void* page = _table->get_page(_table->pager, page_num);
+    sdb::u32_t row_offset = row_num % ROWS_PER_PAGE;
+    sdb::u32_t byte_offset = row_offset * ROW_SIZE;
+    return (sdb::byte_t*)page + byte_offset;
   }
 };
 
