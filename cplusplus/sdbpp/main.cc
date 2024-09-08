@@ -130,6 +130,38 @@ struct Pager {
     }
   }
 
+  void* get_page(sdb::u32_t page_num) noexcept {
+    if (page_num > TABLE_MAX_PAGES) {
+      std::cerr << "Tried to fetch page number out of bounds. " << TABLE_MAX_PAGES << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    if (NULL == pages[page_num]) {
+      void* page = malloc(PAGE_SIZE);
+      sdb::u32_t num_pages = file_length / PAGE_SIZE;
+
+      if (file_length % PAGE_SIZE)
+        num_pages += 1;
+
+      if (page_num <= num_pages) {
+#if defined(SDB_WINDOWS)
+        _lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        sdb::ssz_t bytes_read = _read(file_descriptor, page, PAGE_SIZE);
+#else
+        lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        sdb::ssz_t bytes_read = read(file_descriptor, page, PAGE_SIZE);
+#endif
+        if (-1 == bytes_read) {
+          std::cerr << "Error reading file: " << errno << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+      }
+      pages[page_num] = page;
+    }
+
+    return pages[page_num];
+  }
+
   static Pager* pager_open(const char* filename) noexcept {
 #if defined(SDB_WINDOWS)
     int fd = _open(filename, _O_RDWR | _O_CREAT, _S_IREAD | _S_IWRITE);
@@ -201,42 +233,10 @@ struct Table {
     delete table;
   }
 
-  void* get_page(Pager* pager, sdb::u32_t page_num) noexcept {
-    if (page_num > TABLE_MAX_PAGES) {
-      std::cerr << "Tried to fetch page number out of bounds. " << TABLE_MAX_PAGES << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
-
-    if (NULL == pager->pages[page_num]) {
-      void* page = malloc(PAGE_SIZE);
-      sdb::u32_t num_pages = pager->file_length / PAGE_SIZE;
-
-      if (pager->file_length % PAGE_SIZE)
-        num_pages += 1;
-
-      if (page_num <= num_pages) {
-#if defined(SDB_WINDOWS)
-        _lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        sdb::ssz_t bytes_read = _read(pager->file_descriptor, page, PAGE_SIZE);
-#else
-        lseek(pager->file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        sdb::ssz_t bytes_read = read(pager->file_descriptor, page, PAGE_SIZE);
-#endif
-        if (-1 == bytes_read) {
-          std::cerr << "Error reading file: " << errno << std::endl;
-          std::exit(EXIT_FAILURE);
-        }
-      }
-      pager->pages[page_num] = page;
-    }
-
-    return pager->pages[page_num];
-  }
-
   inline void* row_slot(sdb::u32_t row_num) noexcept {
     sdb::u32_t page_num = row_num / ROWS_PER_PAGE;
 
-    void* page = get_page(pager, page_num);
+    void* page = pager->get_page(page_num);
     sdb::u32_t row_offset = row_num % ROWS_PER_PAGE;
     sdb::u32_t byte_offset = row_offset * ROW_SIZE;
     return (sdb::byte_t*)page + byte_offset;
@@ -286,7 +286,7 @@ struct Cursor {
   void* value() noexcept {
     sdb::u32_t row_num = _row_num;
     sdb::u32_t page_num = row_num / ROWS_PER_PAGE;
-    void* page = _table->get_page(_table->pager, page_num);
+    void* page = _table->pager->get_page(page_num);
     sdb::u32_t row_offset = row_num % ROWS_PER_PAGE;
     sdb::u32_t byte_offset = row_offset * ROW_SIZE;
     return (sdb::byte_t*)page + byte_offset;
