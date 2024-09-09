@@ -233,31 +233,8 @@ struct Table {
     delete table;
   }
 
-  inline void* row_slot(sdb::u32_t row_num) noexcept {
-    sdb::u32_t page_num = row_num / ROWS_PER_PAGE;
-
-    void* page = pager->get_page(page_num);
-    sdb::u32_t row_offset = row_num % ROWS_PER_PAGE;
-    sdb::u32_t byte_offset = row_offset * ROW_SIZE;
-    return (sdb::byte_t*)page + byte_offset;
-  }
-
-  inline bool insert(Row& row) noexcept {
-    if (num_rows >= TABLE_MAX_ROWS)
-      return false;
-
-    row.serialize(row_slot(num_rows));
-    num_rows += 1;
-    return true;
-  }
-
-  inline void select() noexcept {
-    Row row;
-    for (sdb::u32_t i = 0; i < num_rows; ++i) {
-      row.deserialize(row_slot(i));
-      row.print();
-    }
-  }
+  bool insert(Row& row) noexcept;
+  void select() noexcept;
 };
 
 struct Cursor {
@@ -277,6 +254,15 @@ struct Cursor {
     return new Cursor(table, table->num_rows, true);
   }
 
+  static void reclaim(Cursor* cursor) noexcept {
+    if (nullptr != cursor)
+      delete cursor;
+  }
+
+  inline bool end_of_table() const noexcept {
+    return _end_of_table;
+  }
+
   inline void advance() noexcept {
     _row_num += 1;
     if (_row_num >= _table->num_rows)
@@ -292,6 +278,30 @@ struct Cursor {
     return (sdb::byte_t*)page + byte_offset;
   }
 };
+
+bool Table::insert(Row& row) noexcept {
+  if (num_rows >= TABLE_MAX_ROWS)
+    return false;
+
+  Cursor* cursor = Cursor::end(this);
+  row.serialize(cursor->value());
+  num_rows += 1;
+  Cursor::reclaim(cursor);
+
+  return true;
+}
+
+void Table::select() noexcept {
+  Cursor* cursor = Cursor::start(this);
+
+  Row row;
+  while (!(cursor->end_of_table())) {
+    row.deserialize(cursor->value());
+    row.print();
+    cursor->advance();
+  }
+  Cursor::reclaim(cursor);
+}
 
 
 class SQLCompiler final : private sdb::UnCopyable {
