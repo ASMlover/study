@@ -32,12 +32,7 @@
 #include <vector>
 #include <sstream>
 #include "common.hh"
-
-#if defined(SDB_WINDOWS)
-# include <io.h>
-#else
-# include <unistd.h>
-#endif
+#include "util.hh"
 
 enum class MetaCommandResult {
   META_COMMAND_SUCCESS,
@@ -109,21 +104,13 @@ struct Pager {
       std::exit(EXIT_FAILURE);
     }
 
-#if defined(SDB_WINDOWS)
-    off_t offset = _lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-#else
-    off_t offset = lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-#endif
+    off_t offset = sdb::lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
     if (-1 == offset) {
       std::cerr << "Error seeling: " << errno << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
-#if defined(SDB_WINDOWS)
-    sdb::ssz_t bytes_written = _write(file_descriptor, pages[page_num], size);
-#else
-    sdb::ssz_t bytes_written = write(file_descriptor, pages[page_num], size);
-#endif
+    sdb::ssz_t bytes_written = sdb::write(file_descriptor, pages[page_num], size);
     if (-1 == bytes_written) {
       std::cerr << "Error writing: " << errno << std::endl;
       std::exit(EXIT_FAILURE);
@@ -144,13 +131,8 @@ struct Pager {
         num_pages += 1;
 
       if (page_num <= num_pages) {
-#if defined(SDB_WINDOWS)
-        _lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        sdb::ssz_t bytes_read = _read(file_descriptor, page, PAGE_SIZE);
-#else
-        lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        sdb::ssz_t bytes_read = read(file_descriptor, page, PAGE_SIZE);
-#endif
+        sdb::lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        sdb::ssz_t bytes_read = sdb::read(file_descriptor, page, PAGE_SIZE);
         if (-1 == bytes_read) {
           std::cerr << "Error reading file: " << errno << std::endl;
           std::exit(EXIT_FAILURE);
@@ -163,22 +145,13 @@ struct Pager {
   }
 
   static Pager* pager_open(const char* filename) noexcept {
-#if defined(SDB_WINDOWS)
-    int fd = _open(filename, _O_RDWR | _O_CREAT, _S_IREAD | _S_IWRITE);
-#else
-    int fd = open(filename, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR);
-#endif
+    int fd = sdb::open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (-1 == fd) {
       std::cerr << "Unable to open file" << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
-#if defined(SDB_WINDOWS)
-    off_t file_length = _lseek(fd, 0, SEEK_END);
-#else
-    off_t file_length = lseek(fd, 0, SEEK_END);
-#endif
-
+    off_t file_length = sdb::lseek(fd, 0, SEEK_END);
     return new Pager(fd, sdb::as_type<sdb::u32_t>(file_length));
   }
 };
@@ -213,11 +186,7 @@ struct Table {
       pager->pages[i] = NULL;
     }
 
-#if defined(SDB_WINDOWS)
-    int result = _close(pager->file_descriptor);
-#else
-    int result = close(pager->file_descriptor);
-#endif
+    int result = sdb::close(pager->file_descriptor);
     if (-1 == result) {
       std::cerr << "Error closing db file" << std::endl;
       std::exit(EXIT_FAILURE);
