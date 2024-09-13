@@ -39,6 +39,11 @@ enum class MetaCommandResult {
   META_COMMAND_UNRECOGNIZED_COMMAND,
 };
 
+enum class NodeType {
+  NODE_INTERNAL,
+  NODE_LEAF,
+};
+
 #define SIZE_OF_ATTR(Struct, Attr)          sizeof(((Struct*)0)->Attr)
 #define COLUMN_USERNAME_SIZE                (32)
 #define COLUMN_EMAIL_SIZE                   (255)
