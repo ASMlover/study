@@ -39,11 +39,6 @@ enum class MetaCommandResult {
   META_COMMAND_UNRECOGNIZED_COMMAND,
 };
 
-enum class NodeType {
-  NODE_INTERNAL,
-  NODE_LEAF,
-};
-
 #define SIZE_OF_ATTR(Struct, Attr)          sizeof(((Struct*)0)->Attr)
 #define COLUMN_USERNAME_SIZE                (32)
 #define COLUMN_EMAIL_SIZE                   (255)
@@ -72,6 +67,34 @@ constexpr sdb::u32_t ROW_SIZE               = ID_SIZE + USERNAME_SIZE + EMAIL_OF
 constexpr sdb::u32_t PAGE_SIZE              = 4096;
 constexpr sdb::u32_t ROWS_PER_PAGE          = PAGE_SIZE / ROW_SIZE;
 constexpr sdb::u32_t TABLE_MAX_ROWS         = ROWS_PER_PAGE * TABLE_MAX_PAGES;
+
+enum class NodeType {
+  NODE_INTERNAL,
+  NODE_LEAF,
+};
+
+// Common Node Header Layout
+constexpr sdb::u32_t NODE_TYPE_SIZE               = sizeof(sdb::u8_t);
+constexpr sdb::u32_t NODE_TYPE_OFFSET             = 0;
+constexpr sdb::u32_t IS_ROOT_SIZE                 = sizeof(sdb::u8_t);
+constexpr sdb::u32_t IS_ROOT_OFFSET               = NODE_TYPE_SIZE;
+constexpr sdb::u32_t PARENT_POINTER_SIZE          = sizeof(sdb::u32_t);
+constexpr sdb::u32_t PARENT_POINTER_OFFSET        = IS_ROOT_OFFSET + IS_ROOT_SIZE;
+constexpr sdb::u32_t COMMON_NODE_HEADER_SIZE      = NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
+
+// Leaf Node Header Layout
+constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_SIZE     = sizeof(sdb::u32_t);
+constexpr sdb::u32_t LEAF_NODE_NUM_CELSS_OFFSET   = COMMON_NODE_HEADER_SIZE;
+constexpr sdb::u32_t LEAF_NODE_HEADER_SIZE        = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
+
+// Leaf Node Body Layout
+constexpr sdb::u32_t LEAF_NODE_KEY_SIZE           = sizeof(sdb::u32_t);
+constexpr sdb::u32_t LEAF_NODE_KEY_OFFSET         = 0;
+constexpr sdb::u32_t LEAF_NODE_VALUE_SIZE         = ROW_SIZE;
+constexpr sdb::u32_t LEAF_NODE_VALUE_OFFSET       = LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE;
+constexpr sdb::u32_t LEAF_NODE_CELL_SIZE          = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
+constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS    = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
+constexpr sdb::u32_t LEAF_NODE_MAX_CELLS          = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
