@@ -84,7 +84,7 @@ constexpr sdb::u32_t COMMON_NODE_HEADER_SIZE      = NODE_TYPE_SIZE + IS_ROOT_SIZ
 
 // Leaf Node Header Layout
 constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_SIZE     = sizeof(sdb::u32_t);
-constexpr sdb::u32_t LEAF_NODE_NUM_CELSS_OFFSET   = COMMON_NODE_HEADER_SIZE;
+constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_OFFSET   = COMMON_NODE_HEADER_SIZE;
 constexpr sdb::u32_t LEAF_NODE_HEADER_SIZE        = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
 
 // Leaf Node Body Layout
@@ -95,6 +95,26 @@ constexpr sdb::u32_t LEAF_NODE_VALUE_OFFSET       = LEAF_NODE_KEY_OFFSET + LEAF_
 constexpr sdb::u32_t LEAF_NODE_CELL_SIZE          = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
 constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS    = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
 constexpr sdb::u32_t LEAF_NODE_MAX_CELLS          = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
+
+inline sdb::u32_t* leaf_node_num_cells(void* node) noexcept {
+  return (sdb::u32_t*)((sdb::byte_t*)node + LEAF_NODE_NUM_CELLS_OFFSET);
+}
+
+inline void* leaf_node_cell(void* node, sdb::u32_t cell_num) noexcept {
+  return (sdb::byte_t*)node + LEAF_NODE_HEADER_SIZE + cell_num * LEAF_NODE_CELL_SIZE;
+}
+
+inline sdb::u32_t* leaf_node_key(void* node, sdb::u32_t cell_num) noexcept {
+  return (sdb::u32_t*)leaf_node_cell(node, cell_num);
+}
+
+inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
+  return (sdb::byte_t*)leaf_node_cell(node, cell_num) + LEAF_NODE_KEY_SIZE;
+}
+
+inline void initialize_leaf_node(void* node) noexcept {
+  *leaf_node_num_cells(node) = 0;
+}
 
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
@@ -126,7 +146,7 @@ struct Pager {
     }
   }
 
-  void flush(sdb::u32_t page_num, sdb::u32_t size) noexcept {
+  void flush(sdb::u32_t page_num) noexcept {
     if (NULL == pages[page_num]) {
       std::cerr << "Tried to flush null page" << std::endl;
       std::exit(EXIT_FAILURE);
@@ -138,7 +158,7 @@ struct Pager {
       std::exit(EXIT_FAILURE);
     }
 
-    sdb::ssz_t bytes_written = sdb::write(file_descriptor, pages[page_num], size);
+    sdb::ssz_t bytes_written = sdb::write(file_descriptor, pages[page_num], PAGE_SIZE);
     if (-1 == bytes_written) {
       std::cerr << "Error writing: " << errno << std::endl;
       std::exit(EXIT_FAILURE);
@@ -209,7 +229,7 @@ struct Table {
       if (NULL == pager->pages[i])
         continue;
 
-      pager->flush(i, PAGE_SIZE);
+      pager->flush(i);
       free(pager->pages[i]);
       pager->pages[i] = NULL;
     }
