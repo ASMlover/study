@@ -330,12 +330,12 @@ struct Cursor {
 };
 
 bool Table::insert(Row& row) noexcept {
-  if (num_rows >= TABLE_MAX_ROWS)
+  void* node = pager->get_page(_root_page_num);
+  if ((*leaf_node_num_cells(node)) >= LEAF_NODE_MAX_CELLS)
     return false;
 
   Cursor* cursor = Cursor::end(this);
-  row.serialize(cursor->value());
-  num_rows += 1;
+  cursor->leaf_node_insert(row.id, &row);
   Cursor::reclaim(cursor);
 
   return true;
