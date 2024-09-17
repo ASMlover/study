@@ -65,8 +65,6 @@ constexpr sdb::u32_t USERNAME_OFFSET        = ID_OFFSET + ID_SIZE;
 constexpr sdb::u32_t EMAIL_OFFSET           = USERNAME_OFFSET + USERNAME_SIZE;
 constexpr sdb::u32_t ROW_SIZE               = ID_SIZE + USERNAME_SIZE + EMAIL_OFFSET;
 constexpr sdb::u32_t PAGE_SIZE              = 4096;
-constexpr sdb::u32_t ROWS_PER_PAGE          = PAGE_SIZE / ROW_SIZE;
-constexpr sdb::u32_t TABLE_MAX_ROWS         = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
 enum class NodeType {
   NODE_INTERNAL,
@@ -131,10 +129,17 @@ inline void Row::deserialize(const void* source) noexcept {
 struct Pager {
   int                                       file_descriptor;
   sdb::u32_t                                file_length;
+  sdb::u32_t                                num_pages;
   void*                                     pages[TABLE_MAX_PAGES];
 
   Pager(int fd, sdb::u32_t flen) noexcept
     : file_descriptor{fd}, file_length{flen} {
+    num_pages = file_length / PAGE_SIZE;
+    if (0 != file_length % PAGE_SIZE) {
+      std::cerr << "DB file is not a whole number of pages. Corrpt file." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
     for (int i = 0; i < TABLE_MAX_PAGES; ++i)
       pages[i] = NULL;
   }
@@ -187,6 +192,9 @@ struct Pager {
         }
       }
       pages[page_num] = page;
+
+      if (page_num >= num_pages)
+        num_pages = page_num + 1;
     }
 
     return pages[page_num];
@@ -205,20 +213,24 @@ struct Pager {
 };
 
 struct Table {
-  sdb::u32_t                                num_rows{};
+  sdb::u32_t                                _root_page_num{};
   Pager*                                    pager;
 
-  Table(sdb::u32_t rows, Pager* p) noexcept
-    : num_rows{rows}, pager{p} {
+  Table(Pager* p, sdb::u32_t root_page_num = 0) noexcept
+    : pager{p}, _root_page_num{root_page_num} {
   }
 
   ~Table() noexcept {}
 
   static Table* db_open(const char* filename) noexcept {
     Pager* pager = Pager::pager_open(filename);
-    sdb::u32_t num_rows = pager->file_length / ROW_SIZE;
 
-    return new Table(num_rows, pager);
+    Table* table = new Table{pager, 0};
+    if (0 == pager->num_pages) {
+      void* root_node = pager->get_page(0);
+      initialize_leaf_node(root_node);
+    }
+    return table;
   }
 
   static void db_close(Table* table) noexcept {
@@ -256,19 +268,24 @@ struct Table {
 
 struct Cursor {
   Table*                                    _table;
-  sdb::u32_t                                _row_num;
+  sdb::u32_t                                _page_num;
+  sdb::u32_t                                _cell_num;
   bool                                      _end_of_table;
 
-  Cursor(Table* tb, sdb::u32_t rnum, bool is_end) noexcept
-    : _table{tb}, _row_num{rnum}, _end_of_table{is_end} {
+  Cursor(Table* tb, sdb::u32_t page_num, sdb::u32_t cell_num, bool is_end) noexcept
+    : _table{tb}, _page_num{page_num}, _cell_num{cell_num}, _end_of_table{is_end} {
   }
 
   static Cursor* start(Table* table) noexcept {
-    return new Cursor(table, 0, 0 == table->num_rows);
+    void* root_node = table->pager->get_page(table->_root_page_num);
+    sdb::u32_t num_cells = *leaf_node_num_cells(root_node);
+    return new Cursor(table, table->_root_page_num, 0, 0 == num_cells);
   }
 
   static Cursor* end(Table* table) noexcept {
-    return new Cursor(table, table->num_rows, true);
+    void* root_node = table->pager->get_page(table->_root_page_num);
+    sdb::u32_t num_cells = *leaf_node_num_cells(root_node);
+    return new Cursor(table, table->_root_page_num, num_cells, true);
   }
 
   static void reclaim(Cursor* cursor) noexcept {
@@ -281,18 +298,34 @@ struct Cursor {
   }
 
   inline void advance() noexcept {
-    _row_num += 1;
-    if (_row_num >= _table->num_rows)
+    sdb::u32_t page_num = _page_num;
+    void* node = _table->pager->get_page(page_num);
+    _cell_num += 1
+    if (_cell_num >= (*leaf_node_num_cells(node)))
       _end_of_table = true;
   }
 
   void* value() noexcept {
-    sdb::u32_t row_num = _row_num;
-    sdb::u32_t page_num = row_num / ROWS_PER_PAGE;
+    sdb::u32_t page_num = _page_num;
     void* page = _table->pager->get_page(page_num);
-    sdb::u32_t row_offset = row_num % ROWS_PER_PAGE;
-    sdb::u32_t byte_offset = row_offset * ROW_SIZE;
-    return (sdb::byte_t*)page + byte_offset;
+    return leaf_node_value(page, _cell_num);
+  }
+
+  void leaf_node_insert(sdb::u32_t key, Row* value) noexcept {
+    void* node = _table->pager->get_page(_page_num);
+    sdb::u32_t num_cells = *leaf_node_num_cells(node);
+    if (num_cells >= LEAF_NODE_MAX_CELLS) {
+      std::cerr << "Need to implement splitting a leaf node" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    if (_cell_num < num_cells) {
+      for (auto i = num_cells; i > _cell_num; --i)
+        std::memcpy(leaf_node_cell(node, i), leaf_node_cell(node, i - 1), LEAF_NODE_CELL_SIZE);
+    }
+    *(leaf_node_num_cells(node)) += 1;
+    *(leaf_node_key(node, _cell_num)) = key;
+    value->serialize(leaf_node_value(node, _cell_num));
   }
 };
 
