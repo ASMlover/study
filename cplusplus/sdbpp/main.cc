@@ -94,6 +94,16 @@ constexpr sdb::u32_t LEAF_NODE_CELL_SIZE          = LEAF_NODE_KEY_SIZE + LEAF_NO
 constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS    = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
 constexpr sdb::u32_t LEAF_NODE_MAX_CELLS          = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 
+void print_constants() noexcept {
+  std::cout << "========= [Constants] =========" << std::endl;
+  std::cout << "ROW_SIZE: " << ROW_SIZE << std::endl;
+  std::cout << "COMMON_NODE_HEADER_SIZE: " << COMMON_NODE_HEADER_SIZE << std::endl;
+  std::cout << "LEAF_NODE_HEADER_SIZE: " << LEAF_NODE_HEADER_SIZE << std::endl;
+  std::cout << "LEAF_NODE_CELL_SIZE: " << LEAF_NODE_CELL_SIZE << std::endl;
+  std::cout << "LEAF_NODE_SPACE_FOR_CELLS: " << LEAF_NODE_SPACE_FOR_CELLS << std::endl;
+  std::cout << "LEAF_NODE_MAX_CELLS: " << LEAF_NODE_MAX_CELLS << std::endl;
+}
+
 inline sdb::u32_t* leaf_node_num_cells(void* node) noexcept {
   return (sdb::u32_t*)((sdb::byte_t*)node + LEAF_NODE_NUM_CELLS_OFFSET);
 }
@@ -448,6 +458,10 @@ static MetaCommandResult do_meta_command(const sdb::str_t& command, Table* table
   if (command == ".exit") {
     Table::db_close(table);
     exit(EXIT_SUCCESS);
+  }
+  else if (command == ".constants") {
+    print_constants();
+    return MetaCommandResult::META_COMMAND_SUCCESS;
   }
   else {
     return MetaCommandResult::META_COMMAND_UNRECOGNIZED_COMMAND;
