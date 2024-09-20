@@ -124,6 +124,17 @@ inline void initialize_leaf_node(void* node) noexcept {
   *leaf_node_num_cells(node) = 0;
 }
 
+inline void print_leaf_node(void* node) noexcept {
+  sdb::u32_t num_cells = *leaf_node_num_cells(node);
+  std::cout
+    << "Tree:\n"
+    << "leaf (size " << num_cells << ")" << std::endl;
+  for (sdb::u32_t i = 0; i < num_cells; ++i) {
+    sdb::u32_t key = *leaf_node_key(node, i);
+    std::cout << "  - " << i << " : " << key << std::endl;
+  }
+}
+
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
   memcpy((sdb::byte_t*)destination + USERNAME_OFFSET, &username, USERNAME_SIZE);
@@ -458,6 +469,10 @@ static MetaCommandResult do_meta_command(const sdb::str_t& command, Table* table
   if (command == ".exit") {
     Table::db_close(table);
     exit(EXIT_SUCCESS);
+  }
+  else if (command == ".btree") {
+    print_leaf_node(table->pager->get_page(0));
+    return MetaCommandResult::META_COMMAND_SUCCESS;
   }
   else if (command == ".constants") {
     print_constants();
