@@ -148,43 +148,43 @@ inline void Row::deserialize(const void* source) noexcept {
 }
 
 struct Pager {
-  int                                       file_descriptor;
-  sdb::u32_t                                file_length;
-  sdb::u32_t                                num_pages;
-  void*                                     pages[TABLE_MAX_PAGES];
+  int                                       _file_descriptor;
+  sdb::u32_t                                _file_length;
+  sdb::u32_t                                _num_pages;
+  void*                                     _pages[TABLE_MAX_PAGES];
 
   Pager(int fd, sdb::u32_t flen) noexcept
-    : file_descriptor{fd}, file_length{flen} {
-    num_pages = file_length / PAGE_SIZE;
-    if (0 != file_length % PAGE_SIZE) {
+    : _file_descriptor{fd}, _file_length{flen} {
+    _num_pages = _file_length / PAGE_SIZE;
+    if (0 != _file_length % PAGE_SIZE) {
       std::cerr << "DB file is not a whole number of pages. Corrpt file." << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
     for (int i = 0; i < TABLE_MAX_PAGES; ++i)
-      pages[i] = NULL;
+      _pages[i] = NULL;
   }
 
   ~Pager() noexcept {
     for (int i = 0; i < TABLE_MAX_PAGES; ++i) {
-      if (NULL != pages[i])
-        free(pages[i]);
+      if (NULL != _pages[i])
+        free(_pages[i]);
     }
   }
 
   void flush(sdb::u32_t page_num) noexcept {
-    if (NULL == pages[page_num]) {
+    if (NULL == _pages[page_num]) {
       std::cerr << "Tried to flush null page" << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
-    off_t offset = sdb::lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+    off_t offset = sdb::lseek(_file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
     if (-1 == offset) {
       std::cerr << "Error seeling: " << errno << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
-    sdb::ssz_t bytes_written = sdb::write(file_descriptor, pages[page_num], PAGE_SIZE);
+    sdb::ssz_t bytes_written = sdb::write(_file_descriptor, _pages[page_num], PAGE_SIZE);
     if (-1 == bytes_written) {
       std::cerr << "Error writing: " << errno << std::endl;
       std::exit(EXIT_FAILURE);
@@ -197,28 +197,28 @@ struct Pager {
       std::exit(EXIT_FAILURE);
     }
 
-    if (NULL == pages[page_num]) {
+    if (NULL == _pages[page_num]) {
       void* page = malloc(PAGE_SIZE);
-      sdb::u32_t num_pages = file_length / PAGE_SIZE;
+      sdb::u32_t num_pages = _file_length / PAGE_SIZE;
 
-      if (file_length % PAGE_SIZE)
+      if (_file_length % PAGE_SIZE)
         num_pages += 1;
 
       if (page_num <= num_pages) {
-        sdb::lseek(file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
-        sdb::ssz_t bytes_read = sdb::read(file_descriptor, page, PAGE_SIZE);
+        sdb::lseek(_file_descriptor, page_num * PAGE_SIZE, SEEK_SET);
+        sdb::ssz_t bytes_read = sdb::read(_file_descriptor, page, PAGE_SIZE);
         if (-1 == bytes_read) {
           std::cerr << "Error reading file: " << errno << std::endl;
           std::exit(EXIT_FAILURE);
         }
       }
-      pages[page_num] = page;
+      _pages[page_num] = page;
 
-      if (page_num >= num_pages)
-        num_pages = page_num + 1;
+      if (page_num >= _num_pages)
+        _num_pages = page_num + 1;
     }
 
-    return pages[page_num];
+    return _pages[page_num];
   }
 
   static Pager* pager_open(const char* filename) noexcept {
@@ -247,7 +247,7 @@ struct Table {
     Pager* pager = Pager::pager_open(filename);
 
     Table* table = new Table{pager, 0};
-    if (0 == pager->num_pages) {
+    if (0 == pager->_num_pages) {
       void* root_node = pager->get_page(0);
       initialize_leaf_node(root_node);
     }
@@ -256,27 +256,26 @@ struct Table {
 
   static void db_close(Table* table) noexcept {
     Pager* pager = table->pager;
-    sdb::u32_t num_full_pages = table->num_rows / ROWS_PER_PAGE;
 
-    for (sdb::u32_t i = 0; i < num_full_pages; ++i) {
-      if (NULL == pager->pages[i])
+    for (sdb::u32_t i = 0; i < pager->_num_pages; ++i) {
+      if (NULL == pager->_pages[i])
         continue;
 
       pager->flush(i);
-      free(pager->pages[i]);
-      pager->pages[i] = NULL;
+      free(pager->_pages[i]);
+      pager->_pages[i] = NULL;
     }
 
-    int result = sdb::close(pager->file_descriptor);
+    int result = sdb::close(pager->_file_descriptor);
     if (-1 == result) {
       std::cerr << "Error closing db file" << std::endl;
       std::exit(EXIT_FAILURE);
     }
     for (sdb::u32_t i = 0; i < TABLE_MAX_PAGES; ++i) {
-      void* page = pager->pages[i];
+      void* page = pager->_pages[i];
       if (NULL != page) {
         free(page);
-        pager->pages[i] = NULL;
+        pager->_pages[i] = NULL;
       }
     }
     delete pager;
@@ -321,7 +320,7 @@ struct Cursor {
   inline void advance() noexcept {
     sdb::u32_t page_num = _page_num;
     void* node = _table->pager->get_page(page_num);
-    _cell_num += 1
+    _cell_num += 1;
     if (_cell_num >= (*leaf_node_num_cells(node)))
       _end_of_table = true;
   }
