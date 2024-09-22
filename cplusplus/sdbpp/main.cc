@@ -166,11 +166,25 @@ struct Pager {
   }
 
   ~Pager() noexcept {
-    for (int i = 0; i < TABLE_MAX_PAGES; ++i) {
-      if (NULL != _pages[i])
-        free(_pages[i]);
+    for (int i = 0; i < TABLE_MAX_PAGES; ++i)
+      reclaim_page(i);
+  }
+
+  inline void* acquire_page() noexcept {
+    return malloc(PAGE_SIZE);
+  }
+
+  inline void reclaim_page(int i) noexcept {
+    if (nullptr != _pages[i]) {
+      free(_pages[i]);
+      _pages[i] = nullptr;
     }
   }
+
+  inline bool is_page_valid(int i) const noexcept { return nullptr != _pages[i]; }
+  inline int file_descriptor() const noexcept { return _file_descriptor; }
+  inline sdb::u32_t file_length() const noexcept { return _file_length; }
+  inline sdb::u32_t num_pages() const noexcept { return _num_pages; }
 
   void flush(sdb::u32_t page_num) noexcept {
     if (NULL == _pages[page_num]) {
@@ -198,7 +212,7 @@ struct Pager {
     }
 
     if (NULL == _pages[page_num]) {
-      void* page = malloc(PAGE_SIZE);
+      void* page = acquire_page();
       sdb::u32_t num_pages = _file_length / PAGE_SIZE;
 
       if (_file_length % PAGE_SIZE)
@@ -258,26 +272,20 @@ struct Table {
     Pager* pager = table->pager;
 
     for (sdb::u32_t i = 0; i < pager->_num_pages; ++i) {
-      if (NULL == pager->_pages[i])
+      if (!pager->is_page_valid(i))
         continue;
 
       pager->flush(i);
-      free(pager->_pages[i]);
-      pager->_pages[i] = NULL;
+      pager->reclaim_page(i);
     }
 
-    int result = sdb::close(pager->_file_descriptor);
+    int result = sdb::close(pager->file_descriptor());
     if (-1 == result) {
       std::cerr << "Error closing db file" << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    for (sdb::u32_t i = 0; i < TABLE_MAX_PAGES; ++i) {
-      void* page = pager->_pages[i];
-      if (NULL != page) {
-        free(page);
-        pager->_pages[i] = NULL;
-      }
-    }
+    for (sdb::u32_t i = 0; i < TABLE_MAX_PAGES; ++i)
+      pager->reclaim_page(i);
     delete pager;
     delete table;
   }
