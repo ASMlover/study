@@ -249,13 +249,16 @@ struct Pager {
 
 struct Table {
   sdb::u32_t                                _root_page_num{};
-  Pager*                                    pager;
+  Pager*                                    _pager;
 
   Table(Pager* p, sdb::u32_t root_page_num = 0) noexcept
-    : pager{p}, _root_page_num{root_page_num} {
+    : _pager{p}, _root_page_num{root_page_num} {
   }
 
   ~Table() noexcept {}
+
+  inline sdb::u32_t root_page_num() const noexcept { return _root_page_num; }
+  inline Pager* pager() const noexcept { return _pager; }
 
   static Table* db_open(const char* filename) noexcept {
     Pager* pager = Pager::pager_open(filename);
@@ -269,9 +272,9 @@ struct Table {
   }
 
   static void db_close(Table* table) noexcept {
-    Pager* pager = table->pager;
+    Pager* pager = table->pager();
 
-    for (sdb::u32_t i = 0; i < pager->_num_pages; ++i) {
+    for (sdb::u32_t i = 0; i < pager->num_pages(); ++i) {
       if (!pager->is_page_valid(i))
         continue;
 
@@ -305,15 +308,15 @@ struct Cursor {
   }
 
   static Cursor* start(Table* table) noexcept {
-    void* root_node = table->pager->get_page(table->_root_page_num);
+    void* root_node = table->pager()->get_page(table->_root_page_num);
     sdb::u32_t num_cells = *leaf_node_num_cells(root_node);
-    return new Cursor(table, table->_root_page_num, 0, 0 == num_cells);
+    return new Cursor(table, table->root_page_num(), 0, 0 == num_cells);
   }
 
   static Cursor* end(Table* table) noexcept {
-    void* root_node = table->pager->get_page(table->_root_page_num);
+    void* root_node = table->pager()->get_page(table->root_page_num());
     sdb::u32_t num_cells = *leaf_node_num_cells(root_node);
-    return new Cursor(table, table->_root_page_num, num_cells, true);
+    return new Cursor(table, table->root_page_num(), num_cells, true);
   }
 
   static void reclaim(Cursor* cursor) noexcept {
@@ -327,7 +330,7 @@ struct Cursor {
 
   inline void advance() noexcept {
     sdb::u32_t page_num = _page_num;
-    void* node = _table->pager->get_page(page_num);
+    void* node = _table->pager()->get_page(page_num);
     _cell_num += 1;
     if (_cell_num >= (*leaf_node_num_cells(node)))
       _end_of_table = true;
@@ -335,12 +338,12 @@ struct Cursor {
 
   void* value() noexcept {
     sdb::u32_t page_num = _page_num;
-    void* page = _table->pager->get_page(page_num);
+    void* page = _table->pager()->get_page(page_num);
     return leaf_node_value(page, _cell_num);
   }
 
   void leaf_node_insert(sdb::u32_t key, Row* value) noexcept {
-    void* node = _table->pager->get_page(_page_num);
+    void* node = _table->pager()->get_page(_page_num);
     sdb::u32_t num_cells = *leaf_node_num_cells(node);
     if (num_cells >= LEAF_NODE_MAX_CELLS) {
       std::cerr << "Need to implement splitting a leaf node" << std::endl;
@@ -358,7 +361,7 @@ struct Cursor {
 };
 
 bool Table::insert(Row& row) noexcept {
-  void* node = pager->get_page(_root_page_num);
+  void* node = _pager->get_page(_root_page_num);
   if ((*leaf_node_num_cells(node)) >= LEAF_NODE_MAX_CELLS)
     return false;
 
@@ -478,7 +481,7 @@ static MetaCommandResult do_meta_command(const sdb::str_t& command, Table* table
     exit(EXIT_SUCCESS);
   }
   else if (command == ".btree") {
-    print_leaf_node(table->pager->get_page(0));
+    print_leaf_node(table->pager()->get_page(0));
     return MetaCommandResult::META_COMMAND_SUCCESS;
   }
   else if (command == ".constants") {
