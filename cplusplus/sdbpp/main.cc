@@ -39,10 +39,10 @@ enum class MetaCommandResult {
   META_COMMAND_UNRECOGNIZED_COMMAND,
 };
 
-#define SIZE_OF_ATTR(Struct, Attr)          sizeof(((Struct*)0)->Attr)
-#define COLUMN_USERNAME_SIZE                (32)
-#define COLUMN_EMAIL_SIZE                   (255)
-#define TABLE_MAX_PAGES                     (100)
+#define SIZE_OF_ATTR(Struct, Attr)                sizeof(((Struct*)0)->Attr)
+#define COLUMN_USERNAME_SIZE                      (32)
+#define COLUMN_EMAIL_SIZE                         (255)
+#define TABLE_MAX_PAGES                           (100)
 
 struct Row {
   sdb::u32_t                                id;
@@ -57,14 +57,14 @@ struct Row {
   inline void deserialize(const void* source) noexcept;
 };
 
-constexpr sdb::u32_t ID_SIZE                = SIZE_OF_ATTR(Row, id);
-constexpr sdb::u32_t USERNAME_SIZE          = SIZE_OF_ATTR(Row, username);
-constexpr sdb::u32_t EMAIL_SIZE             = SIZE_OF_ATTR(Row, email);
-constexpr sdb::u32_t ID_OFFSET              = 0;
-constexpr sdb::u32_t USERNAME_OFFSET        = ID_OFFSET + ID_SIZE;
-constexpr sdb::u32_t EMAIL_OFFSET           = USERNAME_OFFSET + USERNAME_SIZE;
-constexpr sdb::u32_t ROW_SIZE               = ID_SIZE + USERNAME_SIZE + EMAIL_OFFSET;
-constexpr sdb::u32_t PAGE_SIZE              = 4096;
+constexpr sdb::u32_t ID_SIZE                      = SIZE_OF_ATTR(Row, id);
+constexpr sdb::u32_t USERNAME_SIZE                = SIZE_OF_ATTR(Row, username);
+constexpr sdb::u32_t EMAIL_SIZE                   = SIZE_OF_ATTR(Row, email);
+constexpr sdb::u32_t ID_OFFSET                    = 0;
+constexpr sdb::u32_t USERNAME_OFFSET              = ID_OFFSET + ID_SIZE;
+constexpr sdb::u32_t EMAIL_OFFSET                 = USERNAME_OFFSET + USERNAME_SIZE;
+constexpr sdb::u32_t ROW_SIZE                     = ID_SIZE + USERNAME_SIZE + EMAIL_OFFSET;
+constexpr sdb::u32_t PAGE_SIZE                    = 4096;
 
 enum class NodeType {
   NODE_INTERNAL,
