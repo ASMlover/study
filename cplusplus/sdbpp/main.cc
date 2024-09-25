@@ -124,6 +124,16 @@ inline void initialize_leaf_node(void* node) noexcept {
   *leaf_node_num_cells(node) = 0;
 }
 
+inline NodeType get_node_type(void* node) noexcept {
+  sdb::u8_t value = *((sdb::u8_t*)node + NODE_TYPE_OFFSET);
+  return (NodeType)value;
+}
+
+inline void set_node_type(void* node, NodeType type) noexcept {
+  sdb::u8_t value = (sdb::u8_t)type;
+  *((sdb::u8_t*)node + NODE_TYPE_OFFSET) = value;
+}
+
 inline void print_leaf_node(void* node) noexcept {
   sdb::u32_t num_cells = *leaf_node_num_cells(node);
   std::cout
@@ -362,7 +372,8 @@ struct Cursor {
 
 bool Table::insert(Row& row) noexcept {
   void* node = _pager->get_page(_root_page_num);
-  if ((*leaf_node_num_cells(node)) >= LEAF_NODE_MAX_CELLS)
+  sdb::u32_t num_cells = *leaf_node_num_cells(node);
+  if (num_cells >= LEAF_NODE_MAX_CELLS)
     return false;
 
   Cursor* cursor = Cursor::end(this);
