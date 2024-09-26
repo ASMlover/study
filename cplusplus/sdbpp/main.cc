@@ -94,6 +94,16 @@ constexpr sdb::u32_t LEAF_NODE_CELL_SIZE          = LEAF_NODE_KEY_SIZE + LEAF_NO
 constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS    = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
 constexpr sdb::u32_t LEAF_NODE_MAX_CELLS          = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 
+inline NodeType get_node_type(void* node) noexcept {
+  sdb::u8_t value = *((sdb::u8_t*)node + NODE_TYPE_OFFSET);
+  return (NodeType)value;
+}
+
+inline void set_node_type(void* node, NodeType type) noexcept {
+  sdb::u8_t value = (sdb::u8_t)type;
+  *((sdb::u8_t*)node + NODE_TYPE_OFFSET) = value;
+}
+
 void print_constants() noexcept {
   std::cout << "========= [Constants] =========" << std::endl;
   std::cout << "ROW_SIZE: " << ROW_SIZE << std::endl;
@@ -121,17 +131,8 @@ inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
 }
 
 inline void initialize_leaf_node(void* node) noexcept {
+  set_node_type(node, NodeType::NODE_LEAF);
   *leaf_node_num_cells(node) = 0;
-}
-
-inline NodeType get_node_type(void* node) noexcept {
-  sdb::u8_t value = *((sdb::u8_t*)node + NODE_TYPE_OFFSET);
-  return (NodeType)value;
-}
-
-inline void set_node_type(void* node, NodeType type) noexcept {
-  sdb::u8_t value = (sdb::u8_t)type;
-  *((sdb::u8_t*)node + NODE_TYPE_OFFSET) = value;
 }
 
 inline void print_leaf_node(void* node) noexcept {
@@ -400,6 +401,7 @@ class SQLCompiler final : private sdb::UnCopyable {
 public:
   enum ExecuteRet : int {
     SUCCESS,
+    DUPLICATE_KEY,
     TABLE_FULL,
   };
 
