@@ -258,6 +258,7 @@ struct Pager {
   }
 };
 
+struct Cursor;
 struct Table {
   sdb::u32_t                                _root_page_num{};
   Pager*                                    _pager;
@@ -270,6 +271,8 @@ struct Table {
 
   inline sdb::u32_t root_page_num() const noexcept { return _root_page_num; }
   inline Pager* pager() const noexcept { return _pager; }
+
+  Cursor* leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
 
   static Table* db_open(const char* filename) noexcept {
     Pager* pager = Pager::pager_open(filename);
@@ -370,6 +373,10 @@ struct Cursor {
     value->serialize(leaf_node_value(node, _cell_num));
   }
 };
+
+Cursor* Table::leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
+  return nullptr;
+}
 
 bool Table::insert(Row& row) noexcept {
   void* node = _pager->get_page(_root_page_num);
