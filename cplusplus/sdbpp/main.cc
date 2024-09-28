@@ -333,6 +333,10 @@ struct Cursor {
     return new Cursor(table, table->root_page_num(), num_cells, true);
   }
 
+  static Cursor* make_cursor(Table* table, sdb::u32_t page_num) noexcept {
+    return new Cursor(table, page_num, 0, false);
+  }
+
   static void reclaim(Cursor* cursor) noexcept {
     if (nullptr != cursor)
       delete cursor;
@@ -375,6 +379,9 @@ struct Cursor {
 };
 
 Cursor* Table::leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
+  void* node = _pager->get_page(page_num);
+  sdb::u32_t num_cells = *leaf_node_num_cells(node);
+
   return nullptr;
 }
 
