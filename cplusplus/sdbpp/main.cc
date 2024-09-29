@@ -342,6 +342,10 @@ struct Cursor {
       delete cursor;
   }
 
+  inline void set_cell_num(sdb::u32_t cell_num) noexcept {
+    _cell_num = cell_num;
+  }
+
   inline bool end_of_table() const noexcept {
     return _end_of_table;
   }
@@ -382,7 +386,24 @@ Cursor* Table::leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
   void* node = _pager->get_page(page_num);
   sdb::u32_t num_cells = *leaf_node_num_cells(node);
 
-  return nullptr;
+  Cursor* cursor = Cursor::make_cursor(this, page_num);
+  sdb::u32_t min_index = 0;
+  sdb::u32_t one_past_max_index = num_cells;
+  while (one_past_max_index != min_index) {
+    sdb::u32_t index = (min_index + one_past_max_index) / 2;
+    sdb::u32_t key_at_index = *leaf_node_key(node, key);
+    if (key == key_at_index) {
+      cursor->set_cell_num(index);
+      return cursor;
+    }
+    if (key < key_at_index)
+      one_past_max_index = index;
+    else
+      min_index = index + 1;
+  }
+
+  cursor->set_cell_num(min_index);
+  return cursor;
 }
 
 bool Table::insert(Row& row) noexcept {
