@@ -273,6 +273,7 @@ struct Table {
   inline Pager* pager() const noexcept { return _pager; }
 
   Cursor* leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
+  Cursor* find(sdb::u32_t key) noexcept;
 
   static Table* db_open(const char* filename) noexcept {
     Pager* pager = Pager::pager_open(filename);
@@ -404,6 +405,19 @@ Cursor* Table::leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
 
   cursor->set_cell_num(min_index);
   return cursor;
+}
+
+Cursor* Table::find(sdb::u32_t key) noexcept {
+  sdb::u32_t root_page_num = _root_page_num;
+  void* root_node = _pager->get_page(root_page_num);
+  if (NodeType::NODE_LEAF == get_node_type(root_node)) {
+    return leaf_node_find(root_page_num, key);
+  }
+  else {
+    std::cerr << "Need to implement searching an internal node" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  return nullptr;
 }
 
 bool Table::insert(Row& row) noexcept {
