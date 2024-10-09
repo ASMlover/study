@@ -196,6 +196,7 @@ struct Pager {
   inline int file_descriptor() const noexcept { return _file_descriptor; }
   inline sdb::u32_t file_length() const noexcept { return _file_length; }
   inline sdb::u32_t num_pages() const noexcept { return _num_pages; }
+  inline sdb::u32_t get_unused_page_num() const noexcept { return _num_pages; }
 
   void flush(sdb::u32_t page_num) noexcept {
     if (NULL == _pages[page_num]) {
