@@ -370,8 +370,8 @@ struct Cursor {
     void* node = _table->pager()->get_page(_page_num);
     sdb::u32_t num_cells = *leaf_node_num_cells(node);
     if (num_cells >= LEAF_NODE_MAX_CELLS) {
-      std::cerr << "Need to implement splitting a leaf node" << std::endl;
-      std::exit(EXIT_FAILURE);
+      leaf_node_split_and_insert(key, value);
+      return;
     }
 
     if (_cell_num < num_cells) {
@@ -381,6 +381,10 @@ struct Cursor {
     *(leaf_node_num_cells(node)) += 1;
     *(leaf_node_key(node, _cell_num)) = key;
     value->serialize(leaf_node_value(node, _cell_num));
+  }
+
+  void leaf_node_split_and_insert(sdb::u32_t key, Row* value) noexcept {
+    // TODO:
   }
 };
 
@@ -424,8 +428,6 @@ Cursor* Table::find(sdb::u32_t key) noexcept {
 bool Table::insert(Row& row) noexcept {
   void* node = _pager->get_page(_root_page_num);
   sdb::u32_t num_cells = *leaf_node_num_cells(node);
-  if (num_cells >= LEAF_NODE_MAX_CELLS)
-    return false;
 
   Cursor* cursor = Cursor::end(this);
   cursor->leaf_node_insert(row.id, &row);
