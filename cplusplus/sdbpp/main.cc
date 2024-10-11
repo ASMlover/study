@@ -384,7 +384,14 @@ struct Cursor {
   }
 
   void leaf_node_split_and_insert(sdb::u32_t key, Row* value) noexcept {
-    // TODO:
+    void* old_node = _table->pager()->get_page(_page_num);
+    sdb::u32_t new_page_num = _table->pager()->get_unused_page_num();
+    void* new_node = _table->pager()->get_page(new_page_num);
+    initialize_leaf_node(new_node);
+
+    for (int i = LEAF_NODE_MAX_CELLS; i >= 0; --i) {
+      // TODO:
+    }
   }
 };
 
