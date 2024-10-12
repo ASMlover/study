@@ -94,6 +94,9 @@ constexpr sdb::u32_t LEAF_NODE_CELL_SIZE          = LEAF_NODE_KEY_SIZE + LEAF_NO
 constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS    = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
 constexpr sdb::u32_t LEAF_NODE_MAX_CELLS          = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 
+constexpr sdb::u32_t LEAF_NODE_RIGHT_SPLIT_COUNT  = (LEAF_NODE_MAX_CELLS + 1) / 2;
+constexpr sdb::u32_t LEAF_NODE_LEFT_SPLIT_COUNT   = (LEAF_NODE_MAX_CELLS + 1) - LEAF_NODE_RIGHT_SPLIT_COUNT;
+
 inline NodeType get_node_type(void* node) noexcept {
   sdb::u8_t value = *((sdb::u8_t*)node + NODE_TYPE_OFFSET);
   return (NodeType)value;
@@ -390,7 +393,7 @@ struct Cursor {
     initialize_leaf_node(new_node);
 
     for (int i = LEAF_NODE_MAX_CELLS; i >= 0; --i) {
-      // TODO:
+      void* destination_node;
     }
   }
 };
