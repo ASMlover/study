@@ -392,8 +392,21 @@ struct Cursor {
     void* new_node = _table->pager()->get_page(new_page_num);
     initialize_leaf_node(new_node);
 
-    for (int i = LEAF_NODE_MAX_CELLS; i >= 0; --i) {
+    for (sdb::u32_t i = LEAF_NODE_MAX_CELLS; i >= 0; --i) {
       void* destination_node;
+      if (i >= LEAF_NODE_LEFT_SPLIT_COUNT)
+        destination_node = new_node;
+      else
+        destination_node = old_node;
+      sdb::u32_t index_within_node = i % LEAF_NODE_LEFT_SPLIT_COUNT;
+      void* destination = leaf_node_cell(destination_node, index_within_node);
+
+      if (i == _cell_num)
+        value->serialize(destination);
+      else if (i > _cell_num)
+        std::memcpy(destination, leaf_node_cell(old_node, i - 1), LEAF_NODE_CELL_SIZE);
+      else
+        std::memcpy(destination, leaf_node_cell(old_node, i), LEAF_NODE_CELL_SIZE);
     }
   }
 };
