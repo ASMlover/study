@@ -161,6 +161,16 @@ inline void Row::deserialize(const void* source) noexcept {
   memcpy(&email, (sdb::byte_t*)source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
+inline bool is_node_root(void* node) noexcept {
+  sdb::u8_t value = *((sdb::u8_t*)node + IS_ROOT_OFFSET);
+  return sdb::as_type<bool>(value);
+}
+
+inline void set_node_root(void* node, bool is_root) noexcept {
+  sdb::u8_t value = sdb::as_type<bool>(is_root);
+  *((sdb::u8_t*)node + IS_ROOT_OFFSET) = value;
+}
+
 struct Pager {
   int                                       _file_descriptor;
   sdb::u32_t                                _file_length;
@@ -408,6 +418,11 @@ struct Cursor {
       else
         std::memcpy(destination, leaf_node_cell(old_node, i), LEAF_NODE_CELL_SIZE);
     }
+
+    *(leaf_node_num_cells(old_node)) = LEAF_NODE_LEFT_SPLIT_COUNT;
+    *(leaf_node_num_cells(new_node)) = LEAF_NODE_RIGHT_SPLIT_COUNT;
+
+    // TODO:
   }
 };
 
