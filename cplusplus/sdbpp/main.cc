@@ -324,6 +324,7 @@ struct Table {
 
   bool insert(Row& row) noexcept;
   void select() noexcept;
+  void create_new_root(sdb::u32_t right_child_page_num) noexcept;
 };
 
 struct Cursor {
@@ -484,6 +485,21 @@ void Table::select() noexcept {
     cursor->advance();
   }
   Cursor::reclaim(cursor);
+}
+
+void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
+  void* root = _pager->get_page(_root_page_num);
+  void* right_child = _pager->get_page(right_child_page_num);
+  sdb::u32_t left_child_page_num = _pager->get_unused_page_num();
+  void* left_child = _pager->get_page(left_child_page_num);
+
+  std::memcpy(left_child, root, PAGE_SIZE);
+  set_node_root(left_child, false);
+
+  initialize_leaf_node(root);
+  set_node_root(root, true);
+
+  // TODO:
 }
 
 
