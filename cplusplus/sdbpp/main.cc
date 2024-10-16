@@ -57,14 +57,14 @@ struct Row {
   inline void deserialize(const void* source) noexcept;
 };
 
-constexpr sdb::u32_t ID_SIZE                      = SIZE_OF_ATTR(Row, id);
-constexpr sdb::u32_t USERNAME_SIZE                = SIZE_OF_ATTR(Row, username);
-constexpr sdb::u32_t EMAIL_SIZE                   = SIZE_OF_ATTR(Row, email);
-constexpr sdb::u32_t ID_OFFSET                    = 0;
-constexpr sdb::u32_t USERNAME_OFFSET              = ID_OFFSET + ID_SIZE;
-constexpr sdb::u32_t EMAIL_OFFSET                 = USERNAME_OFFSET + USERNAME_SIZE;
-constexpr sdb::u32_t ROW_SIZE                     = ID_SIZE + USERNAME_SIZE + EMAIL_OFFSET;
-constexpr sdb::u32_t PAGE_SIZE                    = 4096;
+constexpr sdb::u32_t ID_SIZE                          = SIZE_OF_ATTR(Row, id);
+constexpr sdb::u32_t USERNAME_SIZE                    = SIZE_OF_ATTR(Row, username);
+constexpr sdb::u32_t EMAIL_SIZE                       = SIZE_OF_ATTR(Row, email);
+constexpr sdb::u32_t ID_OFFSET                        = 0;
+constexpr sdb::u32_t USERNAME_OFFSET                  = ID_OFFSET + ID_SIZE;
+constexpr sdb::u32_t EMAIL_OFFSET                     = USERNAME_OFFSET + USERNAME_SIZE;
+constexpr sdb::u32_t ROW_SIZE                         = ID_SIZE + USERNAME_SIZE + EMAIL_OFFSET;
+constexpr sdb::u32_t PAGE_SIZE                        = 4096;
 
 enum class NodeType {
   NODE_INTERNAL,
@@ -72,30 +72,42 @@ enum class NodeType {
 };
 
 // Common Node Header Layout
-constexpr sdb::u32_t NODE_TYPE_SIZE               = sizeof(sdb::u8_t);
-constexpr sdb::u32_t NODE_TYPE_OFFSET             = 0;
-constexpr sdb::u32_t IS_ROOT_SIZE                 = sizeof(sdb::u8_t);
-constexpr sdb::u32_t IS_ROOT_OFFSET               = NODE_TYPE_SIZE;
-constexpr sdb::u32_t PARENT_POINTER_SIZE          = sizeof(sdb::u32_t);
-constexpr sdb::u32_t PARENT_POINTER_OFFSET        = IS_ROOT_OFFSET + IS_ROOT_SIZE;
-constexpr sdb::u32_t COMMON_NODE_HEADER_SIZE      = NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
+constexpr sdb::u32_t NODE_TYPE_SIZE                   = sizeof(sdb::u8_t);
+constexpr sdb::u32_t NODE_TYPE_OFFSET                 = 0;
+constexpr sdb::u32_t IS_ROOT_SIZE                     = sizeof(sdb::u8_t);
+constexpr sdb::u32_t IS_ROOT_OFFSET                   = NODE_TYPE_SIZE;
+constexpr sdb::u32_t PARENT_POINTER_SIZE              = sizeof(sdb::u32_t);
+constexpr sdb::u32_t PARENT_POINTER_OFFSET            = IS_ROOT_OFFSET + IS_ROOT_SIZE;
+constexpr sdb::u32_t COMMON_NODE_HEADER_SIZE          = NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE;
 
 // Leaf Node Header Layout
-constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_SIZE     = sizeof(sdb::u32_t);
-constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_OFFSET   = COMMON_NODE_HEADER_SIZE;
-constexpr sdb::u32_t LEAF_NODE_HEADER_SIZE        = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
+constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_SIZE         = sizeof(sdb::u32_t);
+constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_OFFSET       = COMMON_NODE_HEADER_SIZE;
+constexpr sdb::u32_t LEAF_NODE_HEADER_SIZE            = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
 
 // Leaf Node Body Layout
-constexpr sdb::u32_t LEAF_NODE_KEY_SIZE           = sizeof(sdb::u32_t);
-constexpr sdb::u32_t LEAF_NODE_KEY_OFFSET         = 0;
-constexpr sdb::u32_t LEAF_NODE_VALUE_SIZE         = ROW_SIZE;
-constexpr sdb::u32_t LEAF_NODE_VALUE_OFFSET       = LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE;
-constexpr sdb::u32_t LEAF_NODE_CELL_SIZE          = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
-constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS    = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
-constexpr sdb::u32_t LEAF_NODE_MAX_CELLS          = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
+constexpr sdb::u32_t LEAF_NODE_KEY_SIZE               = sizeof(sdb::u32_t);
+constexpr sdb::u32_t LEAF_NODE_KEY_OFFSET             = 0;
+constexpr sdb::u32_t LEAF_NODE_VALUE_SIZE             = ROW_SIZE;
+constexpr sdb::u32_t LEAF_NODE_VALUE_OFFSET           = LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE;
+constexpr sdb::u32_t LEAF_NODE_CELL_SIZE              = LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE;
+constexpr sdb::u32_t LEAF_NODE_SPACE_FOR_CELLS        = PAGE_SIZE - LEAF_NODE_HEADER_SIZE;
+constexpr sdb::u32_t LEAF_NODE_MAX_CELLS              = LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE;
 
-constexpr sdb::u32_t LEAF_NODE_RIGHT_SPLIT_COUNT  = (LEAF_NODE_MAX_CELLS + 1) / 2;
-constexpr sdb::u32_t LEAF_NODE_LEFT_SPLIT_COUNT   = (LEAF_NODE_MAX_CELLS + 1) - LEAF_NODE_RIGHT_SPLIT_COUNT;
+constexpr sdb::u32_t LEAF_NODE_RIGHT_SPLIT_COUNT      = (LEAF_NODE_MAX_CELLS + 1) / 2;
+constexpr sdb::u32_t LEAF_NODE_LEFT_SPLIT_COUNT       = (LEAF_NODE_MAX_CELLS + 1) - LEAF_NODE_RIGHT_SPLIT_COUNT;
+
+// Internal Node Header Layout
+constexpr sdb::u32_t INTERNAL_NODE_NUM_KEYS_SIZE      = sizeof(sdb::u32_t);
+constexpr sdb::u32_t INTERNAL_NODE_NUM_KEYS_OFFSET    = COMMON_NODE_HEADER_SIZE;
+constexpr sdb::u32_t INTERNAL_NODE_RIGHT_CHILD_SIZE   = sizeof(sdb::u32_t);
+constexpr sdb::u32_t INTERNAL_NODE_RIGHT_CHILD_OFFSET = INTERNAL_NODE_NUM_KEYS_OFFSET + INTERNAL_NODE_NUM_KEYS_SIZE;
+constexpr sdb::u32_t INTERNAL_NODE_HEADER_SIZE        = COMMON_NODE_HEADER_SIZE + INTERNAL_NODE_NUM_KEYS_SIZE + INTERNAL_NODE_RIGHT_CHILD_SIZE;
+
+// Internal Node Body Layout
+constexpr sdb::u32_t INTERNAL_NODE_KEY_SIZE           = sizeof(sdb::u32_t);
+constexpr sdb::u32_t INTERNAL_NODE_CHILD_SIZE         = sizeof(sdb::u32_t);
+constexpr sdb::u32_t INTERNAL_NODE_CELL_SIZE          = INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE;
 
 inline NodeType get_node_type(void* node) noexcept {
   sdb::u8_t value = *((sdb::u8_t*)node + NODE_TYPE_OFFSET);
@@ -147,6 +159,10 @@ inline void print_leaf_node(void* node) noexcept {
     sdb::u32_t key = *leaf_node_key(node, i);
     std::cout << "  - " << i << " : " << key << std::endl;
   }
+}
+
+inline sdb::u32_t* internal_node_num_keys(void* node) noexcept {
+  return (sdb::u32_t*)((sdb::u8_t*)node + INTERNAL_NODE_NUM_KEYS_OFFSET);
 }
 
 inline void Row::serialize(void* destination) noexcept {
