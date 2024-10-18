@@ -169,6 +169,10 @@ inline sdb::u32_t* internal_node_right_child(void* node) noexcept {
   return (sdb::u32_t*)((sdb::u8_t*)node + INTERNAL_NODE_RIGHT_CHILD_OFFSET);
 }
 
+inline sdb::u32_t* internal_node_cell(void* node, sdb::u32_t cell_num) noexcept {
+  return (sdb::u32_t*)((sdb::u8_t*)node + INTERNAL_NODE_HEADER_SIZE + cell_num * INTERNAL_NODE_CELL_SIZE);
+}
+
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
   memcpy((sdb::byte_t*)destination + USERNAME_OFFSET, &username, USERNAME_SIZE);
