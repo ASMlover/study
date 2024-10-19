@@ -173,6 +173,20 @@ inline sdb::u32_t* internal_node_cell(void* node, sdb::u32_t cell_num) noexcept 
   return (sdb::u32_t*)((sdb::u8_t*)node + INTERNAL_NODE_HEADER_SIZE + cell_num * INTERNAL_NODE_CELL_SIZE);
 }
 
+inline sdb::u32_t* internal_node_child(void* node, sdb::u32_t child_num) noexcept {
+  sdb::u32_t num_keys = *internal_node_num_keys(node);
+  if (child_num > num_keys) {
+    std::cout << "Tried to access child_num " << child_num << " > " << num_keys << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  else if (child_num == num_keys) {
+    return internal_node_right_child(node);
+  }
+  else {
+    return internal_node_cell(node, child_num);
+  }
+}
+
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
   memcpy((sdb::byte_t*)destination + USERNAME_OFFSET, &username, USERNAME_SIZE);
