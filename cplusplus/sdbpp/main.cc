@@ -187,6 +187,21 @@ inline sdb::u32_t* internal_node_child(void* node, sdb::u32_t child_num) noexcep
   }
 }
 
+inline sdb::u32_t* internal_node_key(void* node, sdb::u32_t key_num) noexcept {
+  return (sdb::u32_t*)((sdb::u8_t*)internal_node_cell(node, key_num) + INTERNAL_NODE_CHILD_SIZE);
+}
+
+inline sdb::u32_t get_node_max_key(void* node) noexcept {
+  switch (get_node_type(node)) {
+  case NodeType::NODE_INTERNAL:
+    return *internal_node_key(node, *internal_node_num_keys(node) - 1);
+  case NodeType::NODE_LEAF:
+    return *leaf_node_key(node, *leaf_node_num_cells(node) - 1);
+  default: break;
+  }
+  return 0;
+}
+
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
   memcpy((sdb::byte_t*)destination + USERNAME_OFFSET, &username, USERNAME_SIZE);
