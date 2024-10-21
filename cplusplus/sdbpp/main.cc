@@ -476,7 +476,13 @@ struct Cursor {
     *(leaf_node_num_cells(old_node)) = LEAF_NODE_LEFT_SPLIT_COUNT;
     *(leaf_node_num_cells(new_node)) = LEAF_NODE_RIGHT_SPLIT_COUNT;
 
-    // TODO:
+    if (is_node_root(old_node)) {
+      return _table->create_new_root(new_page_num);
+    }
+    else {
+      std::cout << "Need to implement updating parent after split" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
   }
 };
 
@@ -650,7 +656,7 @@ public:
 static MetaCommandResult do_meta_command(const sdb::str_t& command, Table* table) {
   if (command == ".exit") {
     Table::db_close(table);
-    exit(EXIT_SUCCESS);
+    std::exit(EXIT_SUCCESS);
   }
   else if (command == ".btree") {
     print_leaf_node(table->pager()->get_page(0));
