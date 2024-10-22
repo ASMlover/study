@@ -145,11 +145,6 @@ inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
   return (sdb::byte_t*)leaf_node_cell(node, cell_num) + LEAF_NODE_KEY_SIZE;
 }
 
-inline void initialize_leaf_node(void* node) noexcept {
-  set_node_type(node, NodeType::NODE_LEAF);
-  *leaf_node_num_cells(node) = 0;
-}
-
 inline void print_leaf_node(void* node) noexcept {
   sdb::u32_t num_cells = *leaf_node_num_cells(node);
   std::cout
@@ -202,6 +197,28 @@ inline sdb::u32_t get_node_max_key(void* node) noexcept {
   return 0;
 }
 
+inline bool is_node_root(void* node) noexcept {
+  sdb::u8_t value = *((sdb::u8_t*)node + IS_ROOT_OFFSET);
+  return sdb::as_type<bool>(value);
+}
+
+inline void set_node_root(void* node, bool is_root) noexcept {
+  sdb::u8_t value = sdb::as_type<bool>(is_root);
+  *((sdb::u8_t*)node + IS_ROOT_OFFSET) = value;
+}
+
+inline void initialize_leaf_node(void* node) noexcept {
+  set_node_type(node, NodeType::NODE_LEAF);
+  set_node_root(node, false);
+  *leaf_node_num_cells(node) = 0;
+}
+
+inline void initialize_internal_node(void* node) noexcept {
+  set_node_type(node, NodeType::NODE_INTERNAL);
+  set_node_root(node, false);
+  *internal_node_num_keys(node) = 0;
+}
+
 inline void Row::serialize(void* destination) noexcept {
   memcpy((sdb::byte_t*)destination + ID_OFFSET, &id, ID_SIZE);
   memcpy((sdb::byte_t*)destination + USERNAME_OFFSET, &username, USERNAME_SIZE);
@@ -212,16 +229,6 @@ inline void Row::deserialize(const void* source) noexcept {
   memcpy(&id, (sdb::byte_t*)source + ID_OFFSET, ID_SIZE);
   memcpy(&username, (sdb::byte_t*)source + USERNAME_OFFSET, USERNAME_SIZE);
   memcpy(&email, (sdb::byte_t*)source + EMAIL_OFFSET, EMAIL_SIZE);
-}
-
-inline bool is_node_root(void* node) noexcept {
-  sdb::u8_t value = *((sdb::u8_t*)node + IS_ROOT_OFFSET);
-  return sdb::as_type<bool>(value);
-}
-
-inline void set_node_root(void* node, bool is_root) noexcept {
-  sdb::u8_t value = sdb::as_type<bool>(is_root);
-  *((sdb::u8_t*)node + IS_ROOT_OFFSET) = value;
 }
 
 struct Pager {
@@ -555,10 +562,14 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
   std::memcpy(left_child, root, PAGE_SIZE);
   set_node_root(left_child, false);
 
-  initialize_leaf_node(root);
+  initialize_internal_node(root);
   set_node_root(root, true);
 
-  // TODO:
+  *internal_node_num_keys(root) = 1;
+  *internal_node_child(root, 0) = left_child_page_num;
+  sdb::u32_t left_child_max_key = get_node_max_key(left_child);
+  *internal_node_key(root, 0) = left_child_max_key;
+  *internal_node_right_child(root) = right_child_page_num;
 }
 
 
