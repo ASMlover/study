@@ -146,14 +146,12 @@ inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
 }
 
 inline void print_leaf_node(void* node) noexcept {
-  sdb::u32_t num_cells = *leaf_node_num_cells(node);
-  std::cout
-    << "Tree:\n"
-    << "leaf (size " << num_cells << ")" << std::endl;
-  for (sdb::u32_t i = 0; i < num_cells; ++i) {
-    sdb::u32_t key = *leaf_node_key(node, i);
-    std::cout << "  - " << i << " : " << key << std::endl;
-  }
+  // TODO: need remove ...
+}
+
+inline void indent(sdb::u32_t level) noexcept {
+  for (auto i = 0; i < level; ++i)
+    std::cout << "  ";
 }
 
 inline sdb::u32_t* internal_node_num_keys(void* node) noexcept {
