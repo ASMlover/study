@@ -356,6 +356,7 @@ struct Table {
     if (0 == pager->_num_pages) {
       void* root_node = pager->get_page(0);
       initialize_leaf_node(root_node);
+      set_node_root(root_node, true);
     }
     return table;
   }
