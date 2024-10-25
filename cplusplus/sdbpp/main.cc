@@ -318,6 +318,19 @@ struct Pager {
     return _pages[page_num];
   }
 
+  void print_tree(sdb::u32_t page_num, sdb::u32_t indentation_level) noexcept {
+    void* node = get_page(page_num);
+    sdb::u32_t num_keys, child;
+
+    switch (get_node_type(node)) {
+    case NodeType::NODE_LEAF:
+      break;
+    case NodeType::NODE_INTERNAL:
+      break;
+    default: break;
+    }
+  }
+
   static Pager* pager_open(const char* filename) noexcept {
     int fd = sdb::open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (-1 == fd) {
