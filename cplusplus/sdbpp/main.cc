@@ -145,12 +145,8 @@ inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
   return (sdb::byte_t*)leaf_node_cell(node, cell_num) + LEAF_NODE_KEY_SIZE;
 }
 
-inline void print_leaf_node(void* node) noexcept {
-  // TODO: need remove ...
-}
-
 inline void indent(sdb::u32_t level) noexcept {
-  for (auto i = 0; i < level; ++i)
+  for (sdb::u32_t i = 0; i < level; ++i)
     std::cout << "  ";
 }
 
@@ -324,6 +320,13 @@ struct Pager {
 
     switch (get_node_type(node)) {
     case NodeType::NODE_LEAF:
+      num_keys = *leaf_node_num_cells(node);
+      indent(indentation_level);
+      std::cout << "- leaf (size " << num_keys << ")" << std::endl;
+      for (sdb::u32_t i = 0; i < num_keys; ++i) {
+        indent(indentation_level + 1);
+        std::cout << "- " << *leaf_node_key(node, i) << std::endl;
+      }
       break;
     case NodeType::NODE_INTERNAL:
       break;
@@ -682,7 +685,7 @@ static MetaCommandResult do_meta_command(const sdb::str_t& command, Table* table
     std::exit(EXIT_SUCCESS);
   }
   else if (command == ".btree") {
-    print_leaf_node(table->pager()->get_page(0));
+    table->pager()->print_tree(0, 0);
     return MetaCommandResult::META_COMMAND_SUCCESS;
   }
   else if (command == ".constants") {
