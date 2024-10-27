@@ -329,6 +329,18 @@ struct Pager {
       }
       break;
     case NodeType::NODE_INTERNAL:
+      num_keys = *internal_node_num_keys(node);
+      indent(indentation_level);
+      std::cout << "- internal (size " << num_keys << ")" << std::endl;
+      for (sdb::u32_t i = 0; i < num_keys; ++i) {
+        child = *internal_node_child(node, i);
+        print_tree(child, indentation_level + 1);
+
+        indent(indentation_level + 1);
+        std::cout << "- key " << *internal_node_key(node, i) << std::endl;
+      }
+      child = *internal_node_right_child(node);
+      print_tree(child, indentation_level + 1);
       break;
     default: break;
     }
