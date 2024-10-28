@@ -374,6 +374,7 @@ struct Table {
 
   Cursor* leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
   Cursor* find(sdb::u32_t key) noexcept;
+  Cursor* internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
 
   static Table* db_open(const char* filename) noexcept {
     Pager* pager = Pager::pager_open(filename);
@@ -597,6 +598,10 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
   sdb::u32_t left_child_max_key = get_node_max_key(left_child);
   *internal_node_key(root, 0) = left_child_max_key;
   *internal_node_right_child(root) = right_child_page_num;
+}
+
+Cursor* Table::internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
+  return nullptr;
 }
 
 
