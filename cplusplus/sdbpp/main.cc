@@ -616,6 +616,15 @@ Cursor* Table::internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept 
       min_index = index + 1;
   }
 
+  sdb::u32_t child_num = *internal_node_child(node, min_index);
+  void* child = _pager->get_page(child_num);
+  switch (get_node_type(child)) {
+  case NodeType::NODE_LEAF:
+    return leaf_node_find(child_num, key);
+  case NodeType::NODE_INTERNAL:
+    return internal_node_find(child_num, key);
+  }
+
   return nullptr;
 }
 
