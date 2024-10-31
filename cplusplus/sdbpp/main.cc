@@ -83,7 +83,9 @@ constexpr sdb::u32_t COMMON_NODE_HEADER_SIZE          = NODE_TYPE_SIZE + IS_ROOT
 // Leaf Node Header Layout
 constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_SIZE         = sizeof(sdb::u32_t);
 constexpr sdb::u32_t LEAF_NODE_NUM_CELLS_OFFSET       = COMMON_NODE_HEADER_SIZE;
-constexpr sdb::u32_t LEAF_NODE_HEADER_SIZE            = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE;
+constexpr sdb::u32_t LEAF_NODE_NEXT_LEAF_SIZE         = sizeof(sdb::u32_t);
+constexpr sdb::u32_t LEAF_NODE_NEXT_LEAF_OFFSET       = LEAF_NODE_NUM_CELLS_OFFSET + LEAF_NODE_NUM_CELLS_SIZE;
+constexpr sdb::u32_t LEAF_NODE_HEADER_SIZE            = COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE + LEAF_NODE_NEXT_LEAF_SIZE;
 
 // Leaf Node Body Layout
 constexpr sdb::u32_t LEAF_NODE_KEY_SIZE               = sizeof(sdb::u32_t);
@@ -143,6 +145,10 @@ inline sdb::u32_t* leaf_node_key(void* node, sdb::u32_t cell_num) noexcept {
 
 inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
   return (sdb::byte_t*)leaf_node_cell(node, cell_num) + LEAF_NODE_KEY_SIZE;
+}
+
+inline sdb::u32_t* leaf_node_next_leaf(void* node) noexcept {
+  // return (sdb::u32_t*)((sdb::u8_t*)node + LEAF_NODE_NEXT)
 }
 
 inline void indent(sdb::u32_t level) noexcept {
