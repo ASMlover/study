@@ -148,7 +148,7 @@ inline void* leaf_node_value(void* node, sdb::u32_t cell_num) noexcept {
 }
 
 inline sdb::u32_t* leaf_node_next_leaf(void* node) noexcept {
-  // return (sdb::u32_t*)((sdb::u8_t*)node + LEAF_NODE_NEXT)
+  return (sdb::u32_t*)((sdb::u8_t*)node + LEAF_NODE_NEXT_LEAF_OFFSET);
 }
 
 inline void indent(sdb::u32_t level) noexcept {
