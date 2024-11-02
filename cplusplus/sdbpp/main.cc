@@ -211,6 +211,7 @@ inline void initialize_leaf_node(void* node) noexcept {
   set_node_type(node, NodeType::NODE_LEAF);
   set_node_root(node, false);
   *leaf_node_num_cells(node) = 0;
+  *leaf_node_next_leaf(node) = 0;
 }
 
 inline void initialize_internal_node(void* node) noexcept {
@@ -496,6 +497,8 @@ struct Cursor {
     sdb::u32_t new_page_num = _table->pager()->get_unused_page_num();
     void* new_node = _table->pager()->get_page(new_page_num);
     initialize_leaf_node(new_node);
+    *leaf_node_next_leaf(new_node) = *leaf_node_next_leaf(old_node);
+    *leaf_node_next_leaf(old_node) = new_page_num;
 
     for (sdb::u32_t i = LEAF_NODE_MAX_CELLS; i >= 0; --i) {
       void* destination_node;
