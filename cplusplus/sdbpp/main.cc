@@ -433,9 +433,12 @@ struct Cursor {
   }
 
   static Cursor* start(Table* table) noexcept {
-    void* root_node = table->pager()->get_page(table->_root_page_num);
-    sdb::u32_t num_cells = *leaf_node_num_cells(root_node);
-    return new Cursor(table, table->root_page_num(), 0, 0 == num_cells);
+    Cursor* cursor = table->find(0);
+    void* node = table->pager()->get_page(cursor->page_num());
+    sdb::u32_t num_cells = *leaf_node_num_cells(node);
+    cursor->set_end_of_table(num_cells == 0);
+
+    return cursor;
   }
 
   static Cursor* end(Table* table) noexcept {
@@ -453,12 +456,20 @@ struct Cursor {
       delete cursor;
   }
 
+  inline sdb::u32_t page_num() const noexcept {
+    return _page_num;
+  }
+
   inline void set_cell_num(sdb::u32_t cell_num) noexcept {
     _cell_num = cell_num;
   }
 
   inline bool end_of_table() const noexcept {
     return _end_of_table;
+  }
+
+  inline void set_end_of_table(bool end_of_table) noexcept {
+    _end_of_table = end_of_table;
   }
 
   inline void advance() noexcept {
