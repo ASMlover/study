@@ -476,8 +476,16 @@ struct Cursor {
     sdb::u32_t page_num = _page_num;
     void* node = _table->pager()->get_page(page_num);
     _cell_num += 1;
-    if (_cell_num >= (*leaf_node_num_cells(node)))
-      _end_of_table = true;
+    if (_cell_num >= (*leaf_node_num_cells(node))) {
+      sdb::u32_t next_page_num = *leaf_node_next_leaf(node);
+      if (0 == next_page_num) {
+        _end_of_table = true;
+      }
+      else {
+        _page_num = next_page_num;
+        _cell_num = 0;
+      }
+    }
   }
 
   void* value() noexcept {
