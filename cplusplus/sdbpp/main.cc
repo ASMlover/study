@@ -207,6 +207,10 @@ inline void set_node_root(void* node, bool is_root) noexcept {
   *((sdb::u8_t*)node + IS_ROOT_OFFSET) = value;
 }
 
+inline sdb::u32_t* node_parent(void* node) noexcept {
+  return (sdb::u32_t*)((sdb::u8_t*)node + PARENT_POINTER_OFFSET);
+}
+
 inline void initialize_leaf_node(void* node) noexcept {
   set_node_type(node, NodeType::NODE_LEAF);
   set_node_root(node, false);
@@ -513,9 +517,11 @@ struct Cursor {
 
   void leaf_node_split_and_insert(sdb::u32_t key, Row* value) noexcept {
     void* old_node = _table->pager()->get_page(_page_num);
+    sdb::u32_t old_max = get_node_max_key(old_node);
     sdb::u32_t new_page_num = _table->pager()->get_unused_page_num();
     void* new_node = _table->pager()->get_page(new_page_num);
     initialize_leaf_node(new_node);
+    *node_parent(new_node) = *node_parent(old_node);
     *leaf_node_next_leaf(new_node) = *leaf_node_next_leaf(old_node);
     *leaf_node_next_leaf(old_node) = new_page_num;
 
