@@ -218,6 +218,28 @@ inline void initialize_leaf_node(void* node) noexcept {
   *leaf_node_next_leaf(node) = 0;
 }
 
+inline sdb::u32_t internal_node_find_child(void* node, sdb::u32_t key) noexcept {
+  sdb::u32_t num_keys = *internal_node_num_keys(node);
+  sdb::u32_t min_index = 0;
+  sdb::u32_t max_index = num_keys;
+
+  while (min_index != max_index) {
+    sdb::u32_t index = (min_index + max_index) / 2;
+    sdb::u32_t key_to_right = *internal_node_key(node, index);
+    if (key_to_right >= key)
+      max_index = index;
+    else
+      min_index = index + 1;
+  }
+
+  return min_index;
+}
+
+inline void update_internal_node_key(void* node, sdb::u32_t old_key, sdb::u32_t new_key) noexcept {
+  sdb::u32_t old_child_index = internal_node_find_child(node, old_key);
+  *internal_node_key(node, old_child_index) = new_key;
+}
+
 inline void initialize_internal_node(void* node) noexcept {
   set_node_type(node, NodeType::NODE_INTERNAL);
   set_node_root(node, false);
