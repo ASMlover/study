@@ -662,21 +662,9 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
 
 Cursor* Table::internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
   void* node = _pager->get_page(page_num);
-  sdb::u32_t num_keys = *internal_node_num_keys(node);
 
-  sdb::u32_t min_index = 0;
-  sdb::u32_t max_index = num_keys;
-
-  while (min_index != max_index) {
-    sdb::u32_t index = (min_index + max_index) / 2;
-    sdb::u32_t key_to_right = *internal_node_key(node, index);
-    if (key_to_right >= key)
-      max_index = index;
-    else
-      min_index = index + 1;
-  }
-
-  sdb::u32_t child_num = *internal_node_child(node, min_index);
+  sdb::u32_t child_index = internal_node_find_child(node, key);
+  sdb::u32_t child_num = *internal_node_child(node, child_index);
   void* child = _pager->get_page(child_num);
   switch (get_node_type(child)) {
   case NodeType::NODE_LEAF:
