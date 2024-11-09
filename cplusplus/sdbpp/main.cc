@@ -110,6 +110,7 @@ constexpr sdb::u32_t INTERNAL_NODE_HEADER_SIZE        = COMMON_NODE_HEADER_SIZE 
 constexpr sdb::u32_t INTERNAL_NODE_KEY_SIZE           = sizeof(sdb::u32_t);
 constexpr sdb::u32_t INTERNAL_NODE_CHILD_SIZE         = sizeof(sdb::u32_t);
 constexpr sdb::u32_t INTERNAL_NODE_CELL_SIZE          = INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE;
+constexpr sdb::u32_t INTERNAL_NODE_MAX_CELLS          = 3;
 
 inline NodeType get_node_type(void* node) noexcept {
   sdb::u8_t value = *((sdb::u8_t*)node + NODE_TYPE_OFFSET);
@@ -407,6 +408,7 @@ struct Table {
 
   Cursor* leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
   Cursor* find(sdb::u32_t key) noexcept;
+  void internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept;
   Cursor* internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
 
   static Table* db_open(const char* filename) noexcept {
@@ -658,6 +660,21 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
   sdb::u32_t left_child_max_key = get_node_max_key(left_child);
   *internal_node_key(root, 0) = left_child_max_key;
   *internal_node_right_child(root) = right_child_page_num;
+}
+
+void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept {
+  void* parent = _pager->get_page(parent_page_num);
+  void* child = _pager->get_page(child_page_num);
+  sdb::u32_t child_max_key = get_node_max_key(child);
+  sdb::u32_t index = internal_node_find_child(parent, child_max_key);
+
+  sdb::u32_t original_num_keys = *internal_node_num_keys(parent);
+  *internal_node_num_keys(parent) = original_num_keys + 1;
+
+  if (original_num_keys >= INTERNAL_NODE_MAX_CELLS) {
+    std::cerr << "Need to implement splitting internal node" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
 }
 
 Cursor* Table::internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
