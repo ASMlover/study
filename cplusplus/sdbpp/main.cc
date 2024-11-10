@@ -675,6 +675,24 @@ void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_pa
     std::cerr << "Need to implement splitting internal node" << std::endl;
     std::exit(EXIT_FAILURE);
   }
+
+  sdb::u32_t right_child_page_num = *internal_node_right_child(parent);
+  void* right_child = _pager->get_page(right_child_page_num);
+
+  if (child_max_key > get_node_max_key(right_child)) {
+    *internal_node_child(parent, original_num_keys) = right_child_page_num;
+    *internal_node_key(parent, original_num_keys) = get_node_max_key(right_child);
+    *internal_node_right_child(parent) = child_page_num;
+  }
+  else {
+    for (sdb::u32_t i = original_num_keys; i > index; --i) {
+      void* destination = internal_node_cell(parent, i);
+      void* source = internal_node_cell(parent, i - 1);
+      memcpy(destination, source, INTERNAL_NODE_CELL_SIZE);
+    }
+    *internal_node_child(parent, index) = child_page_num;
+    *internal_node_key(parent, index) = child_max_key;
+  }
 }
 
 Cursor* Table::internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept {
