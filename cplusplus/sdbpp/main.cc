@@ -577,8 +577,12 @@ struct Cursor {
       return _table->create_new_root(new_page_num);
     }
     else {
-      std::cout << "Need to implement updating parent after split" << std::endl;
-      std::exit(EXIT_FAILURE);
+      sdb::u32_t parent_page_num = *node_parent(old_node);
+      sdb::u32_t new_max = get_node_max_key(old_node);
+      void* parent = _table->pager()->get_page(parent_page_num);
+
+      update_internal_node_key(parent, old_max, new_max);
+      _table->internal_node_insert(parent_page_num, new_page_num);
     }
   }
 };
@@ -660,6 +664,8 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
   sdb::u32_t left_child_max_key = get_node_max_key(left_child);
   *internal_node_key(root, 0) = left_child_max_key;
   *internal_node_right_child(root) = right_child_page_num;
+  *node_parent(left_child) = _root_page_num;
+  *node_parent(right_child) = _root_page_num;
 }
 
 void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept {
