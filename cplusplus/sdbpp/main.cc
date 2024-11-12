@@ -65,6 +65,7 @@ constexpr sdb::u32_t USERNAME_OFFSET                  = ID_OFFSET + ID_SIZE;
 constexpr sdb::u32_t EMAIL_OFFSET                     = USERNAME_OFFSET + USERNAME_SIZE;
 constexpr sdb::u32_t ROW_SIZE                         = ID_SIZE + USERNAME_SIZE + EMAIL_OFFSET;
 constexpr sdb::u32_t PAGE_SIZE                        = 4096;
+constexpr sdb::u32_t INVALID_PAGE_NUM                 = UINT32_MAX;
 
 enum class NodeType {
   NODE_INTERNAL,
@@ -245,6 +246,7 @@ inline void initialize_internal_node(void* node) noexcept {
   set_node_type(node, NodeType::NODE_INTERNAL);
   set_node_root(node, false);
   *internal_node_num_keys(node) = 0;
+  *internal_node_right_child(node) = INVALID_PAGE_NUM;
 }
 
 inline void Row::serialize(void* destination) noexcept {
@@ -408,6 +410,7 @@ struct Table {
 
   Cursor* leaf_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
   Cursor* find(sdb::u32_t key) noexcept;
+  void internal_node_split_and_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept;
   void internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept;
   Cursor* internal_node_find(sdb::u32_t page_num, sdb::u32_t key) noexcept;
 
@@ -669,6 +672,8 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
 }
 
 void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept {
+  // TODO: need modify ...
+
   void* parent = _pager->get_page(parent_page_num);
   void* child = _pager->get_page(child_page_num);
   sdb::u32_t child_max_key = get_node_max_key(child);
