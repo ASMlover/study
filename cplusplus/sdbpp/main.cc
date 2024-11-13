@@ -177,10 +177,20 @@ inline sdb::u32_t* internal_node_child(void* node, sdb::u32_t child_num) noexcep
     std::exit(EXIT_FAILURE);
   }
   else if (child_num == num_keys) {
-    return internal_node_right_child(node);
+    sdb::u32_t* right_child = internal_node_right_child(node);
+    if (INVALID_PAGE_NUM == *right_child) {
+      std::cerr << "Tried to access right child of node, but was invalid page" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    return right_child;
   }
   else {
-    return internal_node_cell(node, child_num);
+    sdb::u32_t* child = internal_node_cell(node, child_num);
+    if (INVALID_PAGE_NUM == *child) {
+      std::cerr << "Tried to access child " << child_num << " of node, but was invalid page" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    return child;
   }
 }
 
