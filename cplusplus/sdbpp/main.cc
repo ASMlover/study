@@ -683,6 +683,24 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
   *node_parent(right_child) = _root_page_num;
 }
 
+void Table::internal_node_split_and_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept {
+  sdb::u32_t old_page_num = parent_page_num;
+  void* old_node = _pager->get_page(parent_page_num);
+  sdb::u32_t old_max = get_node_max_key(old_node);
+
+  sdb::u32_t new_page_num = _pager->get_unused_page_num();
+  sdb::u32_t splitting_root = is_node_root(old_node);
+
+  void* parent;
+  void* new_node;
+  if (splitting_root) {
+    // TODO:
+  }
+  else {
+    // TODO:
+  }
+}
+
 void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept {
   // TODO: need modify ...
 
