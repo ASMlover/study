@@ -688,16 +688,56 @@ void Table::internal_node_split_and_insert(sdb::u32_t parent_page_num, sdb::u32_
   void* old_node = _pager->get_page(parent_page_num);
   sdb::u32_t old_max = get_node_max_key(old_node);
 
+  void* child = _pager->get_page(child_page_num);
+  sdb::u32_t child_max = get_node_max_key(child);
+
   sdb::u32_t new_page_num = _pager->get_unused_page_num();
   sdb::u32_t splitting_root = is_node_root(old_node);
 
   void* parent;
   void* new_node;
   if (splitting_root) {
-    // TODO:
+    create_new_root(new_page_num);
+    parent = _pager->get_page(_root_page_num);
+    old_page_num = *internal_node_child(parent, 0);
+    old_node = _pager->get_page(old_page_num);
   }
   else {
-    // TODO:
+    parent = _pager->get_page(*node_parent(old_node));
+    new_node = _pager->get_page(new_page_num);
+    initialize_internal_node(new_node);
+  }
+
+  sdb::u32_t* old_num_keys = internal_node_num_keys(old_node);
+  sdb::u32_t cur_page_num = *internal_node_right_child(old_node);
+  void* cur = _pager->get_page(cur_page_num);
+
+  internal_node_insert(new_page_num, cur_page_num);
+  *node_parent(cur) = new_page_num;
+  *internal_node_right_child(old_node) = INVALID_PAGE_NUM;
+
+  for (int i = INTERNAL_NODE_MAX_CELLS - 1; i > INTERNAL_NODE_MAX_CELLS / 2; --i) {
+    cur_page_num = *internal_node_child(old_node, i);
+    cur = _pager->get_page(cur_page_num);
+
+    internal_node_insert(new_page_num, cur_page_num);
+    *node_parent(cur) = new_page_num;
+
+    --(*old_num_keys);
+  }
+
+  *internal_node_right_child(old_node) = *internal_node_child(old_node, *old_num_keys - 1);
+  --(*old_num_keys);
+
+  sdb::u32_t max_after_split = get_node_max_key(old_node);
+  sdb::u32_t destination_page_num = child_max < max_after_split ? old_page_num : new_page_num;
+  internal_node_insert(destination_page_num, child_page_num);
+  *node_parent(child) = destination_page_num;
+
+  update_internal_node_key(parent, old_max, get_node_max_key(old_node));
+  if (!splitting_root) {
+    internal_node_insert(*node_parent(old_node), new_page_num);
+    *node_parent(new_node) = *node_parent(old_node);
   }
 }
 
