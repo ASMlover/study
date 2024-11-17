@@ -668,8 +668,23 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
   sdb::u32_t left_child_page_num = _pager->get_unused_page_num();
   void* left_child = _pager->get_page(left_child_page_num);
 
+  if (NodeType::NODE_LEAF == get_node_type(root)) {
+    initialize_internal_node(right_child);
+    initialize_internal_node(left_child);
+  }
+
   std::memcpy(left_child, root, PAGE_SIZE);
   set_node_root(left_child, false);
+
+  if (NodeType::NODE_INTERNAL == get_node_type(left_child)) {
+    void* child;
+    for (sdb::u32_t i = 0; i < *internal_node_num_keys(left_child); ++i) {
+      child = _pager->get_page(*internal_node_child(left_child, i));
+      *node_parent(child) = left_child_page_num;
+    }
+    child = _pager->get_page(*internal_node_right_child(left_child));
+    *node_parent(child) = left_child_page_num;
+  }
 
   initialize_internal_node(root);
   set_node_root(root, true);
