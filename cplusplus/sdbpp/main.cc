@@ -198,17 +198,6 @@ inline sdb::u32_t* internal_node_key(void* node, sdb::u32_t key_num) noexcept {
   return (sdb::u32_t*)((sdb::u8_t*)internal_node_cell(node, key_num) + INTERNAL_NODE_CHILD_SIZE);
 }
 
-inline sdb::u32_t get_node_max_key(void* node) noexcept {
-  switch (get_node_type(node)) {
-  case NodeType::NODE_INTERNAL:
-    return *internal_node_key(node, *internal_node_num_keys(node) - 1);
-  case NodeType::NODE_LEAF:
-    return *leaf_node_key(node, *leaf_node_num_cells(node) - 1);
-  default: break;
-  }
-  return 0;
-}
-
 inline bool is_node_root(void* node) noexcept {
   sdb::u8_t value = *((sdb::u8_t*)node + IS_ROOT_OFFSET);
   return sdb::as_type<bool>(value);
@@ -310,6 +299,14 @@ struct Pager {
   inline sdb::u32_t file_length() const noexcept { return _file_length; }
   inline sdb::u32_t num_pages() const noexcept { return _num_pages; }
   inline sdb::u32_t get_unused_page_num() const noexcept { return _num_pages; }
+
+  sdb::u32_t get_node_max_key(void* node) noexcept {
+    if (NodeType::NODE_LEAF == get_node_type(node))
+      return *leaf_node_key(node, *leaf_node_num_cells(node) - 1);
+
+    void* right_child = get_page(*internal_node_right_child(node));
+    return get_node_max_key(right_child);
+  }
 
   void flush(sdb::u32_t page_num) noexcept {
     if (NULL == _pages[page_num]) {
@@ -556,7 +553,7 @@ struct Cursor {
 
   void leaf_node_split_and_insert(sdb::u32_t key, Row* value) noexcept {
     void* old_node = _table->pager()->get_page(_page_num);
-    sdb::u32_t old_max = get_node_max_key(old_node);
+    sdb::u32_t old_max = _table->pager()->get_node_max_key(old_node);
     sdb::u32_t new_page_num = _table->pager()->get_unused_page_num();
     void* new_node = _table->pager()->get_page(new_page_num);
     initialize_leaf_node(new_node);
@@ -593,7 +590,7 @@ struct Cursor {
     }
     else {
       sdb::u32_t parent_page_num = *node_parent(old_node);
-      sdb::u32_t new_max = get_node_max_key(old_node);
+      sdb::u32_t new_max = _table->pager()->get_node_max_key(old_node);
       void* parent = _table->pager()->get_page(parent_page_num);
 
       update_internal_node_key(parent, old_max, new_max);
@@ -691,7 +688,7 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
 
   *internal_node_num_keys(root) = 1;
   *internal_node_child(root, 0) = left_child_page_num;
-  sdb::u32_t left_child_max_key = get_node_max_key(left_child);
+  sdb::u32_t left_child_max_key = _pager->get_node_max_key(left_child);
   *internal_node_key(root, 0) = left_child_max_key;
   *internal_node_right_child(root) = right_child_page_num;
   *node_parent(left_child) = _root_page_num;
@@ -701,10 +698,10 @@ void Table::create_new_root(sdb::u32_t right_child_page_num) noexcept {
 void Table::internal_node_split_and_insert(sdb::u32_t parent_page_num, sdb::u32_t child_page_num) noexcept {
   sdb::u32_t old_page_num = parent_page_num;
   void* old_node = _pager->get_page(parent_page_num);
-  sdb::u32_t old_max = get_node_max_key(old_node);
+  sdb::u32_t old_max = _pager->get_node_max_key(old_node);
 
   void* child = _pager->get_page(child_page_num);
-  sdb::u32_t child_max = get_node_max_key(child);
+  sdb::u32_t child_max = _pager->get_node_max_key(child);
 
   sdb::u32_t new_page_num = _pager->get_unused_page_num();
   sdb::u32_t splitting_root = is_node_root(old_node);
@@ -744,12 +741,12 @@ void Table::internal_node_split_and_insert(sdb::u32_t parent_page_num, sdb::u32_
   *internal_node_right_child(old_node) = *internal_node_child(old_node, *old_num_keys - 1);
   --(*old_num_keys);
 
-  sdb::u32_t max_after_split = get_node_max_key(old_node);
+  sdb::u32_t max_after_split = _pager->get_node_max_key(old_node);
   sdb::u32_t destination_page_num = child_max < max_after_split ? old_page_num : new_page_num;
   internal_node_insert(destination_page_num, child_page_num);
   *node_parent(child) = destination_page_num;
 
-  update_internal_node_key(parent, old_max, get_node_max_key(old_node));
+  update_internal_node_key(parent, old_max, _pager->get_node_max_key(old_node));
   if (!splitting_root) {
     internal_node_insert(*node_parent(old_node), new_page_num);
     *node_parent(new_node) = *node_parent(old_node);
@@ -761,7 +758,7 @@ void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_pa
 
   void* parent = _pager->get_page(parent_page_num);
   void* child = _pager->get_page(child_page_num);
-  sdb::u32_t child_max_key = get_node_max_key(child);
+  sdb::u32_t child_max_key = _pager->get_node_max_key(child);
   sdb::u32_t index = internal_node_find_child(parent, child_max_key);
 
   sdb::u32_t original_num_keys = *internal_node_num_keys(parent);
@@ -775,9 +772,9 @@ void Table::internal_node_insert(sdb::u32_t parent_page_num, sdb::u32_t child_pa
   sdb::u32_t right_child_page_num = *internal_node_right_child(parent);
   void* right_child = _pager->get_page(right_child_page_num);
 
-  if (child_max_key > get_node_max_key(right_child)) {
+  if (child_max_key > _pager->get_node_max_key(right_child)) {
     *internal_node_child(parent, original_num_keys) = right_child_page_num;
-    *internal_node_key(parent, original_num_keys) = get_node_max_key(right_child);
+    *internal_node_key(parent, original_num_keys) = _pager->get_node_max_key(right_child);
     *internal_node_right_child(parent) = child_page_num;
   }
   else {
