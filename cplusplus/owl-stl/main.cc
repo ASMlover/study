@@ -25,7 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
-#include "owl_type_traits.hh"
+#include "owl_iterator.hh"
+#include "owl_allocator.hh"
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
