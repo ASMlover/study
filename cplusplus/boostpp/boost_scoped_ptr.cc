@@ -27,7 +27,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <iostream>
 
-void test_scoped_ptr() noexcept {
+void boost_scoped_ptr() noexcept {
   boost::scoped_ptr<int> p{new int{1}};
   std::cout << *p << std::endl;
 
