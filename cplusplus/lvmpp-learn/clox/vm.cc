@@ -197,22 +197,33 @@ void VM::trace_references() noexcept {
   }
 }
 
-void VM::blacken_object(Obj* object) noexcept {
-  switch (object->type()) {
-  case ObjType::OBJ_FUNCTION:
-    {
-      ObjFunction* function = object->as_function();
-      mark_object(function->name());
-      function->chunk()->iter_constants([this](Value& value) {
-            mark_value(value);
-          });
-    } break;
-  case ObjType::OBJ_UPVALUE:
-    mark_value(object->as_upvalue()->closed()); break;
-  case ObjType::OBJ_NATIVE:
-  case ObjType::OBJ_STRING:
-    break;
+void VM::sweep() noexcept {
+  for (auto it = strings_.begin(); it != strings_.end();) {
+    if (!it->second->is_marked())
+      strings_.erase(it++);
+    else
+      ++it;
   }
+
+  for (auto it = objects_.begin(); it != objects_.end();) {
+    Obj* object = *it;
+    if (!object->is_marked()) {
+      free_object(object);
+      objects_.erase(it++);
+    }
+    else {
+      object->set_marked(false);
+      ++it;
+    }
+  }
+}
+
+void VM::blacken_object(Obj* object) noexcept {
+#if defined(_CLOX_DEBUG_LOG_GC)
+  std::cout << (void*)object << " blacken " << object->stringify() << std::endl;
+#endif
+
+  object->blacken();
 }
 
 void VM::free_object(Obj* o) noexcept {
@@ -253,6 +264,8 @@ void VM::collect_garbage() noexcept {
 #endif
 
   mark_roots();
+  trace_references();
+  sweep();
 
 #if defined(_CLOX_DEBUG_LOG_GC)
   std::cout << "----- gc end -----" << std::endl;
