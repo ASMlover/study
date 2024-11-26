@@ -27,7 +27,9 @@
 #include <iostream>
 #include <boost/scoped_array.hpp>
 
-void test_scoped_array() noexcept {
+void boost_scoped_array() noexcept {
+  std::cout << "========= [scoped_array] =========" << std::endl;
+
   boost::scoped_array<int> p{new int [2]};
   *p.get() = 1;
   p[1] = 2;
