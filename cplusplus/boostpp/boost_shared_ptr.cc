@@ -28,6 +28,8 @@
 #include <boost/shared_ptr.hpp>
 
 void boost_shared_ptr() noexcept {
+  std::cout << "========= [shared_ptr] =========" << std::endl;
+
   boost::shared_ptr<int> p1{new int{1}};
   std::cout << *p1 << std::endl;
 
