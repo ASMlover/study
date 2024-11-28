@@ -26,9 +26,18 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 
+extern void boost_scoped_ptr() noexcept;
+extern void boost_scoped_array() noexcept;
+extern void boost_shared_ptr() noexcept;
+
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
   std::cout << "Hello, Boost" << std::endl;
+
+  boost_scoped_ptr();
+  boost_scoped_array();
+  boost_shared_ptr();
+
   return 0;
 }
