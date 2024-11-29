@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <boost/shared_ptr.hpp>
+#include <Windows.h>
 
 void boost_shared_ptr() noexcept {
   std::cout << "========= [shared_ptr] =========" << std::endl;
@@ -39,4 +40,7 @@ void boost_shared_ptr() noexcept {
   p1.reset();
 
   std::cout << std::boolalpha << static_cast<bool>(p2) << std::endl;
+
+  std::cout << "--------- [shared_ptr.OpenProcess] ---------" << std::endl;
+  boost::shared_ptr<void> handle(OpenProcess(PROCESS_SET_INFORMATION, FALSE, GetCurrentProcessId()), CloseHandle);
 }
