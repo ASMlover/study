@@ -24,7 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#define BOOST_SP_USE_QUICK_ALLOCATOR
 #include <iostream>
+#include <ctime>
 #include <boost/shared_ptr.hpp>
 #include <Windows.h>
 
@@ -43,4 +45,14 @@ void boost_shared_ptr() noexcept {
 
   std::cout << "--------- [shared_ptr.OpenProcess] ---------" << std::endl;
   boost::shared_ptr<void> handle(OpenProcess(PROCESS_SET_INFORMATION, FALSE, GetCurrentProcessId()), CloseHandle);
+
+  std::cout << "--------- [shared_ptr.USE_QUICK_ALLOCATOR] ---------" << std::endl;
+  {
+    boost::shared_ptr<int> p;
+    std::time_t then = std::time(nullptr);
+    for (int i = 0; i < 10000000; ++i)
+      p.reset(new int{i});
+    std::time_t now = std::time(nullptr);
+    std::cout << now - then << std::endl;
+  }
 }
