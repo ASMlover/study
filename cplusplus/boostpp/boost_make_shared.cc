@@ -32,7 +32,7 @@ void boost_make_shared() noexcept {
   std::cout << "========= [make_shared] =========" << std::endl;
 
   auto p1 = boost::make_shared<int>(1);
-  std::cout << typeid(p1).name() << std::endl;
+  std::cout << "[demo.make_shared] type(p1).name " << typeid(p1).name() << std::endl;
   auto p2 = boost::make_shared<int[]>(10);
-  std::cout << typeid(p2).name() << std::endl;
+  std::cout << "[demo.make_shared] type(p2).name " << typeid(p2).name() << std::endl;
 }
