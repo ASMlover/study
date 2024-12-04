@@ -34,7 +34,7 @@ void boost_scoped_array() noexcept {
   *p.get() = 1;
   p[1] = 2;
 
-  std::cout << p[0] << " " << p[1] << std::endl;
+  std::cout << "[demo.scoped_array] " << p[0] << " " << p[1] << std::endl;
 
   p.reset(new int[3]);
 }
