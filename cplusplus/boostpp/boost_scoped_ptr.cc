@@ -31,11 +31,11 @@ void boost_scoped_ptr() noexcept {
   std::cout << "========= [scoped_ptr] =========" << std::endl;
 
   boost::scoped_ptr<int> p{new int{1}};
-  std::cout << *p << std::endl;
+  std::cout << "[demo.scoped_ptr] " << *p << std::endl;
 
   p.reset(new int{2});
-  std::cout << *p.get() << std::endl;
+  std::cout << "[demo.scoped_ptr] " << *p.get() << std::endl;
 
   p.reset();
-  std::cout << std::boolalpha << static_cast<bool>(p) << std::endl;
+  std::cout << "[demo.scoped_ptr] " << std::boolalpha << static_cast<bool>(p) << std::endl;
 }
