@@ -35,5 +35,5 @@ void boost_shared_array() noexcept {
     boost::shared_array<int> p2{p1};
     p2[0] = 1;
   }
-  std::cout << p1[0] << std::endl;
+  std::cout << "[demo.shared_array] " << p1[0] << std::endl;
 }
