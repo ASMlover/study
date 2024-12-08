@@ -34,14 +34,14 @@ void boost_shared_ptr() noexcept {
   std::cout << "========= [shared_ptr] =========" << std::endl;
 
   boost::shared_ptr<int> p1{new int{1}};
-  std::cout << *p1 << std::endl;
+  std::cout << "[demo.shared_ptr] " << *p1 << std::endl;
 
   boost::shared_ptr<int> p2{p1};
   p1.reset(new int{2});
-  std::cout << *p1.get() << std::endl;
+  std::cout << "[demo.shared_ptr] " << *p1.get() << std::endl;
   p1.reset();
 
-  std::cout << std::boolalpha << static_cast<bool>(p2) << std::endl;
+  std::cout << "[demo.shared_ptr] " << std::boolalpha << static_cast<bool>(p2) << std::endl;
 
   std::cout << "--------- [shared_ptr.OpenProcess] ---------" << std::endl;
   boost::shared_ptr<void> handle(OpenProcess(PROCESS_SET_INFORMATION, FALSE, GetCurrentProcessId()), CloseHandle);
@@ -53,6 +53,6 @@ void boost_shared_ptr() noexcept {
     for (int i = 0; i < 10000000; ++i)
       p.reset(new int{i});
     std::time_t now = std::time(nullptr);
-    std::cout << now - then << std::endl;
+    std::cout << "[demo.shared_ptr] USE_QUICK_ALLOCATOR " << now - then << std::endl;
   }
 }
