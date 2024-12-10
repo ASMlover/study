@@ -25,6 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/ptr_container/ptr_inserter.hpp>
+#include <array>
+#include <algorithm>
 #include <iostream>
 
 void boost_ptr_vector() noexcept {
@@ -34,4 +37,10 @@ void boost_ptr_vector() noexcept {
   v.push_back(new int{1});
   v.push_back(new int{2});
   std::cout << "[demo.ptr_vector] " << v.back() << std::endl;
+
+  std::cout << "--------- [ptr_vector.ptr_inserter] ---------" << std::endl;
+  boost::ptr_vector<int> v2;
+  std::array<int, 3> a{{0 , 1, 2}};
+  std::copy(a.begin(), a.end(), boost::ptr_container::ptr_back_inserter(v2));
+  std::cout << "[demo.ptr_vector] " << v2.size() << std::endl;
 }
