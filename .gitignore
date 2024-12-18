@@ -19,6 +19,7 @@ tolset
 logging
 .vs
 .ycm_extra_conf.py
+.vscode
 Makefile
 build
 cmake-build
