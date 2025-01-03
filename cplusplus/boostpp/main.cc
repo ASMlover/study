@@ -29,15 +29,27 @@
 extern void boost_scoped_ptr() noexcept;
 extern void boost_scoped_array() noexcept;
 extern void boost_shared_ptr() noexcept;
+extern void boost_make_shared() noexcept;
+extern void boost_shared_array() noexcept;
+extern void boost_weak_ptr() noexcept;
+extern void boost_ptr_vector() noexcept;
+extern void boost_ptr_set() noexcept;
+extern void boost_scope_exit() noexcept;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
 
-  std::cout << "Hello, Boost" << std::endl;
+  std::cout << "Hello, Boost !!!" << std::endl;
 
   boost_scoped_ptr();
   boost_scoped_array();
   boost_shared_ptr();
+  boost_make_shared();
+  boost_shared_array();
+  boost_weak_ptr();
+  boost_ptr_vector();
+  boost_ptr_set();
+  boost_scope_exit();
 
   return 0;
 }
