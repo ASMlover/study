@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/scope_exit.hpp>
 #include <iostream>
+#include <utility>
 
 static int* foo() {
   int* i = new int{10};
@@ -38,9 +39,40 @@ static int* foo() {
   return i;
 }
 
+template <typename T> struct scope_exit {
+  T t_;
+
+  scope_exit(T&& t) noexcept
+    : t_{std::move(t)} {
+  }
+
+  ~scope_exit() noexcept {
+    t_();
+  }
+};
+
+template <typename T> scope_exit<T> make_scope_exit(T&& t) noexcept {
+  return scope_exit<T>{std::move(t)};
+}
+
+static int* foo2() noexcept {
+  int* i = new int{10};
+  auto cleanup = make_scope_exit([&i]() mutable {
+    delete i;
+    i = nullptr;
+  });
+
+  std::cout << "[demo.scope_exit] " << *i << std::endl;
+  return i;
+}
+
 void boost_scope_exit() noexcept {
   std::cout << "========= [scope_exit] =========" << std::endl;
 
   int* j = foo();
   std::cout << "[demo.scope_exit] " << j << std::endl;
+
+  std::cout << "--------- [scope_exit.make_scope_exit] ---------" << std::endl;
+  int* j2 = foo2();
+  std::cout << "[demo.scope_exit] " << j2 << std::endl;
 }
