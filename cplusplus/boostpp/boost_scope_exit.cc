@@ -66,6 +66,27 @@ static int* foo2() noexcept {
   return i;
 }
 
+struct X {
+  int i;
+
+  void foo() noexcept {
+    i = 10;
+    BOOST_SCOPE_EXIT(void) {
+      std::cout << "[demo.scope_exit.X] last" << std::endl;
+    } BOOST_SCOPE_EXIT_END
+    BOOST_SCOPE_EXIT(this_) {
+      this_->i = 20;
+      std::cout << "[demo.scope_exit.X] first" << std::endl;
+    } BOOST_SCOPE_EXIT_END;
+  }
+};
+
+static void foo3() noexcept {
+  X obj;
+  obj.foo();
+  std::cout << "[demo.scope_exit.X] " << obj.i << std::endl;
+}
+
 void boost_scope_exit() noexcept {
   std::cout << "========= [scope_exit] =========" << std::endl;
 
@@ -75,4 +96,7 @@ void boost_scope_exit() noexcept {
   std::cout << "--------- [scope_exit.make_scope_exit] ---------" << std::endl;
   int* j2 = foo2();
   std::cout << "[demo.scope_exit] " << j2 << std::endl;
+
+  std::cout << "--------- [scope_exit.BOOST_SCOPE_EXIT] ---------" << std::endl;
+  foo3();
 }
