@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/scope_exit.hpp>
 #include <iostream>
+#include <memory>
 #include <utility>
 
 static int* foo() {
@@ -87,6 +88,22 @@ static void foo3() noexcept {
   std::cout << "[demo.scope_exit.X] " << obj.i << std::endl;
 }
 
+struct CloseFile {
+  inline void operator()(FILE* file) noexcept {
+    fclose(file);
+  }
+};
+
+static void write_to_file(const std::string& s) noexcept {
+  std::unique_ptr<FILE, CloseFile> file{fopen("Hello-world.txt", "a")};
+  fprintf(file.get(), s.c_str());
+}
+
+static void foo4() noexcept {
+  write_to_file("Hello, ");
+  write_to_file("wrold!!");
+}
+
 void boost_scope_exit() noexcept {
   std::cout << "========= [scope_exit] =========" << std::endl;
 
@@ -99,4 +116,7 @@ void boost_scope_exit() noexcept {
 
   std::cout << "--------- [scope_exit.BOOST_SCOPE_EXIT] ---------" << std::endl;
   foo3();
+
+  std::cout << "--------- [scope_exit.CloseFile] ---------" << std::endl;
+  foo4();
 }
