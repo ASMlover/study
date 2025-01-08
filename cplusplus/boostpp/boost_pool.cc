@@ -25,9 +25,25 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/simple_segregated_storage.hpp>
+#include <boost/pool/object_pool.hpp>
 #include <vector>
 #include <cstddef>
 #include <iostream>
+
+static void boost_object_pool() noexcept {
+  std::cout << "--------- [pool.object_pool] ---------" << std::endl;
+  boost::object_pool<int> pool;
+
+  int* i = pool.malloc();
+  *i = 1;
+
+  int* j = pool.construct(2);
+
+  std::cout << "[demo.pool.object_pool] *i = " << *i << ", *j = " << *j << std::endl;
+
+  pool.destroy(i);
+  pool.destroy(j);
+}
 
 void boost_pool() noexcept {
   std::cout << "========= [pool] =========" << std::endl;
@@ -44,4 +60,6 @@ void boost_pool() noexcept {
 
   storage.free(i);
   storage.free_n(j, 1, 512);
+
+  boost_object_pool();
 }
