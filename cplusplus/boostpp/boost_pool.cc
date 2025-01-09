@@ -45,6 +45,15 @@ static void boost_object_pool() noexcept {
   pool.destroy(j);
 }
 
+static void boost_object_pool2() noexcept {
+  std::cout << "--------- [pool.object_pool.2] ---------" << std::endl;
+  boost::object_pool<int> pool{32, 0};
+
+  pool.construct();
+  std::cout << "[demo.pool.object_pool] " << pool.get_next_size() << std::endl;
+  pool.set_next_size(8);
+}
+
 void boost_pool() noexcept {
   std::cout << "========= [pool] =========" << std::endl;
 
@@ -62,4 +71,5 @@ void boost_pool() noexcept {
   storage.free_n(j, 1, 512);
 
   boost_object_pool();
+  boost_object_pool2();
 }
