@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/simple_segregated_storage.hpp>
 #include <boost/pool/object_pool.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include <vector>
 #include <cstddef>
 #include <iostream>
@@ -54,6 +55,17 @@ static void boost_object_pool2() noexcept {
   pool.set_next_size(8);
 }
 
+static void boost_pool_allocator() noexcept {
+  std::cout << "--------- [pool.pool_allocator] ---------" << std::endl;
+
+  std::vector<int, boost::pool_allocator<int>> v;
+  for (int i = 0; i < 1000; ++i)
+    v.push_back(i);
+
+  v.clear();
+  boost::singleton_pool<boost::pool_allocator_tag, sizeof(int)>::purge_memory();
+}
+
 void boost_pool() noexcept {
   std::cout << "========= [pool] =========" << std::endl;
 
@@ -72,4 +84,5 @@ void boost_pool() noexcept {
 
   boost_object_pool();
   boost_object_pool2();
+  boost_pool_allocator();
 }
