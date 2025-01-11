@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/simple_segregated_storage.hpp>
+#include <boost/pool/singleton_pool.hpp>
 #include <boost/pool/object_pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <vector>
@@ -53,6 +54,23 @@ static void boost_object_pool2() noexcept {
   pool.construct();
   std::cout << "[demo.pool.object_pool] " << pool.get_next_size() << std::endl;
   pool.set_next_size(8);
+}
+
+struct IntPool {};
+static void boost_singleton_pool() noexcept {
+  using SingletonIntPool = boost::singleton_pool<IntPool, sizeof(int)>;
+
+  std::cout << "--------- [pool.singleton_pool] ---------" << std::endl;
+  int* i = static_cast<int*>(SingletonIntPool::malloc());
+  *i = 1;
+
+  int* j = static_cast<int*>(SingletonIntPool::ordered_malloc(10));
+  j[9] = 2;
+
+  std::cout << "[demo.pool.singleton_pool] *i = " << *i << ", j[9] = " << j[9] << std::endl;
+
+  SingletonIntPool::release_memory();
+  SingletonIntPool::purge_memory();
 }
 
 static void boost_pool_allocator() noexcept {
@@ -84,5 +102,6 @@ void boost_pool() noexcept {
 
   boost_object_pool();
   boost_object_pool2();
+  boost_singleton_pool();
   boost_pool_allocator();
 }
