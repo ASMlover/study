@@ -29,6 +29,7 @@
 #include <boost/pool/object_pool.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <vector>
+#include <list>
 #include <cstddef>
 #include <iostream>
 
@@ -84,6 +85,20 @@ static void boost_pool_allocator() noexcept {
   boost::singleton_pool<boost::pool_allocator_tag, sizeof(int)>::purge_memory();
 }
 
+static void boost_fast_pool_allocator() noexcept {
+  using Allocator = boost::fast_pool_allocator<int,
+        boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 64, 128>;
+
+  std::cout << "--------- [pool.fast_pool_allocator] ---------" << std::endl;
+
+  std::list<int, Allocator> l;
+  for (int i = 0; i < 1000; ++i)
+    l.push_back(i);
+
+  l.clear();
+  boost::singleton_pool<boost::fast_pool_allocator_tag, sizeof(int)>::purge_memory();
+}
+
 void boost_pool() noexcept {
   std::cout << "========= [pool] =========" << std::endl;
 
@@ -104,4 +119,5 @@ void boost_pool() noexcept {
   boost_object_pool2();
   boost_singleton_pool();
   boost_pool_allocator();
+  boost_fast_pool_allocator();
 }
