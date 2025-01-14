@@ -36,6 +36,7 @@ extern void boost_ptr_vector() noexcept;
 extern void boost_ptr_set() noexcept;
 extern void boost_scope_exit() noexcept;
 extern void boost_pool() noexcept;
+extern void boost_string_algorithms() noexcept;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -52,6 +53,7 @@ int main(int argc, char* argv[]) {
   boost_ptr_set();
   boost_scope_exit();
   boost_pool();
+  boost_string_algorithms();
 
   return 0;
 }
