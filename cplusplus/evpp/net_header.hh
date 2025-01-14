@@ -37,6 +37,7 @@
 # include <ws2ipdef.h>
 
   using socket_t                  = SOCKET;
+  using ev_socket_t               = intptr_t;
   using iovec                     = _WSABUF;
 # define iov_base                 buf
 # define iov_len                  len
@@ -94,6 +95,17 @@
 #   endif
 # endif
 
+# define EVUTIL_ERR_RW_RETRIABLE(e)\
+    ((e) == WSAEWOULDBLOCK || (e) == WSAETIMEDOUT || (e) == WSAEINTR)
+
+# define EVUTIL_ERR_CONNECT_RETRIABLE(e)\
+    ((e) == WSAEWOULDBLOCK || (e) == WSAEINTR || (e) == WSAEINPROGRESS || (e) == WSAEINVAL)
+
+# define EVUTIL_ERR_ACCEPT_RETRIABLE(e)     EVUTIL_ERR_RW_RETRIABLE(e)
+
+# define EVUTIL_ERR_CONNECT_REFUSED(e)      ((e) == WSAECONNREFUSED)
+
+int readv(socket_t sockfd, struct iovec* iov, int iovcnt);
 #else
 # include <unistd.h>
 # include <fcntl.h>
@@ -104,7 +116,17 @@
 # include <sys/uio.h>
 # include <arpa/inet.h>
 
+  using socket_t                  = int;
+  using ev_socket_t               = int;
+
 # if !defined(INVALID_SOCKET)
 #   define INVALID_SOCKET         (-1)
 # endif
+
+# define EVUTIL_ERR_RW_RETRIABLE(e)         ((e) == EINTR || (e) == EAGAIN)
+# define EVUTIL_ERR_CONNECT_RETRIABLE(e)    ((e) == EINTR || (e) == EINPROGRESS)
+# define EVUTIL_ERR_ACCEPT_RETRIABLE(e)     ((e) == EINTR || (e) == EAGAIN || (e) == ECONNABORTED)
+# define EVUTIL_ERR_CONNECT_REFUSED(e)      ((e) == ECONNREFUSED)
 #endif
+
+using signal_number_t             = ev_socket_t;
