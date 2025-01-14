@@ -26,6 +26,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "common.hh"
 #include "slice.hh"
+#include "any.hh"
+#include "socket_ops.hh"
 
 int main(int argc, char* argv[]) {
   EV_UNUSED(argc), EV_UNUSED(argv);
