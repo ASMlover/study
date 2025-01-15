@@ -26,17 +26,30 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/algorithm/string.hpp>
 #include <string>
+#include <locale>
 #include <iostream>
 
 static void boost_to_upper_copy() noexcept {
   std::cout << "--------- [string_algorithms.to_upper_copy] ---------" << std::endl;
 
   std::string s = "Boost C++ Libraries";
-  std::cout << boost::algorithm::to_upper_copy(s) << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::to_upper_copy(s) << std::endl;
+}
+
+static void boost_to_upper_copy2() noexcept {
+  std::cout << "--------- [string_algorithms.to_upper_copy2] ---------" << std::endl;
+
+  std::string s = "Boost C++ k\xfct\xfcphaneleri";
+  std::string upper_case1 = boost::algorithm::to_upper_copy(s);
+  std::string upper_case2 = boost::algorithm::to_upper_copy(s, std::locale{"Turkish"});
+  std::locale::global(std::locale{"Turkish"});
+  std::cout << "[demo.string_algorithms] " << upper_case1 << std::endl;
+  std::cout << "[demo.string_algorithms] " << upper_case2 << std::endl;
 }
 
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
   boost_to_upper_copy();
+  boost_to_upper_copy2();
 }
