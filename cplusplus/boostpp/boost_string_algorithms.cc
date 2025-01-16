@@ -47,9 +47,22 @@ static void boost_to_upper_copy2() noexcept {
   std::cout << "[demo.string_algorithms] " << upper_case2 << std::endl;
 }
 
+static void boost_remove_from_string() noexcept {
+  std::cout << "--------- [string_algorithms.remove_from_string] ---------" << std::endl;
+
+  std::string s = "Boost C++ Libraries";
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_first_copy(s, "s") << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_nth_copy(s, "s", 0) << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_last_copy(s, "s") << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_all_copy(s, "s") << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_head_copy(s, 5) << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_tail_copy(s, 9) << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
   boost_to_upper_copy();
   boost_to_upper_copy2();
+  boost_remove_from_string();
 }
