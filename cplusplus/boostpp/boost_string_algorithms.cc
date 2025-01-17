@@ -59,10 +59,21 @@ static void boost_remove_from_string() noexcept {
   std::cout << "[demo.string_algorithms] " << boost::algorithm::erase_tail_copy(s, 9) << std::endl;
 }
 
+static void boost_search_substring() noexcept {
+  std::cout << "--------- [string_algorithms.search_substring] ---------" << std::endl;
+
+  std::string s = "Boost C++ Libraries";
+  boost::iterator_range<std::string::iterator> r = boost::algorithm::find_first(s, "C++");
+  std::cout << "[demo.string_algorithms] " << r << std::endl;
+  r = boost::algorithm::find_first(s, "xyz");
+  std::cout << "[demo.string_algorithms] " << r << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
   boost_to_upper_copy();
   boost_to_upper_copy2();
   boost_remove_from_string();
+  boost_search_substring();
 }
