@@ -27,6 +27,7 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <locale>
+#include <vector>
 #include <iostream>
 
 static void boost_to_upper_copy() noexcept {
@@ -69,6 +70,13 @@ static void boost_search_substring() noexcept {
   std::cout << "[demo.string_algorithms] " << r << std::endl;
 }
 
+static void boost_concatenate_string() noexcept {
+  std::cout << "--------- [string_algorithms.concatenate_string] --------" << std::endl;
+
+  std::vector<std::string> v{"Boost", "C++", "Libraries"};
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::join(v, " ") << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
@@ -76,4 +84,5 @@ void boost_string_algorithms() noexcept {
   boost_to_upper_copy2();
   boost_remove_from_string();
   boost_search_substring();
+  boost_concatenate_string();
 }
