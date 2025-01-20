@@ -89,6 +89,15 @@ static void boost_replace_string() noexcept {
   std::cout << "[demo.string_algorithms] " << boost::algorithm::replace_tail_copy(s, 9, "LIBRARIES") << std::endl;
 }
 
+static void boost_trim_string() noexcept {
+  std::cout << "--------- [string_algorithms.trim_string] ---------" << std::endl;
+
+  std::string s = "\t Boost C++ Libraries \t";
+  std::cout << "[demo.string_algorithms] _" << boost::algorithm::trim_left_copy(s) << "_" << std::endl;
+  std::cout << "[demo.string_algorithms] _" << boost::algorithm::trim_right_copy(s) << "_" << std::endl;
+  std::cout << "[demo.string_algorithms] _" << boost::algorithm::trim_copy(s) << "_" << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
@@ -98,4 +107,5 @@ void boost_string_algorithms() noexcept {
   boost_search_substring();
   boost_concatenate_string();
   boost_replace_string();
+  boost_trim_string();
 }
