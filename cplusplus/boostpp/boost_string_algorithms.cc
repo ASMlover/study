@@ -98,6 +98,15 @@ static void boost_trim_string() noexcept {
   std::cout << "[demo.string_algorithms] _" << boost::algorithm::trim_copy(s) << "_" << std::endl;
 }
 
+static void boost_create_predicates() noexcept {
+  std::cout << "--------- [string_algorithms.create_predicates] ---------" << std::endl;
+
+  std::string s = "--Boost C++ Libraries--";
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::trim_left_copy_if(s, boost::algorithm::is_any_of("-")) << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::trim_right_copy_if(s, boost::algorithm::is_any_of("-")) << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::trim_copy_if(s, boost::algorithm::is_any_of("-")) << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
@@ -108,4 +117,5 @@ void boost_string_algorithms() noexcept {
   boost_concatenate_string();
   boost_replace_string();
   boost_trim_string();
+  boost_create_predicates();
 }
