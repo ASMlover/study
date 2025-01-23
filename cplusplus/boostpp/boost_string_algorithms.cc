@@ -116,6 +116,17 @@ static void boost_create_predicates2() noexcept {
   std::cout << "[demo.string_algorithms] " << boost::algorithm::trim_copy_if(s, boost::algorithm::is_digit()) << std::endl;
 }
 
+static void boost_compare_string() noexcept {
+  std::cout << "--------- [string_algorithms.compare_string] ---------" << std::endl;
+
+  std::string s = "Boost C++ Libraries";
+  std::cout.setf(std::ios::boolalpha);
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::starts_with(s, "Boost") << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::ends_with(s, "Libraries") << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::contains(s, "C++") << std::endl;
+  std::cout << "[demo.string_algorithms] " << boost::algorithm::lexicographical_compare(s, "Boost") << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
@@ -128,4 +139,5 @@ void boost_string_algorithms() noexcept {
   boost_trim_string();
   boost_create_predicates();
   boost_create_predicates2();
+  boost_compare_string();
 }
