@@ -127,6 +127,15 @@ static void boost_compare_string() noexcept {
   std::cout << "[demo.string_algorithms] " << boost::algorithm::lexicographical_compare(s, "Boost") << std::endl;
 }
 
+static void boost_split_string() noexcept {
+  std::cout << "--------- [string_algorithms.split_string] ---------" << std::endl;
+
+  std::string s = "Boost C++ Libraries";
+  std::vector<std::string> v;
+  boost::algorithm::split(v, s, boost::algorithm::is_space());
+  std::cout << "[demo.string_algorithms] " << v.size() << std::endl;
+}
+
 void boost_string_algorithms() noexcept {
   std::cout << "========= [string_algorithms] =========" << std::endl;
 
@@ -140,4 +149,5 @@ void boost_string_algorithms() noexcept {
   boost_create_predicates();
   boost_create_predicates2();
   boost_compare_string();
+  boost_split_string();
 }
