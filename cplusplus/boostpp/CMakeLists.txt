@@ -79,11 +79,15 @@ add_executable(${PROJECT_NAME} ${BOOSTPP_HEADERS} ${BOOSTPP_SOURCES})
 if (CMAKE_SYSTEM_NAME MATCHES "Windows")
   if (CMAKE_BUILD_TYPE MATCHES "Debug")
     target_link_libraries(${PROJECT_NAME}
-      libboost_context-vc142-mt-gd-x64-1_72.lib libboost_system-vc142-mt-gd-x64-1_72.lib)
+      libboost_context-vc142-mt-gd-x64-1_72.lib
+      libboost_system-vc142-mt-gd-x64-1_72.lib
+      libboost_regex-vc142-mt-gd-x64-1_72.lib)
   else()
     target_link_libraries(${PROJECT_NAME}
-      libboost_context-vc142-mt-x64-1_72.lib libboost_system-vc142-mt-x64-1_72.lib)
+      libboost_context-vc142-mt-x64-1_72.lib
+      libboost_system-vc142-mt-x64-1_72.lib
+      libboost_regex-vc142-mt-x64-1_72.lib)
   endif()
 else()
-  target_link_libraries(${PROJECT_NAME} pthread boost_context boost_system)
+  target_link_libraries(${PROJECT_NAME} pthread boost_context boost_system boost_regex)
 endif()
