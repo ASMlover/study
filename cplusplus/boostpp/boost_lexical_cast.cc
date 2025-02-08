@@ -37,8 +37,20 @@ static void boost_basic_lexical_cast() noexcept {
   std::cout << "[demo.lexical_cast] " << d << std::endl;
 }
 
+static void boost_bad_lexical_cast() noexcept {
+  std::cout << "--------- [lexical_cast.bad_lexical_cast] ---------" << std::endl;
+
+  try {
+    int i = boost::lexical_cast<int>("abc");
+    std::cout << "[demo.lexical_cast] " << i << std::endl;
+  } catch (const boost::bad_lexical_cast& e) {
+    std::cerr << "[demo.lexical_cast] " << e.what() << std::endl;
+  }
+}
+
 void boost_lexical_cast() noexcept {
   std::cout << "========= [lexical_cast] =========" << std::endl;
 
   boost_basic_lexical_cast();
+  boost_bad_lexical_cast();
 }
