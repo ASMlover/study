@@ -31,6 +31,7 @@ static void boost_basic_format() noexcept {
   std::cout << "--------- [format.basic_format] ---------" << std::endl;
 
   // std::cout << "[demo.format] " << (boost::format{"%1%.%2%.%3%"} % 12 % 5 % 2014) << std::endl;
+  // std::cout << "[demo.format] " << boost::format{"%2%/%1%/%3%"} % 12 % 5 % 2014 << std::endl;
 }
 
 void boost_format() noexcept {
