@@ -25,7 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/algorithm/string.hpp>
-// #include <boost/algorithm/string/regex.hpp>
+#include <boost/algorithm/string/regex.hpp>
 #include <string>
 #include <locale>
 #include <vector>
@@ -140,9 +140,9 @@ static void boost_split_string() noexcept {
 static void boost_search_with_regex() noexcept {
   std::cout << "--------- [string_algorithms.search_with_regex] ---------" << std::endl;
 
-  // std::string s = "Boost C++ Libraries";
-  // boost::iterator_range<std::string::iterator> r = boost::algorithm::find_regex(s, boost::regex{"\\w\\+\\+"});
-  // std::cout << "[demo.string_algorithms] " << r << std::endl;
+  std::string s = "Boost C++ Libraries";
+  boost::iterator_range<std::string::iterator> r = boost::algorithm::find_regex(s, boost::regex{"\\w\\+\\+"});
+  std::cout << "[demo.string_algorithms] " << r << std::endl;
 }
 
 void boost_string_algorithms() noexcept {
