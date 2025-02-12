@@ -36,8 +36,21 @@ static void boost_compare_string_with_regex() noexcept {
   std::cout << "[demo.regex] " << std::boolalpha << boost::regex_match(s, expr) << std::endl;
 }
 
+static void boost_search_with_regex() noexcept {
+  std::cout << "--------- [regex.search_with_regex] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  boost::regex expr{"(\\w+)\\s(\\w+)"};
+  boost::smatch what;
+  if (boost::regex_search(s, what, expr)) {
+    std::cout << "[demo.regex] " << what[0] << std::endl;
+    std::cout << "[demo.regex] " << what[1] << "_" << what[2] << std::endl;
+  }
+}
+
 void boost_regex() noexcept {
   std::cout << "========= [regex] =========" << std::endl;
 
   boost_compare_string_with_regex();
+  boost_search_with_regex();
 }
