@@ -38,6 +38,8 @@ extern void boost_scope_exit() noexcept;
 extern void boost_pool() noexcept;
 extern void boost_string_algorithms() noexcept;
 extern void boost_lexical_cast() noexcept;
+extern void boost_format() noexcept;
+extern void boost_regex() noexcept;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -56,6 +58,8 @@ int main(int argc, char* argv[]) {
   boost_pool();
   boost_string_algorithms();
   boost_lexical_cast();
+  boost_format();
+  boost_regex();
 
   return 0;
 }
