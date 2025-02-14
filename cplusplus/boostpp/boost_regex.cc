@@ -48,9 +48,19 @@ static void boost_search_with_regex() noexcept {
   }
 }
 
+static void boost_replace_with_regex() noexcept {
+  std::cout << "--------- [regex.replace_with_regex] ---------" << std::endl;
+
+  std::string s = " Boost Libraries ";
+  boost::regex expr{"\\s"};
+  std::string fmt{"_"};
+  std::cout << "[demo.regex] " << boost::regex_replace(s, expr, fmt) << std::endl;
+}
+
 void boost_regex() noexcept {
   std::cout << "========= [regex] =========" << std::endl;
 
   boost_compare_string_with_regex();
   boost_search_with_regex();
+  boost_replace_with_regex();
 }
