@@ -66,6 +66,17 @@ static void boost_format_with_reference_in_reguar() noexcept {
   std::cout << "[demo.regex] " << boost::regex_replace(s, expr, fmt) << std::endl;
 }
 
+static void boost_iterate_over_string() noexcept {
+  std::cout << "--------- [regex.iterate_over_string] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  boost::regex expr{"\\w+"};
+  boost::regex_token_iterator<std::string::iterator> it{s.begin(), s.end(), expr};
+  boost::regex_token_iterator<std::string::iterator> end;
+  while (it != end)
+    std::cout << "[demo.regex] " << *it++ << std::endl;
+}
+
 void boost_regex() noexcept {
   std::cout << "========= [regex] =========" << std::endl;
 
@@ -73,4 +84,5 @@ void boost_regex() noexcept {
   boost_search_with_regex();
   boost_replace_with_regex();
   boost_format_with_reference_in_reguar();
+  boost_iterate_over_string();
 }
