@@ -57,10 +57,20 @@ static void boost_replace_with_regex() noexcept {
   std::cout << "[demo.regex] " << boost::regex_replace(s, expr, fmt) << std::endl;
 }
 
+static void boost_format_with_reference_in_reguar() noexcept {
+  std::cout << "--------- [regex.format_with_reference_in_reguar] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  boost::regex expr{"(\\w+)\\s(\\w+)"};
+  std::string fmt{"\\2 \\1"};
+  std::cout << "[demo.regex] " << boost::regex_replace(s, expr, fmt) << std::endl;
+}
+
 void boost_regex() noexcept {
   std::cout << "========= [regex] =========" << std::endl;
 
   boost_compare_string_with_regex();
   boost_search_with_regex();
   boost_replace_with_regex();
+  boost_format_with_reference_in_reguar();
 }
