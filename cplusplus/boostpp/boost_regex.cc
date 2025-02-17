@@ -77,6 +77,17 @@ static void boost_iterate_over_string() noexcept {
     std::cout << "[demo.regex] " << *it++ << std::endl;
 }
 
+static void boost_access_groups() noexcept {
+  std::cout << "--------- [regex.access_groups] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  boost::regex expr{"(\\w)\\w+"};
+  boost::regex_token_iterator<std::string::iterator> it{s.begin(), s.end(), expr, 1};
+  boost::regex_token_iterator<std::string::iterator> end;
+  while (it != end)
+    std::cout << "[demo.regex] " << *it++ << std::endl;
+}
+
 void boost_regex() noexcept {
   std::cout << "========= [regex] =========" << std::endl;
 
@@ -85,4 +96,5 @@ void boost_regex() noexcept {
   boost_replace_with_regex();
   boost_format_with_reference_in_reguar();
   boost_iterate_over_string();
+  boost_access_groups();
 }
