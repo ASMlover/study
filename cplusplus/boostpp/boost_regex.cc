@@ -66,6 +66,17 @@ static void boost_format_with_reference_in_reguar() noexcept {
   std::cout << "[demo.regex] " << boost::regex_replace(s, expr, fmt) << std::endl;
 }
 
+static void boost_flag_for_formats() noexcept {
+  std::cout << "--------- [regex.flag_for_formats] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  boost::regex expr{"(\\w+)\\s(\\w+)"};
+  std::string fmt{"\\2 \\1"};
+  std::cout << "[demo.regex] "
+    << boost::regex_replace(s, expr, fmt, boost::regex_constants::format_literal)
+    << std::endl;
+}
+
 static void boost_iterate_over_string() noexcept {
   std::cout << "--------- [regex.iterate_over_string] ---------" << std::endl;
 
@@ -95,6 +106,7 @@ void boost_regex() noexcept {
   boost_search_with_regex();
   boost_replace_with_regex();
   boost_format_with_reference_in_reguar();
+  boost_flag_for_formats();
   boost_iterate_over_string();
   boost_access_groups();
 }
