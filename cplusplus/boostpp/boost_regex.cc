@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/regex.hpp>
+#include <locale>
 #include <string>
 #include <iostream>
 
@@ -57,8 +58,8 @@ static void boost_replace_with_regex() noexcept {
   std::cout << "[demo.regex] " << boost::regex_replace(s, expr, fmt) << std::endl;
 }
 
-static void boost_format_with_reference_in_reguar() noexcept {
-  std::cout << "--------- [regex.format_with_reference_in_reguar] ---------" << std::endl;
+static void boost_format_with_reference_in_regular() noexcept {
+  std::cout << "--------- [regex.format_with_reference_in_regular] ---------" << std::endl;
 
   std::string s = "Boost Libraries";
   boost::regex expr{"(\\w+)\\s(\\w+)"};
@@ -99,14 +100,25 @@ static void boost_access_groups() noexcept {
     std::cout << "[demo.regex] " << *it++ << std::endl;
 }
 
+static void boost_link_locale_to_regular_expr() noexcept {
+  std::cout << "--------- [regex.link_locale_to_regular_expr] ---------" << std::endl;
+
+  std::string s = "Boost k\xfct\xfcphaneleri";
+  boost::basic_regex<char, boost::cpp_regex_traits<char>> expr;
+  expr.imbue(std::locale{"Turkish"});
+  expr = "\\w+\\s\\w+";
+  std::cout << "[demo.regex] " << std::boolalpha << boost::regex_match(s, expr) << std::endl;
+}
+
 void boost_regex() noexcept {
   std::cout << "========= [regex] =========" << std::endl;
 
   boost_compare_string_with_regex();
   boost_search_with_regex();
   boost_replace_with_regex();
-  boost_format_with_reference_in_reguar();
+  boost_format_with_reference_in_regular();
   boost_flag_for_formats();
   boost_iterate_over_string();
   boost_access_groups();
+  boost_link_locale_to_regular_expr();
 }
