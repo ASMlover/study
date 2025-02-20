@@ -40,6 +40,7 @@ extern void boost_string_algorithms() noexcept;
 extern void boost_lexical_cast() noexcept;
 extern void boost_format() noexcept;
 extern void boost_regex() noexcept;
+extern void boost_xpressive() noexcept;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -60,6 +61,7 @@ int main(int argc, char* argv[]) {
   boost_lexical_cast();
   boost_format();
   boost_regex();
+  boost_xpressive();
 
   return 0;
 }
