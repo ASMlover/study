@@ -44,9 +44,18 @@ static void boost_xpressive_cregex_with_strings() noexcept {
   std::cout << "[demo.xpressive] " << std::boolalpha << boost::xpressive::regex_match(c, expr) << std::endl;
 }
 
+static void boost_xpressive_regular_expr() noexcept {
+  std::cout << "--------- [xpressive.regular_expr] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  boost::xpressive::sregex expr = +boost::xpressive::_w >> boost::xpressive::_s >> +boost::xpressive::_w;
+  std::cout << "[demo.xpressive] " << std::boolalpha << boost::xpressive::regex_match(s, expr) << std::endl;
+}
+
 void boost_xpressive() noexcept {
   std::cout << "========= [xpressive] =========" << std::endl;
 
   boost_xpressive_compare_strings();
   boost_xpressive_cregex_with_strings();
+  boost_xpressive_regular_expr();
 }
