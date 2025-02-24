@@ -25,7 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/xpressive/xpressive.hpp>
+#include <boost/xpressive/regex_actions.hpp>
 #include <string>
+#include <iterator>
 #include <iostream>
 
 static void boost_xpressive_compare_strings() noexcept {
@@ -52,10 +54,21 @@ static void boost_xpressive_regular_expr() noexcept {
   std::cout << "[demo.xpressive] " << std::boolalpha << boost::xpressive::regex_match(s, expr) << std::endl;
 }
 
+static void boost_xpressive_link_action_to_expr() noexcept {
+  std::cout << "--------- [xpressive.link_action_to_expr] ---------" << std::endl;
+
+  std::string s = "Boost Libraries";
+  std::ostream_iterator<std::string> it{std::cout, "\n"};
+  boost::xpressive::sregex expr = (+boost::xpressive::_w)[*boost::xpressive::ref(it)
+    = boost::xpressive::_] >> boost::xpressive::_s >> +boost::xpressive::_w;
+  std::cout << "[demo.xpressive] " << std::boolalpha << boost::xpressive::regex_match(s, expr) << std::endl;
+}
+
 void boost_xpressive() noexcept {
   std::cout << "========= [xpressive] =========" << std::endl;
 
   boost_xpressive_compare_strings();
   boost_xpressive_cregex_with_strings();
   boost_xpressive_regular_expr();
+  boost_xpressive_link_action_to_expr();
 }
