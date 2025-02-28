@@ -50,9 +50,21 @@ static void boost_tokenizer_initializing() noexcept {
     std::cout << "[demo.tokenizer] " << t << std::endl;
 }
 
+static void boost_tokenizer_simulating_the_default_behavior() noexcept {
+  std::cout << "--------- [tokenizer.simulating_the_default_behavior] ---------" << std::endl;
+
+  typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
+  std::string s = "Boost C++ Libraries";
+  boost::char_separator<char> sep{" ", "+"};
+  tokenizer tok{s, sep};
+  for (const auto& t : tok)
+    std::cout << "[demo.tokenizer] " << t << std::endl;
+}
+
 void boost_tokenizer() noexcept {
   std::cout << "========= [tokenizer] =========" << std::endl;
 
   boost_tokenizer_iterate_over_partial_expr();
   boost_tokenizer_initializing();
+  boost_tokenizer_simulating_the_default_behavior();
 }
