@@ -72,6 +72,17 @@ static void boost_tokenizer_initializing_to_display() noexcept {
     std::cout << "[demo.tokenizer] " << t << std::endl;
 }
 
+static void boost_tokenizer_wide_strings() noexcept {
+  std::cout << "--------- [tokenizer.wide_strings] ---------" << std::endl;
+
+  typedef boost::tokenizer<boost::char_separator<wchar_t>, std::wstring::const_iterator, std::wstring> tokenizer;
+  std::wstring s = L"Boost C++ Libraries";
+  boost::char_separator<wchar_t> sep{L" "};
+  tokenizer tok{s, sep};
+  for (const auto& t : tok)
+    std::wcout << "[demo.tokenizer] " << t << std::endl;
+}
+
 void boost_tokenizer() noexcept {
   std::cout << "========= [tokenizer] =========" << std::endl;
 
@@ -79,4 +90,5 @@ void boost_tokenizer() noexcept {
   boost_tokenizer_initializing();
   boost_tokenizer_simulating_the_default_behavior();
   boost_tokenizer_initializing_to_display();
+  boost_tokenizer_wide_strings();
 }
