@@ -83,6 +83,16 @@ static void boost_tokenizer_wide_strings() noexcept {
     std::wcout << "[demo.tokenizer] " << t << std::endl;
 }
 
+static void boost_tokenizer_parsing_csv_files() noexcept {
+  std::cout << "--------- [tokenizer.parsing_csv_files] ---------" << std::endl;
+
+  typedef boost::tokenizer<boost::escaped_list_separator<char>> tokenizer;
+  std::string s = "Boost,\"C++ Libraries\"";
+  tokenizer tok{s};
+  for (const auto& t : tok)
+    std::cout << "[demo.tokenizer] " << t << std::endl;
+}
+
 void boost_tokenizer() noexcept {
   std::cout << "========= [tokenizer] =========" << std::endl;
 
@@ -91,4 +101,5 @@ void boost_tokenizer() noexcept {
   boost_tokenizer_simulating_the_default_behavior();
   boost_tokenizer_initializing_to_display();
   boost_tokenizer_wide_strings();
+  boost_tokenizer_parsing_csv_files();
 }
