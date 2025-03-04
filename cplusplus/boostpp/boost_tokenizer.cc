@@ -93,6 +93,18 @@ static void boost_tokenizer_parsing_csv_files() noexcept {
     std::cout << "[demo.tokenizer] " << t << std::endl;
 }
 
+static void boost_tokenizer_iterate_over_partial_expr_offset_separator() noexcept {
+  std::cout << "--------- [tokenizer.iterate_over_partial_expr_offset_separator] ---------" << std::endl;
+
+  typedef boost::tokenizer<boost::offset_separator> tokenizer;
+  std::string s = "Boost_C++_Libraries";
+  int offsets[] = {5, 5, 9};
+  boost::offset_separator sep{offsets, offsets + 3};
+  tokenizer tok{s, sep};
+  for (const auto& t : tok)
+    std::cout << "[demo.tokenizer] " << t << std::endl;
+}
+
 void boost_tokenizer() noexcept {
   std::cout << "========= [tokenizer] =========" << std::endl;
 
@@ -102,4 +114,5 @@ void boost_tokenizer() noexcept {
   boost_tokenizer_initializing_to_display();
   boost_tokenizer_wide_strings();
   boost_tokenizer_parsing_csv_files();
+  boost_tokenizer_iterate_over_partial_expr_offset_separator();
 }
