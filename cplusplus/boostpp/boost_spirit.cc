@@ -56,9 +56,24 @@ static void boost_spirit_using_phrase_parse() noexcept {
     std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
 }
 
+static void boost_spirit_with_dont_postskip() noexcept {
+  std::cout << "--------- [spirit.with_dont_postskip] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  bool match = qi::phrase_parse(it, s.end(), ascii::digit, ascii::space, qi::skip_flag::dont_postskip);
+  std::cout << "[demo.spirit] " << std::boolalpha << match << std::endl;
+  if (it != s.end())
+    std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
   boost_spirit_using_parse();
   boost_spirit_using_phrase_parse();
+  boost_spirit_with_dont_postskip();
 }
