@@ -31,7 +31,7 @@
 static void boost_spirit_using_parse() noexcept {
   std::cout << "--------- [spirit.using_parse] ---------" << std::endl;
 
-  std::cout << "PLEASE INPUT: ";
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
   std::string s;
   std::getline(std::cin, s);
 
@@ -42,8 +42,23 @@ static void boost_spirit_using_parse() noexcept {
     std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
 }
 
+static void boost_spirit_using_phrase_parse() noexcept {
+  std::cout << "--------- [spirit.using_phrase_parse] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  bool match = qi::phrase_parse(it, s.begin(), ascii::digit, ascii::space);
+  std::cout << "[demo.spirit] " << std::boolalpha << match << std::endl;
+  if (it != s.end())
+    std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
   boost_spirit_using_parse();
+  boost_spirit_using_phrase_parse();
 }
