@@ -84,6 +84,20 @@ static void boost_spirit_with_wide_strings() noexcept {
     std::wcout << "[demo.spirit] " << std::wstring{it, s.end()} << std::endl;
 }
 
+static void boost_spirit_parser_consecutive_digits() noexcept {
+  std::cout << "--------- [spirit.parser_consecutive_digits] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  bool match = qi::phrase_parse(it, s.end(), ascii::digit >> ascii::digit, ascii::space);
+  std::cout << "[demo.spirit] " << std::boolalpha << match << std::endl;
+  if (it != s.end())
+    std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -91,4 +105,5 @@ void boost_spirit() noexcept {
   boost_spirit_using_phrase_parse();
   boost_spirit_with_dont_postskip();
   boost_spirit_with_wide_strings();
+  boost_spirit_parser_consecutive_digits();
 }
