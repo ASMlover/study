@@ -126,6 +126,20 @@ static void boost_spirit_rules_similar_to_regular_expr() noexcept {
     std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
 }
 
+static void boost_spirit_numeric_parsers() noexcept {
+  std::cout << "--------- [spirit.numeric_parsers] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  bool match = qi::phrase_parse(it, s.end(), qi::int_, ascii::space);
+  std::cout << "[demo.spirit] " << std::boolalpha << match << std::endl;
+  if (it != s.end())
+    std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -136,4 +150,5 @@ void boost_spirit() noexcept {
   boost_spirit_parser_consecutive_digits();
   boost_spirit_parsing_with_lexeme();
   boost_spirit_rules_similar_to_regular_expr();
+  boost_spirit_numeric_parsers();
 }
