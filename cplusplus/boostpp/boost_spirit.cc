@@ -24,7 +24,9 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
+#include <boost/phoenix/phoenix.hpp>
 #include <string>
 #include <iostream>
 
@@ -155,6 +157,24 @@ static void boost_spirit_linking_action_with_parsers() noexcept {
     std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
 }
 
+static void boost_spirit_with_phoenix() noexcept {
+  std::cout << "--------- [spirit.with_phoenix] ---------" << std::endl;
+  using namespace boost::spirit;
+  using boost::phoenix::ref;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  int i;
+  bool match = qi::phrase_parse(it, s.end(), qi::int_[ref(i) = qi::_1], ascii::space);
+  std::cout << "[demo.spirit] " << std::boolalpha << match << std::endl;
+  if (match)
+    std::cout << "[demo.spirit] " << i << std::endl;
+  if (it != s.end())
+    std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -167,4 +187,5 @@ void boost_spirit() noexcept {
   boost_spirit_rules_similar_to_regular_expr();
   boost_spirit_numeric_parsers();
   boost_spirit_linking_action_with_parsers();
+  boost_spirit_with_phoenix();
 }
