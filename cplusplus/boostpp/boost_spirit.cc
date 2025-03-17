@@ -175,6 +175,19 @@ static void boost_spirit_with_phoenix() noexcept {
     std::cout << "[demo.spirit] " << std::string{it, s.end()} << std::endl;
 }
 
+static void boost_spirit_storing_value_in_attribute() noexcept {
+  std::cout << "--------- [spirit.storing_value_in_attribute] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  int i;
+  if (qi::phrase_parse(it, s.end(), qi::int_, ascii::space, i))
+    std::cout << "[demo.spirit] " << i << std::endl;
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -188,4 +201,5 @@ void boost_spirit() noexcept {
   boost_spirit_numeric_parsers();
   boost_spirit_linking_action_with_parsers();
   boost_spirit_with_phoenix();
+  boost_spirit_storing_value_in_attribute();
 }
