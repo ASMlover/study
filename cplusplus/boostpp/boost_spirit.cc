@@ -28,6 +28,9 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/phoenix.hpp>
 #include <string>
+#include <vector>
+#include <iterator>
+#include <algorithm>
 #include <iostream>
 
 static void boost_spirit_using_parse() noexcept {
@@ -188,6 +191,21 @@ static void boost_spirit_storing_value_in_attribute() noexcept {
     std::cout << "[demo.spirit] " << i << std::endl;
 }
 
+static void boost_spirit_storing_several_values_in_attribute() noexcept {
+  std::cout << "--------- [storing_several_values_in_attribute] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  std::vector<int> v;
+  if (qi::phrase_parse(it, s.end(), qi::int_ % ',', ascii::space, v)) {
+    std::ostream_iterator<int> out{std::cout, ";"};
+    std::copy(v.begin(), v.end(), out);
+  }
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -202,4 +220,5 @@ void boost_spirit() noexcept {
   boost_spirit_linking_action_with_parsers();
   boost_spirit_with_phoenix();
   boost_spirit_storing_value_in_attribute();
+  boost_spirit_storing_several_values_in_attribute();
 }
