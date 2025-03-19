@@ -206,6 +206,22 @@ static void boost_spirit_storing_several_values_in_attribute() noexcept {
   }
 }
 
+static void boost_spirit_defining_rules() noexcept {
+  std::cout << "--------- [spirit.defining_rules] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  qi::rule<std::string::iterator, std::vector<int>(), ascii::space_type> values = qi::int_ % ',';
+  std::vector<int> v;
+  if (qi::phrase_parse(it, s.end(), values, ascii::space, v)) {
+    std::ostream_iterator<int> out{std::cout, ";"};
+    std::copy(v.begin(), v.end(), out);
+  }
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -221,4 +237,5 @@ void boost_spirit() noexcept {
   boost_spirit_with_phoenix();
   boost_spirit_storing_value_in_attribute();
   boost_spirit_storing_several_values_in_attribute();
+  boost_spirit_defining_rules();
 }
