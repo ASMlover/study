@@ -27,6 +27,7 @@
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
 #include <boost/phoenix/phoenix.hpp>
+#include <boost/variant.hpp>
 #include <string>
 #include <vector>
 #include <iterator>
@@ -222,6 +223,28 @@ static void boost_spirit_defining_rules() noexcept {
   }
 }
 
+struct print {
+  template <typename T> void operator()(T t) const {
+    std::cout << std::boolalpha << t << ";";
+  }
+};
+static void boost_spirit_nesting_rules() noexcept {
+  std::cout << "--------- [spirit.nesting_rules] ---------" << std::endl;
+  using namespace boost::spirit;
+
+  std::string s;
+  std::cout << "[demo.spirit] PLEASE INPUT: ";
+  std::getline(std::cin, s);
+  auto it = s.begin();
+  qi::rule<std::string::iterator, boost::variant<int, bool>(), ascii::space_type> value = qi::int_ | qi::bool_;
+  qi::rule<std::string::iterator, std::vector<boost::variant<int, bool>>(), ascii::space_type> values = value % ',';
+  std::vector<boost::variant<int, bool>> v;
+  if (qi::phrase_parse(it, s.end(), values, ascii::space, v)) {
+    for (const auto& elem : v)
+      boost::apply_visitor(print{}, elem);
+  }
+}
+
 void boost_spirit() noexcept {
   std::cout << "========= [spirit] =========" << std::endl;
 
@@ -238,4 +261,5 @@ void boost_spirit() noexcept {
   boost_spirit_storing_value_in_attribute();
   boost_spirit_storing_several_values_in_attribute();
   boost_spirit_defining_rules();
+  boost_spirit_nesting_rules();
 }
