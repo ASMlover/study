@@ -38,10 +38,9 @@ static void boost_multiindex_multi_index_container() noexcept {
   std::cout << "--------- [multiindex.multi_index_container] ---------" << std::endl;
   using namespace boost::multi_index;
 
-  typedef multi_index_container<
-    animal,
-    indexed_by<hashed_non_unique<member<animal, std::string, &animal::name>>,
-    hashed_non_unique<member<animal, int, &animal::legs>>>> animal_multi;
+  using animal_multi = multi_index_container<
+    animal, indexed_by<hashed_non_unique<member<animal, std::string, &animal::name>>,
+    hashed_non_unique<member<animal, int, &animal::legs>>>>;
 
   animal_multi animals;
   animals.insert({"cat", 4});
@@ -53,8 +52,28 @@ static void boost_multiindex_multi_index_container() noexcept {
   std::cout << "[demo.multiindex] " << legs_index.count(8) << std::endl;
 }
 
+static void boost_multiindex_changing_elements() noexcept {
+  std::cout << "-------- [multiindex.changing_elements] ---------" << std::endl;
+  using namespace boost::multi_index;
+
+  using animal_multi = multi_index_container<
+    animal, indexed_by<hashed_non_unique<member<animal, std::string, &animal::name>>,
+    hashed_non_unique<member<animal, int, &animal::legs>>>>;
+
+  animal_multi animals;
+  animals.insert({"cat", 4});
+  animals.insert({"shark", 0});
+  animals.insert({"spider", 8});
+
+  auto& legs_index = animals.get<1>();
+  auto it = legs_index.find(4);
+  legs_index.modify(it, [](animal& a) { a.name = "dog"; });
+  std::cout << "[demo.multiindex] " << animals.count("dog") << std::endl;
+}
+
 void boost_multiindex() noexcept {
   std::cout << "========= [multiindex] =========" << std::endl;
 
   boost_multiindex_multi_index_container();
+  boost_multiindex_changing_elements();
 }
