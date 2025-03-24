@@ -71,9 +71,27 @@ static void boost_multiindex_changing_elements() noexcept {
   std::cout << "[demo.multiindex] " << animals.count("dog") << std::endl;
 }
 
+static void boost_multiindex_container_hashed_unique() noexcept {
+  std::cout << "--------- [multiindex.container_hashed_unique] ---------" << std::endl;
+  using namespace boost::multi_index;
+
+  using animal_multi = multi_index_container<
+    animal, indexed_by<hashed_non_unique<member<animal, std::string, &animal::name>>,
+    hashed_unique<member<animal, int, &animal::legs>>>>;
+
+  animal_multi animals;
+  animals.insert({"cat", 4});
+  animals.insert({"shark", 0});
+  animals.insert({"dog", 4});
+
+  auto& legs_index = animals.get<1>();
+  std::cout << "[demo,multiindex] " << legs_index.count(4) << std::endl;
+}
+
 void boost_multiindex() noexcept {
   std::cout << "========= [multiindex] =========" << std::endl;
 
   boost_multiindex_multi_index_container();
   boost_multiindex_changing_elements();
+  boost_multiindex_container_hashed_unique();
 }
