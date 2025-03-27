@@ -127,6 +127,15 @@ static void boost_multiindex_interfaces() noexcept {
   std::cout << "[demo.multiindex] " << rand_index[0].name << std::endl;
 }
 
+static void boost_multiindex_extractors() noexcept {
+  std::cout << "--------- [multiindex.extractors] ---------" << std::endl;
+  using namespace boost::multi_index;
+
+  using animal_multi = multi_index_container<
+    Animal, indexed_by<ordered_unique<identity<Animal>>,
+    hashed_unique<const_mem_fun<Animal, const std::string&, &Animal::name>>>>;
+}
+
 void boost_multiindex() noexcept {
   std::cout << "========= [multiindex] =========" << std::endl;
 
@@ -134,4 +143,5 @@ void boost_multiindex() noexcept {
   boost_multiindex_changing_elements();
   boost_multiindex_container_hashed_unique();
   boost_multiindex_interfaces();
+  boost_multiindex_extractors();
 }
