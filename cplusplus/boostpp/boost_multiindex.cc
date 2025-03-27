@@ -30,12 +30,25 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 #include <string>
+#include <utility>
 #include <iostream>
 
 struct animal {
   std::string name;
   int legs;
+};
+
+class Animal {
+  std::string name_;
+  int legs_;
+public:
+  Animal(std::string name, int legs) noexcept : name_{std::move(name)}, legs_{legs} {}
+  bool operator<(const Animal& a) const noexcept { return legs_ < a.legs_; }
+  const std::string& name() const noexcept { return name_; }
+  int legs() const noexcept { return legs_; }
 };
 static void boost_multiindex_multi_index_container() noexcept {
   std::cout << "--------- [multiindex.multi_index_container] ---------" << std::endl;
