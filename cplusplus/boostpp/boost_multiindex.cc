@@ -134,6 +134,15 @@ static void boost_multiindex_extractors() noexcept {
   using animal_multi = multi_index_container<
     Animal, indexed_by<ordered_unique<identity<Animal>>,
     hashed_unique<const_mem_fun<Animal, const std::string&, &Animal::name>>>>;
+
+  animal_multi animals;
+  animals.emplace("cat", 4);
+  animals.emplace("shark", 0);
+  animals.emplace("spider", 8);
+  std::cout << "[demo.multiindex] " << animals.begin()->name() << std::endl;
+
+  const auto& name_index = animals.get<1>();
+  std::cout << "[demo.multiindex] " << name_index.count("shark") << std::endl;
 }
 
 void boost_multiindex() noexcept {
