@@ -33,6 +33,7 @@
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <string>
+#include <vector>
 #include <utility>
 #include <iostream>
 
@@ -40,6 +41,14 @@ struct animal {
   std::string name;
   int legs;
   bool has_tail;
+};
+
+class animals_container {
+public:
+  void add(animal a) noexcept {}
+  const animal* find_by_name(const std::string& name) const noexcept { return nullptr; }
+  std::vector<animal> find_by_legs(int from, int to) const noexcept { return {}; }
+  std::vector<animal> find_by_tail(bool has_tail) const noexcept { return {}; }
 };
 
 class Animal {
