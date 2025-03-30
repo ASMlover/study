@@ -39,6 +39,7 @@
 struct animal {
   std::string name;
   int legs;
+  bool has_tail;
 };
 
 class Animal {
