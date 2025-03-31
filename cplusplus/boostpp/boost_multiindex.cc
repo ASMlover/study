@@ -155,6 +155,28 @@ static void boost_multiindex_extractors() noexcept {
   std::cout << "[demo.multiindex] " << name_index.count("shark") << std::endl;
 }
 
+static void boost_multiindex_animals_container() noexcept {
+  std::cout << "--------- [multiindex.animals_container] ---------" << std::endl;
+
+  animals_container animals;
+  animals.add({"cat", 4, true});
+  animals.add({"ant", 6, false});
+  animals.add({"spider", 8, false});
+  animals.add({"shark", 0, false});
+
+  const animal* a = animals.find_by_name("cat");
+  if (a)
+    std::cout << "[demo.multiindex] cat has " << a->legs << " legs" << std::endl;
+
+  auto animals_with_6_to_8_legs = animals.find_by_legs(6, 9);
+  for (auto a : animals_with_6_to_8_legs)
+    std::cout << "[demo.multiindex] " << a.name << " has " << a.legs << " legs" << std::endl;
+
+  auto animals_without_tail = animals.find_by_tail(false);
+  for (auto a : animals_without_tail)
+    std::cout << "[demo.multiindex] " << a.name << " has no tail" << std::endl;
+}
+
 void boost_multiindex() noexcept {
   std::cout << "========= [multiindex] =========" << std::endl;
 
@@ -163,4 +185,5 @@ void boost_multiindex() noexcept {
   boost_multiindex_container_hashed_unique();
   boost_multiindex_interfaces();
   boost_multiindex_extractors();
+  boost_multiindex_animals_container();
 }
