@@ -46,6 +46,7 @@ extern void boost_spirit() noexcept;
 extern void boost_multiindex() noexcept;
 extern void boost_bimap() noexcept;
 extern void boost_array() noexcept;
+extern void boost_unordered() noexcept;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -72,6 +73,7 @@ int main(int argc, char* argv[]) {
   boost_multiindex();
   boost_bimap();
   boost_array();
+  boost_unordered();
 
   return 0;
 }
