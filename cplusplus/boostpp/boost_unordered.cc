@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/unordered_set.hpp>
+#include <boost/unordered_map.hpp>
 #include <string>
 #include <iostream>
 
@@ -47,8 +48,28 @@ static void boost_unordered_using_unordered_set() noexcept {
   std::cout << "[demo.unordered] " << set.count("shark") << std::endl;
 }
 
+static void boost_unordered_using_unordered_map() noexcept {
+  std::cout << "--------- [unordered.using_unordered_map] ---------" << std::endl;
+  using unordered_map = boost::unordered_map<std::string, int>;
+
+  unordered_map map;
+  map.emplace("cat", 4);
+  map.emplace("shark", 0);
+  map.emplace("spider", 8);
+
+  for (const auto& p : map)
+    std::cout << "[demo.unordered] " << p.first << ";" << p.second << std::endl;
+
+  std::cout << "[demo.unordered] " << map.size() << std::endl;
+  std::cout << "[demo.unordered] " << map.max_size() << std::endl;
+
+  std::cout << "[demo.unordered] " << std::boolalpha << (map.find("cat") != map.end()) << std::endl;
+  std::cout << "[demo.unordered] " << map.count("shark") << std::endl;
+}
+
 void boost_unordered() noexcept {
   std::cout << "========= [unordered] =========" << std::endl;
 
   boost_unordered_using_unordered_set();
+  boost_unordered_using_unordered_map();
 }
