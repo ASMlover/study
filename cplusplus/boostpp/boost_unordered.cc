@@ -26,8 +26,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+#include <cstddef>
 #include <string>
 #include <iostream>
+
+template <typename T> inline void hash_combine(std::size_t& seed, const T& v) noexcept {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 
 static void boost_unordered_using_unordered_set() noexcept {
   std::cout << "--------- [unordered.using_unordered_set] ---------" << std::endl;
@@ -67,9 +73,33 @@ static void boost_unordered_using_unordered_map() noexcept {
   std::cout << "[demo.unordered] " << map.count("shark") << std::endl;
 }
 
+struct animal {
+  std::string name;
+  int legs;
+};
+inline bool operator==(const animal& lhs, const animal& rhs) noexcept {
+  return lhs.name == rhs.name && lhs.legs == rhs.legs;
+}
+inline std::size_t hash_value(const animal& a) {
+  std::size_t seed = 0;
+  hash_combine(seed, a.name);
+  hash_combine(seed, a.legs);
+  return seed;
+}
+static void boost_unordered_user_defined() noexcept {
+  std::cout << "--------- [unordered.user_defined] ---------" << std::endl;
+  using unordered_set = boost::unordered_set<animal>;
+
+  unordered_set animals;
+  animals.insert({"cat", 4});
+  animals.insert({"shark", 0});
+  animals.insert({"spider", 8});
+}
+
 void boost_unordered() noexcept {
   std::cout << "========= [unordered] =========" << std::endl;
 
   boost_unordered_using_unordered_set();
   boost_unordered_using_unordered_map();
+  boost_unordered_user_defined();
 }
