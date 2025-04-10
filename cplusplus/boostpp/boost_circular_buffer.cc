@@ -49,8 +49,34 @@ static void boost_circular_buffer_basic() noexcept {
     std::cout << "[demo.circular_buffer] " << i << std::endl;
 }
 
+static void boost_circular_buffer_various_member_functions() noexcept {
+  std::cout << "--------- [circular_buffer.various_member_functions] ---------" << std::endl;
+  using circular_buffer = boost::circular_buffer<int>;
+
+  circular_buffer cb{3};
+  cb.push_back(0);
+  cb.push_back(1);
+  cb.push_back(2);
+  cb.push_back(3);
+  std::cout << "[demo.circular_buffer] " << std::boolalpha << cb.is_linearized() << std::endl;
+
+  circular_buffer::array_range ar1, ar2;
+  ar1 = cb.array_one();
+  ar2 = cb.array_two();
+  std::cout << "[demo.circular_buffer] " << ar1.second << ";" << ar2.second << std::endl;
+
+  for (int i : cb)
+    std::cout << "[demo.circular_buffer] " << i << std::endl;
+
+  cb.linearize();
+  ar1 = cb.array_one();
+  ar2 = cb.array_two();
+  std::cout << "[demo.circular_buffer] " << ar1.second << ";" << ar2.second << std::endl;
+}
+
 void boost_circular_buffer() noexcept {
   std::cout << "========= [circular_buffer] =========" << std::endl;
 
   boost_circular_buffer_basic();
+  boost_circular_buffer_various_member_functions();
 }
