@@ -47,6 +47,7 @@ extern void boost_multiindex() noexcept;
 extern void boost_bimap() noexcept;
 extern void boost_array() noexcept;
 extern void boost_unordered() noexcept;
+extern void boost_circular_buffer() noexcept;
 
 int main(int argc, char* argv[]) {
   (void)argc, (void)argv;
@@ -74,6 +75,7 @@ int main(int argc, char* argv[]) {
   boost_bimap();
   boost_array();
   boost_unordered();
+  boost_circular_buffer();
 
   return 0;
 }
