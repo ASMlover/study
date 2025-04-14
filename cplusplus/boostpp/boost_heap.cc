@@ -30,8 +30,22 @@
 static void boost_heap_priority_queue() noexcept {
   std::cout << "--------- [heap.priority_queue] ---------" << std::endl;
   using namespace boost::heap;
+
+  priority_queue<int> pq;
+  pq.push(2);
+  pq.push(3);
+  pq.push(1);
+
+  for (int i : pq)
+    std::cout << "[demo.heap] " << i << std::endl;
+
+  priority_queue<int> pq2;
+  pq2.push(4);
+  std::cout << "[demo.heap] " << std::boolalpha << (pq > pq2) << std::endl;
 }
 
 void boost_heap() noexcept {
   std::cout << "========= [heap] =========" << std::endl;
+
+  boost_heap_priority_queue();
 }
