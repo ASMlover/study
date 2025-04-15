@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/heap/priority_queue.hpp>
+#include <boost/heap/binomial_heap.hpp>
 #include <iostream>
 
 static void boost_heap_priority_queue() noexcept {
@@ -44,8 +45,27 @@ static void boost_heap_priority_queue() noexcept {
   std::cout << "[demo.heap] " << std::boolalpha << (pq > pq2) << std::endl;
 }
 
+static void boost_heap_binomial_heap() noexcept {
+  std::cout << "--------- [heap.binomial_heap] ---------" << std::endl;
+  using namespace boost::heap;
+
+  binomial_heap<int> bh;
+  bh.push(2);
+  bh.push(3);
+  bh.push(1);
+
+  binomial_heap<int> bh2;
+  bh2.push(4);
+  bh.merge(bh2);
+
+  for (auto it = bh.ordered_begin(); it != bh.ordered_end(); ++it)
+    std::cout << "[demo.heap] " << *it << std::endl;
+  std::cout << "[demo.heap] " << std::boolalpha << bh2.empty() << std::endl;
+}
+
 void boost_heap() noexcept {
   std::cout << "========= [heap] =========" << std::endl;
 
   boost_heap_priority_queue();
+  boost_heap_binomial_heap();
 }
