@@ -63,9 +63,23 @@ static void boost_heap_binomial_heap() noexcept {
   std::cout << "[demo.heap] " << std::boolalpha << bh2.empty() << std::endl;
 }
 
+static void boost_heap_changing_elements() noexcept {
+  std::cout << "--------- [heap.changing_elements] ---------" << std::endl;
+  using namespace boost::heap;
+
+  binomial_heap<int> bh;
+  auto handle = bh.push(2);
+  bh.push(3);
+  bh.push(1);
+
+  bh.update(handle, 4);
+  std::cout << "[demo.heap] " << bh.top() << std::endl;
+}
+
 void boost_heap() noexcept {
   std::cout << "========= [heap] =========" << std::endl;
 
   boost_heap_priority_queue();
   boost_heap_binomial_heap();
+  boost_heap_changing_elements();
 }
