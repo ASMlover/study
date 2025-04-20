@@ -38,7 +38,6 @@ struct animal : public boost::intrusive::list_base_hook<> {
 
 static void boost_intrusive_using_intrusive_list() noexcept {
   std::cout << "--------- [intrusive.using_intrusive_list] ---------" << std::endl;
-  using namespace boost::intrusive;
 
   animal a1{"cat", 4};
   animal a2{"shark", 0};
@@ -54,6 +53,10 @@ static void boost_intrusive_using_intrusive_list() noexcept {
 
   for (const animal& a : animals)
     std::cout << "[demo.intrusive] " << a.name << std::endl;
+}
+
+static void boost_intrusive_remove_and_destroy() noexcept {
+  std::cout << "--------- [intrusive.remove_and_destroy] ---------" << std::endl;
 }
 
 void boost_intrusive() noexcept {
