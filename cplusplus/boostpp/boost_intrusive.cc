@@ -76,9 +76,29 @@ static void boost_intrusive_remove_and_destroy() noexcept {
     std::cout << "[demo.intrusive] " << a.name << std::endl;
 }
 
+static void boost_intrusive_pop_back_and_dispose() noexcept {
+  std::cout << "--------- [intrusive.pop_back_and_dispose] ---------" << std::endl;
+
+  animal a1{"cat", 4};
+  animal a2{"shark", 0};
+  animal* a3 = new animal{"spider", 8};
+
+  using animal_list = boost::intrusive::list<animal>;
+  animal_list animals;
+
+  animals.push_back(a1);
+  animals.push_back(a2);
+  animals.push_back(*a3);
+
+  animals.pop_back_and_dispose([](animal* a) { delete a; });
+  for (const animal& a : animals)
+    std::cout << "[demo.intrusive] " << a.name << std::endl;
+}
+
 void boost_intrusive() noexcept {
   std::cout << "========= [intrusive] =========" << std::endl;
 
   boost_intrusive_using_intrusive_list();
   boost_intrusive_remove_and_destroy();
+  boost_intrusive_pop_back_and_dispose();
 }
