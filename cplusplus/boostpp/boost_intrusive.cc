@@ -29,11 +29,18 @@
 #include <utility>
 #include <iostream>
 
+using mode = boost::intrusive::link_mode<boost::intrusive::auto_unlink>;
 
 struct animal : public boost::intrusive::list_base_hook<> {
   std::string name;
   int legs;
   animal(std::string n, int l) noexcept : name{std::move(n)}, legs{l} {}
+};
+
+struct Animal : public boost::intrusive::list_base_hook<mode> {
+  std::string name;
+  int legs;
+  Animal(std::string n, int l) noexcept : name{std::move(n)}, legs{l} {}
 };
 
 static void boost_intrusive_using_intrusive_list() noexcept {
@@ -95,10 +102,32 @@ static void boost_intrusive_pop_back_and_dispose() noexcept {
     std::cout << "[demo.intrusive] " << a.name << std::endl;
 }
 
+static void boost_intrusive_auto_unlink_mode() noexcept {
+  std::cout << "--------- [intrusive.auto_unlink_mode] ---------" << std::endl;
+
+  Animal a1{"cat", 4};
+  Animal a2{"shark", 0};
+  Animal* a3 = new Animal{"spider", 8};
+
+  using constant_time_size = boost::intrusive::constant_time_size<false>;
+  using animal_list = boost::intrusive::list<Animal, constant_time_size>;
+  animal_list animals;
+
+  animals.push_back(a1);
+  animals.push_back(a2);
+  animals.push_back(*a3);
+
+  delete a3;
+
+  for (const Animal& a : animals)
+    std::cout << "[demo.intrusive] " << a.name << std::endl;
+}
+
 void boost_intrusive() noexcept {
   std::cout << "========= [intrusive] =========" << std::endl;
 
   boost_intrusive_using_intrusive_list();
   boost_intrusive_remove_and_destroy();
   boost_intrusive_pop_back_and_dispose();
+  boost_intrusive_auto_unlink_mode();
 }
