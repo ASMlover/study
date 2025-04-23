@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/intrusive/list.hpp>
+#include <boost/intrusive/set.hpp>
 #include <string>
 #include <utility>
 #include <iostream>
@@ -41,6 +42,14 @@ struct Animal : public boost::intrusive::list_base_hook<mode> {
   std::string name;
   int legs;
   Animal(std::string n, int l) noexcept : name{std::move(n)}, legs{l} {}
+};
+
+struct Animal2 {
+  std::string name;
+  int legs;
+  boost::intrusive::set_member_hook<> set_hook;
+  Animal2(std::string n, int l) noexcept : name{std::move(n)}, legs{l} {}
+  bool operator<(const Animal2& a) const noexcept { return legs < a.legs; }
 };
 
 static void boost_intrusive_using_intrusive_list() noexcept {
@@ -123,11 +132,31 @@ static void boost_intrusive_auto_unlink_mode() noexcept {
     std::cout << "[demo.intrusive] " << a.name << std::endl;
 }
 
+static void boost_intrusive_defining_hook_as_member_variable() noexcept {
+  std::cout << "--------- [intrusive.defining_hook_as_member_variable] ---------" << std::endl;
+
+  Animal2 a1{"cat", 4};
+  Animal2 a2{"shark", 0};
+  Animal2 a3{"spider", 8};
+
+  using hook = boost::intrusive::member_hook<Animal2, boost::intrusive::set_member_hook<>, &Animal2::set_hook>;
+  using animal_list = boost::intrusive::set<Animal2, hook>;
+  animal_list animals;
+
+  animals.insert(a1);
+  animals.insert(a2);
+  animals.insert(a3);
+
+  for (const Animal2& a : animals)
+    std::cout << "[demo.intrusive] " << a.name << std::endl;
+}
+
 void boost_intrusive() noexcept {
   std::cout << "========= [intrusive] =========" << std::endl;
 
   boost_intrusive_using_intrusive_list();
   boost_intrusive_remove_and_destroy();
   boost_intrusive_pop_back_and_dispose();
-  boost_intrusive_auto_unlink_mode();
+  // boost_intrusive_auto_unlink_mode();
+  boost_intrusive_defining_hook_as_member_variable();
 }
