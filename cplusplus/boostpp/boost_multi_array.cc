@@ -62,9 +62,30 @@ static void boost_multi_array_views_and_subarrays() noexcept {
   std::cout << "[demo.multi_array] " << subarray.origin() << std::endl;
 }
 
+static void boost_multi_array_wrapping_c_array() noexcept {
+  std::cout << "--------- [multi_array.wrapping_c_array] ---------" << std::endl;
+
+  using array_view = boost::multi_array<char, 2>::array_view<1>::type;
+  using range      = boost::multi_array_types::index_range;
+
+  char c[12] = {
+    't', 's', 'o', 'o', 'B', '\0',
+    'C', '+', '+', '\0', '\0', '\0',
+  };
+  boost::multi_array_ref<char, 2> a{c, boost::extents[2][6]};
+  array_view view = a[boost::indices[0][range{0, 5}]];
+
+  std::reverse(view.begin(), view.end());
+  std::cout << "[demo.multi_array] " << view.origin() << std::endl;
+
+  boost::multi_array<char, 2>::reference subarray = a[1];
+  std::cout << "[demo.multi_array] " << subarray.origin() << std::endl;
+}
+
 void boost_multi_array() noexcept {
   std::cout << "========= [multi_array] =========" << std::endl;
 
   boost_multi_array_one_dimensional_array();
   boost_multi_array_views_and_subarrays();
+  boost_multi_array_wrapping_c_array();
 }
