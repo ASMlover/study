@@ -27,8 +27,16 @@
 #include <boost/container/vector.hpp>
 #include <iostream>
 
+struct animal {
+  boost::container::vector<animal> children;
+};
+
 static void boost_container_recursive_containers() noexcept {
   std::cout << "--------- [container.recursive_containers] ---------" << std::endl;
+
+  animal parent, child1, child2;
+  parent.children.push_back(child1);
+  parent.children.push_back(child2);
 }
 
 void boost_container() noexcept {
