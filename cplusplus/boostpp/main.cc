@@ -52,6 +52,7 @@ extern void boost_circular_buffer() noexcept;
 extern void boost_heap() noexcept;
 extern void boost_intrusive() noexcept;
 extern void boost_multi_array() noexcept;
+extern void boost_container() noexcept;
 
 typedef void (*FuncPtr)();
 static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
@@ -80,6 +81,7 @@ static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
   {"heap",                boost_heap},
   {"intrusive",           boost_intrusive},
   {"multi_array",         boost_multi_array},
+  {"container",           boost_container},
 };
 
 int main(int argc, char* argv[]) {
