@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/container/vector.hpp>
+#include <boost/container/stable_vector.hpp>
 #include <iostream>
 
 struct animal {
@@ -39,8 +40,19 @@ static void boost_container_recursive_containers() noexcept {
   parent.children.push_back(child2);
 }
 
+static void boost_container_stable_vector() noexcept {
+  std::cout << "--------- [container.stable_vector] ---------" << std::endl;
+  using namespace boost::container;
+
+  stable_vector<int> v(2, 1);
+  int& i = v[1];
+  v.erase(v.begin());
+  std::cout << "[demo.container] " << i << std::endl;
+}
+
 void boost_container() noexcept {
   std::cout << "========= [container] =========" << std::endl;
 
   boost_container_recursive_containers();
+  boost_container_stable_vector();
 }
