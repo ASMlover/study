@@ -53,6 +53,7 @@ extern void boost_heap() noexcept;
 extern void boost_intrusive() noexcept;
 extern void boost_multi_array() noexcept;
 extern void boost_container() noexcept;
+extern void boost_optional() noexcept;
 
 typedef void (*FuncPtr)();
 static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
@@ -82,6 +83,7 @@ static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
   {"intrusive",           boost_intrusive},
   {"multi_array",         boost_multi_array},
   {"container",           boost_container},
+  {"optional",            boost_optional},
 };
 
 int main(int argc, char* argv[]) {
