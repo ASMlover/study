@@ -29,6 +29,22 @@
 #include <cmath>
 #include <iostream>
 
+static int get_even_random_number() noexcept {
+  int i = std::rand();
+  return (i % 2 == 0) ? i : -1;
+}
+
+static void boost_optional_special_values_to_denote_optional() noexcept {
+  std::cout << "--------- [optional.special_values_to_denote_optional] ---------" << std::endl;
+
+  std::srand(static_cast<unsigned int>(std::time(0)));
+  int i = get_even_random_number();
+  if (i != -1)
+    std::cout << "[demo.optional] " << std::sqrt(static_cast<float>(i)) << std::endl;
+}
+
 void boost_optional() noexcept {
   std::cout << "========= [optional] =========" << std::endl;
+
+  boost_optional_special_values_to_denote_optional();
 }
