@@ -58,9 +58,24 @@ static void boost_optional_return_with_optional() noexcept {
     std::cout << "[demo.optional] " << std::sqrt(static_cast<float>(*i)) << std::endl;
 }
 
+static boost::optional<int> get_even_random_number3() noexcept {
+  int i = std::rand();
+  return boost::optional<int>{i % 2 == 0, i};
+}
+
+static void boost_optional_useful_member_functions() noexcept {
+  std::cout << "--------- [optional.useful_member_functions] ---------" << std::endl;
+
+  std::srand(static_cast<unsigned int>(std::time(0)));
+  boost::optional<int> i = get_even_random_number3();
+  if (i.is_initialized())
+    std::cout << "[demo.optional] " << std::sqrt(static_cast<float>(i.get())) << std::endl;
+}
+
 void boost_optional() noexcept {
   std::cout << "========= [optional] =========" << std::endl;
 
   boost_optional_special_values_to_denote_optional();
   boost_optional_return_with_optional();
+  boost_optional_useful_member_functions();
 }
