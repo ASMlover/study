@@ -31,8 +31,14 @@
 
 static void boost_tuple_replacing_pair() noexcept {
   std::cout << "--------- [tuple.replacing_pair] ---------" << std::endl;
+  using animal = boost::tuple<std::string, int>;
+
+  animal a{"cat", 4};
+  std::cout << "[demo.tuple] " << a << std::endl;
 }
 
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
+
+  boost_tuple_replacing_pair();
 }
