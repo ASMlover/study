@@ -37,8 +37,17 @@ static void boost_tuple_replacing_pair() noexcept {
   std::cout << "[demo.tuple] " << a << std::endl;
 }
 
+static void boost_tuple_as_better_pair() noexcept {
+  std::cout << "--------- [tuple.as_bettler_pair] ---------" << std::endl;
+  using animal = boost::tuple<std::string, int, bool>;
+
+  animal a{"cat", 4, true};
+  std::cout << "[demo.tuple] " << std::boolalpha << a << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
   boost_tuple_replacing_pair();
+  boost_tuple_as_better_pair();
 }
