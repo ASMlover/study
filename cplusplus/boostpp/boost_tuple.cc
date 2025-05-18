@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_io.hpp>
+#include <boost/ref.hpp>
 #include <string>
 #include <iostream>
 
@@ -52,10 +53,19 @@ static void boost_tuple_with_make_tuple() noexcept {
   std::cout << "[demo.tuple] " << boost::make_tuple("cat", 4, true) << std::endl;
 }
 
+static void boost_tuple_with_references() noexcept {
+  std::cout << "--------- [tuple.with_references] ---------" << std::endl;
+
+  std::string s = "cat";
+  std::cout.setf(std::ios::boolalpha);
+  std::cout << "[demo.tuple] " << boost::make_tuple(boost::ref(s), 4, true) << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
   boost_tuple_replacing_pair();
   boost_tuple_as_better_pair();
   boost_tuple_with_make_tuple();
+  boost_tuple_with_references();
 }
