@@ -61,6 +61,15 @@ static void boost_tuple_with_references() noexcept {
   std::cout << "[demo.tuple] " << boost::make_tuple(boost::ref(s), 4, true) << std::endl;
 }
 
+static void boost_tuple_reading_elements_of_tuple() noexcept {
+  std::cout << "--------- [tuple.reading_elements_of_tuple] ---------" << std::endl;
+  using animal = boost::tuple<std::string, int, bool>;
+
+  animal a = boost::make_tuple("cat", 4, true);
+  std::cout << "[demo.tuple] " << a.get<0>() << std::endl;
+  std::cout << "[demo.tuple] " << boost::get<0>(a) << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
@@ -68,4 +77,5 @@ void boost_tuple() noexcept {
   boost_tuple_as_better_pair();
   boost_tuple_with_make_tuple();
   boost_tuple_with_references();
+  boost_tuple_reading_elements_of_tuple();
 }
