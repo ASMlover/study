@@ -70,6 +70,15 @@ static void boost_tuple_reading_elements_of_tuple() noexcept {
   std::cout << "[demo.tuple] " << boost::get<0>(a) << std::endl;
 }
 
+static void boost_tuple_writing_elements_of_tuple() noexcept {
+  std::cout << "--------- [tuple.writing_elements_of_tuple] ---------" << std::endl;
+  using animal = boost::tuple<std::string, int, bool>;
+
+  animal a = boost::make_tuple("cat", 4, true);
+  a.get<0>() = "dog";
+  std::cout << "[demo.tuple] " << std::boolalpha << a << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
@@ -78,4 +87,5 @@ void boost_tuple() noexcept {
   boost_tuple_with_make_tuple();
   boost_tuple_with_references();
   boost_tuple_reading_elements_of_tuple();
+  boost_tuple_writing_elements_of_tuple();
 }
