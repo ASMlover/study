@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_io.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <boost/ref.hpp>
 #include <string>
 #include <iostream>
@@ -79,6 +80,15 @@ static void boost_tuple_writing_elements_of_tuple() noexcept {
   std::cout << "[demo.tuple] " << std::boolalpha << a << std::endl;
 }
 
+static void boost_tuple_comparing_tuples() noexcept {
+  std::cout << "--------- [tuple.comparing_tuples] ---------" << std::endl;
+  using animal = boost::tuple<std::string, int, bool>;
+
+  animal a1 = boost::make_tuple("cat", 4, true);
+  animal a2 = boost::make_tuple("shark", 0, true);
+  std::cout << "[demo.tuple] " << std::boolalpha << (a1 != a2) << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
@@ -88,4 +98,5 @@ void boost_tuple() noexcept {
   boost_tuple_with_references();
   boost_tuple_reading_elements_of_tuple();
   boost_tuple_writing_elements_of_tuple();
+  boost_tuple_comparing_tuples();
 }
