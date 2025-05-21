@@ -89,6 +89,18 @@ static void boost_tuple_comparing_tuples() noexcept {
   std::cout << "[demo.tuple] " << std::boolalpha << (a1 != a2) << std::endl;
 }
 
+static void boost_tuple_creating_a_tier() noexcept {
+  std::cout << "--------- [tuple.creating_a_tier] ---------" << std::endl;
+  using animal = boost::tuple<std::string&, int&, bool&>;
+
+  std::string name = "cat";
+  int legs = 4;
+  bool tail = true;
+  animal a = boost::tie(name, legs, tail);
+  name = "dog";
+  std::cout << "[demo.tuple] " << std::boolalpha << a << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
@@ -99,4 +111,5 @@ void boost_tuple() noexcept {
   boost_tuple_reading_elements_of_tuple();
   boost_tuple_writing_elements_of_tuple();
   boost_tuple_comparing_tuples();
+  boost_tuple_creating_a_tier();
 }
