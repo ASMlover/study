@@ -113,6 +113,19 @@ static void boost_tuple_creating_a_tier_without_boost_tie() noexcept {
   std::cout << "[demo.tuple] " << std::boolalpha << a << std::endl;
 }
 
+boost::tuple<std::string, int> new_cat() noexcept {
+  return boost::make_tuple("cat", 4);
+}
+
+static void boost_tuple_unpacking_return_values() noexcept {
+  std::cout << "--------- [tuple.unpacking_return_values] ---------" << std::endl;
+
+  std::string name;
+  int legs;
+  boost::tie(name, legs) = new_cat();
+  std::cout << "[demo.tuple] " << name << ", " << legs << std::endl;
+}
+
 void boost_tuple() noexcept {
   std::cout << "========= [tuple] =========" << std::endl;
 
@@ -125,4 +138,5 @@ void boost_tuple() noexcept {
   boost_tuple_comparing_tuples();
   boost_tuple_creating_a_tier();
   boost_tuple_creating_a_tier_without_boost_tie();
+  boost_tuple_unpacking_return_values();
 }
