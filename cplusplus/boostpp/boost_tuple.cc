@@ -118,7 +118,7 @@ boost::tuple<std::string, int> new_cat() noexcept {
 }
 
 static void boost_tuple_unpacking_return_values() noexcept {
-  std::cout << "--------- [tuple.unpacking_return_values] ---------" << std::endl;
+  std::cout << "--------- [tuple.unpacking_return_values] ---------" << std::endl;
 
   std::string name;
   int legs;
