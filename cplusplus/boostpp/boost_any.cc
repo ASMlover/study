@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/any.hpp>
+#include <string>
 #include <iostream>
 
 static void boost_any_using_any() noexcept {
@@ -35,6 +36,15 @@ static void boost_any_using_any() noexcept {
   a = true;
 }
 
+static void boost_any_storing_a_string() noexcept {
+  std::cout << "--------- [any.storing_a_string] ---------" << std::endl;
+
+  boost::any a = std::string{"Boost"};
+}
+
 void boost_any() noexcept {
   std::cout << "========= [any] =========" << std::endl;
+
+  boost_any_using_any();
+  boost_any_storing_a_string();
 }
