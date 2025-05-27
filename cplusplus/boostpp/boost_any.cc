@@ -42,9 +42,23 @@ static void boost_any_storing_a_string() noexcept {
   boost::any a = std::string{"Boost"};
 }
 
+static void boost_any_accessing_values() noexcept {
+  std::cout << "--------- [any.accessing_values] ---------" << std::endl;
+
+  boost::any a = 1;
+  std::cout << "[demo.any] " << boost::any_cast<int>(a) << std::endl;
+
+  a = 3.14;
+  std::cout << "[demo.any] " << boost::any_cast<double>(a) << std::endl;
+
+  a = true;
+  std::cout << "[demo.any] " << std::boolalpha << boost::any_cast<bool>(a) << std::endl;
+}
+
 void boost_any() noexcept {
   std::cout << "========= [any] =========" << std::endl;
 
   boost_any_using_any();
   boost_any_storing_a_string();
+  boost_any_accessing_values();
 }
