@@ -55,6 +55,7 @@ extern void boost_multi_array() noexcept;
 extern void boost_container() noexcept;
 extern void boost_optional() noexcept;
 extern void boost_tuple() noexcept;
+extern void boost_any() noexcept;
 
 typedef void (*FuncPtr)();
 static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
@@ -86,6 +87,7 @@ static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
   {"container",           boost_container},
   {"optional",            boost_optional},
   {"tuple",               boost_tuple},
+  {"any",                 boost_any},
 };
 
 int main(int argc, char* argv[]) {
