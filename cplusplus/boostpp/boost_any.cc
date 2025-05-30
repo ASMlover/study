@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/any.hpp>
+#include <typeinfo>
 #include <string>
 #include <iostream>
 
@@ -67,6 +68,16 @@ static void boost_any_bad_any_cast() noexcept {
   }
 }
 
+static void boost_any_checking_type_of_currently_stored_value() noexcept {
+  std::cout << "--------- [any.checking_type_of_currently_stored_value] ---------" << std::endl;
+
+  boost::any a = 1;
+  if (!a.empty()) {
+    const std::type_info& ti = a.type();
+    std::cout << "[demo.any] " << ti.name() << std::endl;
+  }
+}
+
 void boost_any() noexcept {
   std::cout << "========= [any] =========" << std::endl;
 
@@ -74,4 +85,5 @@ void boost_any() noexcept {
   boost_any_storing_a_string();
   boost_any_accessing_values();
   boost_any_bad_any_cast();
+  boost_any_checking_type_of_currently_stored_value();
 }
