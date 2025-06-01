@@ -78,6 +78,14 @@ static void boost_any_checking_type_of_currently_stored_value() noexcept {
   }
 }
 
+static void boost_any_accessing_values_through_pointer() noexcept {
+  std::cout << "--------- [any.accessing_values_through_pointer] ---------" << std::endl;
+
+  boost::any a = 1;
+  int* i = boost::any_cast<int>(&a);
+  std::cout << "[demo.any] " << *i << std::endl;
+}
+
 void boost_any() noexcept {
   std::cout << "========= [any] =========" << std::endl;
 
@@ -86,4 +94,5 @@ void boost_any() noexcept {
   boost_any_accessing_values();
   boost_any_bad_any_cast();
   boost_any_checking_type_of_currently_stored_value();
+  boost_any_accessing_values_through_pointer();
 }
