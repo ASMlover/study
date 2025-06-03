@@ -28,6 +28,17 @@
 #include <string>
 #include <iostream>
 
+static void boost_variant_basic() noexcept {
+  std::cout << "--------- [variant.basic] ---------" << std::endl;
+
+  boost::variant<double, char, std::string> v;
+  v = 3.14;
+  v = 'A';
+  v = "Boost";
+}
+
 void boost_variant() noexcept {
   std::cout << "========= [variant] =========" << std::endl;
+
+  boost_variant_basic();
 }
