@@ -85,6 +85,24 @@ static void boost_variant_using_visitor() noexcept {
   boost::apply_visitor(Output{}, v);
 }
 
+struct Output2 {
+  template <typename T> void operator()(T& t) const noexcept { std::cout << "[demo.variant] " << t << std::endl; }
+};
+static void boost_variant_using_visitor_with_function_template() noexcept {
+  std::cout << "--------- [variant.using_visitor_with_function_template] ---------" << std::endl;
+
+  boost::variant<double, char, std::string> v;
+
+  v = 3.14;
+  boost::apply_visitor(Output2{}, v);
+
+  v = 'A';
+  boost::apply_visitor(Output2{}, v);
+
+  v = "Boost";
+  boost::apply_visitor(Output2{}, v);
+}
+
 void boost_variant() noexcept {
   std::cout << "========= [variant] =========" << std::endl;
 
@@ -92,4 +110,5 @@ void boost_variant() noexcept {
   boost_variant_accessing_values();
   boost_variant_direct_output_on_stream();
   boost_variant_using_visitor();
+  boost_variant_using_visitor_with_function_template();
 }
