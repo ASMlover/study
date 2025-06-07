@@ -65,10 +65,31 @@ static void boost_variant_direct_output_on_stream() noexcept {
   std::cout << "[demo.variant] " << v << std::endl;
 }
 
+struct Output {
+  void operator()(double d) const noexcept { std::cout << "[demo.variant] " << d << std::endl; }
+  void operator()(char c) const noexcept { std::cout << "[demo.variant] " << c << std::endl; }
+  void operator()(const std::string& s) const noexcept { std::cout << "[demo.variant] " << s << std::endl; }
+};
+static void boost_variant_using_visitor() noexcept {
+  std::cout << "--------- [variant.using_visitor] ---------" << std::endl;
+
+  boost::variant<double, char, std::string> v;
+
+  v = 3.14;
+  boost::apply_visitor(Output{}, v);
+
+  v = 'A';
+  boost::apply_visitor(Output{}, v);
+
+  v = "Boost";
+  boost::apply_visitor(Output{}, v);
+}
+
 void boost_variant() noexcept {
   std::cout << "========= [variant] =========" << std::endl;
 
   boost_variant_basic();
   boost_variant_accessing_values();
   boost_variant_direct_output_on_stream();
+  boost_variant_using_visitor();
 }
