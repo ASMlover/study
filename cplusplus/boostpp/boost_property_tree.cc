@@ -27,6 +27,21 @@
 #include <boost/property_tree/ptree.hpp>
 #include <iostream>
 
+static void boost_property_tree_accessing_data() noexcept {
+  std::cout << "--------- [property_tree.accessing_data] ---------" << std::endl;
+  using boost::property_tree::ptree;
+
+  ptree pt;
+  pt.put("C:.Windows.System", "20 files");
+
+  ptree& c = pt.get_child("C:");
+  ptree& windows = c.get_child("Windows");
+  ptree& system = windows.get_child("System");
+  std::cout << "[demo.property_tree] " << system.get_value<std::string>() << std::endl;
+}
+
 void boost_property_tree() noexcept {
   std::cout << "========= [property_tree] =========" << std::endl;
+
+  boost_property_tree_accessing_data();
 }
