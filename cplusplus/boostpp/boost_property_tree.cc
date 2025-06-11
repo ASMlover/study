@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/property_tree/ptree.hpp>
+#include <utility>
 #include <iostream>
 
 static void boost_property_tree_accessing_data() noexcept {
@@ -40,8 +41,24 @@ static void boost_property_tree_accessing_data() noexcept {
   std::cout << "[demo.property_tree] " << system.get_value<std::string>() << std::endl;
 }
 
+static void boost_property_tree_accessing_data_in_basic_ptree() noexcept {
+  std::cout << "--------- [property_tree.accessing_data_in_basic_ptree] ---------" << std::endl;
+  using ptree = boost::property_tree::basic_ptree<std::string, int>;
+
+  ptree pt;
+  pt.put(ptree::path_type{"C:\\Windows\\System", '\\'}, 20);
+  pt.put(ptree::path_type{"C:\\Windows\\Cursors", '\\'}, 50);
+
+  ptree& windows = pt.get_child(ptree::path_type{"C:\\Windows", '\\'});
+  int files = 0;
+  for (const std::pair<std::string, ptree>& p : windows)
+    files += p.second.get_value<int>();
+  std::cout << "[demo.property_tree] " << files << std::endl;
+}
+
 void boost_property_tree() noexcept {
   std::cout << "========= [property_tree] =========" << std::endl;
 
   boost_property_tree_accessing_data();
+  boost_property_tree_accessing_data_in_basic_ptree();
 }
