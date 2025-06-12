@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/property_tree/ptree.hpp>
+#include <boost/optional.hpp>
+#include <cstdlib>
 #include <utility>
 #include <iostream>
 
@@ -56,9 +58,35 @@ static void boost_property_tree_accessing_data_in_basic_ptree() noexcept {
   std::cout << "[demo.property_tree] " << files << std::endl;
 }
 
+struct string_to_int_translator {
+  using internal_type = std::string;
+  using external_type = int;
+
+  boost::optional<int> get_value(const std::string& s) noexcept {
+    char* c;
+    long l = std::strtol(s.c_str(), &c, 10);
+    return boost::make_optional(c != s.c_str(), static_cast<int>(l));
+  }
+};
+static void boost_property_tree_accessing_data_with_translator() noexcept {
+  std::cout << "--------- [property_tree.accessing_data_with_translator] ---------" << std::endl;
+  using ptree = boost::property_tree::iptree;
+
+  ptree pt;
+  pt.put(ptree::path_type{"C:\\Windows\\System", '\\'}, "20 files");
+  pt.put(ptree::path_type{"C:\\Windows\\Cursors", '\\'}, "50 files");
+
+  string_to_int_translator tr;
+  int files =
+    pt.get<int>(ptree::path_type{"C:\\windows\\system", '\\'}, tr) +
+    pt.get<int>(ptree::path_type{"C:\\windows\\cursors", '\\'}, tr);
+  std::cout << "[demo.property_tree] " << files << std::endl;
+}
+
 void boost_property_tree() noexcept {
   std::cout << "========= [property_tree] =========" << std::endl;
 
   boost_property_tree_accessing_data();
   boost_property_tree_accessing_data_in_basic_ptree();
+  boost_property_tree_accessing_data_with_translator();
 }
