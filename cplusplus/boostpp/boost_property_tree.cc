@@ -83,10 +83,32 @@ static void boost_property_tree_accessing_data_with_translator() noexcept {
   std::cout << "[demo.property_tree] " << files << std::endl;
 }
 
+static void boost_property_tree_various_member_functions() noexcept {
+  std::cout << "--------- [property_tree.various_member_functions] ---------" << std::endl;
+  using boost::property_tree::ptree;
+
+  ptree pt;
+  pt.put("C:.Windows.System", "20 files");
+
+  boost::optional<std::string> c = pt.get_optional<std::string>("C:");
+  std::cout << "[demo.property_tree] " << std::boolalpha << c.is_initialized() << std::endl;
+
+  pt.put_child("D:.Program Files", ptree{"50 files"});
+  pt.add_child("D:.Program Files", ptree{"60 files"});
+
+  ptree d = pt.get_child("D:");
+  for (const std::pair<std::string, ptree>& p : d)
+    std::cout << "[demo.property_tree] " << p.second.get_value<std::string>() << std::endl;
+
+  boost::optional<ptree&> e = pt.get_child_optional("E:");
+  std::cout << "[demo.property_tree] " << e.is_initialized() << std::endl;
+}
+
 void boost_property_tree() noexcept {
   std::cout << "========= [property_tree] =========" << std::endl;
 
   boost_property_tree_accessing_data();
   boost_property_tree_accessing_data_in_basic_ptree();
   boost_property_tree_accessing_data_with_translator();
+  boost_property_tree_various_member_functions();
 }
