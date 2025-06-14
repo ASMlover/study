@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/optional.hpp>
 #include <cstdlib>
 #include <utility>
@@ -104,6 +105,21 @@ static void boost_property_tree_various_member_functions() noexcept {
   std::cout << "[demo.property_tree] " << e.is_initialized() << std::endl;
 }
 
+static void boost_property_tree_serializing_in_json() noexcept {
+  std::cout << "--------- [property_tree.serializing_in_json] ---------" << std::endl;
+  using namespace boost::property_tree;
+
+  ptree pt;
+  pt.put("C:.Windows.System", "20 files");
+  pt.put("C:.Windows.Cursors", "50 files");
+  json_parser::write_json("file.json", pt);
+
+  ptree pt2;
+  json_parser::read_json("file.json", pt2);
+
+  std::cout << "[demo.property_tree] " << std::boolalpha << (pt == pt2) << std::endl;
+}
+
 void boost_property_tree() noexcept {
   std::cout << "========= [property_tree] =========" << std::endl;
 
@@ -111,4 +127,5 @@ void boost_property_tree() noexcept {
   boost_property_tree_accessing_data_in_basic_ptree();
   boost_property_tree_accessing_data_with_translator();
   boost_property_tree_various_member_functions();
+  boost_property_tree_serializing_in_json();
 }
