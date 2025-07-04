@@ -29,6 +29,18 @@
 
 static void boost_dynamic_bitset_basic_using() noexcept {
   std::cout << "--------- [dynamic_bitset.basic_using] ---------" << std::endl;
+
+  boost::dynamic_bitset<> db{3, 4};
+  db.push_back(true);
+
+  std::cout.setf(std::ios::boolalpha);
+  std::cout << "[demo.dynamic_bitset] db.size() = " << db.size() << std::endl;
+  std::cout << "[demo.dynamic_bitset] db.count() = " << db.count() << std::endl;
+  std::cout << "[demo.dynamic_bitset] db.any() = " << db.any() << std::endl;
+  std::cout << "[demo.dynamic_bitset] db.none() = " << db.none() << std::endl;
+  std::cout << "[demo.dynamic_bitset] db[0].flip() = " << db[0].flip() << std::endl;
+  std::cout << "[demo.dynamic_bitset] ~db[3] = " << ~db[3] << std::endl;
+  std::cout << "[demo.dynamic_bitset] db = " << db << std::endl;
 }
 
 void boost_dynamic_bitset() noexcept {
