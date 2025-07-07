@@ -29,6 +29,21 @@
 
 static void boost_tribool_three_states() noexcept {
   std::cout << "--------- [tribool.three_states] ---------" << std::endl;
+  using namespace boost::logic;
+
+  tribool b{};
+  std::cout << "[demo.tribool] " << std::boolalpha << bool(b) << std::endl;
+
+  b = true;
+  b = false;
+  b = indeterminate;
+  if (b) {
+  }
+  else if (!b) {
+  }
+  else {
+    std::cout << "[demo.tribool] " << "indeterminate" << std::endl;
+  }
 }
 
 void boost_tribool() noexcept {
