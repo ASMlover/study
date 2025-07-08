@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/logic/tribool.hpp>
+#include <boost/logic/tribool_io.hpp>
 #include <iostream>
 
 static void boost_tribool_three_states() noexcept {
@@ -32,7 +33,7 @@ static void boost_tribool_three_states() noexcept {
   using namespace boost::logic;
 
   tribool b{};
-  std::cout << "[demo.tribool] " << std::boolalpha << bool(b) << std::endl;
+  std::cout << "[demo.tribool] " << __func__ << " bool(b) => " << std::boolalpha << bool(b) << std::endl;
 
   b = true;
   b = false;
@@ -42,12 +43,32 @@ static void boost_tribool_three_states() noexcept {
   else if (!b) {
   }
   else {
-    std::cout << "[demo.tribool] " << "indeterminate" << std::endl;
+    std::cout << "[demo.tribool] " << __func__ << " => " << "indeterminate" << std::endl;
   }
+}
+
+static void boost_tribool_logical_operators() noexcept {
+  std::cout << "--------- [tribool.logical_operators] ---------" << std::endl;
+  using namespace boost::logic;
+
+  std::cout.setf(std::ios::boolalpha);
+
+  tribool b1 = true;
+  std::cout << "[demo.tribool] " << __func__ << " (b1 || indeterminate) => " << (b1 || indeterminate) << std::endl;
+  std::cout << "[demo.tribool] " << __func__ << " (b1 && indeterminate) => " << (b1 && indeterminate) << std::endl;
+
+  tribool b2 = false;
+  std::cout << "[demo.tribool] " << __func__ << " (b2 || indeterminate) => " << (b2 || indeterminate) << std::endl;
+  std::cout << "[demo.tribool] " << __func__ << " (b2 && indeterminate) => " << (b2 && indeterminate) << std::endl;
+
+  tribool b3 = indeterminate;
+  std::cout << "[demo.tribool] " << __func__ << " (b3 || b3) => " << (b3 || b3) << std::endl;
+  std::cout << "[demo.tribool] " << __func__ << " (b3 && b3) => " << (b3 && b3) << std::endl;
 }
 
 void boost_tribool() noexcept {
   std::cout << "========= [tribool] =========" << std::endl;
 
   boost_tribool_three_states();
+  boost_tribool_logical_operators();
 }
