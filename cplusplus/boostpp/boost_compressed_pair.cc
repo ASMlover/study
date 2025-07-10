@@ -29,6 +29,20 @@
 #include <iostream>
 
 
+struct empty {};
+
+static void boost_compressed_pair_reduced_memory_requirements() noexcept {
+  std::cout << "--------- [compressed_pair.reduced_memory_requirements] ---------" << std::endl;
+
+  std::pair<int, empty> p;
+  std::cout << "[demo.compressed_pair] " << __func__ << " sizeof(p) => " << sizeof(p) << std::endl;
+
+  boost::compressed_pair<int, empty> cp;
+  std::cout << "[demo.compressed_pair] " << __func__ << " sizeof(cp) => " << sizeof(cp) << std::endl;
+}
+
 void boost_compressed_pair() noexcept {
   std::cout << "========= [compressed_pair] =========" << std::endl;
+
+  boost_compressed_pair_reduced_memory_requirements();
 }
