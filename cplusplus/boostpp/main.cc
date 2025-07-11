@@ -60,6 +60,8 @@ extern void boost_variant() noexcept;
 extern void boost_property_tree() noexcept;
 extern void boost_dynamic_bitset() noexcept;
 extern void boost_tribool() noexcept;
+extern void boost_compressed_pair() noexcept;
+extern void boost_algorithm() noexcept;
 
 typedef void (*FuncPtr)();
 static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
@@ -96,6 +98,8 @@ static std::unordered_map<std::string, FuncPtr> kBoostFuncs = {
   {"ptree",               boost_property_tree},
   {"dynamic_bitset",      boost_dynamic_bitset},
   {"tribool",             boost_tribool},
+  {"compressed_pair",     boost_compressed_pair},
+  {"algorithm",           boost_algorithm},
 };
 
 int main(int argc, char* argv[]) {
