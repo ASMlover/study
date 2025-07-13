@@ -32,6 +32,13 @@
 static void boost_algorithm_testing_for_exactly_one_value() noexcept {
   std::cout << "--------- [algorithm.testing_for_exactly_one_value] ---------" << std::endl;
   using namespace boost::algorithm;
+
+  std::array<int, 6> a{{0, 5, 2, 1, 4, 3}};
+  auto predicate = [](int i) { return i == 4; };
+  std::cout.setf(std::ios::boolalpha);
+
+  std::cout << "[demo.algorithm] " << __func__ << " one_of(a.begin(), a.end(), predicate) => " << one_of(a.begin(), a.end(), predicate) << std::endl;
+  std::cout << "[demo.algorithm] " << __func__ << " one_of_equal(a.begin(), a.end(), 4) = > " << one_of_equal(a.begin(), a.end(), 4) << std::endl;
 }
 
 void boost_algorithm() noexcept {
