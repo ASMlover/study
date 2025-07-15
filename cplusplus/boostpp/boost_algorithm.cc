@@ -28,6 +28,8 @@
 #include <boost/algorithm/cxx11/iota.hpp>
 #include <boost/algorithm/cxx11/is_sorted.hpp>
 #include <boost/algorithm/cxx11/copy_if.hpp>
+#include <boost/algorithm/cxx14/equal.hpp>
+#include <boost/algorithm/cxx14/mismatch.hpp>
 #include <array>
 #include <vector>
 #include <iterator>
@@ -56,6 +58,25 @@ static void boost_algorithm_more_variants() noexcept {
   std::cout << "[demo.algorithm] " << __func__ << " is_increasing(v) => " << is_increasing(v) << std::endl;
   std::ostream_iterator<int> out{std::cout, ","};
   copy_until(v, out, [](int i) { return i > 12; });
+  std::cout << std::endl;
+}
+
+static void boost_algorithm_using_cxx14() noexcept {
+  std::cout << "--------- [algorithm.using_cxx14] ---------" << std::endl;
+  using namespace boost::algorithm;
+
+  std::vector<int> v{1, 2};
+  std::vector<int> w{1, 2, 3};
+  std::cout.setf(std::ios::boolalpha);
+
+  auto x = boost::algorithm::equal(v.begin(), v.end(), w.begin(), w.end());
+  std::cout << "[demo.algorithm] " << __func__ << " equal(v.begin(), v.end(), w.begin(), w.end()) => " << x << std::endl;
+
+  auto pair = mismatch(v.begin(), v.end(), w.begin(), w.end());
+  if (pair.first != v.end())
+    std::cout << "[demo.algorithm] " << __func__ << " *pair.first => " << *pair.first << std::endl;
+  if (pair.second != w.end())
+    std::cout << "[demo.algorithm] " << __func__ << " *pair.second => " << *pair.second << std::endl;
 }
 
 void boost_algorithm() noexcept {
@@ -63,4 +84,5 @@ void boost_algorithm() noexcept {
 
   boost_algorithm_testing_for_exactly_one_value();
   boost_algorithm_more_variants();
+  boost_algorithm_using_cxx14();
 }
