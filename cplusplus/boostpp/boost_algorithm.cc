@@ -30,9 +30,11 @@
 #include <boost/algorithm/cxx11/copy_if.hpp>
 #include <boost/algorithm/cxx14/equal.hpp>
 #include <boost/algorithm/cxx14/mismatch.hpp>
+#include <boost/algorithm/hex.hpp>
 #include <array>
 #include <vector>
 #include <iterator>
+#include <string>
 #include <iostream>
 
 
@@ -72,11 +74,30 @@ static void boost_algorithm_using_cxx14() noexcept {
   auto x = boost::algorithm::equal(v.begin(), v.end(), w.begin(), w.end());
   std::cout << "[demo.algorithm] " << __func__ << " equal(v.begin(), v.end(), w.begin(), w.end()) => " << x << std::endl;
 
-  auto pair = mismatch(v.begin(), v.end(), w.begin(), w.end());
+  auto pair = boost::algorithm::mismatch(v.begin(), v.end(), w.begin(), w.end());
   if (pair.first != v.end())
     std::cout << "[demo.algorithm] " << __func__ << " *pair.first => " << *pair.first << std::endl;
   if (pair.second != w.end())
     std::cout << "[demo.algorithm] " << __func__ << " *pair.second => " << *pair.second << std::endl;
+}
+
+static void boost_algorithm_using_hex_and_unhex() noexcept {
+  std::cout << "--------- [algorithm.using_hex_and_unhex] ---------" << std::endl;
+  using namespace boost::algorithm;
+
+  std::vector<char> v{'C', '+', '+'};
+  hex(v, std::ostream_iterator<char>{std::cout, ""});
+  std::cout << std::endl;
+
+  std::string s = "C++";
+  std::cout << "[demo.algorithm] " << __func__ << " hex(s) => " << hex(s) << std::endl;
+
+  std::vector<char> w{'4', '3', '2', 'b', '2', 'b'};
+  unhex(w, std::ostream_iterator<char>{std::cout, ""});
+  std::cout << std::endl;
+
+  std::string t = "432b2b";
+  std::cout << "[demo.algorithm] " << __func__ << " unhex(t) => " << unhex(t) << std::endl;
 }
 
 void boost_algorithm() noexcept {
@@ -85,4 +106,5 @@ void boost_algorithm() noexcept {
   boost_algorithm_testing_for_exactly_one_value();
   boost_algorithm_more_variants();
   boost_algorithm_using_cxx14();
+  boost_algorithm_using_hex_and_unhex();
 }
