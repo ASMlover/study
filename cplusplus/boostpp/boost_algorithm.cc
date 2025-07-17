@@ -31,6 +31,7 @@
 #include <boost/algorithm/cxx14/equal.hpp>
 #include <boost/algorithm/cxx14/mismatch.hpp>
 #include <boost/algorithm/hex.hpp>
+#include <boost/range/algorithm.hpp>
 #include <array>
 #include <vector>
 #include <iterator>
@@ -100,6 +101,13 @@ static void boost_algorithm_using_hex_and_unhex() noexcept {
   std::cout << "[demo.algorithm] " << __func__ << " unhex(t) => " << unhex(t) << std::endl;
 }
 
+static void boost_algorithm_counting() noexcept {
+  std::cout << "--------- [algorithm.counting] ---------" << std::endl;
+
+  std::array<int, 6> a{{0, 1, 0, 1, 0, 1}};
+  std::cout << "[demo.algorithm] " << __func__ << " count(a, 0) => " << boost::count(a, 0) << std::endl;
+}
+
 void boost_algorithm() noexcept {
   std::cout << "========= [algorithm] =========" << std::endl;
 
@@ -107,4 +115,5 @@ void boost_algorithm() noexcept {
   boost_algorithm_more_variants();
   boost_algorithm_using_cxx14();
   boost_algorithm_using_hex_and_unhex();
+  boost_algorithm_counting();
 }
