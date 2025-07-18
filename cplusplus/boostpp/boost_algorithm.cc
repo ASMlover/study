@@ -32,6 +32,7 @@
 #include <boost/algorithm/cxx14/mismatch.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/range/numeric.hpp>
 #include <array>
 #include <vector>
 #include <iterator>
@@ -108,6 +109,17 @@ static void boost_algorithm_counting() noexcept {
   std::cout << "[demo.algorithm] " << __func__ << " count(a, 0) => " << boost::count(a, 0) << std::endl;
 }
 
+static void boost_algorithm_related_from_stdlib() noexcept {
+  std::cout << "--------- [algorithm.related_from_stdlib] ---------" << std::endl;
+
+  std::array<int, 6> a{{0, 1, 2, 3, 4, 5}};
+  boost:: random_shuffle(a);
+  boost::copy(a, std::ostream_iterator<int>{std::cout, ","});
+  std::cout << std::endl;
+  std::cout << "[demo.algorithm] " << __func__ << " *boost::max_element(a) => " << *boost::max_element(a) << std::endl;
+  std::cout << "[demo.algorithm] " << __func__ << " boost::accumulate(a, 0) => " << boost::accumulate(a, 0) << std::endl;
+}
+
 void boost_algorithm() noexcept {
   std::cout << "========= [algorithm] =========" << std::endl;
 
@@ -116,4 +128,5 @@ void boost_algorithm() noexcept {
   boost_algorithm_using_cxx14();
   boost_algorithm_using_hex_and_unhex();
   boost_algorithm_counting();
+  boost_algorithm_related_from_stdlib();
 }
