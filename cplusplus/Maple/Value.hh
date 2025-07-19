@@ -26,74 +26,74 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <variant>
 #include "Common.hh"
 
 namespace ms {
 
 enum class ValueType : u8_t {
   NIL,
-  BOOL,
-  INT,
-  FLOAT,
+  BOOLEAN,
+  NUMBER,
   STRING,
   FUNCTION,
-  NATIVE_FUNCTION,
+  CLASS,
+  INSTANCE,
   MODULE
 };
 
-class Environment;
 class Function;
+class Class;
+class Instance;
 class Module;
 
+using FunctionPtr = std::shared_ptr<Function>;
+using ClassPtr    = std::shared_ptr<Class>;
+using InstancePtr = std::shared_ptr<Instance>;
+using ModulePtr   = std::shared_ptr<Module>;
+
 class Value final : public Copyable {
-  ValueType type_{ValueType::NIL};
-  union {
-    bool      boolean;
-    i64_t     integer;
-    double    floating;
-    str_t*    str;
-    Function* function;
-    struct {
-      void*   func_ptr;
-      cstr_t  name;
-    } native_function;
-    Module*   module;
-  } as_;
+  using VariantType = std::variant<
+    nil_t,
+    bool,
+    double,
+    std::string,
+    FunctionPtr,
+    ClassPtr,
+    InstancePtr,
+    ModulePtr>;
 
-  template <typename T> inline void set_integer(T x) noexcept { as_.integer = as_type<i64_t>(x); }
-  template <typename T> inline void set_numeric(T x) noexcept { as_.floating = as_type<double>(x); }
+  VariantType v_{};
+
+  inline ValueType value_type() const noexcept { return as_type<ValueType>(v_.index()); }
+
+  template <typename T> inline void set_number(T x) noexcept { v_ = as_type<double>(x); }
+  template <typename T> inline void set_string(T x) noexcept { v_ = str_t{x}; }
 public:
-  Value() noexcept {}
-  Value(nil_t) noexcept {}
-  Value(bool b) noexcept : type_{ValueType::BOOL} { as_.boolean = b; }
-  Value(i8_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
-  Value(u8_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
-  Value(i16_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
-  Value(u16_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
-  Value(i32_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
-  Value(u32_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
-  Value(i64_t i) noexcept : type_{ValueType::INT} { as_.integer = i; }
-  Value(u64_t i) noexcept : type_{ValueType::INT} { set_integer(i); }
+  Value() noexcept : v_{nullptr} {}
+  Value(nil_t) noexcept : v_{nullptr} {}
+  Value(bool b) noexcept : v_{b} {}
+  Value(i8_t i) noexcept { set_number(i); }
+  Value(u8_t i) noexcept { set_number(i); }
+  Value(i16_t i) noexcept { set_number(i); }
+  Value(u16_t i) noexcept { set_number(i); }
+  Value(i32_t i) noexcept { set_number(i); }
+  Value(u32_t i) noexcept { set_number(i); }
+  Value(i64_t i) noexcept { set_number(i); }
+  Value(u64_t i) noexcept { set_number(i); }
 #if defined(MAPLE_GNUC)
-  Value(long long ll) noexcept : type_{ValueType::INT} { set_integer(ll); }
-  Value(unsigned long long ull) noexcept : type_{ValueType::INT} { set_integer(ull); }
+  Value(long long ll) noexcept { set_number(ll); }
+  Value(unsigned long long ull) noexcept { set_number(ull); }
 #endif
-  Value(float f) noexcept : type_{ValueType::FLOAT} { set_numeric(f); }
-  Value(double d) noexcept : type_{ValueType::FLOAT} { as_.floating = d; }
-  Value(const str_t& s) noexcept : type_{ValueType::STRING} { as_.str = make_string(s); }
-  Value(strv_t s) noexcept : type_{ValueType::STRING} { as_.str = make_string(s); }
-  Value(cstr_t s) noexcept : type_{ValueType::STRING} { as_.str = make_string(s); }
-  Value(Function* f) noexcept : type_{ValueType::FUNCTION} { as_.function = f; }
-  Value(void* func, cstr_t name) noexcept : type_{ValueType::NATIVE_FUNCTION} {
-    as_.native_function.func_ptr = func;
-    as_.native_function.name = name;
-  }
-  Value(Module* m) : type_{ValueType::MODULE} { as_.module = m; }
-
-  ~Value() noexcept {
-    if (type_ == ValueType::STRING)
-      free_string(as_.str);
-  }
+  Value(float f) noexcept { set_number(f); }
+  Value(double d) noexcept : v_{d} {}
+  Value(const str_t& s) noexcept : v_{s} {}
+  Value(strv_t s) noexcept { set_string(s); }
+  Value(cstr_t s) noexcept { set_string(s); }
+  Value(const FunctionPtr& f) noexcept : v_{f} {}
+  Value(const ClassPtr& c) noexcept : v_{c} {}
+  Value(const InstancePtr& i) noexcept : v_{i} {}
+  Value(const ModulePtr& m) noexcept : v_{m} {}
 };
 
 }
