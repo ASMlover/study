@@ -27,6 +27,8 @@
 #pragma once
 
 #include <variant>
+#include <stdexcept>
+#include <format>
 #include "Common.hh"
 
 namespace ms {
@@ -54,7 +56,7 @@ using ModulePtr   = std::shared_ptr<Module>;
 
 class Value final : public Copyable {
   using VariantType = std::variant<
-    nil_t,
+    std::monostate,
     bool,
     double,
     std::string,
@@ -63,37 +65,82 @@ class Value final : public Copyable {
     InstancePtr,
     ModulePtr>;
 
-  VariantType v_{};
+  VariantType v_{std::monostate{}};
+
+  template <typename T> inline double number_cast(T x) noexcept { return as_type<double>(x); }
+  template <typename T> inline str_t string_cast(T x) noexcept { return str_t{x}; }
+
+  inline void check_type(ValueType expected, const str_t& type_name) const {
+    if (value_type() != expected)
+      throw std::runtime_error(from_fmt("Expected %s, but got %s !!!", type_name.c_str(), name_of_type().c_str()));
+  }
+
+  str_t name_of_type() const noexcept;
+public:
+  Value() noexcept : v_{std::monostate{}} {}
+  Value(nil_t) noexcept : v_{std::monostate{}} {}
+  Value(bool b) noexcept : v_{b} {}
+  Value(i8_t i) noexcept : v_{number_cast(i)} {}
+  Value(u8_t i) noexcept : v_{number_cast(i)} {}
+  Value(i16_t i) noexcept : v_{number_cast(i)} {}
+  Value(u16_t i) noexcept : v_{number_cast(i)} {}
+  Value(i32_t i) noexcept : v_{number_cast(i)} {}
+  Value(u32_t i) noexcept : v_{number_cast(i)} {}
+  Value(i64_t i) noexcept : v_{number_cast(i)} {}
+  Value(u64_t i) noexcept : v_{number_cast(i)} {}
+#if defined(MAPLE_GNUC)
+  Value(long long ll) noexcept : v_{number_cast(ll)} {}
+  Value(unsigned long long ull) noexcept : v_{number_cast(ull)} {}
+#endif
+  Value(float f) noexcept : v_{number_cast(f)} {}
+  Value(double d) noexcept : v_{d} {}
+  Value(const str_t& s) noexcept : v_{s} {}
+  Value(strv_t s) noexcept : v_{string_cast(s)} {}
+  Value(cstr_t s) noexcept : v_{string_cast(s)} {}
+  Value(FunctionPtr f) noexcept : v_{std::move(f)} {}
+  Value(const FunctionPtr& f) noexcept : v_{f} {}
+  Value(ClassPtr c) noexcept : v_{std::move(c)} {}
+  Value(const ClassPtr& c) noexcept : v_{c} {}
+  Value(InstancePtr i) noexcept : v_{std::move(i)} {}
+  Value(const InstancePtr& i) noexcept : v_{i} {}
+  Value(ModulePtr m) noexcept : v_{std::move(m)} {}
+  Value(const ModulePtr& m) noexcept : v_{m} {}
+  Value(const Value& other) noexcept : v_{other.v_} {}
+  Value(Value&& other) noexcept : v_{std::move(other.v_)} {}
+
+  Value& operator=(const Value& other) noexcept {
+    if (this != &other)
+      v_ = other.v_;
+    return *this;
+  }
+
+  Value& operator=(Value&& other) noexcept {
+    if (this != &other)
+      v_ = std::move(other.v_);
+    return *this;
+  }
 
   inline ValueType value_type() const noexcept { return as_type<ValueType>(v_.index()); }
 
-  template <typename T> inline void set_number(T x) noexcept { v_ = as_type<double>(x); }
-  template <typename T> inline void set_string(T x) noexcept { v_ = str_t{x}; }
-public:
-  Value() noexcept : v_{nullptr} {}
-  Value(nil_t) noexcept : v_{nullptr} {}
-  Value(bool b) noexcept : v_{b} {}
-  Value(i8_t i) noexcept { set_number(i); }
-  Value(u8_t i) noexcept { set_number(i); }
-  Value(i16_t i) noexcept { set_number(i); }
-  Value(u16_t i) noexcept { set_number(i); }
-  Value(i32_t i) noexcept { set_number(i); }
-  Value(u32_t i) noexcept { set_number(i); }
-  Value(i64_t i) noexcept { set_number(i); }
-  Value(u64_t i) noexcept { set_number(i); }
-#if defined(MAPLE_GNUC)
-  Value(long long ll) noexcept { set_number(ll); }
-  Value(unsigned long long ull) noexcept { set_number(ull); }
-#endif
-  Value(float f) noexcept { set_number(f); }
-  Value(double d) noexcept : v_{d} {}
-  Value(const str_t& s) noexcept : v_{s} {}
-  Value(strv_t s) noexcept { set_string(s); }
-  Value(cstr_t s) noexcept { set_string(s); }
-  Value(const FunctionPtr& f) noexcept : v_{f} {}
-  Value(const ClassPtr& c) noexcept : v_{c} {}
-  Value(const InstancePtr& i) noexcept : v_{i} {}
-  Value(const ModulePtr& m) noexcept : v_{m} {}
+  inline bool is_nil() const noexcept { return value_type() == ValueType::NIL; }
+  inline bool is_boolean() const noexcept { return value_type() == ValueType::BOOLEAN; }
+  inline bool is_number() const noexcept { return value_type() == ValueType::NUMBER; }
+  inline bool is_string() const noexcept { return value_type() == ValueType::STRING; }
+  inline bool is_function() const noexcept { return value_type() == ValueType::FUNCTION; }
+  inline bool is_class() const noexcept { return value_type() == ValueType::CLASS; }
+  inline bool is_instance() const noexcept { return value_type() == ValueType::INSTANCE; }
+  inline bool is_module() const noexcept { return value_type() == ValueType::MODULE; }
+
+  inline bool as_boolean() const noexcept { return std::get<bool>(v_); }
+  inline double as_number() const noexcept { return std::get<double>(v_); }
+  inline const str_t& as_string() const noexcept { return std::get<str_t>(v_); }
+  inline FunctionPtr as_function() const noexcept { return std::get<FunctionPtr>(v_); }
+  inline ClassPtr as_class() const noexcept { return std::get<ClassPtr>(v_); }
+  inline InstancePtr as_instance() const noexcept { return std::get<InstancePtr>(v_); }
+  inline ModulePtr as_module() const noexcept { return std::get<ModulePtr>(v_); }
+
+  bool is_truthy() const noexcept;
+  str_t stringify() const noexcept;
 };
 
 }
