@@ -32,8 +32,10 @@
 #include <boost/algorithm/cxx14/mismatch.hpp>
 #include <boost/algorithm/hex.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
 #include <boost/range/numeric.hpp>
 #include <array>
+#include <deque>
 #include <vector>
 #include <iterator>
 #include <string>
@@ -120,6 +122,17 @@ static void boost_algorithm_related_from_stdlib() noexcept {
   std::cout << "[demo.algorithm] " << __func__ << " boost::accumulate(a, 0) => " << boost::accumulate(a, 0) << std::endl;
 }
 
+static void boost_algorithm_without_counterparts() noexcept {
+  std::cout << "--------- [algorithm.without_counterparts] ---------" << std::endl;
+
+  std::array<int, 6> a{{0, 1, 2, 3, 4, 5}};
+  std::cout << "[demo.algorithm] " << __func__ << " is_sorted(a) => " << std::boolalpha << boost::is_sorted(a) << std::endl;
+  std::deque<int> d;
+  boost::push_back(d, a);
+  boost::remove_erase(d, 2);
+  boost::copy_n(d, 3, std::ostream_iterator<int>{std::cout, ","});
+}
+
 void boost_algorithm() noexcept {
   std::cout << "========= [algorithm] =========" << std::endl;
 
@@ -129,4 +142,5 @@ void boost_algorithm() noexcept {
   boost_algorithm_using_hex_and_unhex();
   boost_algorithm_counting();
   boost_algorithm_related_from_stdlib();
+  boost_algorithm_without_counterparts();
 }
