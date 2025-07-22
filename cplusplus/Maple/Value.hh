@@ -72,7 +72,7 @@ class Value final : public Copyable {
 
   inline void check_type(ValueType expected, const str_t& type_name) const {
     if (value_type() != expected)
-      throw std::runtime_error(from_fmt("Expected %s, but got %s !!!", type_name.c_str(), name_of_type().c_str()));
+      throw std::runtime_error(std::format("Expected {} but got {}", type_name, name_of_type()));
   }
 
   str_t name_of_type() const noexcept;
@@ -139,8 +139,37 @@ public:
   inline InstancePtr as_instance() const noexcept { return std::get<InstancePtr>(v_); }
   inline ModulePtr as_module() const noexcept { return std::get<ModulePtr>(v_); }
 
+  inline bool operator==(const Value& other) const noexcept {
+    return (is_number() && other.is_number()) ? as_number() == other.as_number() : v_ == other.v_;
+  }
+
+  inline bool operator!=(const Value& other) const noexcept { return !(*this == other); }
+  inline bool operator<(const Value& other) const noexcept { return as_number() < other.as_number(); }
+  inline bool operator<=(const Value& other) const noexcept { return as_number() <= other.as_number(); }
+  inline bool operator>(const Value& other) const noexcept { return as_number() > other.as_number(); }
+  inline bool operator>=(const Value& other) const noexcept { return as_number() >= other.as_number(); }
+
+  inline Value operator+(const Value& other) const noexcept {
+    if (is_string() && other.is_string())
+      return as_string() + other.as_string();
+    return as_number() + other.as_number();
+  }
+
+  inline Value operator-(const Value& other) const noexcept { return as_number() - other.as_number(); }
+  inline Value operator*(const Value& other) const noexcept { return as_number() * other.as_number(); }
+  inline Value operator/(const Value& other) const noexcept { return as_number() / other.as_number(); }
+  inline Value operator-() const noexcept { return -as_number(); }
+  inline Value operator!() const noexcept { return !is_truthy(); }
+
+  inline bool is_abs_equal(const Value& other) const noexcept { return v_ == other.v_; }
+  inline bool is_equal(const Value& other) const noexcept { return (this == &other) || (*this == other); }
+
   bool is_truthy() const noexcept;
   str_t stringify() const noexcept;
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Value& v) noexcept {
+  return out << v.stringify();
+}
 
 }
