@@ -27,6 +27,7 @@
 
 #include <iostream>
 #include "Common.hh"
+#include "Environment.hh"
 
 int main(int argc, char* argv[]) {
   MAPLE_UNUSED(argc), MAPLE_UNUSED(argv);
