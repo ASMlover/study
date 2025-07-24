@@ -27,6 +27,9 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/adaptors.hpp>
 #include <array>
+#include <map>
+#include <string>
+#include <utility>
 #include <iterator>
 #include <iostream>
 
@@ -36,10 +39,28 @@ static void boost_adaptors_filtering_a_range() noexcept {
   std::array<int, 6> a{{0, 5, 2, 1, 3, 4}};
   boost::copy(boost::adaptors::filter(a, [](int i) { return i > 2; }),
       std::ostream_iterator<int>{std::cout, ","});
+  std::cout << std::endl;
+}
+
+static void boost_adaptors_using_keys_values_indirect() noexcept {
+  std::cout << "-------- [adaptors.using_keys_values_indirect] ---------" << std::endl;
+
+  std::array<int, 3> a{{0, 1, 2}};
+  std::map<std::string, int*> m;
+  m.insert(std::make_pair("a", &a[0]));
+  m.insert(std::make_pair("b", &a[1]));
+  m.insert(std::make_pair("c", &a[2]));
+
+  boost::copy(boost::adaptors::keys(m),
+      std::ostream_iterator<std::string>{std::cout, ","});
+  boost::copy(boost::adaptors::indirect(boost::adaptors::values(m)),
+      std::ostream_iterator<int>(std::cout, ","));
+  std::cout << std::endl;
 }
 
 void boost_adaptors() noexcept {
   std::cout << "========= [adaptors] =========" << std::endl;
 
   boost_adaptors_filtering_a_range();
+  boost_adaptors_using_keys_values_indirect();
 }
