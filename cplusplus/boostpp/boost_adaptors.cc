@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/range/algorithm.hpp>
 #include <boost/range/adaptors.hpp>
+#include <boost/regex.hpp>
 #include <array>
 #include <map>
 #include <string>
@@ -58,9 +59,20 @@ static void boost_adaptors_using_keys_values_indirect() noexcept {
   std::cout << std::endl;
 }
 
+static void boost_adaptors_tokenize() noexcept {
+  std::cout << "--------- [adaptors.tokenize] ---------" << std::endl;
+
+  std::string s = "The Boost C++ Libraries";
+  boost::regex expr{"[\\w+]+"};
+  boost::copy(boost::adaptors::tokenize(s, expr, 0, boost::regex_constants::match_default),
+      std::ostream_iterator<std::string>{std::cout, ","});
+  std::cout << std::endl;
+}
+
 void boost_adaptors() noexcept {
   std::cout << "========= [adaptors] =========" << std::endl;
 
   boost_adaptors_filtering_a_range();
   boost_adaptors_using_keys_values_indirect();
+  boost_adaptors_tokenize();
 }
