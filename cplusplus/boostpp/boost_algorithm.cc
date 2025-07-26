@@ -34,6 +34,7 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/numeric.hpp>
+#include <boost/range/irange.hpp>
 #include <array>
 #include <deque>
 #include <vector>
@@ -131,6 +132,15 @@ static void boost_algorithm_without_counterparts() noexcept {
   boost::push_back(d, a);
   boost::remove_erase(d, 2);
   boost::copy_n(d, 3, std::ostream_iterator<int>{std::cout, ","});
+  std::cout << std::endl;
+}
+
+static void boost_algorithm_creating_range() noexcept {
+  std::cout << "--------- [algorithm.creating_range] ---------" << std::endl;
+
+  boost::integer_range<int> ir = boost::irange(0, 3);
+  boost::copy(ir, std::ostream_iterator<int>{std::cout, ","});
+  std::cout << std::endl;
 }
 
 void boost_algorithm() noexcept {
@@ -143,4 +153,5 @@ void boost_algorithm() noexcept {
   boost_algorithm_counting();
   boost_algorithm_related_from_stdlib();
   boost_algorithm_without_counterparts();
+  boost_algorithm_creating_range();
 }
