@@ -162,4 +162,8 @@ inline void string_split(const StringType& str, const DelimType& delims, u32_t m
   } while (StringType::npos != pos);
 }
 
+template <typename To, typename From> inline To implicit_cast(const From& x) noexcept {
+  return x;
+}
+
 }

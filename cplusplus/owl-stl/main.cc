@@ -24,13 +24,12 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include "common.hh"
-#include "slice.hh"
-#include "any.hh"
-#include "socket_ops.hh"
+#include <iostream>
+#include "owl_iterator.hh"
+#include "owl_allocator.hh"
 
 int main(int argc, char* argv[]) {
-  EV_UNUSED(argc), EV_UNUSED(argv);
+  (void)argc, (void)argv;
 
   return 0;
 }
