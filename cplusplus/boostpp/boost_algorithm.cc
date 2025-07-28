@@ -35,6 +35,7 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/range/irange.hpp>
+#include <boost/range/istream_range.hpp>
 #include <array>
 #include <deque>
 #include <vector>
@@ -143,6 +144,13 @@ static void boost_algorithm_creating_range() noexcept {
   std::cout << std::endl;
 }
 
+static void boost_algorithm_creating_range_for_input_stream() noexcept {
+  std::cout << "--------- [algorithm.creating_range_for_input_stream] ---------" << std::endl;
+
+  boost::iterator_range<std::istream_iterator<int>> ir = boost::istream_range<int>(std::cin);
+  boost::copy(ir, std::ostream_iterator<int>{std::cout, "\n"});
+}
+
 void boost_algorithm() noexcept {
   std::cout << "========= [algorithm] =========" << std::endl;
 
@@ -154,4 +162,5 @@ void boost_algorithm() noexcept {
   boost_algorithm_related_from_stdlib();
   boost_algorithm_without_counterparts();
   boost_algorithm_creating_range();
+  boost_algorithm_creating_range_for_input_stream();
 }
