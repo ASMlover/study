@@ -25,6 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/graph/adjacency_list.hpp>
+#include <utility>
+#include <algorithm>
+#include <iterator>
 #include <iostream>
 
 static void boost_graph_with_four_vertices() noexcept {
@@ -39,8 +42,25 @@ static void boost_graph_with_four_vertices() noexcept {
   std::cout << "[demo.graph] " << __func__ << " => " << v1 << "," << v2 << "," << v3 << "," << v4 << std::endl;
 }
 
+static void boost_graph_accessing_vertices() noexcept {
+  std::cout << "--------- [graph.accessing_vertices] ---------" << std::endl;
+
+  boost::adjacency_list<> g;
+
+  boost::add_vertex(g);
+  boost::add_vertex(g);
+  boost::add_vertex(g);
+  boost::add_vertex(g);
+
+  std::pair<boost::adjacency_list<>::vertex_iterator, boost::adjacency_list<>::vertex_iterator> vs = boost::vertices(g);
+
+  std::copy(vs.first, vs.second,
+      std::ostream_iterator<boost::adjacency_list<>::vertex_descriptor>{std::cout, "\n"});
+}
+
 void boost_graph() noexcept {
   std::cout << "========= [graph] =========" << std::endl;
 
   boost_graph_with_four_vertices();
+  boost_graph_accessing_vertices();
 }
