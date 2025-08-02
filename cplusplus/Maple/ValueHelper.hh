@@ -45,12 +45,14 @@ class Function;
 class Class;
 class Instance;
 class Module;
+class Environment;
 
-using FunctionPtr   = std::shared_ptr<Function>;
-using ClassPtr      = std::shared_ptr<Class>;
-using InstancePtr   = std::shared_ptr<Instance>;
-using ModulePtr     = std::shared_ptr<Module>;
+using FunctionPtr     = std::shared_ptr<Function>;
+using ClassPtr        = std::shared_ptr<Class>;
+using InstancePtr     = std::shared_ptr<Instance>;
+using ModulePtr       = std::shared_ptr<Module>;
+using EnvironmentPtr  = std::shared_ptr<Environment>;
 
-using ValueSpecial  = std::variant<std::monostate, bool, double, str_t, FunctionPtr, ClassPtr, InstancePtr, ModulePtr>;
+using ValueSpecial    = std::variant<std::monostate, bool, double, str_t, FunctionPtr, ClassPtr, InstancePtr, ModulePtr>;
 
 }
