@@ -30,42 +30,12 @@
 #include <stdexcept>
 #include <format>
 #include "Common.hh"
+#include "ValueHelper.hh"
 
 namespace ms {
 
-enum class ValueType : u8_t {
-  NIL,
-  BOOLEAN,
-  NUMBER,
-  STRING,
-  FUNCTION,
-  CLASS,
-  INSTANCE,
-  MODULE
-};
-
-class Function;
-class Class;
-class Instance;
-class Module;
-
-using FunctionPtr = std::shared_ptr<Function>;
-using ClassPtr    = std::shared_ptr<Class>;
-using InstancePtr = std::shared_ptr<Instance>;
-using ModulePtr   = std::shared_ptr<Module>;
-
 class Value final : public Copyable {
-  using VariantType = std::variant<
-    std::monostate,
-    bool,
-    double,
-    std::string,
-    FunctionPtr,
-    ClassPtr,
-    InstancePtr,
-    ModulePtr>;
-
-  VariantType v_{std::monostate{}};
+  ValueSpecial v_{std::monostate{}};
 
   template <typename T> inline double number_cast(T x) noexcept { return as_type<double>(x); }
   template <typename T> inline str_t string_cast(T x) noexcept { return str_t{x}; }
