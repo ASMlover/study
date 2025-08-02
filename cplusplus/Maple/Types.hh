@@ -30,6 +30,11 @@
 #include <string_view>
 #include <sstream>
 #include "Macros.hh"
+#if defined(MAPLE_GNUC)
+# include <sys/types.h>
+#else
+# include <basetsd.h>
+#endif
 
 namespace ms {
 
@@ -50,7 +55,7 @@ using sz_t                        = std::size_t;
 #if defined(MAPLE_GNUC)
   using ssz_t                     = ssize_t;
 #else
-  using ssz_t                     = std::int64_t;
+  using ssz_t                     = SSIZE_T;
 #endif
 using str_t                       = std::string;
 using strv_t                      = std::string_view;
