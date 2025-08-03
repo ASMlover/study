@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include "Common.hh"
+#include <memory>
+#include <variant>
+#include "Types.hh"
 
 namespace ms {
 
