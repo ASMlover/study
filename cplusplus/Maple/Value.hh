@@ -26,7 +26,6 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <variant>
 #include <stdexcept>
 #include <format>
 #include "Common.hh"
