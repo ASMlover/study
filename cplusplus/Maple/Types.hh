@@ -26,15 +26,15 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <string>
-#include <string_view>
-#include <sstream>
 #include "Macros.hh"
 #if defined(MAPLE_GNUC)
 # include <sys/types.h>
 #else
 # include <basetsd.h>
 #endif
+#include <string>
+#include <string_view>
+#include <sstream>
 
 namespace ms {
 

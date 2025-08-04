@@ -36,6 +36,9 @@
 # define MAPLE_MSVC
 #endif
 
+#undef MAPLE_GNUC
+#define MAPLE_MSVC
+
 #if !defined(interface)
 # define interface                struct
 #endif
