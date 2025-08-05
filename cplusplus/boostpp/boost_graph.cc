@@ -58,9 +58,58 @@ static void boost_graph_accessing_vertices() noexcept {
       std::ostream_iterator<boost::adjacency_list<>::vertex_descriptor>{std::cout, "\n"});
 }
 
+static void boost_graph_accessing_edges() noexcept {
+  std::cout << "--------- [graph.accessing_edges] ---------" << std::endl;
+
+  boost::adjacency_list<> g;
+  boost::adjacency_list<>::vertex_descriptor v1 = boost::add_vertex(g);
+  boost::adjacency_list<>::vertex_descriptor v2 = boost::add_vertex(g);
+  boost::add_vertex(g);
+  boost::add_vertex(g);
+
+  std::pair<boost::adjacency_list<>::edge_descriptor, bool> p = boost::add_edge(v1, v2, g);
+  std::cout.setf(std::ios::boolalpha);
+  std::cout << "[demo.graph] " << __func__ << " p.second => " << p.second << std::endl;
+
+  p = boost::add_edge(v1, v2, g);
+  std::cout << "[demo.graph] " << __func__ << " p.second => " << p.second << std::endl;
+
+  p = boost::add_edge(v2, v1, g);
+  std::cout << "[demo.graph] " << __func__ << " p.second => " << p.second << std::endl;
+
+  std::pair<boost::adjacency_list<>::edge_iterator, boost::adjacency_list<>::edge_iterator> es = boost::edges(g);
+  std::copy(es.first, es.second, std::ostream_iterator<boost::adjacency_list<>::edge_descriptor>{std::cout, "\n"});
+}
+
+static void boost_graph_with_selectors() noexcept {
+  std::cout << "--------- [graph.with_selectors] ---------" << std::endl;
+  using graph = boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS>;
+
+  graph g;
+  boost::adjacency_list<>::vertex_descriptor v1 = boost::add_vertex(g);
+  boost::adjacency_list<>::vertex_descriptor v2 = boost::add_vertex(g);
+  boost::add_vertex(g);
+  boost::add_vertex(g);
+
+  std::pair<graph::edge_descriptor, bool> p = boost::add_edge(v1, v2, g);
+  std::cout.setf(std::ios::boolalpha);
+  std::cout << "[demo.graph] " << __func__ << " p.second => " << p.second << std::endl;
+
+  p = boost::add_edge(v1, v2, g);
+  std::cout << "[demo.graph] " << __func__ << " p.second => " << p.second << std::endl;
+
+  p = boost::add_edge(v2, v1, g);
+  std::cout << "[demo.graph] " << __func__ << " p.second => " << p.second << std::endl;
+
+  std::pair<graph::edge_iterator, graph::edge_iterator> es = boost::edges(g);
+  std::copy(es.first, es.second, std::ostream_iterator<graph::edge_descriptor>{std::cout, "\n"});
+}
+
 void boost_graph() noexcept {
   std::cout << "========= [graph] =========" << std::endl;
 
   boost_graph_with_four_vertices();
   boost_graph_accessing_vertices();
+  boost_graph_accessing_edges();
+  boost_graph_with_selectors();
 }
