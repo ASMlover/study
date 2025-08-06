@@ -358,142 +358,33 @@ class Parser final : private UnCopyable {
     }
   }
 
-  inline StmtPtr declaration() noexcept {
-    // TODO:
-    return nullptr;
-  }
+  StmtPtr declaration() noexcept;
+  StmtPtr class_declaration() noexcept;
+  FunctionStmtPtr function(const str_t& kind);
+  StmtPtr var_declaration() noexcept;
+  StmtPtr statement() noexcept;
 
-  inline StmtPtr class_declaration() noexcept {
-    // TODO:
-    return nullptr;
-  }
+  StmtPtr for_statement() noexcept;
+  StmtPtr if_statement() noexcept;
+  StmtPtr print_statement() noexcept;
+  StmtPtr return_statement() noexcept;
+  StmtPtr while_statement() noexcept;
+  std::vector<StmtPtr> block() noexcept;
+  StmtPtr import_statement() noexcept;
+  StmtPtr expression_statement() noexcept;
+  ExprPtr expression() noexcept;
 
-  inline FunctionStmtPtr function(const str_t& kind) noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr var_declaration() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr print_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline std::vector<StmtPtr> block() noexcept {
-    // TODO:
-    return {};
-  }
-
-  inline StmtPtr expression_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr if_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr while_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr for_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr return_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline StmtPtr import_statement() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr expression() noexcept {
-    return assignment();
-  }
-
-  inline ExprPtr assignment() {
-    auto expr = or_expr();
-    if (match({TokenType::TK_EQUAL})) {
-      auto& equals = prev();
-      auto value = assignment();
-
-      if (auto var_expr = as_down<VariableExpr>(expr.get())) {
-        return std::make_shared<AssignExpr>(var_expr->name(), std::move(value));
-      }
-      else if (auto get_expr = as_down<GetExpr>(expr.get())) {
-        return std::make_shared<SetExpr>(std::move(get_expr->object()), get_expr->name(), std::move(value));
-      }
-
-      throw std::runtime_error(std::format("Error at line {}: Invalid assignment target", equals.lineno()));
-    }
-    return expr;
-  }
-
-  inline ExprPtr or_expr() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr and_expr() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr equality() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr comparison() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr term() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr factor() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr unary() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr call() noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr finish_call(ExprPtr callee) noexcept {
-    // TODO:
-    return nullptr;
-  }
-
-  inline ExprPtr primary() noexcept {
-    // TODO:
-    return nullptr;
-  }
+  ExprPtr assignment();
+  ExprPtr or_expr() noexcept;
+  ExprPtr and_expr() noexcept;
+  ExprPtr equality() noexcept;
+  ExprPtr comparison() noexcept;
+  ExprPtr term() noexcept;
+  ExprPtr factor() noexcept;
+  ExprPtr unary() noexcept;
+  ExprPtr call() noexcept;
+  ExprPtr finish_call(ExprPtr callee);
+  ExprPtr primary();
 public:
   Parser(const std::vector<Token>& tokens) noexcept : tokens_{tokens} {}
 
