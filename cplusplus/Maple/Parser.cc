@@ -25,6 +25,11 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "Parser.hh"
+#include "Token.hh"
+#include <format>
+#include <memory>
+#include <stdexcept>
+#include <vector>
 
 namespace ms {
 
@@ -49,5 +54,324 @@ void WhileStmt::accept(Interpreter& Interpreter) const {}
 void FunctionStmt::accept(Interpreter& Interpreter) const {}
 void ClassStmt::accept(Interpreter& Interpreter) const {}
 void ImportStmt::accept(Interpreter& Interpreter) const {}
+
+// ----------------------------------- Parser ----------------------------------
+StmtPtr Parser::declaration() noexcept {
+  try {
+    if (match({TokenType::KW_CLASS}))
+      return class_declaration();
+    if (match({TokenType::KW_FUN}))
+      return function("function");
+    if (match({TokenType::KW_VAR}))
+      return var_declaration();
+  } catch (const std::runtime_error&) {
+    synchronize();
+  }
+  return nullptr;
+}
+
+StmtPtr Parser::class_declaration() noexcept {
+  auto name = consume(TokenType::TK_IDENTIFIER, "Expect class name.");
+
+  VariableExprPtr superclass = nullptr;
+  if (match({TokenType::TK_LESS})) {
+    consume(TokenType::TK_IDENTIFIER, "Expect superclass name");
+    superclass = std::make_shared<VariableExpr>(prev());
+  }
+  consume(TokenType::TK_LBRACE, "Expect `(` before class body.");
+
+  std::vector<FunctionStmtPtr> methods;
+  while (!check(TokenType::TK_RBRACE) && !is_at_end())
+    methods.push_back(function("method"));
+
+  consume(TokenType::TK_RBRACE, "Expect `}` after class body.");
+  return std::make_shared<ClassStmt>(name, std::move(superclass), methods);
+}
+
+FunctionStmtPtr Parser::function(const str_t& kind) {
+  auto name = consume(TokenType::TK_IDENTIFIER, std::format("Expect {} name.", kind));
+  consume(TokenType::TK_LPAREN, std::format("Expect `(` after {} name.", kind));
+
+  std::vector<Token> parameters;
+  if (!check(TokenType::TK_RPAREN)) {
+    do {
+      if (parameters.size() >= 255)
+        throw std::runtime_error(std::format("Error at line {}: cannot have more than 255 parameters.", peek().lineno()));
+    } while (match({TokenType::TK_COMMA}));
+  }
+  consume(TokenType::TK_RPAREN, "Expect `)` after parameters.");
+  consume(TokenType::TK_LBRACE, std::format("Expect `{{` before {} body.", kind));
+
+  auto body = block();
+  return std::make_shared<FunctionStmt>(name, parameters, std::move(body));
+}
+
+StmtPtr Parser::var_declaration() noexcept {
+  auto name = consume(TokenType::TK_IDENTIFIER, "Expect variable name.");
+
+  ExprPtr initializer = nullptr;
+  if (match({TokenType::TK_EQUAL}))
+    initializer = expression();
+  consume(TokenType::TK_SEMICOLON, "Expect `;` after variable declaration.");
+
+  return std::make_shared<VarStmt>(name, std::move(initializer));
+}
+
+StmtPtr Parser::statement() noexcept {
+  if (match({TokenType::KW_FOR}))
+    return for_statement();
+  if (match({TokenType::KW_IF}))
+    return if_statement();
+  if (match({TokenType::KW_PRINT}))
+    return print_statement();
+  if (match({TokenType::KW_RETURN}))
+    return return_statement();
+  if (match({TokenType::KW_WHILE}))
+    return while_statement();
+  if (match({TokenType::TK_LBRACE}))
+    return std::make_shared<BlockStmt>(block());
+  if (match({TokenType::KW_IMPORT}))
+    return import_statement();
+
+  return expression_statement();
+}
+
+StmtPtr Parser::for_statement() noexcept {
+  consume(TokenType::TK_LPAREN, "Expect `(` after `for`.");
+
+  StmtPtr initializer;
+  if (match({TokenType::TK_SEMICOLON}))
+    initializer = nullptr;
+  else if (match({TokenType::KW_VAR}))
+    initializer = var_declaration();
+  else
+    initializer = expression_statement();
+
+  ExprPtr condition{};
+  if (!check(TokenType::TK_SEMICOLON))
+    condition = expression();
+  consume(TokenType::TK_SEMICOLON, "Expect `;` after loop condition.");
+
+  ExprPtr increment{};
+  if (!check(TokenType::TK_RPAREN))
+    increment = expression();
+  consume(TokenType::TK_RPAREN, "Expect `)` after for statement.");
+
+  auto body = statement();
+  if (increment) {
+    std::vector<StmtPtr> stmts{body, std::make_shared<ExpressionStmt>(increment)};
+    body = std::make_shared<BlockStmt>(stmts);
+  }
+
+  if (!condition)
+    condition = std::make_shared<LiteralExpr>(true);
+  body = std::make_shared<WhileStmt>(std::move(condition), std::move(body));
+
+  if (initializer) {
+    std::vector<StmtPtr> stmts{initializer, body};
+    body = std::make_shared<BlockStmt>(stmts);
+  }
+
+  return body;
+}
+
+StmtPtr Parser::if_statement() noexcept {
+  // TODO:
+  return nullptr;
+}
+
+StmtPtr Parser::print_statement() noexcept {
+  auto value = expression();
+  consume(TokenType::TK_SEMICOLON, "Expect `;` after value.");
+  return std::make_shared<PrintStmt>(std::move(value));
+}
+
+StmtPtr Parser::return_statement() noexcept {
+  // TODO:
+  return nullptr;
+}
+
+StmtPtr Parser::while_statement() noexcept {
+  // TODO:
+  return nullptr;
+}
+
+std::vector<StmtPtr> Parser::block() noexcept {
+  // TODO:
+  return {};
+}
+
+StmtPtr Parser::import_statement() noexcept {
+  // TODO:
+  return nullptr;
+}
+
+StmtPtr Parser::expression_statement() noexcept {
+  // TODO:
+  return nullptr;
+}
+
+ExprPtr Parser::expression() noexcept {
+  return assignment();
+}
+
+ExprPtr Parser::assignment() {
+  auto expr = or_expr();
+  if (match({TokenType::TK_EQUAL})) {
+    auto& equals = prev();
+    auto value = assignment();
+
+    if (auto var_expr = as_down<VariableExpr>(expr.get())) {
+      return std::make_shared<AssignExpr>(var_expr->name(), std::move(value));
+    }
+    else if (auto get_expr = as_down<GetExpr>(expr.get())) {
+      return std::make_shared<SetExpr>(std::move(get_expr->object()), get_expr->name(), std::move(value));
+    }
+
+    throw std::runtime_error(std::format("Error at line {}: Invalid assignment target", equals.lineno()));
+  }
+  return expr;
+}
+
+ExprPtr Parser::or_expr() noexcept {
+  auto expr = and_expr();
+
+  while (match({TokenType::KW_OR})) {
+    auto op = prev();
+    auto right = and_expr();
+    expr = std::make_shared<LogicalExpr>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
+ExprPtr Parser::and_expr() noexcept {
+  auto expr = equality();
+
+  while (match({TokenType::KW_AND})) {
+    auto op = prev();
+    auto right = equality();
+    expr = std::make_shared<LogicalExpr>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
+ExprPtr Parser::equality() noexcept {
+  auto expr = comparison();
+
+  while (match({TokenType::TK_BANG_EQUAL, TokenType::TK_EQUAL_EQUAL})) {
+    auto op = prev();
+    auto right = comparison();
+    expr = std::make_shared<BinayExpr>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
+ExprPtr Parser::comparison() noexcept {
+  auto expr = term();
+
+  while (match({TokenType::TK_GREATER, TokenType::TK_GREATER_EQUAL,
+        TokenType::TK_LESS, TokenType::TK_LESS_EQUAL})) {
+    auto op = prev();
+    auto right = term();
+    expr = std::make_shared<BinayExpr>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
+ExprPtr Parser::term() noexcept {
+  auto expr = factor();
+
+  while (match({TokenType::TK_MINUS, TokenType::TK_PLUS})) {
+    auto op = prev();
+    auto right = factor();
+    expr = std::make_shared<BinayExpr>(std::move(expr), op, std::move(right));
+  }
+  return expr;
+}
+
+ExprPtr Parser::factor() noexcept {
+  auto expr = unary();
+
+  while (match({TokenType::TK_SLASH, TokenType::TK_STAR})) {
+    auto op = prev();
+    auto right = unary();
+    expr = std::make_shared<BinayExpr>(std::move(expr), op, right);
+  }
+  return expr;
+}
+
+ExprPtr Parser::unary() noexcept {
+  if (match({TokenType::TK_BANG, TokenType::TK_MINUS})) {
+    auto op = prev();
+    auto right = unary();
+    return std::make_shared<UnaryExpr>(op, std::move(right));
+  }
+  return call();
+}
+
+ExprPtr Parser::call() noexcept {
+  auto expr = primary();
+
+  for (;;) {
+    if (match({TokenType::TK_LPAREN})) {
+      expr = finish_call(std::move(expr));
+    }
+    else if (match({TokenType::TK_DOT})) {
+      auto name = consume(TokenType::TK_IDENTIFIER, "Expect property name after `.`.");
+      expr = std::make_shared<GetExpr>(std::move(expr), name);
+    }
+    else {
+      break;
+    }
+  }
+  return expr;
+}
+
+ExprPtr Parser::finish_call(ExprPtr callee) {
+  std::vector<ExprPtr> arguments;
+
+  if (!check(TokenType::TK_RPAREN)) {
+    do {
+      if (arguments.size() >= 255)
+        throw std::runtime_error(std::format("Error at line {}: Cannot have more than 255 arguments.", peek().lineno()));
+    } while (match({TokenType::TK_COMMA}));
+  }
+
+  auto paren = consume(TokenType::TK_RPAREN, "Expect `)` after arguments.");
+  return std::make_shared<CallExpr>(std::move(callee), paren, arguments);
+}
+
+ExprPtr Parser::primary() {
+  if (match({TokenType::KW_FALSE}))
+    return std::make_shared<LiteralExpr>(false);
+  if (match({TokenType::KW_TRUE}))
+    return std::make_shared<LiteralExpr>(true);
+  if (match({TokenType::KW_NIL}))
+    return std::make_shared<LiteralExpr>(nullptr);
+
+  if (match({TokenType::TK_NUMBER}))
+    return std::make_shared<LiteralExpr>(prev().as_number());
+  if (match({TokenType::TK_STRING}))
+    return std::make_shared<LiteralExpr>(prev().as_string());
+
+  if (match({TokenType::KW_SUPER})) {
+    auto keyword = prev();
+    consume(TokenType::TK_DOT, "Expect `.` after `super`.");
+    auto method = consume(TokenType::TK_IDENTIFIER, "Expect superclass method name.");
+    return std::make_shared<SuperExpr>(keyword, method);
+  }
+  if (match({TokenType::KW_THIS}))
+    return std::make_shared<ThisExpr>(prev());
+
+  if (match({TokenType::TK_IDENTIFIER}))
+    return std::make_shared<VariableExpr>(prev());
+  if (match({TokenType::TK_LPAREN})) {
+    auto expr = expression();
+    consume(TokenType::TK_RPAREN, "Expect `)` after expression.");
+    return std::make_shared<GroupingExpr>(std::move(expr));
+  }
+
+  throw std::runtime_error(std::format("Error at line {}: Expect expression.", prev().lineno()));
+}
 
 }
