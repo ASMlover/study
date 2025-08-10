@@ -33,27 +33,28 @@
 
 namespace ms {
 
-Value LiteralExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value GroupingExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value UnaryExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value BinayExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value LogicalExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value VariableExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value AssignExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value CallExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value GetExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value SetExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value ThisExpr::accept(Interpreter& Interpreter) const { return 0; }
-Value SuperExpr::accept(Interpreter& Interpreter) const { return 0; }
-void ExpressionStmt::accept(Interpreter& Interpreter) const {}
-void PrintStmt::accept(Interpreter& Interpreter) const {}
-void VarStmt::accept(Interpreter& Interpreter) const {}
-void BlockStmt::accept(Interpreter& Interpreter) const {}
-void IfStmt::accept(Interpreter& Interpreter) const {}
-void WhileStmt::accept(Interpreter& Interpreter) const {}
-void FunctionStmt::accept(Interpreter& Interpreter) const {}
-void ClassStmt::accept(Interpreter& Interpreter) const {}
-void ImportStmt::accept(Interpreter& Interpreter) const {}
+Value LiteralExpr::accept(Interpreter& interpreter) const { return 0; }
+Value GroupingExpr::accept(Interpreter& interpreter) const { return 0; }
+Value UnaryExpr::accept(Interpreter& interpreter) const { return 0; }
+Value BinayExpr::accept(Interpreter& interpreter) const { return 0; }
+Value LogicalExpr::accept(Interpreter& interpreter) const { return 0; }
+Value VariableExpr::accept(Interpreter& interpreter) const { return 0; }
+Value AssignExpr::accept(Interpreter& interpreter) const { return 0; }
+Value CallExpr::accept(Interpreter& interpreter) const { return 0; }
+Value GetExpr::accept(Interpreter& interpreter) const { return 0; }
+Value SetExpr::accept(Interpreter& interpreter) const { return 0; }
+Value ThisExpr::accept(Interpreter& interpreter) const { return 0; }
+Value SuperExpr::accept(Interpreter& interpreter) const { return 0; }
+void ExpressionStmt::accept(Interpreter& interpreter) const {}
+void PrintStmt::accept(Interpreter& interpreter) const {}
+void VarStmt::accept(Interpreter& interpreter) const {}
+void BlockStmt::accept(Interpreter& interpreter) const {}
+void IfStmt::accept(Interpreter& interpreter) const {}
+void WhileStmt::accept(Interpreter& interpreter) const {}
+void FunctionStmt::accept(Interpreter& interpreter) const {}
+void ReturnStmt::accept(Interpreter& interpreter) const {}
+void ClassStmt::accept(Interpreter& interpreter) const {}
+void ImportStmt::accept(Interpreter& interpreter) const {}
 
 // ----------------------------------- Parser ----------------------------------
 StmtPtr Parser::declaration() noexcept {
@@ -176,8 +177,16 @@ StmtPtr Parser::for_statement() noexcept {
 }
 
 StmtPtr Parser::if_statement() noexcept {
-  // TODO:
-  return nullptr;
+  consume(TokenType::TK_LPAREN, "Expect `(` after `if`.");
+  auto condition = expression();
+  consume(TokenType::TK_RPAREN, "Expect `)` after if condition.");
+
+  auto then_branch = statement();
+  StmtPtr else_branch{};
+  if (match({TokenType::KW_ELSE}))
+    else_branch = statement();
+
+  return std::make_shared<IfStmt>(std::move(condition), std::move(then_branch), std::move(else_branch));
 }
 
 StmtPtr Parser::print_statement() noexcept {
@@ -187,28 +196,41 @@ StmtPtr Parser::print_statement() noexcept {
 }
 
 StmtPtr Parser::return_statement() noexcept {
-  // TODO:
-  return nullptr;
+  auto keyword = prev();
+  ExprPtr value{};
+  if (!check(TokenType::TK_SEMICOLON))
+    value = expression();
+  consume(TokenType::TK_SEMICOLON, "Expect `;` after return value.");
+  return std::make_shared<ReturnStmt>(keyword, std::move(value));
 }
 
 StmtPtr Parser::while_statement() noexcept {
-  // TODO:
-  return nullptr;
+  consume(TokenType::TK_LPAREN, "Expect `(` after `while`.");
+  auto condition = expression();
+  consume(TokenType::TK_RPAREN, "Expect `)` after while condition.");
+  auto body = statement();
+  return std::make_shared<WhileStmt>(std::move(condition), std::move(body));
 }
 
 std::vector<StmtPtr> Parser::block() noexcept {
-  // TODO:
-  return {};
+  std::vector<StmtPtr> statements;
+  while (!check(TokenType::TK_RBRACE) && !is_at_end())
+    statements.push_back(declaration());
+  consume(TokenType::TK_RBRACE, "Expect `}` after block.");
+
+  return statements;
 }
 
 StmtPtr Parser::import_statement() noexcept {
-  // TODO:
-  return nullptr;
+  auto module_name = consume(TokenType::TK_STRING, "Expect module path string.");
+  consume(TokenType::TK_SEMICOLON, "Expect `;` after import statement.");
+  return std::make_shared<ImportStmt>(module_name);
 }
 
 StmtPtr Parser::expression_statement() noexcept {
-  // TODO:
-  return nullptr;
+  auto expr = expression();
+  consume(TokenType::TK_SEMICOLON, "Expect `;` after expression.");
+  return std::make_shared<ExpressionStmt>(std::move(expr));
 }
 
 ExprPtr Parser::expression() noexcept {

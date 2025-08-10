@@ -279,6 +279,17 @@ public:
   inline const std::vector<StmtPtr>& body() const noexcept { return body_; }
 };
 
+class ReturnStmt final : public Stmt {
+  Token keyword_;
+  ExprPtr value_;
+public:
+  ReturnStmt(const Token& keyword, ExprPtr value) noexcept : keyword_{keyword}, value_{std::move(value)} {}
+  virtual void accept(Interpreter& interpreter) const override;
+
+  inline const Token& keyword() const noexcept { return keyword_; }
+  inline const ExprPtr& value() const noexcept { return value_; }
+};
+
 class ClassStmt final : public Stmt {
   Token name_;
   VariableExprPtr superclass_;
