@@ -47,11 +47,17 @@ using VariableExprPtr = std::shared_ptr<VariableExpr>;
 using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
 
 struct Expr : private UnCopyable {
+  interface Visitor : private UnCopyable {
+  };
+
   virtual ~Expr() noexcept = default;
   virtual Value accept(Interpreter& interpreter) const = 0;
 };
 
 struct Stmt : private UnCopyable {
+  interface Visitor : private UnCopyable {
+  };
+
   virtual ~Stmt() noexcept = default;
   virtual void accept(Interpreter& interpreter) const = 0;
 };
