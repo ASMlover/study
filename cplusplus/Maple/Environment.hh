@@ -50,16 +50,8 @@ public:
     throw std::runtime_error(std::format("Undefined variable `{}`", name));
   }
 
-  inline void set(const str_t& name, const Value& value) noexcept {
-    variables_[name] = value;
-  }
-
   inline void set(const str_t& name, Value value) noexcept {
     variables_[name] = std::move(value);
-  }
-
-  inline void define(const str_t& name, const Value& value) noexcept {
-    variables_.insert_or_assign(name, value);
   }
 
   inline void define(const str_t& name, Value value) noexcept {
