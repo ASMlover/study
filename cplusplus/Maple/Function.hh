@@ -53,6 +53,8 @@ public:
 
     return body_(args);
   }
+
+  inline sz_t params_size() const noexcept { return params_.size(); }
 };
 
 }
