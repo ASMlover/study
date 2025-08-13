@@ -67,13 +67,9 @@ public:
   Value(strv_t s) noexcept : v_{string_cast(s)} {}
   Value(cstr_t s) noexcept : v_{string_cast(s)} {}
   Value(FunctionPtr f) noexcept : v_{std::move(f)} {}
-  Value(const FunctionPtr& f) noexcept : v_{f} {}
   Value(ClassPtr c) noexcept : v_{std::move(c)} {}
-  Value(const ClassPtr& c) noexcept : v_{c} {}
   Value(InstancePtr i) noexcept : v_{std::move(i)} {}
-  Value(const InstancePtr& i) noexcept : v_{i} {}
   Value(ModulePtr m) noexcept : v_{std::move(m)} {}
-  Value(const ModulePtr& m) noexcept : v_{m} {}
   Value(const Value& other) noexcept : v_{other.v_} {}
   Value(Value&& other) noexcept : v_{std::move(other.v_)} {}
 
