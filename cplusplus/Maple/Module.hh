@@ -39,10 +39,6 @@ class Module final : private UnCopyable {
 public:
   Module(const str_t& name, EnvironmentPtr env) noexcept : name_{name}, env_{std::move(env)} {}
 
-  void export_value(const str_t& name, const Value& value) noexcept {
-    exports_[name] = value;
-  }
-
   void export_value(const str_t& name, Value value) noexcept {
     exports_[name] = std::move(value);
   }

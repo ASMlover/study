@@ -29,6 +29,7 @@
 #include <format>
 #include <unordered_map>
 #include "Common.hh"
+#include "Token.hh"
 #include "Value.hh"
 
 namespace ms {
@@ -39,6 +40,19 @@ class Environment final : private UnCopyable {
 public:
   Environment() noexcept {}
   Environment(EnvironmentPtr parent) noexcept : parent_{std::move(parent)}  {}
+
+  void assign(const str_t& name, const Value& value) {
+    if (auto it = variables_.find(name); it != variables_.end()) {
+      variables_[name] = value;
+      return;
+    }
+    if (parent_) {
+      parent_->assign(name, value);
+      return;
+    }
+
+    throw std::runtime_error(std::format("Undefined variable `{}`.", name));
+  }
 
   inline const Value& get(const str_t& name) const noexcept(false) {
     if (auto it = variables_.find(name); it != variables_.end())
@@ -57,6 +71,9 @@ public:
   inline void define(const str_t& name, Value value) noexcept {
     variables_.insert_or_assign(name, std::move(value));
   }
+
+  inline const EnvironmentPtr& parent() const noexcept { return parent_; }
+  inline const std::unordered_map<str_t, Value>& variables() const noexcept { return variables_; }
 };
 
 }
