@@ -39,7 +39,7 @@ class Instance final : private UnCopyable {
 public:
   Instance(ClassPtr klass) noexcept : klass_{std::move(klass)} {}
 
-  Value get(const str_t& name) {
+  Value get(const str_t& name) const {
     if (auto it = fields_.find(name); it != fields_.end())
       return it->second;
 
@@ -48,10 +48,6 @@ public:
       return method;
 
     throw std::runtime_error(std::format("Undefined property `{}` on instance of {}", name, klass_->name()));
-  }
-
-  void set(const str_t& name, const Value& value) noexcept {
-    fields_[name] = value;
   }
 
   void set(const str_t& name, Value value) noexcept {
