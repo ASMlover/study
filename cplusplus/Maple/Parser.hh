@@ -37,9 +37,32 @@ namespace ms {
 
 struct Expr;
 struct Stmt;
+
 class Interpreter;
 class VariableExpr;
+
+class LiteralExpr;
+class GroupingExpr;
+class UnaryExpr;
+class BinayExpr;
+class LogicalExpr;
+class VariableExpr;
+class AssignExpr;
+class CallExpr;
+class GetExpr;
+class SetExpr;
+class ThisExpr;
+class SuperExpr;
+class ExpressionStmt;
+class PrintStmt;
+class VarStmt;
+class BlockStmt;
+class IfStmt;
+class WhileStmt;
 class FunctionStmt;
+class ReturnStmt;
+class ClassStmt;
+class ImportStmt;
 
 using ExprPtr         = std::shared_ptr<Expr>;
 using StmtPtr         = std::shared_ptr<Stmt>;
@@ -48,6 +71,18 @@ using FunctionStmtPtr = std::shared_ptr<FunctionStmt>;
 
 struct Expr : private UnCopyable {
   interface Visitor : private UnCopyable {
+    virtual Value visit(const LiteralExpr&) = 0;
+    virtual Value visit(const GroupingExpr&) = 0;
+    virtual Value visit(const UnaryExpr&) = 0;
+    virtual Value visit(const BinayExpr&) = 0;
+    virtual Value visit(const LogicalExpr&) = 0;
+    virtual Value visit(const VariableExpr&) = 0;
+    virtual Value visit(const AssignExpr&) = 0;
+    virtual Value visit(const CallExpr&) = 0;
+    virtual Value visit(const GetExpr&) = 0;
+    virtual Value visit(const SetExpr&) = 0;
+    virtual Value visit(const ThisExpr&) = 0;
+    virtual Value visit(const SuperExpr&) = 0;
   };
 
   virtual ~Expr() noexcept = default;
@@ -56,6 +91,16 @@ struct Expr : private UnCopyable {
 
 struct Stmt : private UnCopyable {
   interface Visitor : private UnCopyable {
+    virtual void visit(const ExpressionStmt&) = 0;
+    virtual void visit(const PrintStmt&) = 0;
+    virtual void visit(const VarStmt&) = 0;
+    virtual void visit(const BlockStmt&) = 0;
+    virtual void visit(const IfStmt&) = 0;
+    virtual void visit(const WhileStmt&) = 0;
+    virtual void visit(const FunctionStmt&) = 0;
+    virtual void visit(const ReturnStmt&) = 0;
+    virtual void visit(const ClassStmt&) = 0;
+    virtual void visit(const ImportStmt&) = 0;
   };
 
   virtual ~Stmt() noexcept = default;
@@ -282,6 +327,7 @@ public:
 
   inline const Token& name() const noexcept { return name_; }
   inline const std::vector<Token>& params() const noexcept { return params_; }
+  inline const Token& get_param_at_index(sz_t i) const noexcept { return params_[i]; }
   inline const std::vector<StmtPtr>& body() const noexcept { return body_; }
 };
 
