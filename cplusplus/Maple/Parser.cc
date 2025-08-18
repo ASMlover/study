@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include "Parser.hh"
 #include "Token.hh"
+#include "Interpreter.hh"
 #include <format>
 #include <memory>
 #include <stdexcept>
@@ -33,28 +34,93 @@
 
 namespace ms {
 
-Value LiteralExpr::accept(Interpreter& interpreter) const { return 0; }
-Value GroupingExpr::accept(Interpreter& interpreter) const { return 0; }
-Value UnaryExpr::accept(Interpreter& interpreter) const { return 0; }
-Value BinayExpr::accept(Interpreter& interpreter) const { return 0; }
-Value LogicalExpr::accept(Interpreter& interpreter) const { return 0; }
-Value VariableExpr::accept(Interpreter& interpreter) const { return 0; }
-Value AssignExpr::accept(Interpreter& interpreter) const { return 0; }
-Value CallExpr::accept(Interpreter& interpreter) const { return 0; }
-Value GetExpr::accept(Interpreter& interpreter) const { return 0; }
-Value SetExpr::accept(Interpreter& interpreter) const { return 0; }
-Value ThisExpr::accept(Interpreter& interpreter) const { return 0; }
-Value SuperExpr::accept(Interpreter& interpreter) const { return 0; }
-void ExpressionStmt::accept(Interpreter& interpreter) const {}
-void PrintStmt::accept(Interpreter& interpreter) const {}
-void VarStmt::accept(Interpreter& interpreter) const {}
-void BlockStmt::accept(Interpreter& interpreter) const {}
-void IfStmt::accept(Interpreter& interpreter) const {}
-void WhileStmt::accept(Interpreter& interpreter) const {}
-void FunctionStmt::accept(Interpreter& interpreter) const {}
-void ReturnStmt::accept(Interpreter& interpreter) const {}
-void ClassStmt::accept(Interpreter& interpreter) const {}
-void ImportStmt::accept(Interpreter& interpreter) const {}
+Value LiteralExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value GroupingExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value UnaryExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value BinayExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value LogicalExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value VariableExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value AssignExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value CallExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value GetExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value SetExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value ThisExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+Value SuperExpr::accept(Interpreter& interpreter) const {
+  return interpreter.visit(*this);
+}
+
+void ExpressionStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void PrintStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void VarStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void BlockStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void IfStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void WhileStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void FunctionStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void ReturnStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void ClassStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
+
+void ImportStmt::accept(Interpreter& interpreter) const {
+  interpreter.visit(*this);
+}
 
 // ----------------------------------- Parser ----------------------------------
 StmtPtr Parser::declaration() noexcept {

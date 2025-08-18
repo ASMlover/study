@@ -52,7 +52,7 @@ class Interpreter final : public Expr::Visitor, public Stmt::Visitor {
 
   void check_number_operand(const Token& op, const Value& operand);
   void check_number_operands(const Token& op, const Value& left, const Value& right);
-
+public:
   virtual Value visit(const LiteralExpr&) override;
   virtual Value visit(const GroupingExpr&) override;
   virtual Value visit(const UnaryExpr&) override;
