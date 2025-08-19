@@ -26,8 +26,59 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
-#include "Common.hh"
-#include "Environment.hh"
+#include <fstream>
+#include "Types.hh"
+#include "Lexer.hh"
+#include "Parser.hh"
+#include "Interpreter.hh"
+
+static void run_script(const ms::str_t& source_bytes) noexcept {
+  ms::Lexer lex(source_bytes);
+  auto tokens = lex.scan_tokens();
+
+  ms::Parser parser(tokens);
+  auto statements = parser.parse();
+
+  ms::Interpreter interpreter;
+  interpreter.interpret(statements);
+}
+
+static void run_file(const ms::str_t& path) noexcept {
+  std::ifstream fp{path};
+  if (!fp) {
+    std::cerr << "Could not open file: " << path << std::endl;
+    return;
+  }
+
+  ms::ss_t buffer;
+  buffer << fp.rdbuf();
+  run_script(buffer.str());
+}
+
+static void run_prompt() noexcept {
+  ms::Interpreter interpreter;
+
+  for (;;) {
+    std::cout << ">>> ";
+    ms::str_t line;
+    if (!std::getline(std::cin, line)) {
+      break;
+    }
+
+    try {
+      ms::Lexer lex(line);
+      auto tokens = lex.scan_tokens();
+
+      ms::Parser parser(tokens);
+      auto statements = parser.parse();
+
+      interpreter.interpret(statements);
+    }
+    catch (const std::runtime_error& error) {
+      std::cerr << "Error: " << error.what() << std::endl;
+    }
+  }
+}
 
 int main(int argc, char* argv[]) {
   MAPLE_UNUSED(argc), MAPLE_UNUSED(argv);
