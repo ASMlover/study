@@ -48,7 +48,16 @@ Interpreter::Interpreter() noexcept {
     auto func = std::make_shared<Function>(std::vector<str_t>{}, nullptr, func_body, "clock");
     globals_->define("clock", Value(func));
   }
+}
 
+void Interpreter::interpret(const std::vector<StmtPtr>& statements) noexcept {
+  try {
+    for (const auto& statement : statements)
+      execute(*statement);
+  }
+  catch (const std::runtime_error& error) {
+    std::cerr << "Runtime error: " << error.what() << std::endl;
+  }
 }
 
 Value Interpreter::lookup_variable(const Token& name, const Expr* expr) noexcept {
