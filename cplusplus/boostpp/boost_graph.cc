@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <boost/graph/adjacency_list.hpp>
+#include <tuple>
 #include <utility>
 #include <algorithm>
 #include <iterator>
@@ -105,6 +106,24 @@ static void boost_graph_with_selectors() noexcept {
   std::copy(es.first, es.second, std::ostream_iterator<graph::edge_descriptor>{std::cout, "\n"});
 }
 
+static void boost_graph_creating_indexes() noexcept {
+  std::cout << "--------- [grap.creating_indexes] ---------" << std::endl;
+  using graph = boost::adjacency_list<boost::setS, boost::vecS, boost::undirectedS>;
+
+  enum { topLeft, topRight, bottomRight, bottomLeft};
+
+  graph g;
+  boost::add_edge(topLeft, topRight, g);
+  boost::add_edge(topRight, bottomRight, g);
+  boost::add_edge(bottomRight, bottomLeft, g);
+  boost::add_edge(bottomLeft, topLeft, g);
+
+  graph::edge_iterator it, end;
+  std::tie(it, end) = boost::edges(g);
+  std::copy(it, end,
+      std::ostream_iterator<graph::edge_descriptor>{std::cout, "\n"});
+}
+
 void boost_graph() noexcept {
   std::cout << "========= [graph] =========" << std::endl;
 
@@ -112,4 +131,5 @@ void boost_graph() noexcept {
   boost_graph_accessing_vertices();
   boost_graph_accessing_edges();
   boost_graph_with_selectors();
+  boost_graph_creating_indexes();
 }
