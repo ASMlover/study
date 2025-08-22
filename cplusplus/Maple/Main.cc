@@ -72,6 +72,10 @@ static void run_prompt() noexcept {
       ms::Parser parser(tokens);
       auto statements = parser.parse();
 
+      for (auto& s : statements)
+        std::cout << s.get() << std::endl;
+
+      std::cout << "============= begin interpret =============" << std::endl;
       interpreter.interpret(statements);
     }
     catch (const std::runtime_error& error) {
@@ -84,5 +88,16 @@ int main(int argc, char* argv[]) {
   MAPLE_UNUSED(argc), MAPLE_UNUSED(argv);
 
   std::cout << "Maple Script !!!" << std::endl;
+  if (argc > 2) {
+    std::cout << "Usage: Maple.exe [script]" << std::endl;
+    return 1;
+  }
+  else if (argc == 2) {
+    run_file(argv[1]);
+  }
+  else {
+    run_prompt();
+  }
+
   return 0;
 }
