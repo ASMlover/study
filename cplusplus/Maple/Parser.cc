@@ -131,6 +131,7 @@ StmtPtr Parser::declaration() noexcept {
       return function("function");
     if (match({TokenType::KW_VAR}))
       return var_declaration();
+    return statement();
   } catch (const std::runtime_error&) {
     synchronize();
   }
@@ -164,6 +165,8 @@ FunctionStmtPtr Parser::function(const str_t& kind) {
     do {
       if (parameters.size() >= 255)
         throw std::runtime_error(std::format("Error at line {}: cannot have more than 255 parameters.", peek().lineno()));
+
+      parameters.push_back(consume(TokenType::TK_IDENTIFIER, "Expect paramter name."));
     } while (match({TokenType::TK_COMMA}));
   }
   consume(TokenType::TK_RPAREN, "Expect `)` after parameters.");
@@ -422,6 +425,7 @@ ExprPtr Parser::finish_call(ExprPtr callee) {
     do {
       if (arguments.size() >= 255)
         throw std::runtime_error(std::format("Error at line {}: Cannot have more than 255 arguments.", peek().lineno()));
+      arguments.push_back(expression());
     } while (match({TokenType::TK_COMMA}));
   }
 
