@@ -39,6 +39,8 @@ class Instance final : private UnCopyable {
 public:
   Instance(ClassPtr klass) noexcept : klass_{std::move(klass)} {}
 
+  inline const std::unordered_map<str_t, Value>& fields() const noexcept { return fields_; }
+
   Value get(const str_t& name) const {
     if (auto it = fields_.find(name); it != fields_.end())
       return it->second;
