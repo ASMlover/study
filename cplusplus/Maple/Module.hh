@@ -27,8 +27,10 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 #include "Common.hh"
 #include "Value.hh"
+#include "Environment.hh"
 
 namespace ms {
 
@@ -40,9 +42,11 @@ public:
   Module(const str_t& name, EnvironmentPtr env) noexcept : name_{name}, env_{std::move(env)} {}
 
   inline const str_t& name() const noexcept { return name_; }
+  inline bool has_export(const str_t& name) const noexcept { return exports_.contains(name); }
 
   void export_value(const str_t& name, Value value) noexcept {
     exports_[name] = std::move(value);
+    env_->define(name, exports_[name]);
   }
 
   Value get_export(const str_t& name) {
@@ -50,6 +54,13 @@ public:
       return it->second;
 
     throw std::runtime_error(std::format("Module `{}` does not export `{}`", name_, name));
+  }
+
+  std::vector<str_t> get_export_names() const noexcept {
+    std::vector<str_t> names;
+    for (const auto& [name, _] : exports_)
+      names.push_back(name);
+    return names;
   }
 };
 
