@@ -100,6 +100,26 @@ void Interpreter::check_number_operands(const Token& op, const Value& left, cons
   throw std::runtime_error(std::format("Operands `{}` must be numbers or strings.", op.literal()));
 }
 
+void Interpreter::collect_exportes(ModulePtr module, EnvironmentPtr module_env) noexcept {
+  for (const auto& [name, value] : module_env->variables()) {
+    if (name.starts_with("export_")) {
+      auto export_name = name.substr(7);
+      module->export_value(export_name, value);
+    }
+  }
+
+  try {
+    auto export_obj = module_env->get("exports");
+    if (export_obj.is_instance()) {
+      auto instance = export_obj.as_instance();
+      for (const auto& [name, value] : instance->fields())
+        module->export_value(name, value);
+    }
+  }
+  catch (const std::runtime_error& /*e*/) {
+  }
+}
+
 Value Interpreter::visit(const LiteralExpr& expr) {
   return expr.value();
 }
@@ -205,7 +225,26 @@ Value Interpreter::visit(const GetExpr& expr) {
 
   if (object.is_instance())
     return object.as_instance()->get(expr.name().literal());
-  throw std::runtime_error("Only instances have properties.");
+
+  if (object.is_module()) {
+    auto module = object.as_module();
+    try {
+      return module->get_export(expr.name().literal());
+    }
+    catch (const std::runtime_error& /*e*/) {
+      throw std::runtime_error(std::format("Module `{}` does not export `{}`.", module->name(), expr.name().literal()));
+    }
+  }
+
+  if (object.is_class()) {
+    auto klass = object.as_class();
+    if (auto method = klass->find_method(expr.name().literal()); !method.is_nil())
+      return method;
+
+    throw std::runtime_error(std::format("Class `{}` has no static method `{}`.", klass->name(), expr.name().literal()));
+  }
+
+  throw std::runtime_error("Only instances, modules and classes have properties.");
 }
 
 Value Interpreter::visit(const SetExpr& expr) {
@@ -374,13 +413,13 @@ void Interpreter::visit(const ImportStmt& stmt) {
   environment_ = prev_env;
 
   auto module = std::make_shared<Module>(std::filesystem::path(module_path).stem().string(), module_env);
-
   for (const auto& [name, value] : module_env->variables()) {
     if (name.starts_with("export_")) {
       auto export_name = name.substr(7);
       module->export_value(export_name, value);
     }
   }
+  collect_exportes(module, module_env);
   loaded_modules_[module_path] = module;
 
   environment_->define(std::filesystem::path(module_path).stem().string(), module);

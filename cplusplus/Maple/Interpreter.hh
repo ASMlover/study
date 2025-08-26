@@ -52,6 +52,8 @@ class Interpreter final : public Expr::Visitor, public Stmt::Visitor {
 
   void check_number_operand(const Token& op, const Value& operand);
   void check_number_operands(const Token& op, const Value& left, const Value& right);
+
+  void collect_exportes(ModulePtr module, EnvironmentPtr module_env) noexcept;
 public:
   virtual Value visit(const LiteralExpr&) override;
   virtual Value visit(const GroupingExpr&) override;
