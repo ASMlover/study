@@ -54,7 +54,25 @@ void Scanner::scan_token() noexcept {
   }
 }
 
-void Scanner::string() noexcept {}
+void Scanner::string() noexcept {
+  while (!is_at_end() && peek() != '"') {
+    if (peek() == '\n')
+      ++lineno_;
+
+    advance();
+  }
+
+  if (is_at_end()) {
+    error_reporter_.error("", lineno_, "Unterminated string.");
+    return;
+  }
+
+  // the closing ".
+  advance();
+
+  add_token(TokenType::TK_STRING, gen_literal(start_pos_ + 1, current_pos_ - 1));
+}
+
 void Scanner::number() noexcept {}
 void Scanner::identifier() noexcept {}
 
