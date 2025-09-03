@@ -73,7 +73,25 @@ void Scanner::string() noexcept {
   add_token(TokenType::TK_STRING, gen_literal(start_pos_ + 1, current_pos_ - 1));
 }
 
-void Scanner::number() noexcept {}
-void Scanner::identifier() noexcept {}
+void Scanner::number() noexcept {
+  while (is_digit(peek()))
+    advance();
+
+  if (peek() == '.' && is_digit(peek_next())) {
+    advance();
+
+    while (is_digit(peek()))
+      advance();
+  }
+  add_token(TokenType::TK_NUMBER);
+}
+
+void Scanner::identifier() noexcept {
+  while (is_alnum(peek()))
+    advance();
+
+  str_t literal = gen_literal(start_pos_, current_pos_);
+  add_token(get_keyword_type(literal), literal);
+}
 
 }
