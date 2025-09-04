@@ -51,6 +51,43 @@ void Scanner::scan_token() noexcept {
   switch (c) {
   case '(': add_token(TokenType::TK_LPAREN); break;
   case ')': add_token(TokenType::TK_RPAREN); break;
+  case '{': add_token(TokenType::TK_LBRACE); break;
+  case '}': add_token(TokenType::TK_RBRACE); break;
+  case ',': add_token(TokenType::TK_COMMA); break;
+  case '.': add_token(TokenType::TK_DOT); break;
+  case '-': add_token(TokenType::TK_MINUS); break;
+  case '+': add_token(TokenType::TK_PLUS); break;
+  case ';': add_token(TokenType::TK_SEMICOLON); break;
+  case '*': add_token(TokenType::TK_STAR); break;
+  case '!': add_token(match('=') ? TokenType::TK_BANG_EQUAL : TokenType::TK_BANG); break;
+  case '=': add_token(match('=') ? TokenType::TK_EQUAL_EQUAL : TokenType::TK_EQUAL); break;
+  case '<': add_token(match('=') ? TokenType::TK_LESS_EQUAL : TokenType::TK_LESS); break;
+  case '>': add_token(match('=') ? TokenType::TK_GREATER_EQUAL : TokenType::TK_GREATER); break;
+  case '/':
+    if (match('/')) {
+      // a comment goes until the end of the line.
+      while (!is_at_end() && peek() != '\n')
+        advance();
+    }
+    else {
+      add_token(TokenType::TK_SLASH);
+    }
+    break;
+  case ' ':
+  case '\r':
+  case '\t':
+    // Ignore whitespace
+    break;
+  case '\n': ++lineno_; break;
+  case '"': string(); break;
+  default:
+    if (is_digit(c))
+      number();
+    else if (is_alpha(c))
+      identifier();
+    else
+      error_reporter_.error("", lineno_, "Unexpected character.");
+    break;
   }
 }
 
