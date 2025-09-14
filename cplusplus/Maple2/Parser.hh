@@ -138,7 +138,25 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::FunctionPtr function(const str_t& kind) noexcept {
-    return nullptr;
+    // function -> IDENTIFIER "(" parameters? ")" block ;
+
+    auto name = consume(TokenType::TK_IDENTIFIER, "Expect " + kind + " name.");
+    consume(TokenType::TK_LPAREN, "Expect `(` after " + kind + " name.");
+    std::vector<Token> parameters;
+    if (!check(TokenType::TK_RPAREN)) {
+      do {
+        if (parameters.size() >= 255)
+          error(peek(), "Cannot have more than 255 parameters.");
+
+        parameters.push_back(consume(TokenType::TK_IDENTIFIER, "Expect parameter name."));
+      }
+      while (match({TokenType::TK_COMMA}));
+    }
+    consume(TokenType::TK_RPAREN, "Expect `)` after parameters.");
+
+    consume(TokenType::TK_LBRACE, "Expect `{` before " + kind + " body.");
+    auto body = block();
+    return std::make_shared<ast::Function>(name, parameters, body);
   }
 
   inline ast::StmtPtr var_declaration() noexcept {
