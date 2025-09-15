@@ -160,7 +160,15 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::StmtPtr var_declaration() noexcept {
-    return nullptr;
+    // varDecl -> "var" IDENTIFIER ( "=" expression )? ";" ;
+
+    auto name = consume(TokenType::TK_IDENTIFIER, "Expect variable name.");
+
+    ast::ExprPtr initializer{};
+    if (match({TokenType:: TK_EQUAL}))
+      initializer = expression();
+    consume(TokenType::TK_SEMICOLON, "Expect `;` after variable declaration.");
+    return std::make_shared<ast::Var>(name, initializer);
   }
 
   inline ast::StmtPtr statement() noexcept {
