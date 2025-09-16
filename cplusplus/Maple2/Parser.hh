@@ -172,27 +172,76 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::StmtPtr statement() noexcept {
-    return nullptr;
+    // statement -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | returnStmt | importStm | block ;
+
+    if (match({TokenType::KW_IF}))
+      return if_statement();
+    if (match({TokenType::KW_WHILE}))
+      return while_statement();
+    if (match({TokenType::KW_FOR}))
+      return for_statement();
+    if (match({TokenType::KW_PRINT}))
+      return print_statement();
+    if (match({TokenType::KW_RETURN}))
+      return return_statement();
+    if (match({TokenType::KW_IMPORT}))
+      return import_statement();
+    if (match({TokenType::TK_LBRACE}))
+      return std::make_shared<ast::Block>(block());
+    return expression_statement();
   }
 
   inline ast::StmtPtr print_statement() noexcept {
-    return nullptr;
+    // printStmt -> "print" expression ";" ;
+
+    auto value = expression();
+    consume(TokenType::TK_SEMICOLON, "Expect `;` after value ...");
+    return std::make_shared<ast::Print>(value);
   }
 
   inline std::vector<ast::StmtPtr> block() noexcept {
-    return {};
+    // block -> "{" declaration* "}" ;
+
+    std::vector<ast::StmtPtr> statements;
+    while (!is_at_end() && !check(TokenType::TK_LBRACE))
+      statements.push_back(declaration());
+    consume(TokenType::TK_RBRACE, "Expect `}` after block.");
+
+    return statements;
   }
 
   inline ast::StmtPtr expression_statement() noexcept {
-    return nullptr;
+    // exprStmt -> expression ;
+
+    auto expr = expression();
+    consume(TokenType::TK_SEMICOLON, "Expect `;` after expression.");
+    return std::make_shared<ast::Expression>(expr);
   }
 
   inline ast::StmtPtr if_statement() noexcept {
-    return nullptr;
+    // ifStmt -> "if" "(" expression ")" statement ( "else" statement )? ;
+
+    consume(TokenType::TK_LPAREN, "Expect `(` after key `if`.");
+    auto condition = expression();
+    consume(TokenType::TK_RPAREN, "Expect `)` after if condition.");
+    auto then_branch = statement();
+
+    ast::StmtPtr else_branch{};
+    if (match({TokenType::KW_ELSE}))
+      else_branch = statement();
+
+    return std::make_shared<ast::If>(condition, then_branch, else_branch);
   }
 
   inline ast::StmtPtr while_statement() noexcept {
-    return nullptr;
+    // whileStmt -> "while" "(" expression ")" statement ;
+
+    consume(TokenType::TK_LPAREN, "Expect `(` after key `while`.");
+    auto condition = expression();
+    consume(TokenType::TK_RPAREN, "Expect `)` after while condition.");
+    auto body = statement();
+
+    return std::make_shared<ast::While>(condition, body);
   }
 
   inline ast::StmtPtr for_statement() noexcept {
