@@ -172,7 +172,7 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::StmtPtr statement() noexcept {
-    // statement -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | returnStmt | importStm | block ;
+    // statement -> exprStmt | ifStmt | whileStmt | forStmt | printStmt | returnStmt | importStmt | block ;
 
     if (match({TokenType::KW_IF}))
       return if_statement();
@@ -249,10 +249,20 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::StmtPtr return_statement() noexcept {
-    return nullptr;
+    // returnStmt -> "return" expression? ";" ;
+
+    auto keyword = prev();
+    ast::ExprPtr value{};
+    if (!check(TokenType::TK_SEMICOLON))
+      value = expression();
+
+    consume(TokenType::TK_SEMICOLON, "Expect `;` after return value.");
+    return std::make_shared<ast::Return>(keyword, value);
   }
 
   inline ast::StmtPtr import_statement() noexcept {
+    // importStmt -> "import" module_name_str ";" ;
+
     return nullptr;
   }
 
