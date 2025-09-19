@@ -263,7 +263,9 @@ class Parser final : private UnCopyable {
   inline ast::StmtPtr import_statement() noexcept {
     // importStmt -> "import" module_name_str ";" ;
 
-    return nullptr;
+    auto module_name = consume(TokenType::TK_STRING, "Expect module path string.");
+    consume(TokenType::TK_SEMICOLON, "Expect `;` after import statement.");
+    return std::make_shared<ast::Import>(module_name);
   }
 
   inline ast::ExprPtr expression() noexcept {
