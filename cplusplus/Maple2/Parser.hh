@@ -245,7 +245,42 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::StmtPtr for_statement() noexcept {
-    return nullptr;
+    // forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+
+    consume(TokenType::TK_LPAREN, "Expect `(` after key `for`.");
+    ast::StmtPtr initializer;
+    if (match({TokenType::TK_SEMICOLON}))
+      initializer = nullptr;
+    else if (match({TokenType::KW_VAR}))
+      initializer = var_declaration();
+    else
+      initializer = expression_statement();
+
+    ast::ExprPtr condition;
+    if (!check(TokenType::TK_SEMICOLON))
+      condition = expression();
+    consume(TokenType::TK_SEMICOLON, "Expect `;` after loop condition.");
+
+    ast::ExprPtr increment;
+    if (!check(TokenType::TK_RPAREN))
+      increment = expression();
+    consume(TokenType::TK_RPAREN, "Expect `)` after for clauses.");
+
+    auto body = statement();
+    if (increment) {
+      std::vector<ast::StmtPtr> stmts{body, std::make_shared<ast::Expression>(increment)};
+      body = std::make_shared<ast::Block>(stmts);
+    }
+    if (!condition)
+      condition = std::make_shared<ast::Literal>(true);
+    body = std::make_shared<ast::While>(condition, body);
+
+    if (!initializer) {
+      std::vector<ast::StmtPtr> stmts{initializer, body};
+      body = std::make_shared<ast::Block>(stmts);
+    }
+
+    return body;
   }
 
   inline ast::StmtPtr return_statement() noexcept {
@@ -269,7 +304,9 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr expression() noexcept {
-    return nullptr;
+    //  expression -> assignment ;
+
+    return assignment();
   }
 
   inline ast::ExprPtr assignment() noexcept {
