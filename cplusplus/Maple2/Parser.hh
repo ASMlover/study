@@ -310,11 +310,37 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr assignment() noexcept {
-    return nullptr;
+    // assignment -> ( call "." )? IDENTIFIER "=" assignment | logical_or ;
+
+    auto expr = logical_or();
+    if (match({TokenType::TK_EQUAL})) {
+      const auto& equals = prev();
+      auto value = assignment();
+
+      if (std::dynamic_pointer_cast<ast::Variable>(expr)) {
+        const auto& name = std::static_pointer_cast<ast::Variable>(expr)->name();
+        return std::make_shared<ast::Assign>(name, value);
+      }
+      else if (std::dynamic_pointer_cast<ast::Get>(expr)) {
+        const auto& get = std::static_pointer_cast<ast::Get>(expr);
+        return std::make_shared<ast::Set>(get->object(), get->name(), value);
+      }
+
+      error(equals, "Invalid assignment target.");
+    }
+    return expr;
   }
 
   inline ast::ExprPtr logical_or() noexcept {
-    return nullptr;
+    // logical_or -> logical_and ( "or" logical_and )* ;
+
+    auto expr = logical_and();
+    while (match({TokenType::KW_OR})) {
+       const auto& oper = prev();
+       auto right = logical_and();
+       expr = std::make_shared<ast::Logical>(expr, oper, right);
+    }
+    return expr;
   }
 
   inline ast::ExprPtr logical_and() noexcept {
