@@ -49,7 +49,7 @@ interface Callable : private UnCopyable {
   virtual ~Callable() {}
 
   virtual Value call(const InterpreterPtr& interp, const std::vector<Value>& arguments) = 0;
-  virtual sz_t airty() const = 0;
+  virtual sz_t arity() const = 0;
   virtual str_t as_string() const = 0;
 };
 
@@ -67,7 +67,7 @@ public:
   virtual Value call(const InterpreterPtr& interp, const std::vector<Value>& arguments) override;
   virtual str_t as_string() const override;
 
-  virtual sz_t airty() const override { return declaration_->params().size(); }
+  virtual sz_t arity() const override { return declaration_->params().size(); }
 };
 
 }
