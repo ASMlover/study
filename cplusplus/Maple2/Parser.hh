@@ -344,7 +344,15 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr logical_and() noexcept {
-    return nullptr;
+    // logical_and -> equality ( "and" equality )* ;
+
+    auto expr = equality();
+    while (match({TokenType::KW_AND})) {
+      const auto& oper = prev();
+      auto right = equality();
+      expr = std::make_shared<ast::Logical>(expr, oper, right);
+    }
+    return expr;
   }
 
   inline ast::ExprPtr equality() noexcept {
