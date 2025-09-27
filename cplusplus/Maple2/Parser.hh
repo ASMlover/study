@@ -356,7 +356,15 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr equality() noexcept {
-    return nullptr;
+    // equality -> comparison ( ( "!=" | "==" ) comparison )* ;
+
+    auto left = comparison();
+    while (match({TokenType::TK_BANG_EQUAL, TokenType::TK_EQUAL_EQUAL})) {
+      const auto& oper = prev();
+      auto right = comparison();
+      left = std::make_shared<ast::Binary>(left, oper, right);
+    }
+    return left;
   }
 
   inline ast::ExprPtr comparison() noexcept {
