@@ -89,6 +89,12 @@ class Interpreter final
   }
 
   virtual void visit(const ast::AssignPtr& expr) override {
+    auto value = evaluate(expr->value());
+
+    if (auto distance_iter = locals_.find(expr); distance_iter != locals_.end())
+      environment_->assign_at(distance_iter->second, expr->name(), value);
+    else
+      globals_->assign(expr->name(), value);
   }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
