@@ -368,7 +368,15 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr comparison() noexcept {
-    return nullptr;
+    // comparison -> term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+
+    auto left = term();
+    while (match({TokenType::TK_GREATER, TokenType::TK_GREATER_EQUAL, TokenType::TK_LESS, TokenType::TK_LESS_EQUAL})) {
+      const auto& oper = prev();
+      auto right = term();
+      left = std::make_shared<ast::Binary>(left, oper, right);
+    }
+    return left;
   }
 
   inline ast::ExprPtr term() noexcept {
