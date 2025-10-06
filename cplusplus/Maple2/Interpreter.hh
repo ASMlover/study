@@ -96,6 +96,42 @@ class Interpreter final
     else
       globals_->assign(expr->name(), value);
   }
+
+  virtual void visit(const ast::BinaryPtr& expr) override {
+    auto left = evaluate(expr->left());
+    auto right = evaluate(expr->right());
+
+    const auto& oper = expr->op();
+    switch (oper.type()) {
+    case TokenType::TK_GREATER:
+      check_number_operands(oper, left, right);
+      value_ = left > right; break;
+    case TokenType::TK_GREATER_EQUAL:
+      check_number_operands(oper, left, right);
+      value_ = left >= right; break;
+    case TokenType::TK_LESS:
+      check_number_operands(oper, left, right);
+      value_ = left < right; break;
+    case TokenType::TK_LESS_EQUAL:
+      check_number_operands(oper, left, right);
+      value_ = left <= right; break;
+    case TokenType::TK_PLUS:
+      check_plus_operands(oper, left, right);
+      value_ = left + right; break;
+    case TokenType::TK_MINUS:
+      check_number_operands(oper, left, right);
+      value_ = left - right; break;
+    case TokenType::TK_SLASH:
+      check_number_operands(oper, left, right);
+      value_ = left / right; break;
+    case TokenType::TK_STAR:
+      check_number_operands(oper, left, right);
+      value_ = left * right; break;
+    case TokenType::TK_BANG_EQUAL: value_ = left != right; break;
+    case TokenType::TK_EQUAL_EQUAL: value_ = left == right; break;
+    default: break;
+    }
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}, globals_{new Environment()}, environment_{globals_} {
