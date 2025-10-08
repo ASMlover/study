@@ -28,6 +28,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "Common.hh"
 #include "Value.hh"
 #include "Environment.hh"
@@ -68,6 +69,60 @@ public:
   virtual str_t as_string() const override;
 
   virtual sz_t arity() const override { return declaration_->params().size(); }
+};
+
+class Class final : public Callable, public std::enable_shared_from_this<Callable> {
+  str_t name_;
+  ClassPtr superclass_;
+  std::unordered_map<str_t, FunctionPtr> methods_;
+public:
+  Class(const str_t& name, const ClassPtr& superclass,
+      const std::unordered_map<str_t, FunctionPtr>& methods) noexcept
+    : name_{name}
+    , superclass_{superclass}
+    , methods_{methods} {
+  }
+
+  inline const str_t& name() const noexcept { return name_; }
+
+  inline FunctionPtr find_method(const str_t& name) const noexcept {
+    if (auto it = methods_.find(name); it != methods_.end())
+      return it->second;
+
+    if (superclass_)
+      return superclass_->find_method(name);
+    return nullptr;
+  }
+
+  virtual Value call(const InterpreterPtr& interp, const std::vector<Value>& arguments) override;
+  virtual str_t as_string() const override { return name_; }
+
+  virtual sz_t arity() const override;
+};
+
+class Instance final : private UnCopyable, public std::enable_shared_from_this<Instance> {
+  ClassPtr klass_;
+  std::unordered_map<str_t, Value> fields_;
+public:
+  Instance(const ClassPtr& klass) noexcept : klass_{klass} {}
+
+  str_t as_string() const noexcept;
+
+  inline Value get(const Token& name)  {
+    auto field_name = name.literal();
+    if (auto it = fields_.find(field_name); it != fields_.end())
+      return it->second;
+
+    auto method = klass_->find_method(field_name);
+    if (method)
+      return Value{method->bind(shared_from_this())};
+
+    throw RuntimeError(name, "Undefined property `" + field_name + "`.");
+  }
+
+  inline void set(const Token& name, const Value& value) noexcept {
+    fields_[name.literal()] = value;
+  }
 };
 
 }
