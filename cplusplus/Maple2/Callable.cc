@@ -28,6 +28,7 @@
 
 namespace ms {
 
+// ========= Function ========
 FunctionPtr Function::bind(InstancePtr instance) noexcept {
   auto env = std::make_shared<Environment>(closure_);
   env->define("this", instance);
@@ -42,6 +43,24 @@ Value Function::call(const InterpreterPtr& interp, const std::vector<Value>& arg
 str_t Function::as_string() const {
   ss_t ss;
   ss << "<fn " << declaration_->name().as_string() << ">";
+  return ss.str();
+}
+
+// ========= Class =========
+Value Class::call(const InterpreterPtr& interp, const std::vector<Value>& arguments) {
+  // TODO:
+  return nullptr;
+}
+
+sz_t Class::arity() const {
+  auto initializer = find_method("init");
+  return initializer ? initializer->arity() : 0;
+}
+
+// ========= Instance =========
+str_t Instance::as_string() const noexcept {
+  ss_t ss;
+  ss << "<" << klass_->name() << " instance at " << this << ">";
   return ss.str();
 }
 
