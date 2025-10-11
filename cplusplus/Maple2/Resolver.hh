@@ -73,6 +73,17 @@ class Resolver final
 
   inline void begin_scope() noexcept { scopes_.push_back({}); }
   inline void end_scope() noexcept { scopes_.pop_back(); }
+
+  void declare(const Token& name) noexcept {
+    if (scopes_.empty())
+      return;
+
+    auto& scope = scopes_.back();
+    auto name_key = name.literal();
+    if (auto it = scope.find(name_key); it != scope.end())
+      err_reporter_.error(name, "Already a variable with this name in this scope.");
+    scope.insert({name_key, false});
+  }
 private:
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
