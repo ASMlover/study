@@ -84,6 +84,13 @@ class Resolver final
       err_reporter_.error(name, "Already a variable with this name in this scope.");
     scope.insert({name_key, false});
   }
+
+  void define(const Token& name) noexcept {
+    if (scopes_.empty())
+      return;
+
+    scopes_.back().insert({name.literal(), true});
+  }
 private:
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
