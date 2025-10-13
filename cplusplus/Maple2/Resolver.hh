@@ -91,6 +91,18 @@ class Resolver final
 
     scopes_.back().insert({name.literal(), true});
   }
+
+  void resolve_local(const ast::ExprPtr& expr, const Token& name) noexcept {
+    auto n = scopes_.size() - 1;
+    auto name_key = name.literal();
+    for (auto i = n; i >= 0; --i) {
+      auto& scope = scopes_[i];
+      if (scope.find(name_key) != scope.end()) {
+        interpreter_->resolve(expr, n - i);
+        return;
+      }
+    }
+  }
 private:
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
