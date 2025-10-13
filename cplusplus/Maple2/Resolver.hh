@@ -103,6 +103,23 @@ class Resolver final
       }
     }
   }
+
+  void resolve_function(const ast::FunctionPtr& function, FunctionType type) noexcept {
+    auto enclosing_function = current_function_;
+    current_function_ = type;
+
+    begin_scope();
+
+    for (const auto& param : function->params()) {
+      declare(param);
+      define(param);
+    }
+    resolve(function->body());
+
+    end_scope();
+
+    current_function_ = enclosing_function;
+  }
 private:
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
