@@ -121,6 +121,10 @@ class Resolver final
     current_function_ = enclosing_function;
   }
 private:
+  virtual void visit(const ast::AssignPtr& expr) override {
+    resolve(expr->value());
+    resolve_local(expr, expr->name());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
