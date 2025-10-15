@@ -125,6 +125,11 @@ private:
     resolve(expr->value());
     resolve_local(expr, expr->name());
   }
+
+  virtual void visit(const ast::BinaryPtr& expr) override {
+    resolve(expr->left());
+    resolve(expr->right());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
