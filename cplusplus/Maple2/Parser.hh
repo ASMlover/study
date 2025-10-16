@@ -380,11 +380,27 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr term() noexcept {
-    return nullptr;
+    // term -> factor ( ( "-" | "+" ) factor )* ;
+
+    auto left = factor();
+    while (match({TokenType::TK_MINUS, TokenType::TK_PLUS})) {
+      const auto& oper = prev();
+      auto right = factor();
+      left = std::make_shared<ast::Binary>(left, oper, right);
+    }
+    return left;
   }
 
   inline ast::ExprPtr factor() noexcept {
-    return nullptr;
+    // factor -> unary ( ( "/" | "*" ) unary )* ;
+
+    auto left = unary();
+    while (match({TokenType::TK_SLASH, TokenType::TK_STAR})) {
+      const auto& oper = prev();
+      auto right = unary();
+      left = std::make_shared<ast::Binary>(left, oper, right);
+    }
+    return left;
   }
 
   inline ast::ExprPtr unary() noexcept {
