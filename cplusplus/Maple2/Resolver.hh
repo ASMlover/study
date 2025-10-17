@@ -130,6 +130,14 @@ private:
     resolve(expr->left());
     resolve(expr->right());
   }
+
+  virtual void visit(const ast::CallPtr& expr) override {
+    resolve(expr->callee());
+
+    expr->iter_arguments([&](const auto& arg) {
+          resolve(arg);
+        });
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
