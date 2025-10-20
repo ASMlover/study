@@ -142,6 +142,17 @@ private:
   virtual void visit(const ast::GetPtr& expr) override {
     resolve(expr->object());
   }
+
+  virtual void visit(const ast::GroupingPtr& expr) override {
+    resolve(expr->expression());
+  }
+
+  virtual void visit(const ast::LiteralPtr& expr) override {}
+
+  virtual void visit(const ast::LogicalPtr& expr) override {
+    resolve(expr->left());
+    resolve(expr->right());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
