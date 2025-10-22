@@ -158,6 +158,15 @@ private:
     resolve(expr->value());
     resolve(expr->object());
   }
+
+  virtual void visit(const ast::SuperPtr& expr) override {
+    if (current_class_ == ClassType::NONE)
+      err_reporter_.error(expr->keyword(), "Cannot use `super` outside of a class.");
+    else if (current_class_ != ClassType::SUBCLASS)
+      err_reporter_.error(expr->keyword(), "Cannot use `super` in a class with no superclass.");
+
+    resolve_local(expr, expr->keyword());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
