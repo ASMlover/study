@@ -404,7 +404,14 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr unary() noexcept {
-    return nullptr;
+    // unary -> ( "!" | "-" ) unary | call ;
+
+    if (match({TokenType::TK_BANG, TokenType::TK_MINUS})) {
+      const auto& oper = prev();
+      auto right = unary();
+      return std::make_shared<ast::Unary>(oper, right);
+    }
+    return call();
   }
 
   inline ast::ExprPtr call() noexcept {
