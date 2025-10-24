@@ -167,6 +167,15 @@ private:
 
     resolve_local(expr, expr->keyword());
   }
+
+  virtual void visit(const ast::ThisPtr& expr) override {
+    if (current_class_ == ClassType::NONE) {
+      err_reporter_.error(expr->keyword(), "Cannot use `this` outside of a class.");
+      return;
+    }
+
+    resolve_local(expr, expr->keyword());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
