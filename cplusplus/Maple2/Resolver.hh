@@ -176,6 +176,10 @@ private:
 
     resolve_local(expr, expr->keyword());
   }
+
+  virtual void visit(const ast::UnaryPtr& expr) override {
+    resolve(expr->right());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
