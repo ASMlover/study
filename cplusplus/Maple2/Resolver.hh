@@ -180,6 +180,17 @@ private:
   virtual void visit(const ast::UnaryPtr& expr) override {
     resolve(expr->right());
   }
+
+  virtual void visit(const ast::VariablePtr& expr) override {
+    if (!scopes_.empty()) {
+      auto& scope = scopes_.back();
+      const auto& name = expr->name().literal();
+      if (scope.find(name) != scope.end() && !scope[name])
+        throw RuntimeError(expr->name(), "Cannot read local variable in its own initializer ...");
+    }
+
+    resolve_local(expr, expr->name());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
