@@ -191,6 +191,12 @@ private:
 
     resolve_local(expr, expr->name());
   }
+
+  virtual void visit(const ast::BlockPtr& stmt) override {
+    begin_scope();
+    resolve(stmt->statements());
+    end_scope();
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
