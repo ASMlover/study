@@ -197,6 +197,44 @@ private:
     resolve(stmt->statements());
     end_scope();
   }
+
+  virtual void visit(const ast::ClassPtr& stmt) override {
+    auto enclosing_class = current_class_;
+    current_class_ = ClassType::CLASS;
+
+    declare(stmt->name());
+    define(stmt->name());
+
+    auto superclass = stmt->superclass();
+    if (superclass) {
+      if (stmt->name().is_equal_to(superclass->name()))
+        err_reporter_.error(superclass->name(), "A class cannot inherit from itself.");
+
+      current_class_ = ClassType::SUBCLASS;
+      resolve(superclass);
+    }
+    if (superclass) {
+      begin_scope();
+      scopes_.back().insert({"super", true});
+    }
+
+    begin_scope();
+    scopes_.back().insert({"this", true});
+
+    stmt->iter_methods([this](const ast::FunctionPtr& method) {
+          auto declaration = FunctionType::METHOD;
+          if (method->name().is_equal_to("init"))
+            declaration = FunctionType::INITIALIZER;
+          resolve_function(method, declaration);
+        });
+
+    end_scope();
+
+    if (stmt->superclass())
+      end_scope();
+
+    current_class_ = enclosing_class;
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
