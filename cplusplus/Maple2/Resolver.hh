@@ -239,6 +239,13 @@ private:
   virtual void visit(const ast::ExpressionPtr& stmt) override {
     resolve(stmt->expression());
   }
+
+  virtual void visit(const ast::FunctionPtr& stmt) override {
+    declare(stmt->name());
+    define(stmt->name());
+
+    resolve_function(stmt, FunctionType::FUNCTION);
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
