@@ -235,6 +235,10 @@ private:
 
     current_class_ = enclosing_class;
   }
+
+  virtual void visit(const ast::ExpressionPtr& stmt) override {
+    resolve(stmt->expression());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
