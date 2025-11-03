@@ -246,6 +246,13 @@ private:
 
     resolve_function(stmt, FunctionType::FUNCTION);
   }
+
+  virtual void visit(const ast::IfPtr& stmt) override {
+    resolve(stmt->condition());
+    resolve(stmt->then_branch());
+    if (stmt->else_branch())
+      resolve(stmt->else_branch());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
