@@ -253,6 +253,10 @@ private:
     if (stmt->else_branch())
       resolve(stmt->else_branch());
   }
+
+  virtual void visit(const ast::PrintPtr& stmt) override {
+    resolve(stmt->expression());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
