@@ -257,6 +257,18 @@ private:
   virtual void visit(const ast::PrintPtr& stmt) override {
     resolve(stmt->expression());
   }
+
+  virtual void visit(const ast::ReturnPtr& stmt) override {
+    if (current_function_ == FunctionType::NONE)
+      err_reporter_.error(stmt->keyword(), "Cannot return from top-level code.");
+
+    if (stmt->value()) {
+      if (current_function_ == FunctionType::INITIALIZER)
+        err_reporter_.error(stmt->keyword(), "Cannot return a value from an initializer.");
+
+      resolve(stmt->value());
+    }
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
