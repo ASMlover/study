@@ -269,6 +269,9 @@ private:
       resolve(stmt->value());
     }
   }
+
+  virtual void visit(const ast::VarPtr& stmt) override {
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
