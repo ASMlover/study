@@ -254,6 +254,11 @@ private:
       resolve(stmt->else_branch());
   }
 
+  virtual void visit(const ast::ImportPtr& stmt) override {
+    declare(stmt->module_path());
+    define(stmt->module_path());
+  }
+
   virtual void visit(const ast::PrintPtr& stmt) override {
     resolve(stmt->expression());
   }
