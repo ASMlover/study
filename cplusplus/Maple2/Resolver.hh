@@ -272,6 +272,11 @@ private:
 
   virtual void visit(const ast::VarPtr& stmt) override {
   }
+
+  virtual void visit(const ast::WhilePtr& stmt) override {
+    resolve(stmt->condition());
+    resolve(stmt->body());
+  }
 public:
   Resolver(ErrorReporter& err_reporter, const InterpreterPtr& interpreter) noexcept
     : err_reporter_{err_reporter}, interpreter_{interpreter} {
