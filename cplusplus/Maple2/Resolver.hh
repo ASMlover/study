@@ -288,6 +288,7 @@ public:
   }
 
   inline void invoke_resolve(const std::vector<ast::StmtPtr>& stmts) noexcept {
+    resolve(stmts);
   }
 };
 
