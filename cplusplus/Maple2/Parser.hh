@@ -415,7 +415,24 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr call() noexcept {
-    return nullptr;
+    // call -> primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
+
+    auto expr = primary();
+    for (;;) {
+      if (match({TokenType::TK_LPAREN})) {
+        expr = finish_call(expr);
+      }
+      else if (match({TokenType::TK_DOT})) {
+        auto name = consume(TokenType::TK_IDENTIFIER, "Expect property name after .");
+        expr = std::make_shared<ast::Get>(expr, name);
+
+        // TODO: module getting ...
+      }
+      else {
+        break;
+      }
+    }
+    return expr;
   }
 
   inline ast::ExprPtr finish_call(const ast::ExprPtr& callee) noexcept {
