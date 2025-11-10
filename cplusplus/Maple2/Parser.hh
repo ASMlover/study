@@ -436,7 +436,17 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr finish_call(const ast::ExprPtr& callee) noexcept {
-    return nullptr;
+    std::vector<ast::ExprPtr> arguments;
+    if (!check(TokenType::TK_RPAREN)) {
+      do {
+        if (arguments.size() >= 255)
+          error(peek(), "Cannot have more than 255 arguments.");
+        arguments.push_back(expression());
+      } while (match({TokenType::TK_COMMA}));
+    }
+    auto paren = consume(TokenType::TK_RPAREN, "Expect `)` after arguments.");
+
+    return std::make_shared<ast::Call>(callee, paren, arguments);
   }
 
   inline ast::ExprPtr primary() noexcept(false) {
