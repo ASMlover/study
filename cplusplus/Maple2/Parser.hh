@@ -450,6 +450,13 @@ class Parser final : private UnCopyable {
   }
 
   inline ast::ExprPtr primary() noexcept(false) {
+    // primary -> NUMBER | STRING | IDENTIFIER | "true" | "false" | "nil" | "this"
+    //          | "(" expression ")" | "super" "." IDENTIFIER ;
+
+    if (match({TokenType::KW_TRUE}))
+      return std::make_shared<ast::Literal>(true);
+    if (match({TokenType::KW_FALSE}))
+      return std::make_shared<ast::Literal>(false);
     return nullptr;
   }
 public:
@@ -458,6 +465,8 @@ public:
   }
 
   inline std::vector<ast::StmtPtr> parse() noexcept {
+    // program -> declaration* EOF ;
+
     std::vector<ast::StmtPtr> statements;
     while (!is_at_end())
       statements.push_back(declaration());
