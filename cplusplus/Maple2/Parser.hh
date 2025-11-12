@@ -457,6 +457,11 @@ class Parser final : private UnCopyable {
       return std::make_shared<ast::Literal>(true);
     if (match({TokenType::KW_FALSE}))
       return std::make_shared<ast::Literal>(false);
+    if (match({TokenType::KW_NIL}))
+      return std::make_shared<ast::Literal>(nullptr);
+
+    if (match({TokenType::TK_NUMBER}))
+      return std::make_shared<ast::Literal>(prev().as_number());
     return nullptr;
   }
 public:
