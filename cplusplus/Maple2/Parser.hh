@@ -462,7 +462,10 @@ class Parser final : private UnCopyable {
 
     if (match({TokenType::TK_NUMBER}))
       return std::make_shared<ast::Literal>(prev().as_number());
-    return nullptr;
+    if (match({TokenType::TK_STRING}))
+      return std::make_shared<ast::Literal>(prev().as_string());
+
+    throw error(peek(), "Expect expression.");
   }
 public:
   Parser(ErrorReporter& error_reporter, const std::vector<Token>& tokens) noexcept
