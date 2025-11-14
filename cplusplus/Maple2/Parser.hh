@@ -465,6 +465,15 @@ class Parser final : private UnCopyable {
     if (match({TokenType::TK_STRING}))
       return std::make_shared<ast::Literal>(prev().as_string());
 
+    if (match({TokenType::KW_SUPER})) {
+      auto keyword = prev();
+      consume(TokenType::TK_DOT, "Expect `.` after `super`.");
+      auto method = consume(TokenType::TK_IDENTIFIER, "Expect superclass method name.");
+      return std::make_shared<ast::Super>(keyword, method);
+    }
+    if (match({TokenType::KW_THIS}))
+      return std::make_shared<ast::This>(prev());
+
     throw error(peek(), "Expect expression.");
   }
 public:
