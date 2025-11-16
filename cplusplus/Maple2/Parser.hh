@@ -474,6 +474,15 @@ class Parser final : private UnCopyable {
     if (match({TokenType::KW_THIS}))
       return std::make_shared<ast::This>(prev());
 
+    if (match({TokenType::TK_IDENTIFIER}))
+      return std::make_shared<ast::Variable>(prev());
+
+    if (match({TokenType::TK_LPAREN})) {
+      auto expr = expression();
+      consume(TokenType::TK_RPAREN, "Expect `)` after expression.");
+      return std::make_shared<ast::Grouping>(expr);
+    }
+
     throw error(peek(), "Expect expression.");
   }
 public:
