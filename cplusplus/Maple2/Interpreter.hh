@@ -132,6 +132,139 @@ class Interpreter final
     default: break;
     }
   }
+
+  virtual void visit(const ast::CallPtr& expr) override {
+    auto callee = evaluate(expr->callee());
+    if (!callee.is_callable())
+      throw RuntimeError(expr->paren(), "Can only call functions and classes.");
+
+    std::vector<Value> arguments;
+    expr->iter_arguments([this, &arguments](const auto& arg) {
+          arguments.push_back(evaluate(arg));
+        });
+
+    auto function = callee.as_callable();
+    if (arguments.size() != function->arity()) {
+      throw RuntimeError(expr->paren(),
+          "Expected " + as_string(function->arity()) + " arguments but got " + as_string(arguments.size()));
+    }
+    value_ = function->call(shared_from_this(), arguments);
+  }
+
+  virtual void visit(const ast::GetPtr& expr) override {
+    auto object = evaluate(expr->object());
+    if (object.is_instance())
+      value_ = object.as_instance()->get(expr->name());
+
+    if (object.is_module()) {
+      auto module = object.as_module();
+      try {
+        // TODO:
+      }
+      catch (const std::runtime_error& /*e*/) {
+        // TODO:
+      }
+    }
+
+    throw RuntimeError(expr->name(), "Only instances, modules have properties");
+  }
+
+  virtual void visit(const ast::GroupingPtr& expr) override {
+    evaluate(expr->expression());
+  }
+
+  virtual void visit(const ast::LiteralPtr& expr) override {
+    value_ = expr->value();
+  }
+
+  virtual void visit(const ast::LogicalPtr& expr) override {
+    auto left = evaluate(expr->left());
+
+    if (expr->op().type() == TokenType::KW_OR) {
+      if (left.is_truthy()) {
+        value_ = left;
+        return;
+      }
+    }
+    else {
+      if (!left.is_truthy()) {
+        value_ = left;
+        return;
+      }
+    }
+    value_ = evaluate(expr->right());
+  }
+
+  virtual void visit(const ast::SetPtr& expr) override {
+    auto object = evaluate(expr->object());
+
+    if (!object.is_instance())
+      throw RuntimeError(expr->name(), "Only instances have fields.");
+
+    auto value = evaluate(expr->value());
+    object.as_instance()->set(expr->name(), value);
+  }
+
+  virtual void visit(const ast::SuperPtr& expr) override {
+    auto distance = 0;
+    if (auto super_iter = locals_.find(expr); super_iter != locals_.end())
+      distance = super_iter->second;
+
+    auto superclass = std::static_pointer_cast<Class>(
+        environment_->get_at(distance, "super").as_callable());
+    auto object = std::static_pointer_cast<Instance>(
+        environment_->get_at(distance - 1, "this").as_instance());
+    auto method = superclass->find_method(expr->method().literal());
+    if (!method)
+      throw RuntimeError(expr->method(), "Undefined property `" + expr->method().literal() + "`");
+    method->bind(object);
+
+    value_ = Value{method};
+  }
+
+  virtual void visit(const ast::ThisPtr& expr) override {
+    value_ = lookup_variable(expr->keyword(), expr);
+  }
+
+  virtual void visit(const ast::UnaryPtr& expr) override {
+    auto right = evaluate(expr->right());
+
+    switch (expr->op().type()) {
+    case TokenType::TK_MINUS: value_ = -right; break;
+    case TokenType::TK_BANG_EQUAL: value_ = !right; break;
+    default: break;
+    }
+  }
+
+  virtual void visit(const ast::VariablePtr& expr) override {
+    value_ = lookup_variable(expr->name(), expr);
+  }
+
+  virtual void visit(const ast::BlockPtr& stmt) override {
+    execute_block(stmt->statements(), std::make_shared<Environment>(environment_));
+  }
+
+  virtual void visit(const ast::ClassPtr& stmt) override {
+    Value superclass_value{};
+    if (stmt->superclass()) {
+      superclass_value = evaluate(stmt->superclass());
+      if (!(superclass_value.is_callable() &&
+          std::dynamic_pointer_cast<Class>(superclass_value.as_callable())))
+        throw RuntimeError(stmt->superclass()->name(), "Superclass must be a class.");
+    }
+
+    environment_->define(stmt->name().as_string(), nullptr);
+
+    if (stmt->superclass()) {
+      environment_ = std::make_shared<Environment>(environment_);
+      environment_->define("super", superclass_value);
+    }
+
+    std::unordered_map<str_t, FunctionPtr> methods;
+    stmt->iter_methods([&](const auto& method) {
+          auto function = std::make_shared<Function>(method, environment_, method);
+        })
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}, globals_{new Environment()}, environment_{globals_} {
