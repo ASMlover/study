@@ -263,7 +263,15 @@ class Interpreter final
     std::unordered_map<str_t, FunctionPtr> methods;
     stmt->iter_methods([&](const auto& method) {
           auto function = std::make_shared<Function>(method, environment_, method);
-        })
+        });
+
+    auto superclass = std::static_pointer_cast<Class>(superclass_value.as_callable());
+    auto klass = std::make_shared<Class>(stmt->name().literal(), superclass, methods);
+
+    if (!superclass_value.is_nil())
+      environment_ = environment_->enclosing();
+
+    environment_->assign(stmt->name(), Value{klass});
   }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
