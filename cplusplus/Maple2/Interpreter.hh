@@ -273,6 +273,15 @@ class Interpreter final
 
     environment_->assign(stmt->name(), Value{klass});
   }
+
+  virtual void visit(const ast::ExpressionPtr& stmt) override {
+    evaluate(stmt->expression());
+  }
+
+  virtual void visit(const ast::FunctionPtr& stmt) override {
+    auto function = std::make_shared<Function>(stmt, environment_, false);
+    environment_->define(stmt->name().literal(), Value{function});
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}, globals_{new Environment()}, environment_{globals_} {
