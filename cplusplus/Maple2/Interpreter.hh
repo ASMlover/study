@@ -282,6 +282,14 @@ class Interpreter final
     auto function = std::make_shared<Function>(stmt, environment_, false);
     environment_->define(stmt->name().literal(), Value{function});
   }
+
+  virtual void visit(const ast::IfPtr& stmt) override {
+    auto cond = evaluate(stmt->condition());
+    if (cond.is_truthy())
+      execute(stmt->then_branch());
+    else if (stmt->else_branch())
+      execute(stmt->else_branch());
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}, globals_{new Environment()}, environment_{globals_} {
