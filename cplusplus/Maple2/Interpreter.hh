@@ -290,6 +290,11 @@ class Interpreter final
     else if (stmt->else_branch())
       execute(stmt->else_branch());
   }
+
+  virtual void visit(const ast::PrintPtr& stmt) override {
+    auto value = evaluate(stmt->expression());
+    std::cout << value << std::endl;
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}, globals_{new Environment()}, environment_{globals_} {
