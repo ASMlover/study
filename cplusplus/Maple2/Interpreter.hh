@@ -262,7 +262,7 @@ class Interpreter final
 
     std::unordered_map<str_t, FunctionPtr> methods;
     stmt->iter_methods([&](const auto& method) {
-          auto function = std::make_shared<Function>(method, environment_, method);
+          auto function = std::make_shared<Function>(method, environment_, method->name().is_equal_to("init"));
         });
 
     auto superclass = std::static_pointer_cast<Class>(superclass_value.as_callable());
@@ -294,6 +294,11 @@ class Interpreter final
   virtual void visit(const ast::PrintPtr& stmt) override {
     auto value = evaluate(stmt->expression());
     std::cout << value << std::endl;
+  }
+
+  virtual void visit(const ast::ReturnPtr& stmt) override {
+    auto value = stmt->value();
+    throw except::Return{value ? evaluate(value) : Value{}};
   }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
