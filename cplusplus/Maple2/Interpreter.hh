@@ -300,6 +300,14 @@ class Interpreter final
     auto value = stmt->value();
     throw except::Return{value ? evaluate(value) : Value{}};
   }
+
+  virtual void visit(const ast::VarPtr& stmt) override {
+    Value value{};
+    if (stmt->initializer() != nullptr)
+      value = evaluate(stmt->initializer());
+
+    environment_->define(stmt->name().literal(), value);
+  }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
     : err_reporter_{err_reporter}, globals_{new Environment()}, environment_{globals_} {
