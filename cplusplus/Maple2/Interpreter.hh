@@ -291,6 +291,10 @@ class Interpreter final
       execute(stmt->else_branch());
   }
 
+  virtual void visit(const ast::ImportPtr& stmt) override {
+    // TODO:
+  }
+
   virtual void visit(const ast::PrintPtr& stmt) override {
     auto value = evaluate(stmt->expression());
     std::cout << value << std::endl;
@@ -307,6 +311,11 @@ class Interpreter final
       value = evaluate(stmt->initializer());
 
     environment_->define(stmt->name().literal(), value);
+  }
+
+  virtual void visit(const ast::WhilePtr& stmt) override {
+    while (evaluate(stmt->condition()).is_truthy())
+      execute(stmt->body());
   }
 public:
   Interpreter(ErrorReporter& err_reporter) noexcept
