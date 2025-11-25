@@ -65,8 +65,11 @@ str_t Function::as_string() const {
 
 // ========= Class =========
 Value Class::call(const InterpreterPtr& interp, const std::vector<Value>& arguments) {
-  // TODO:
-  return nullptr;
+  auto instance = std::make_shared<Instance>(shared_from_this());
+  auto initializer = find_method("init");
+  if (initializer)
+    initializer->bind(instance)->call(interp, arguments);
+  return instance;
 }
 
 sz_t Class::arity() const {
