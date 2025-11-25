@@ -25,6 +25,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include "Callable.hh"
+#include "Return.hh"
+#include "Interpreter.hh"
 
 namespace ms {
 
@@ -36,7 +38,22 @@ FunctionPtr Function::bind(InstancePtr instance) noexcept {
 }
 
 Value Function::call(const InterpreterPtr& interp, const std::vector<Value>& arguments) {
-  // TODO:
+  auto environment = std::make_shared<Environment>(closure_);
+  for (sz_t i = 0; i < arguments.size(); ++i)
+    environment->define(declaration_->params()[i].literal(), arguments[i]);
+
+  try {
+    interp->invoke_execute_block(declaration_->body(), environment);
+  }
+  catch (const except::Return& r) {
+    if (is_initializer_)
+      return closure_->get_at(0, "this");
+
+    return r.value();
+  }
+
+  if (is_initializer_)
+    return closure_->get_at(0, "this");
   return nullptr;
 }
 
