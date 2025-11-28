@@ -71,7 +71,7 @@ public:
   virtual sz_t arity() const override { return declaration_->params().size(); }
 };
 
-class Class final : public Callable, public std::enable_shared_from_this<Callable> {
+class Class final : public Callable, public std::enable_shared_from_this<Class> {
   str_t name_;
   ClassPtr superclass_;
   std::unordered_map<str_t, FunctionPtr> methods_;
