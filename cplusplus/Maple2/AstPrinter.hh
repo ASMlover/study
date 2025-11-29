@@ -38,7 +38,18 @@ class AstPrinter final
 
   void parenthesize(const str_t& name, std::initializer_list<ast::ExprPtr> exprs) noexcept;
 
-  virtual void viist(const ast::AssignPtr& expr) override;
+  virtual void visit(const ast::AssignPtr& expr) override;
+  virtual void visit(const ast::BinaryPtr& expr) override;
+  virtual void visit(const ast::CallPtr& expr) override;
+  virtual void visit(const ast::GetPtr& expr) override;
+  virtual void visit(const ast::GroupingPtr& expr) override;
+  virtual void visit(const ast::LiteralPtr& expr) override;
+  virtual void visit(const ast::LogicalPtr& expr) override;
+  virtual void visit(const ast::SetPtr& expr) override;
+  virtual void visit(const ast::SuperPtr& expr) override;
+  virtual void visit(const ast::ThisPtr& expr) override;
+  virtual void visit(const ast::UnaryPtr& expr) override;
+  virtual void visit(const ast::VariablePtr& expr) override;
 public:
   str_t stringify(const ast::ExprPtr& expr) noexcept;
 };
