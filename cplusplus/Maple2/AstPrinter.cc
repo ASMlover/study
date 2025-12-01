@@ -34,6 +34,14 @@ str_t AstPrinter::stringify(const ast::ExprPtr& expr) noexcept {
 }
 
 void AstPrinter::parenthesize(const str_t& name, std::initializer_list<ast::ExprPtr> exprs) noexcept {
+  printer_bytes_ += "(";
+  printer_bytes_ += name;
+
+  for (auto& expr : exprs) {
+    printer_bytes_ += " ";
+    expr->accept(shared_from_this());
+  }
+  printer_bytes_ += ")";
 }
 
 void AstPrinter::visit(const ast::AssignPtr& expr) {}
