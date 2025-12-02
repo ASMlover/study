@@ -44,7 +44,12 @@ void AstPrinter::parenthesize(const str_t& name, std::initializer_list<ast::Expr
   printer_bytes_ += ")";
 }
 
-void AstPrinter::visit(const ast::AssignPtr& expr) {}
+void AstPrinter::visit(const ast::AssignPtr& expr) {
+  auto name = str_t{"= "};
+  name += expr->name().as_string();
+  parenthesize(name, {expr->value()});
+}
+
 void AstPrinter::visit(const ast::BinaryPtr& expr) {}
 void AstPrinter::visit(const ast::CallPtr& expr) {}
 void AstPrinter::visit(const ast::GetPtr& expr) {}
