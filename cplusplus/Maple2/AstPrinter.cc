@@ -50,7 +50,10 @@ void AstPrinter::visit(const ast::AssignPtr& expr) {
   parenthesize(name, {expr->value()});
 }
 
-void AstPrinter::visit(const ast::BinaryPtr& expr) {}
+void AstPrinter::visit(const ast::BinaryPtr& expr) {
+  parenthesize(expr->op().literal(), {expr->left(), expr->right()});
+}
+
 void AstPrinter::visit(const ast::CallPtr& expr) {}
 void AstPrinter::visit(const ast::GetPtr& expr) {}
 void AstPrinter::visit(const ast::GroupingPtr& expr) {}
