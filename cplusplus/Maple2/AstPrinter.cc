@@ -56,7 +56,11 @@ void AstPrinter::visit(const ast::BinaryPtr& expr) {
 
 void AstPrinter::visit(const ast::CallPtr& expr) {}
 void AstPrinter::visit(const ast::GetPtr& expr) {}
-void AstPrinter::visit(const ast::GroupingPtr& expr) {}
+
+void AstPrinter::visit(const ast::GroupingPtr& expr) {
+  parenthesize("group", {expr->expression()});
+}
+
 void AstPrinter::visit(const ast::LiteralPtr& expr) {}
 void AstPrinter::visit(const ast::LogicalPtr& expr) {}
 void AstPrinter::visit(const ast::SetPtr& expr) {}
