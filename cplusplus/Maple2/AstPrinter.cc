@@ -61,8 +61,14 @@ void AstPrinter::visit(const ast::GroupingPtr& expr) {
   parenthesize("group", {expr->expression()});
 }
 
-void AstPrinter::visit(const ast::LiteralPtr& expr) {}
-void AstPrinter::visit(const ast::LogicalPtr& expr) {}
+void AstPrinter::visit(const ast::LiteralPtr& expr) {
+  printer_bytes_ += expr->value().stringify();
+}
+
+void AstPrinter::visit(const ast::LogicalPtr& expr) {
+  parenthesize(expr->op().literal(), {expr->left(), expr->right()});
+}
+
 void AstPrinter::visit(const ast::SetPtr& expr) {}
 void AstPrinter::visit(const ast::SuperPtr& expr) {}
 void AstPrinter::visit(const ast::ThisPtr& expr) {}
