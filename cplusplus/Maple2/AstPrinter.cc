@@ -72,7 +72,11 @@ void AstPrinter::visit(const ast::LogicalPtr& expr) {
 void AstPrinter::visit(const ast::SetPtr& expr) {}
 void AstPrinter::visit(const ast::SuperPtr& expr) {}
 void AstPrinter::visit(const ast::ThisPtr& expr) {}
-void AstPrinter::visit(const ast::UnaryPtr& expr) {}
+
+void AstPrinter::visit(const ast::UnaryPtr& expr) {
+  parenthesize(expr->op().literal(), {expr->right()});
+}
+
 void AstPrinter::visit(const ast::VariablePtr& expr) {}
 
 }
