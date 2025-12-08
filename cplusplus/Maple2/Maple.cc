@@ -33,6 +33,15 @@
 namespace ms {
 
 int Maple::run(int argc, char* argv[]) {
+  MAPLE_UNUSED(argc), MAPLE_UNUSED(argv);
+
+  if (argc > 2)
+    std::cout << "Usage: maple [script]" << std::endl;
+  else if (argc == 2)
+    run_from_file(argv[1]);
+  else
+    run_from_prompt();
+
   return 0;
 }
 
