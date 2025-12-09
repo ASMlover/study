@@ -45,7 +45,15 @@ int Maple::run(int argc, char* argv[]) {
   return 0;
 }
 
-void Maple::run_from_file(const str_t& filepath) noexcept {}
+void Maple::run_from_file(const str_t& filepath) noexcept {
+  if (std::ifstream fp(filepath); fp.is_open()) {
+    ss_t ss;
+    ss << fp.rdbuf();
+
+    run(filepath, ss.str());
+  }
+}
+
 void Maple::run_from_prompt() noexcept {}
 void Maple::run(const str_t& filepath, const str_t& source_bytes) noexcept {}
 
