@@ -54,7 +54,17 @@ void Maple::run_from_file(const str_t& filepath) noexcept {
   }
 }
 
-void Maple::run_from_prompt() noexcept {}
+void Maple::run_from_prompt() noexcept {
+  str_t line;
+  for (;;) {
+    std::cout << ">>> ";
+    if (!std::getline(std::cin, line) || line == "exit")
+      break;
+
+    run("", line);
+  }
+}
+
 void Maple::run(const str_t& filepath, const str_t& source_bytes) noexcept {}
 
 }
