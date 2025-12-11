@@ -28,6 +28,8 @@
 #include <iostream>
 #include "Scanner.hh"
 #include "Parser.hh"
+#include "Resolver.hh"
+#include "Interpreter.hh"
 #include "Maple.hh"
 
 namespace ms {
@@ -65,6 +67,21 @@ void Maple::run_from_prompt() noexcept {
   }
 }
 
-void Maple::run(const str_t& filepath, const str_t& source_bytes) noexcept {}
+void Maple::run(const str_t& filepath, const str_t& source_bytes) noexcept {
+  Scanner scanner{err_reporter_, source_bytes, ""};
+  const auto& tokens = scanner.scan_tokens();
+
+  Parser parser{err_reporter_, tokens};
+  auto statements = parser.parse();
+
+  auto interp = std::make_shared<Interpreter>(err_reporter_);
+  auto resolver = std::make_shared<Resolver>(err_reporter_, interp);
+  resolver->invoke_resolve(statements);
+
+  if (err_reporter_.had_error())
+    return;
+
+  interp->interpret(statements);
+}
 
 }
