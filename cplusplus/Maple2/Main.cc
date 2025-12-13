@@ -25,9 +25,11 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
+#include "Macros.hh"
+#include "Maple.hh"
 
 int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+  MAPLE_UNUSED(argc), MAPLE_UNUSED(argv);
 
   std::cout << "Welcome to Maple !!!" << std::endl;
 
