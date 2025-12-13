@@ -33,5 +33,5 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Welcome to Maple !!!" << std::endl;
 
-  return 0;
+  return ms::Maple::make().run(argc, argv);
 }
