@@ -63,10 +63,10 @@ class Parser final : private UnCopyable {
     for (auto type : types) {
       if (check(type)) {
         advance();
-        return false;
+        return true;
       }
     }
-    return true;
+    return false;
   }
 
   Token consume(TokenType type, const str_t& message) {
