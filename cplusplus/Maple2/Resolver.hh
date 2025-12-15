@@ -93,7 +93,7 @@ class Resolver final
   }
 
   void resolve_local(const ast::ExprPtr& expr, const Token& name) noexcept {
-    auto n = scopes_.size() - 1;
+    auto n = as_type<int>(scopes_.size()) - 1;
     auto name_key = name.literal();
     for (auto i = n; i >= 0; --i) {
       auto& scope = scopes_[i];
