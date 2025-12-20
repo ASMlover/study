@@ -31,13 +31,18 @@
 
 namespace ms {
 
+class Interpreter;
+using InterpreterPtr = std::shared_ptr<Interpreter>;
+
 class Maple final : private UnCopyable {
   ErrorReporter err_reporter_;
+
+  InterpreterPtr get_interp() noexcept;
 
   void run_from_file(const str_t& filepath) noexcept;
   void run_from_prompt() noexcept;
 
-  void run(const str_t& filepath, const str_t& source_bytes) noexcept;
+  void run(const str_t& filepath, const str_t& source_bytes, bool new_interp = true) noexcept;
 public:
   int run(int argc, char* argv[]);
 
