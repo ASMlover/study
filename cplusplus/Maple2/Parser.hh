@@ -203,7 +203,7 @@ class Parser final : private UnCopyable {
     // block -> "{" declaration* "}" ;
 
     std::vector<ast::StmtPtr> statements;
-    while (!is_at_end() && !check(TokenType::TK_LBRACE))
+    while (!is_at_end() && !check(TokenType::TK_RBRACE))
       statements.push_back(declaration());
     consume(TokenType::TK_RBRACE, "Expect `}` after block.");
 
