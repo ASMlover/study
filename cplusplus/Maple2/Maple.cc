@@ -47,6 +47,11 @@ int Maple::run(int argc, char* argv[]) {
   return 0;
 }
 
+InterpreterPtr Maple::get_interp() noexcept {
+  static auto interp = std::make_shared<Interpreter>(err_reporter_);
+  return interp;
+}
+
 void Maple::run_from_file(const str_t& filepath) noexcept {
   if (std::ifstream fp(filepath); fp.is_open()) {
     ss_t ss;
@@ -63,18 +68,22 @@ void Maple::run_from_prompt() noexcept {
     if (!std::getline(std::cin, line) || line == "exit")
       break;
 
-    run("", line);
+    run("", line, false);
   }
 }
 
-void Maple::run(const str_t& filepath, const str_t& source_bytes) noexcept {
+void Maple::run(const str_t& filepath, const str_t& source_bytes, bool new_interp) noexcept {
   Scanner scanner{err_reporter_, source_bytes, ""};
   const auto& tokens = scanner.scan_tokens();
 
   Parser parser{err_reporter_, tokens};
   auto statements = parser.parse();
 
-  auto interp = std::make_shared<Interpreter>(err_reporter_);
+  InterpreterPtr interp;
+  if (new_interp)
+    interp = std::make_shared<Interpreter>(err_reporter_);
+  else
+    interp = get_interp();
   auto resolver = std::make_shared<Resolver>(err_reporter_, interp);
   resolver->invoke_resolve(statements);
 
