@@ -68,4 +68,22 @@ enum class Color : u8_t {
   kBACKGROUND_LIGHTWHITE,
 };
 
+std::ostream& set_colorful(std::ostream& stream, Color color) noexcept;
+std::ostream& set_foreground_colorful(std::ostream& stream, Color color) noexcept;
+std::ostream& set_background_colorful(std::ostream& stream, Color color) noexcept;
+
+inline std::ostream& reset_colorful(std::ostream& stream) noexcept {
+  return set_colorful(stream, Color::kREST);
+}
+
+#define FGCOLOR(c) set_foreground_colorful(stream, Color::kFOREGROUND_##c)
+#define BGCOLOR(c) set_background_colorful(stream, Color::kBACKGROUND_##c)
+
+namespace bg {
+
+  inline std::ostream& black(std::ostream& stream) noexcept { return FGCOLOR(BLACK); }
+  inline std::ostream& red(std::ostream& stream) noexcept { return FGCOLOR(RED); }
+
+}
+
 }
