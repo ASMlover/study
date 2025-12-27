@@ -76,13 +76,33 @@ inline std::ostream& reset_colorful(std::ostream& stream) noexcept {
   return set_colorful(stream, Color::kREST);
 }
 
-#define FGCOLOR(c) set_foreground_colorful(stream, Color::kFOREGROUND_##c)
-#define BGCOLOR(c) set_background_colorful(stream, Color::kBACKGROUND_##c)
+#define FGCOLOR(Name, C) \
+  inline std::ostream& Name(std::ostream& stream) noexcept {\
+    return set_foreground_colorful(stream, Color::kFOREGROUND_##C);\
+  }
+#define BGCOLOR(Name, C) \
+  inline std::ostream& Name(std::ostream& stream) noexcept {\
+    return set_background_colorful(stream, Color::kBACKGROUND_##C);\
+  }
 
 namespace bg {
 
-  inline std::ostream& black(std::ostream& stream) noexcept { return FGCOLOR(BLACK); }
-  inline std::ostream& red(std::ostream& stream) noexcept { return FGCOLOR(RED); }
+  FGCOLOR(black,        BLACK)
+  FGCOLOR(red,          RED)
+  FGCOLOR(green,        GREEN)
+  FGCOLOR(yellow,       YELLOW)
+  FGCOLOR(blue,         BLUE)
+  FGCOLOR(magenta,      MAGENTA)
+  FGCOLOR(cyan,         CYAN)
+  FGCOLOR(white,        WHITE)
+  FGCOLOR(gray,         GRAY)
+  FGCOLOR(lightred,     LIGHTRED)
+  FGCOLOR(lightgreen,   LIGHTGREEN)
+  FGCOLOR(lightyellow,  LIGHTYELLOW)
+  FGCOLOR(lightblue,    LIGHTBLUE)
+  FGCOLOR(lightmagenta, LIGHTMAGENTA)
+  FGCOLOR(lightcyan,    LIGHTCYAN)
+  FGCOLOR(lightwhite,   LIGHTWHITE)
 
 }
 
