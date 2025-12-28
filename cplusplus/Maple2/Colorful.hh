@@ -85,7 +85,7 @@ inline std::ostream& reset_colorful(std::ostream& stream) noexcept {
     return set_background_colorful(stream, Color::kBACKGROUND_##C);\
   }
 
-namespace bg {
+namespace fg {
 
   FGCOLOR(black,        BLACK)
   FGCOLOR(red,          RED)
@@ -103,6 +103,27 @@ namespace bg {
   FGCOLOR(lightmagenta, LIGHTMAGENTA)
   FGCOLOR(lightcyan,    LIGHTCYAN)
   FGCOLOR(lightwhite,   LIGHTWHITE)
+
+}
+
+namespace bg {
+
+  BGCOLOR(black,        BLACK)
+  BGCOLOR(red,          RED)
+  BGCOLOR(green,        GREEN)
+  BGCOLOR(yellow,       YELLOW)
+  BGCOLOR(blue,         BLUE)
+  BGCOLOR(magenta,      MAGENTA)
+  BGCOLOR(cyan,         CYAN)
+  BGCOLOR(white,        WHITE)
+  BGCOLOR(gray,         GRAY)
+  BGCOLOR(lightred,     LIGHTRED)
+  BGCOLOR(lightgreen,   LIGHTGREEN)
+  BGCOLOR(lightyellow,  LIGHTYELLOW)
+  BGCOLOR(lightblue,    LIGHTBLUE)
+  BGCOLOR(lightmagenta, LIGHTMAGENTA)
+  BGCOLOR(lightcyan,    LIGHTCYAN)
+  BGCOLOR(lightwhite,   LIGHTWHITE)
 
 }
 
