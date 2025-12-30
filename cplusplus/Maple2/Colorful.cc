@@ -26,7 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include "Macros.hh"
-#if defined(MAPLE_MSVC)
+#if defined (MAPLE_MSVC)
 # include <io.h>
 # include <Windows.h>
 #else
@@ -42,6 +42,18 @@ inline FILE* get_standard_stream(const std::ostream& stream) noexcept {
   else if (&stream == &std::cerr || &stream == &std::clog)
     return stderr;
   return nullptr;
+}
+
+inline bool is_atty(std::ostream& stream) noexcept {
+  FILE* std_stream = get_standard_stream(stream);
+  if (!std_stream)
+    return false;
+
+#if defined (MAPLE_MSVC)
+  return ::_isatty(::_fileno(std_stream));
+#else
+  return ::isatty(::fileno(std_stream));
+#endif
 }
 
 std::ostream& set_colorful(std::ostream& stream, Color color) noexcept { return stream; }
