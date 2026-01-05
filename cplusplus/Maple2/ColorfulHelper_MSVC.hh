@@ -28,6 +28,7 @@
 
 #include <io.h>
 #include <Windows.h>
+#include "Common.hh"
 #include "ColorfulCommon.hh"
 #include "Colorful.hh"
 
@@ -90,7 +91,45 @@ inline int get_colorful(Color c) noexcept {
 }
 
 inline std::ostream& set_colorful_impl(std::ostream& stream, int foreground = -1, int background = -1) noexcept {
-  // TODO:
+  static WORD wDefaultAttributes = 0;
+
+  if (!is_atty(stream))
+    return stream;
+
+  HANDLE hTerminal = INVALID_HANDLE_VALUE;
+  if (&stream == &std::cout)
+    hTerminal = ::GetStdHandle(STD_OUTPUT_HANDLE);
+  else if (&stream == &std::cerr)
+    hTerminal = ::GetStdHandle(STD_ERROR_HANDLE);
+
+  if (!wDefaultAttributes) {
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
+      return stream;
+    wDefaultAttributes = info.wAttributes;
+  }
+
+  WORD wAttributes;
+  if (foreground == -1 && background == -1) {
+    wAttributes = wDefaultAttributes;
+  }
+  else {
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (!::GetConsoleScreenBufferInfo(hTerminal, &info))
+      return stream;
+
+    wAttributes = info.wAttributes;
+    if (foreground != -1) {
+      wAttributes &= ~(info.wAttributes & 0x0F);
+      wAttributes |= as_type<WORD>(foreground);
+    }
+    if (background != -1) {
+      wAttributes &= ~(info.wAttributes & 0x0F);
+      wAttributes |= as_type<WORD>(background);
+    }
+  }
+
+  ::SetConsoleTextAttribute(hTerminal, wAttributes);
   return stream;
 }
 
