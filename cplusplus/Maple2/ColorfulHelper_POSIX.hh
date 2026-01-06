@@ -39,4 +39,52 @@ inline bool is_atty(std::ostream& stream) noexcept {
   return ::isatty(::fileno(std_stream));
 }
 
+inline const char* get_colorful(Color c) noexcept {
+#define COLORMAP(c, v)    case Color::k##c: return v
+#define FGCOLORMAP(c, v)  case Color::kFOREGROUND_##c: return v
+#define BGCOLORMAP(c, v)  case Color::kBACKGROUND_##c: return v
+
+  switch (c) {
+  COLORMAP(RESET,           "\033[00m");
+  FGCOLORMAP(BLACK,         "\033[30m");
+  FGCOLORMAP(RED,           "\033[31m");
+  FGCOLORMAP(GREEN,         "\033[32m");
+  FGCOLORMAP(YELLOW,        "\033[33m");
+  FGCOLORMAP(BLUE,          "\033[34m");
+  FGCOLORMAP(MAGENTA,       "\033[35m");
+  FGCOLORMAP(CYAN,          "\033[36m");
+  FGCOLORMAP(WHITE,         "\033[37m");
+  FGCOLORMAP(GRAY,          "\033[90m");
+  FGCOLORMAP(LIGHTRED,      "\033[91m");
+  FGCOLORMAP(LIGHTGREEN,    "\033[92m");
+  FGCOLORMAP(LIGHTYELLOW,   "\033[93m");
+  FGCOLORMAP(LIGHTBLUE,     "\033[94m");
+  FGCOLORMAP(LIGHTMAGENTA,  "\033[95m");
+  FGCOLORMAP(LIGHTCYAN,     "\033[96m");
+  FGCOLORMAP(LIGHTWHITE,    "\033[97m");
+  BGCOLORMAP(BLACK,         "\033[40m");
+  BGCOLORMAP(RED,           "\033[41m");
+  BGCOLORMAP(GREEN,         "\033[42m");
+  BGCOLORMAP(YELLOW,        "\033[43m");
+  BGCOLORMAP(BLUE,          "\033[44m");
+  BGCOLORMAP(MAGENTA,       "\033[45m");
+  BGCOLORMAP(CYAN,          "\033[46m");
+  BGCOLORMAP(WHITE,         "\033[47m");
+  BGCOLORMAP(GRAY,          "\033[100m");
+  BGCOLORMAP(LIGHTRED,      "\033[101m");
+  BGCOLORMAP(LIGHTGREEN,    "\033[102m");
+  BGCOLORMAP(LIGHTYELLOW,   "\033[103m");
+  BGCOLORMAP(LIGHTBLUE,     "\033[104m");
+  BGCOLORMAP(LIGHTMAGENTA,  "\033[105m");
+  BGCOLORMAP(LIGHTCYAN,     "\033[106m");
+  BGCOLORMAP(LIGHTWHITE,    "\033[107m");
+  default: break;
+  }
+
+#undef BGCOLORMAP
+#undef FGCOLORMAP
+#undef COLORMAP
+  return "\033[00m";
+}
+
 }
