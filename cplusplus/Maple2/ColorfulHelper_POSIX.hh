@@ -92,9 +92,11 @@ inline std::ostream& set_colorful(std::ostream& stream, Color color) noexcept {
 }
 
 inline std::ostream& set_foreground_colorful(std::ostream& stream, Color color) noexcept {
+  return set_colorful(stream, color);
 }
 
 inline std::ostream& set_background_colorful(std::ostream& stream, Color color) noexcept {
+  return stream << get_colorful(color);
 }
 
 }
