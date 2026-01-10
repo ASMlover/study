@@ -28,7 +28,7 @@
 
 #include "Macros.hh"
 #if defined (MAPLE_MSVC)
-# include "ColorfulHelper_MSVC.hh"
+# include "ColorfulHelper_WIN32.hh"
 #else
 # include "ColorfulHelper_POSIX.hh"
 #endif
