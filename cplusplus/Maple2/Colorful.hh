@@ -31,7 +31,7 @@
 namespace ms {
 
 enum class Color : u8_t {
-  kREST,
+  kRESET,
 
   kFOREGROUND_BLACK,
   kFOREGROUND_RED,
@@ -73,7 +73,7 @@ std::ostream& set_foreground_colorful(std::ostream& stream, Color color) noexcep
 std::ostream& set_background_colorful(std::ostream& stream, Color color) noexcept;
 
 inline std::ostream& reset_colorful(std::ostream& stream) noexcept {
-  return set_colorful(stream, Color::kREST);
+  return set_colorful(stream, Color::kRESET);
 }
 
 #define FGCOLOR(Name, C) \
