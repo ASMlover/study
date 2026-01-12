@@ -24,40 +24,21 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include "Macros.hh"
-#if defined (MAPLE_MSVC)
-# include <io.h>
-# include <Windows.h>
-#else
-# include <unistd.h>
-#endif
+#include "ColorfulHelper.hh"
 #include "Colorful.hh"
 
 namespace ms {
 
-inline FILE* get_standard_stream(const std::ostream& stream) noexcept {
-  if (&stream == &std::cout)
-    return stdout;
-  else if (&stream == &std::cerr || &stream == &std::clog)
-    return stderr;
-  return nullptr;
+std::ostream& set_colorful(std::ostream& stream, Color color) noexcept {
+  return colorful::set_colorful(stream, color);
 }
 
-inline bool is_atty(std::ostream& stream) noexcept {
-  FILE* std_stream = get_standard_stream(stream);
-  if (!std_stream)
-    return false;
-
-#if defined (MAPLE_MSVC)
-  return ::_isatty(::_fileno(std_stream));
-#else
-  return ::isatty(::fileno(std_stream));
-#endif
+std::ostream& set_foreground_colorful(std::ostream& stream, Color color) noexcept {
+  return colorful::set_foreground_colorful(stream, color);
 }
 
-std::ostream& set_colorful(std::ostream& stream, Color color) noexcept { return stream; }
-std::ostream& set_foreground_colorful(std::ostream& stream, Color color) noexcept { return stream; }
-std::ostream& set_background_colorful(std::ostream& stream, Color color) noexcept { return stream; }
+std::ostream& set_background_colorful(std::ostream& stream, Color color) noexcept {
+  return colorful::set_background_colorful(stream, color);
+}
 
 }
