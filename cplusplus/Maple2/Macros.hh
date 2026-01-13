@@ -36,9 +36,6 @@
 # define MAPLE_MSVC
 #endif
 
-#undef MAPLE_GUNC  // TODO: need remove
-#define MAPLE_MSVC // TODO: need remove
-
 #if !defined(interface)
 # define interface                struct
 #endif

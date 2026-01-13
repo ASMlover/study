@@ -268,8 +268,6 @@ class Interpreter final
     ClassPtr superclass{};
     if (!superclass_value.is_nil())
       superclass = std::static_pointer_cast<Class>(superclass_value.as_callable());
-    else
-      std::cout << "====================== superclass_value is null" << std::endl;
     auto klass = std::make_shared<Class>(stmt->name().literal(), superclass, methods);
 
     if (!superclass_value.is_nil())
