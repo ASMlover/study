@@ -50,12 +50,15 @@ class Token final : public Copyable {
   int lineno_{};
 public:
   Token() noexcept {}
+
   Token(TokenType type, const str_t& literal, int lineno = 0) noexcept
     : type_{type}, literal_{literal}, lineno_{lineno} {
   }
+
   Token(const Token& r) noexcept
     : type_{r.type_}, literal_{r.literal_}, lineno_{r.lineno_} {
   }
+
   Token(Token&& r) noexcept
     : type_{std::move(r.type_)}, literal_{std::move(r.literal_)}, lineno_{std::move(r.lineno_)} {
   }
@@ -68,6 +71,7 @@ public:
     }
     return *this;
   }
+
   inline Token& operator=(Token&& r) noexcept {
     if (this != &r) {
       type_ = std::move(r.type_);
@@ -75,6 +79,14 @@ public:
       lineno_ = std::move(r.lineno_);
     }
     return *this;
+  }
+
+  inline bool operator==(const Token& r) const noexcept {
+    return this == &r ? true : literal_ == r.literal_;
+  }
+
+  inline bool operator!=(const Token& r) const noexcept {
+    return !(*this == r);
   }
 };
 
