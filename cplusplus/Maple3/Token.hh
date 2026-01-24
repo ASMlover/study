@@ -45,6 +45,37 @@ cstr_t get_type_name(TokenType type) noexcept;
 TokenType get_keyword_type(const str_t& keyword) noexcept;
 
 class Token final : public Copyable {
+  TokenType type_{TokenType::TK_ERR};
+  str_t literal_{};
+  int lineno_{};
+public:
+  Token() noexcept {}
+  Token(TokenType type, const str_t& literal, int lineno = 0) noexcept
+    : type_{type}, literal_{literal}, lineno_{lineno} {
+  }
+  Token(const Token& r) noexcept
+    : type_{r.type_}, literal_{r.literal_}, lineno_{r.lineno_} {
+  }
+  Token(Token&& r) noexcept
+    : type_{std::move(r.type_)}, literal_{std::move(r.literal_)}, lineno_{std::move(r.lineno_)} {
+  }
+
+  inline Token& operator=(const Token& r) noexcept {
+    if (this != &r) {
+      type_ = r.type_;
+      literal_ = r.literal_;
+      lineno_ = r.lineno_;
+    }
+    return *this;
+  }
+  inline Token& operator=(Token&& r) noexcept {
+    if (this != &r) {
+      type_ = std::move(r.type_);
+      literal_ = std::move(r.literal_);
+      lineno_ = std::move(r.lineno_);
+    }
+    return *this;
+  }
 };
 
 }
