@@ -88,6 +88,30 @@ public:
   inline bool operator!=(const Token& r) const noexcept {
     return !(*this == r);
   }
+
+  inline bool is_equal_to(const Token& r) const noexcept { return *this == r; }
+  inline bool is_equal_to(const str_t& s) const noexcept { return literal_ == s; }
+
+  inline TokenType type() const noexcept { return type_; }
+  inline const str_t& literal() const noexcept { return literal_; }
+  inline int lineno() const noexcept { return lineno_; }
+  inline double as_number() const noexcept { return std::atof(literal_.c_str()); }
+  inline const str_t& as_string() const noexcept { return literal_; }
+  inline cstr_t as_cstring() const noexcept { return literal_.c_str(); }
+
+  str_t stringify() const;
+
+  static Token from_literal(const str_t& literal) noexcept {
+    return Token{TokenType::TK_STRING, literal};
+  }
+
+  static Token from_details(TokenType type, const str_t& literal, int lineno) noexcept {
+    return Token{type, literal, lineno};
+  }
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Token& t) noexcept {
+  return out << t.stringify();
+}
 
 }
