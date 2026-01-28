@@ -41,6 +41,14 @@ class Scanner final : private UnCopyable {
   sz_t start_{};
   sz_t current_{};
   int lineno_{1};
+
+  inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
+  inline bool is_alpha(char c) const noexcept { return std::isalpha(c) || c == '_'; }
+  inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
+
+  inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept { return source_code_.substr(begpos, endpos - begpos); }
+
+  inline bool is_at_end() const noexcept { return current_ >= source_code_.size(); }
 };
 
 }
