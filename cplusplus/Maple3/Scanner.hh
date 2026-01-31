@@ -49,6 +49,25 @@ class Scanner final : private UnCopyable {
   inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept { return source_code_.substr(begpos, endpos - begpos); }
 
   inline bool is_at_end() const noexcept { return current_ >= source_code_.size(); }
+  inline char advance() noexcept { return source_code_[current_++]; }
+  inline char peek() const noexcept { return is_at_end() ? '\0' : source_code_[current_]; }
+  inline char peek_next() const noexcept { return current_ + 1 >= source_code_.size() ? '\0' : source_code_[current_ + 1]; }
+
+  inline bool match(char expected) noexcept {
+    if (is_at_end() || source_code_[current_] != expected)
+      return false;
+
+    ++current_;
+    return true;
+  }
+
+  inline void add_token(TokenType type, const str_t& literal) noexcept {
+    tokens_.emplace_back(type, literal, lineno_);
+  }
+
+  inline void add_token(TokenType type) noexcept {
+    add_token(type, gen_literal(start_, current_));
+  }
 };
 
 }
