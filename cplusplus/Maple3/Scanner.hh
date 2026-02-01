@@ -68,6 +68,14 @@ class Scanner final : private UnCopyable {
   inline void add_token(TokenType type) noexcept {
     add_token(type, gen_literal(start_, current_));
   }
+
+  void scan_token() noexcept;
+  void string() noexcept;
+  void number() noexcept;
+  void identifier() noexcept;
+public:
+  Scanner(const str_t& source_code, const str_t& source_fname = "") noexcept;
+  std::vector<Token> scan_tokens() noexcept;
 };
 
 }
