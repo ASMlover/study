@@ -76,6 +76,11 @@ macro(source_group_by_dir source_files)
 endmacro()
 
 file(GLOB_RECURSE MAPLE_SOURCES *.hh *.cc)
+list(FILTER MAPLE_SOURCES EXCLUDE REGEX ".*/tests/.*")
+list(FILTER MAPLE_SOURCES EXCLUDE REGEX ".*\\\\tests\\\\.*")
+set(MAPLE_CORE_SOURCES ${MAPLE_SOURCES})
+list(FILTER MAPLE_CORE_SOURCES EXCLUDE REGEX ".*/Main.cc$")
+list(FILTER MAPLE_CORE_SOURCES EXCLUDE REGEX ".*\\\\Main.cc$")
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   source_group_by_dir(MAPLE_SOURCES)
 endif()
@@ -86,3 +91,11 @@ foreach(_MAPLE_REALPATH IN LISTS MAPLE_SOURCES)
 endforeach()
 
 add_executable(${PROJECT_NAME} ${MAPLE_SOURCES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+set(MAPLE_TEST_SOURCES
+  ${MAPLE_CORE_SOURCES}
+  tests/ScannerTest.cc
+)
+add_executable(MapleScanTest ${MAPLE_TEST_SOURCES})
+target_include_directories(MapleScanTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

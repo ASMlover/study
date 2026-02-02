@@ -44,9 +44,133 @@ std::vector<Token> Scanner::scan_tokens() noexcept {
   return tokens_;
 }
 
-void Scanner::scan_token() noexcept {}
-void Scanner::string() noexcept {}
-void Scanner::number() noexcept {}
-void Scanner::identifier() noexcept {}
+void Scanner::scan_token() noexcept {
+  char c = advance();
+  switch (c) {
+  case '(': add_token(TokenType::TK_LPAREN); break;
+  case ')': add_token(TokenType::TK_RPAREN); break;
+  case '{': add_token(TokenType::TK_LBRACE); break;
+  case '}': add_token(TokenType::TK_RBRACE); break;
+  case ',': add_token(TokenType::TK_COMMA); break;
+  case '.': add_token(TokenType::TK_DOT); break;
+  case '-': add_token(TokenType::TK_MINUS); break;
+  case '+': add_token(TokenType::TK_PLUS); break;
+  case ';': add_token(TokenType::TK_SEMICOLON); break;
+  case '*': add_token(TokenType::TK_STAR); break;
+  case '!': add_token(match('=') ? TokenType::TK_BANG_EQUAL : TokenType::TK_BANG); break;
+  case '=': add_token(match('=') ? TokenType::TK_EQUAL_EQUAL : TokenType::TK_EQUAL); break;
+  case '<': add_token(match('=') ? TokenType::TK_LESS_EQUAL : TokenType::TK_LESS); break;
+  case '>': add_token(match('=') ? TokenType::TK_GREATER_EQUAL : TokenType::TK_GREATER); break;
+  case '/':
+    if (match('/')) {
+      while (peek() != '\n' && !is_at_end())
+        advance();
+    }
+    else if (match('*')) {
+      bool closed = false;
+      while (!is_at_end()) {
+        if (peek() == '\n')
+          ++lineno_;
+        if (peek() == '*' && peek_next() == '/') {
+          advance();
+          advance();
+          closed = true;
+          break;
+        }
+        advance();
+      }
+      if (!closed)
+        add_token(TokenType::TK_ERR, "Unterminated block comment.");
+    }
+    else {
+      add_token(TokenType::TK_SLASH);
+    }
+    break;
+  case ' ':
+  case '\r':
+  case '\t':
+    break;
+  case '\n':
+    ++lineno_;
+    break;
+  case '"':
+    string();
+    break;
+  default:
+    if (is_digit(c)) {
+      number();
+    }
+    else if (is_alpha(c)) {
+      identifier();
+    }
+    else {
+      add_token(TokenType::TK_ERR, from_fmt("Unexpected character: `%c`", c));
+    }
+    break;
+  }
+}
+
+void Scanner::string() noexcept {
+  str_t literal;
+  bool closed = false;
+
+  while (!is_at_end()) {
+    char c = advance();
+    if (c == '"') {
+      closed = true;
+      break;
+    }
+
+    if (c == '\n')
+      ++lineno_;
+
+    if (c == '\\') {
+      if (is_at_end()) {
+        add_token(TokenType::TK_ERR, "Unterminated escape sequence.");
+        return;
+      }
+      char esc = advance();
+      switch (esc) {
+      case 'n': literal.push_back('\n'); break;
+      case 'r': literal.push_back('\r'); break;
+      case 't': literal.push_back('\t'); break;
+      case '\\': literal.push_back('\\'); break;
+      case '"': literal.push_back('"'); break;
+      default: literal.push_back(esc); break;
+      }
+    }
+    else {
+      literal.push_back(c);
+    }
+  }
+
+  if (!closed) {
+    add_token(TokenType::TK_ERR, "Unterminated string.");
+    return;
+  }
+
+  add_token(TokenType::TK_STRING, literal);
+}
+
+void Scanner::number() noexcept {
+  while (is_digit(peek()))
+    advance();
+
+  if (peek() == '.' && is_digit(peek_next())) {
+    advance();
+    while (is_digit(peek()))
+      advance();
+  }
+
+  add_token(TokenType::TK_NUMBER);
+}
+
+void Scanner::identifier() noexcept {
+  while (is_alnum(peek()))
+    advance();
+
+  str_t text = gen_literal(start_, current_);
+  add_token(get_keyword_type(text), text);
+}
 
 }
