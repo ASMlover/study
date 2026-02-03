@@ -1,0 +1,12 @@
+{
+  "delete_allow": ["127.0.0.1", "::1"],
+  "max_files_per_mode": 20,
+  "log_level": "INFO",
+  "log_file": "run/hotfix_server.log",
+  "mode_limits": {
+    "h75_hotfix": { "max_files": 20 },
+    "h75_server_hotfix": { "max_files": 20 },
+    "h75na_hotfix": { "max_files": 20 },
+    "h75na_server_hotfix": { "max_files": 20 }
+  }
+}

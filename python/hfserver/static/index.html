@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HotfixServer Console</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="bg-glow"></div>
+    <div class="weather-layer">
+      <canvas id="rain-canvas"></canvas>
+      <div class="fog"></div>
+    </div>
+    <header class="hero">
+      <div class="logo">
+        <svg
+          class="logo-icon"
+          viewBox="0 0 120 120"
+          role="img"
+          aria-label="HotfixServer"
+        >
+          <defs>
+            <linearGradient id="bolt" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#f6ff6b" />
+              <stop offset="1" stop-color="#ff9d2f" />
+            </linearGradient>
+          </defs>
+          <rect x="12" y="18" width="96" height="72" rx="14" class="logo-frame" />
+          <path
+            d="M66 26 L46 68 H62 L54 100 L88 56 H70 L78 26 Z"
+            fill="url(#bolt)"
+          />
+          <circle cx="32" cy="38" r="8" class="logo-dot" />
+        </svg>
+        <div>
+          <div class="logo-subtitle">
+            <span class="slogan-icon">
+              <svg viewBox="0 0 64 64" role="img" aria-label="signal">
+                <circle cx="32" cy="32" r="10" fill="currentColor" />
+                <path
+                  d="M12 32c8-10 32-10 40 0M6 32c12-16 40-16 52 0"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+            <span class="slogan-text">
+              <span class="slogan-main">Rapid hotfix dispatch channel</span>
+              <span class="slogan-sub">signal woven in motion</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="clock-card">
+        <div class="clock-face">
+          <div class="hand hand-hour" id="hand-hour"></div>
+          <div class="hand hand-minute" id="hand-minute"></div>
+          <div class="hand hand-second" id="hand-second"></div>
+          <div class="clock-pin"></div>
+        </div>
+        <div class="clock-digital" id="clock-digital">--:--:--</div>
+        <div class="clock-date" id="clock-date">----</div>
+      </div>
+    </header>
+
+    <main class="panel">
+      <section class="toolbar">
+        <div class="tabs" id="mode-tabs"></div>
+      </section>
+
+      <section class="content">
+        <div class="mode-summary" id="mode-summary"></div>
+        <div class="file-grid" id="file-grid"></div>
+      </section>
+    </main>
+
+    <template id="file-card-template">
+      <article class="file-card">
+        <div class="file-icon">
+          <svg viewBox="0 0 64 64" role="img" aria-label="file">
+            <path
+              d="M14 6h22l14 14v38H14z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+            />
+            <path d="M36 6v14h14" fill="none" stroke="currentColor" stroke-width="3" />
+          </svg>
+        </div>
+        <div class="file-info">
+          <div class="file-name"></div>
+          <div class="file-meta"></div>
+        </div>
+        <div class="file-actions">
+          <button class="action-btn download" title="Download">
+            <svg viewBox="0 0 64 64" role="img" aria-label="download">
+              <path
+                d="M32 8v28m0 0l10-10m-10 10L22 26"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M14 42v10h36V42"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <button class="action-btn delete" title="Delete">
+            <svg viewBox="0 0 64 64" role="img" aria-label="delete">
+              <path
+                d="M18 20h28m-24 0l2 30h20l2-30m-20-6h16l-2-6H24z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </article>
+    </template>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
