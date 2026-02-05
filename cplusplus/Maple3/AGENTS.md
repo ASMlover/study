@@ -1,5 +1,10 @@
 ﻿# Repository Guidelines
 
+## Project Background
+
+Maple3 is a lightweight scripting language interpreter project. It currently focuses on the frontend (lexer/scanner) and is evolving toward a full pipeline (parser, runtime, and CLI) using a simple, CMake-based C++20 codebase.
+The project aims to stay small, readable, and portable while growing toward a complete interpreter stack, with emphasis on a clean C++20 codebase and straightforward CMake workflows.
+
 ## Project Structure & Module Organization
 
 - Root directory contains all production sources as `*.cc` and `*.hh` (for example `Main.cc`, `Scanner.cc`, `Token.hh`).
@@ -26,6 +31,11 @@
 - Prefer `snake_case` for functions and `kCONSTANT`-style for constants (see `Consts.hh`).
 - Keep includes ordered: standard headers first, then local headers.
 - Keep comments brief and let code be self-explanatory where possible.
+
+## Agent Workflow Rules
+
+- At the start of every session, read `Plans.md` first.
+- At the end of every task round, update `Plans.md` with progress and next steps.
 
 ## Testing Guidelines
 
