@@ -39,4 +39,4 @@ For PRs, include a short description, link related issues, and list testing done
 
 ## Agent-Specific Instructions
 If you change endpoints, update `docs/PROGRAM_DESIGN.md` and `docs/USER_GUIDE.md` together.
-Every session must start by reading `PLAN.md`, and every task completion must update `PLAN.md`.
+Every session must start by reading `Plans.md`, and every task completion must update `Plans.md`.

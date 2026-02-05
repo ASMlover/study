@@ -33,3 +33,5 @@
 - 2026-02-03: Updated AGENTS.md coding style rules for UTF-8 header and no magic numbers.
 - 2026-02-03: Enforced LF line endings and documented the rule.
 - 2026-02-03: Removed trailing whitespace and documented the rule.
+- 2026-02-03: Renamed PLAN.md to Plans.md and updated references.
+- 2026-02-06: Added upload size validation with config-driven limits and updated docs.
