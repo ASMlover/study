@@ -15,6 +15,8 @@ from .constants import (
     DEFAULT_LOG_FILE,
     DEFAULT_MAX_FILES,
     DEFAULT_PORT,
+    DEFAULT_UPLOAD_MAX_FILE_BYTES,
+    DEFAULT_UPLOAD_MAX_REQUEST_BYTES,
 )
 from .models import ModeLimit, ServerConfig
 
@@ -38,6 +40,17 @@ def parse_log_level(value: str | None, default: int) -> int:
     if isinstance(level, int):
         return level
     return default
+
+
+def parse_positive_int(value: Any, default: int) -> int:
+    """Parse a positive integer with a safe fallback."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    if parsed <= 0:
+        return default
+    return parsed
 
 
 def parse_args() -> ServerConfig:
@@ -66,6 +79,14 @@ def parse_args() -> ServerConfig:
         args.max_files
         if args.max_files is not None
         else pick("max_files_per_mode", DEFAULT_MAX_FILES)
+    )
+    upload_max_file_bytes = parse_positive_int(
+        pick("upload_max_file_bytes", DEFAULT_UPLOAD_MAX_FILE_BYTES),
+        DEFAULT_UPLOAD_MAX_FILE_BYTES,
+    )
+    upload_max_request_bytes = parse_positive_int(
+        pick("upload_max_request_bytes", DEFAULT_UPLOAD_MAX_REQUEST_BYTES),
+        DEFAULT_UPLOAD_MAX_REQUEST_BYTES,
     )
 
     whitelist: set[str] = set()
@@ -103,6 +124,8 @@ def parse_args() -> ServerConfig:
         upload_dir=Path(str(pick("upload_dir", args.upload_dir))),
         static_dir=Path(str(pick("static_dir", args.static_dir))),
         max_files_per_mode=max_files,
+        upload_max_file_bytes=upload_max_file_bytes,
+        upload_max_request_bytes=upload_max_request_bytes,
         mode_limits=mode_limits,
         delete_allow=whitelist,
         trust_x_forwarded_for=bool(
@@ -132,6 +155,14 @@ def apply_config_payload(
             config.max_files_per_mode = int(payload["max_files_per_mode"])
         except (TypeError, ValueError):
             pass
+    if "upload_max_file_bytes" in payload:
+        config.upload_max_file_bytes = parse_positive_int(
+            payload["upload_max_file_bytes"], config.upload_max_file_bytes
+        )
+    if "upload_max_request_bytes" in payload:
+        config.upload_max_request_bytes = parse_positive_int(
+            payload["upload_max_request_bytes"], config.upload_max_request_bytes
+        )
 
     raw_limits = payload.get("mode_limits", {})
     if isinstance(raw_limits, dict):

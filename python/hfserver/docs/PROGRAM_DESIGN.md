@@ -36,6 +36,7 @@
 ## 安全策略
 - 删除接口 `DELETE /files/<name>` 仅允许 IP 白名单访问。
 - 白名单通过 `config.json` 配置，默认仅本机 `127.0.0.1`/`::1`。
+- 上传校验：限制总请求大小与单文件大小；文件名必须匹配已知模式。
 
 ## 接口
 - `POST /upload`：multipart 文件上传
@@ -46,6 +47,11 @@
 
 ## 运行时
 服务器基于 `asyncio` 的 `start_server` 构建，采用异步处理请求与文件 I/O（通过 `asyncio.to_thread`）。
+
+## 上传校验配置
+`config.json` 可设置：
+- `upload_max_file_bytes`：单文件大小上限（默认 10MB）
+- `upload_max_request_bytes`：单次请求体大小上限（默认 100MB）
 
 ## 日志
 控制台日志按级别输出不同颜色，启动时先输出字符 LOGO，再输出配置与监听信息。

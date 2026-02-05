@@ -22,9 +22,29 @@ from .models import MODE_DEFS, FileRecord, ServerConfig, ServerState, now_utc
 from .storage import cleanup_removed, match_mode, prune_records, save_records
 
 
+class RequestTooLarge(Exception):
+    """Raised when a request exceeds the allowed body size."""
+
+    def __init__(
+        self,
+        method: str,
+        target: str,
+        headers: dict[str, str],
+        content_length: int,
+        limit: int,
+    ) -> None:
+        super().__init__(f"request too large: {content_length} > {limit}")
+        self.method = method
+        self.target = target
+        self.headers = headers
+        self.content_length = content_length
+        self.limit = limit
+
+
 async def read_request(
     reader: asyncio.StreamReader,
-) -> tuple[str, str, dict[str, str], bytes] | None:
+    max_body_bytes: int | None,
+) -> tuple[str, str, dict[str, str], bytes, int] | None:
     """Read a single HTTP request from the stream."""
     header_bytes = b""
     while REQUEST_HEADER_SEPARATOR not in header_bytes:
@@ -54,11 +74,16 @@ async def read_request(
         key, value = line.split(":", 1)
         headers[key.strip().lower()] = value.strip()
 
-    content_length = int(headers.get("content-length", "0") or 0)
+    try:
+        content_length = int(headers.get("content-length", "0") or 0)
+    except ValueError:
+        return None
+    if max_body_bytes is not None and content_length > max_body_bytes:
+        raise RequestTooLarge(method, target, headers, content_length, max_body_bytes)
     body = rest
     if len(body) < content_length:
         body += await reader.readexactly(content_length - len(body))
-    return method, target, headers, body
+    return method, target, headers, body, content_length
 
 
 def parse_multipart(body: bytes, content_type: str) -> list[tuple[str, bytes]]:
@@ -136,12 +161,28 @@ async def handle_client(
 ) -> None:
     """Process a single HTTP connection."""
     await maybe_reload()
-    request = await read_request(reader)
+    try:
+        request = await read_request(reader, config.upload_max_request_bytes)
+    except RequestTooLarge as exc:
+        requester_ip = client_ip(exc.headers, writer, config)
+        status = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+        response = json_response(status, {"error": "request too large"})
+        logger.warning(
+            "UPLOAD rejected ip=%s reason=max_request_bytes length=%d limit=%d",
+            requester_ip,
+            exc.content_length,
+            exc.limit,
+        )
+        writer.write(response)
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+        return
     if request is None:
         writer.close()
         await writer.wait_closed()
         return
-    method, target, headers, body = request
+    method, target, headers, body, content_length = request
     path = urlparse(target).path
     path = unquote(path)
     requester_ip = client_ip(headers, writer, config)
@@ -189,7 +230,7 @@ async def handle_client(
                 logger.info("DOWNLOAD ip=%s file=%s", requester_ip, name)
         elif method == "POST" and path == "/upload":
             status, response, _uploaded = await handle_upload(
-                config, state, headers, body, requester_ip, logger
+                config, state, headers, body, content_length, requester_ip, logger
             )
         elif method == "DELETE" and path.startswith("/files/"):
             name = path.removeprefix("/files/")
@@ -287,6 +328,7 @@ async def handle_upload(
     state: ServerState,
     headers: dict[str, str],
     body: bytes,
+    content_length: int,
     requester_ip: str,
     logger: logging.Logger,
 ) -> tuple[HTTPStatus, bytes, list[str]]:
@@ -302,31 +344,63 @@ async def handle_upload(
         return status, json_response(
             status, {"error": "expected multipart/form-data"}
         ), []
+    if content_length <= 0:
+        status = HTTPStatus.BAD_REQUEST
+        logger.warning("UPLOAD rejected ip=%s reason=missing_content_length", requester_ip)
+        return status, json_response(status, {"error": "missing content-length"}), []
     files = parse_multipart(body, content_type)
     if not files:
         status = HTTPStatus.BAD_REQUEST
         logger.warning("UPLOAD rejected ip=%s reason=no_files", requester_ip)
         return status, json_response(status, {"error": "no files found"}), []
 
+    max_file_bytes = config.upload_max_file_bytes
+    violations: list[str] = []
+    has_size_violation = False
+    has_mode_violation = False
+    for filename, content in files:
+        safe_name = os.path.basename(filename)
+        if not safe_name:
+            violations.append("empty filename")
+            has_mode_violation = True
+            logger.warning("UPLOAD rejected ip=%s reason=empty_filename", requester_ip)
+            continue
+        mode = match_mode(safe_name)
+        if not mode:
+            violations.append(f"{safe_name}: unknown mode")
+            has_mode_violation = True
+            logger.warning(
+                "UPLOAD rejected ip=%s file=%s reason=unknown_mode",
+                requester_ip,
+                safe_name,
+            )
+            continue
+        if len(content) > max_file_bytes:
+            violations.append(f"{safe_name}: file too large")
+            has_size_violation = True
+            logger.warning(
+                "UPLOAD rejected ip=%s file=%s reason=max_file_bytes size=%d limit=%d",
+                requester_ip,
+                safe_name,
+                len(content),
+                max_file_bytes,
+            )
+            continue
+
+    if violations:
+        status = (
+            HTTPStatus.BAD_REQUEST
+            if has_mode_violation
+            else HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+        )
+        return status, json_response(status, {"error": "upload rejected"}), []
+
     saved: list[dict[str, Any]] = []
-    errors: list[str] = []
     config.upload_dir.mkdir(parents=True, exist_ok=True)
     async with state.lock:
         for filename, content in files:
             safe_name = os.path.basename(filename)
-            if not safe_name:
-                logger.warning("UPLOAD skipped ip=%s reason=empty_filename", requester_ip)
-                errors.append("empty filename")
-                continue
             mode = match_mode(safe_name)
-            if not mode:
-                logger.warning(
-                    "UPLOAD skipped ip=%s file=%s reason=unknown_mode",
-                    requester_ip,
-                    safe_name,
-                )
-                errors.append(f"{safe_name}: unknown mode")
-                continue
             target = config.upload_dir / safe_name
             await asyncio.to_thread(target.write_bytes, content)
             record = FileRecord(
@@ -342,17 +416,7 @@ async def handle_upload(
         cleanup_removed(config.upload_dir, removed)
         await asyncio.to_thread(save_records, config.upload_dir, state.records)
 
-    if not saved:
-        status = HTTPStatus.BAD_REQUEST
-        logger.warning(
-            "UPLOAD rejected ip=%s reason=no_files_saved warnings=%d",
-            requester_ip,
-            len(errors),
-        )
-        return status, json_response(status, {"error": "no files saved"}), []
     payload: dict[str, Any] = {"saved": saved}
-    if errors:
-        payload["warnings"] = errors
     status = HTTPStatus.OK
     uploaded_names = [item["name"] for item in saved]
     logger.info(
@@ -360,7 +424,7 @@ async def handle_upload(
         requester_ip,
         len(files),
         ", ".join(uploaded_names),
-        len(errors),
+        0,
     )
     return status, json_response(status, payload), uploaded_names
 

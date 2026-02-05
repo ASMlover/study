@@ -19,13 +19,16 @@
 ```bash
 curl -F "file=@./h75_hotfix_demo.bin" http://127.0.0.1:8000/upload
 ```
-文件名需满足模式关键字，否则会被拒绝。`config.json` 支持按模式设置 `mode_limits`。
+文件名需满足模式关键字，否则会被拒绝。任一文件不合规则整包请求被拒绝。
+`config.json` 支持按模式设置 `mode_limits`，并可配置上传大小上限。
 
 ## 配置文件示例
 ```json
 {
   "delete_allow": ["127.0.0.1", "::1"],
   "max_files_per_mode": 20,
+  "upload_max_file_bytes": 10485760,
+  "upload_max_request_bytes": 104857600,
   "log_level": "INFO",
   "mode_limits": {
     "h75_hotfix": { "max_files": 20 }

@@ -48,6 +48,8 @@ class ServerConfig:
     upload_dir: Path
     static_dir: Path
     max_files_per_mode: int
+    upload_max_file_bytes: int
+    upload_max_request_bytes: int
     mode_limits: dict[str, ModeLimit]
     delete_allow: set[str]
     trust_x_forwarded_for: bool
