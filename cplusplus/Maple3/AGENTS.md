@@ -16,6 +16,7 @@ The project aims to stay small, readable, and portable while growing toward a co
 - Configure: `cmake -S . -B build` (generates build files into `build/`).
 - Build: `cmake --build build --config Release` (or `Debug` for symbols and checks).
 - Run: `build/Maple` (executable name matches the `project(Maple)` target).
+- Test: `ctest --test-dir build --output-on-failure -C Debug` (Windows multi-config), or `ctest --test-dir build --output-on-failure` (single-config).
 
 ## Getting Started (Platform Notes)
 
@@ -26,6 +27,9 @@ The project aims to stay small, readable, and portable while growing toward a co
 ## Coding Style & Naming Conventions
 
 - Indentation: 2 spaces; no tabs.
+- File encoding: UTF-8.
+- Line endings: UNIX style (`LF`).
+- Automatically trim trailing whitespace.
 - Headers use `#pragma once` and are named `*.hh`; implementations are `*.cc`.
 - Namespaces use short, lowercase prefixes (e.g., `ms`).
 - Prefer `snake_case` for functions and `kCONSTANT`-style for constants (see `Consts.hh`).
@@ -36,10 +40,12 @@ The project aims to stay small, readable, and portable while growing toward a co
 
 - At the start of every session, read `Plans.md` first.
 - At the end of every task round, update `Plans.md` with progress and next steps.
+- When implementation is updated, synchronize architecture changes in `Designs.md` in the same task round.
+- When language implementation is updated, synchronize developer/user guidance in `Guides.md` in the same task round.
 
 ## Testing Guidelines
 
-- No dedicated test framework is configured in this repository yet.
+- Use lightweight self-check executables under `tests/` and register them with CMake/CTest.
 - If you add tests, place them under a new `tests/` directory and wire them into `CMakeLists.txt`.
 - Name tests by feature, for example `tests/scanner_tokenize.cc`.
 
