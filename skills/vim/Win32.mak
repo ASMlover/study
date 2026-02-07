@@ -145,6 +145,10 @@ TARGETOS = WINNT
 APPVER = 5.0
 !ENDIF
 
+!IF "$(APPVER)" == "6.01"
+APPVER = 6.1
+!ENDIF
+
 !IF "$(APPVER)" != "6.1"
 !IF "$(APPVER)" != "6.0"
 !IF "$(APPVER)" != "5.02"
