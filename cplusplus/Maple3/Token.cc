@@ -62,7 +62,9 @@ str_t Token::stringify() const {
 
   ss << std::left << std::setw(20) << get_type_name(type_) << ":"
     << std::right << std::setw(24) << literal_ << "|"
-    << std::right << std::setw(04) << lineno_;
+    << std::right << std::setw(04) << lineno_ << ":"
+    << std::right << std::setw(03) << colno_ << "+"
+    << std::right << std::setw(03) << length_;
   return ss.str();
 }
 

@@ -29,6 +29,7 @@
 #include <cctype>
 #include <vector>
 #include "Common.hh"
+#include "Errors.hh"
 #include "Token.hh"
 
 namespace ms {
@@ -41,12 +42,14 @@ class Scanner final : private UnCopyable {
   sz_t start_{};
   sz_t current_{};
   int lineno_{1};
+  int token_lineno_{1};
 
   inline bool is_digit(char c) const noexcept { return std::isdigit(c); }
   inline bool is_alpha(char c) const noexcept { return std::isalpha(c) || c == '_'; }
   inline bool is_alnum(char c) const noexcept { return std::isalnum(c) || c == '_'; }
 
   inline str_t gen_literal(sz_t begpos, sz_t endpos) const noexcept { return source_code_.substr(begpos, endpos - begpos); }
+  int get_column(sz_t pos) const noexcept;
 
   inline bool is_at_end() const noexcept { return current_ >= source_code_.size(); }
   inline char advance() noexcept { return source_code_[current_++]; }
@@ -62,11 +65,17 @@ class Scanner final : private UnCopyable {
   }
 
   inline void add_token(TokenType type, const str_t& literal) noexcept {
-    tokens_.emplace_back(type, literal, lineno_);
+    int colno = get_column(start_);
+    int length = as_type<int>(current_ - start_);
+    tokens_.emplace_back(type, literal, token_lineno_, colno, length);
   }
 
   inline void add_token(TokenType type) noexcept {
     add_token(type, gen_literal(start_, current_));
+  }
+
+  inline void add_error(const str_t& message) noexcept {
+    add_token(TokenType::TK_ERR, format_diagnostic(message, source_fname_, token_lineno_, get_column(start_)));
   }
 
   void scan_token() noexcept;

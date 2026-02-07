@@ -27,6 +27,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 project(Maple CXX)
+include(CTest)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose build type [Debug|Release|RelWithDebInfo|MinSizeRel]" FORCE)
@@ -99,3 +100,12 @@ set(MAPLE_TEST_SOURCES
 )
 add_executable(MapleScanTest ${MAPLE_TEST_SOURCES})
 target_include_directories(MapleScanTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME MapleScanTest COMMAND MapleScanTest)
+
+set(MAPLE_PARSER_TEST_SOURCES
+  ${MAPLE_CORE_SOURCES}
+  tests/ParserTest.cc
+)
+add_executable(MapleParserTest ${MAPLE_PARSER_TEST_SOURCES})
+target_include_directories(MapleParserTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME MapleParserTest COMMAND MapleParserTest)

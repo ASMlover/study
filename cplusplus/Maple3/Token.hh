@@ -48,19 +48,22 @@ class Token final : public Copyable {
   TokenType type_{TokenType::TK_ERR};
   str_t literal_{};
   int lineno_{};
+  int colno_{};
+  int length_{};
 public:
   Token() noexcept {}
 
-  Token(TokenType type, const str_t& literal, int lineno = 0) noexcept
-    : type_{type}, literal_{literal}, lineno_{lineno} {
+  Token(TokenType type, const str_t& literal, int lineno = 0, int colno = 0, int length = 0) noexcept
+    : type_{type}, literal_{literal}, lineno_{lineno}, colno_{colno}, length_{length} {
   }
 
   Token(const Token& r) noexcept
-    : type_{r.type_}, literal_{r.literal_}, lineno_{r.lineno_} {
+    : type_{r.type_}, literal_{r.literal_}, lineno_{r.lineno_}, colno_{r.colno_}, length_{r.length_} {
   }
 
   Token(Token&& r) noexcept
-    : type_{std::move(r.type_)}, literal_{std::move(r.literal_)}, lineno_{std::move(r.lineno_)} {
+    : type_{std::move(r.type_)}, literal_{std::move(r.literal_)}, lineno_{std::move(r.lineno_)},
+      colno_{std::move(r.colno_)}, length_{std::move(r.length_)} {
   }
 
   inline Token& operator=(const Token& r) noexcept {
@@ -68,6 +71,8 @@ public:
       type_ = r.type_;
       literal_ = r.literal_;
       lineno_ = r.lineno_;
+      colno_ = r.colno_;
+      length_ = r.length_;
     }
     return *this;
   }
@@ -77,6 +82,8 @@ public:
       type_ = std::move(r.type_);
       literal_ = std::move(r.literal_);
       lineno_ = std::move(r.lineno_);
+      colno_ = std::move(r.colno_);
+      length_ = std::move(r.length_);
     }
     return *this;
   }
@@ -95,6 +102,8 @@ public:
   inline TokenType type() const noexcept { return type_; }
   inline const str_t& literal() const noexcept { return literal_; }
   inline int lineno() const noexcept { return lineno_; }
+  inline int colno() const noexcept { return colno_; }
+  inline int length() const noexcept { return length_; }
   inline double as_number() const noexcept { return std::atof(literal_.c_str()); }
   inline const str_t& as_string() const noexcept { return literal_; }
   inline cstr_t as_cstring() const noexcept { return literal_.c_str(); }
@@ -105,8 +114,8 @@ public:
     return Token{TokenType::TK_STRING, literal};
   }
 
-  static Token from_details(TokenType type, const str_t& literal, int lineno) noexcept {
-    return Token{type, literal, lineno};
+  static Token from_details(TokenType type, const str_t& literal, int lineno, int colno, int length) noexcept {
+    return Token{type, literal, lineno, colno, length};
   }
 };
 

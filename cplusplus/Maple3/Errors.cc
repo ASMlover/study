@@ -24,37 +24,43 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <stdexcept>
-#include "Types.hh"
+#include "Common.hh"
+#include "Errors.hh"
 
 namespace ms {
 
-str_t format_diagnostic(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0, cstr_t level = "error") noexcept;
+str_t format_diagnostic(const str_t& message, const str_t& filename, int lineno, int colno, cstr_t level) noexcept {
+  str_t origin;
 
-class RuntimeError final : public std::runtime_error {
-  str_t filename_;
-  int lineno_{};
-  int colno_{};
-public:
-  RuntimeError(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0) noexcept;
+  if (!filename.empty())
+    origin = filename;
+  else
+    origin = "<input>";
 
-  inline const str_t& filename() const noexcept { return filename_; }
-  inline int lineno() const noexcept { return lineno_; }
-  inline int colno() const noexcept { return colno_; }
-};
+  if (lineno > 0) {
+    origin += ":";
+    origin += as_string(lineno);
+  }
+  if (colno > 0) {
+    origin += ":";
+    origin += as_string(colno);
+  }
 
-class ParseError final : public std::runtime_error {
-  str_t filename_;
-  int lineno_{};
-  int colno_{};
-public:
-  ParseError(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0) noexcept;
+  return as_string(origin, " ", level, ": ", message);
+}
 
-  inline const str_t& filename() const noexcept { return filename_; }
-  inline int lineno() const noexcept { return lineno_; }
-  inline int colno() const noexcept { return colno_; }
-};
+RuntimeError::RuntimeError(const str_t& message, const str_t& filename, int lineno, int colno) noexcept
+  : std::runtime_error(format_diagnostic(message, filename, lineno, colno))
+  , filename_{filename}
+  , lineno_{lineno}
+  , colno_{colno} {
+}
+
+ParseError::ParseError(const str_t& message, const str_t& filename, int lineno, int colno) noexcept
+  : std::runtime_error(format_diagnostic(message, filename, lineno, colno))
+  , filename_{filename}
+  , lineno_{lineno}
+  , colno_{colno} {
+}
 
 }

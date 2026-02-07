@@ -32,14 +32,29 @@ Scanner::Scanner(const str_t& source_code, const str_t& source_fname) noexcept
   : source_code_{source_code}, source_fname_{source_fname} {
 }
 
+int Scanner::get_column(sz_t pos) const noexcept {
+  int colno = 1;
+  for (; pos > 0; --pos) {
+    if (source_code_[pos - 1] == '\n')
+      break;
+    ++colno;
+  }
+  return colno;
+}
+
 std::vector<Token> Scanner::scan_tokens() noexcept {
   tokens_.clear();
+  current_ = 0;
+  start_ = 0;
+  lineno_ = 1;
+  token_lineno_ = 1;
 
   for (; !is_at_end(); ) {
     start_ = current_;
+    token_lineno_ = lineno_;
     scan_token();
   }
-  tokens_.emplace_back(TokenType::TK_EOF, "", lineno_);
+  tokens_.emplace_back(TokenType::TK_EOF, "", lineno_, get_column(current_), 0);
 
   return tokens_;
 }
@@ -80,7 +95,7 @@ void Scanner::scan_token() noexcept {
         advance();
       }
       if (!closed)
-        add_token(TokenType::TK_ERR, "Unterminated block comment.");
+        add_error("Unterminated block comment.");
     }
     else {
       add_token(TokenType::TK_SLASH);
@@ -104,7 +119,7 @@ void Scanner::scan_token() noexcept {
       identifier();
     }
     else {
-      add_token(TokenType::TK_ERR, from_fmt("Unexpected character: `%c`", c));
+      add_error(from_fmt("Unexpected character: `%c`", c));
     }
     break;
   }
@@ -126,7 +141,7 @@ void Scanner::string() noexcept {
 
     if (c == '\\') {
       if (is_at_end()) {
-        add_token(TokenType::TK_ERR, "Unterminated escape sequence.");
+        add_error("Unterminated escape sequence.");
         return;
       }
       char esc = advance();
@@ -145,7 +160,7 @@ void Scanner::string() noexcept {
   }
 
   if (!closed) {
-    add_token(TokenType::TK_ERR, "Unterminated string.");
+    add_error("Unterminated string.");
     return;
   }
 

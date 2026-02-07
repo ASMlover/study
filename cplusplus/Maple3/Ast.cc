@@ -24,37 +24,28 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
-
-#include <stdexcept>
-#include "Types.hh"
+#include "Ast.hh"
 
 namespace ms {
 
-str_t format_diagnostic(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0, cstr_t level = "error") noexcept;
+str_t LiteralExpr::debug_string() const noexcept {
+  return value_.literal();
+}
 
-class RuntimeError final : public std::runtime_error {
-  str_t filename_;
-  int lineno_{};
-  int colno_{};
-public:
-  RuntimeError(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0) noexcept;
+str_t GroupingExpr::debug_string() const noexcept {
+  return as_string("(group ", debug_expr(expression_.get()), ")");
+}
 
-  inline const str_t& filename() const noexcept { return filename_; }
-  inline int lineno() const noexcept { return lineno_; }
-  inline int colno() const noexcept { return colno_; }
-};
+str_t UnaryExpr::debug_string() const noexcept {
+  return as_string("(", operator_.literal(), " ", debug_expr(right_.get()), ")");
+}
 
-class ParseError final : public std::runtime_error {
-  str_t filename_;
-  int lineno_{};
-  int colno_{};
-public:
-  ParseError(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0) noexcept;
+str_t BinaryExpr::debug_string() const noexcept {
+  return as_string("(", operator_.literal(), " ", debug_expr(left_.get()), " ", debug_expr(right_.get()), ")");
+}
 
-  inline const str_t& filename() const noexcept { return filename_; }
-  inline int lineno() const noexcept { return lineno_; }
-  inline int colno() const noexcept { return colno_; }
-};
+str_t debug_expr(const Expr* expr) noexcept {
+  return expr ? expr->debug_string() : "<nil-expr>";
+}
 
 }

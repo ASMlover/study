@@ -26,35 +26,46 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <stdexcept>
-#include "Types.hh"
+#include <initializer_list>
+#include "Ast.hh"
+#include "Common.hh"
+#include "Errors.hh"
+#include "Token.hh"
 
 namespace ms {
 
-str_t format_diagnostic(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0, cstr_t level = "error") noexcept;
+class Parser final : private UnCopyable {
+  const std::vector<Token>& tokens_;
+  sz_t current_{};
+  str_t source_fname_;
+  std::vector<str_t> errors_;
 
-class RuntimeError final : public std::runtime_error {
-  str_t filename_;
-  int lineno_{};
-  int colno_{};
+  bool is_at_end() const noexcept;
+  const Token& peek() const noexcept;
+  const Token& previous() const noexcept;
+  const Token& advance() noexcept;
+  bool check(TokenType type) const noexcept;
+  bool match(std::initializer_list<TokenType> types) noexcept;
+
+  ParseError parse_error(const Token& token, const str_t& message) noexcept;
+  void synchronize() noexcept;
+  const Token& consume(TokenType type, const str_t& message);
+
+  ExprPtr expression();
+  ExprPtr equality();
+  ExprPtr comparison();
+  ExprPtr term();
+  ExprPtr factor();
+  ExprPtr unary();
+  ExprPtr primary();
 public:
-  RuntimeError(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0) noexcept;
+  Parser(const std::vector<Token>& tokens, const str_t& source_fname = "") noexcept;
 
-  inline const str_t& filename() const noexcept { return filename_; }
-  inline int lineno() const noexcept { return lineno_; }
-  inline int colno() const noexcept { return colno_; }
-};
+  ExprPtr parse_expression() noexcept;
+  ExprList parse_program() noexcept;
 
-class ParseError final : public std::runtime_error {
-  str_t filename_;
-  int lineno_{};
-  int colno_{};
-public:
-  ParseError(const str_t& message, const str_t& filename = "", int lineno = 0, int colno = 0) noexcept;
-
-  inline const str_t& filename() const noexcept { return filename_; }
-  inline int lineno() const noexcept { return lineno_; }
-  inline int colno() const noexcept { return colno_; }
+  inline bool has_error() const noexcept { return !errors_.empty(); }
+  inline const std::vector<str_t>& errors() const noexcept { return errors_; }
 };
 
 }
