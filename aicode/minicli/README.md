@@ -55,3 +55,36 @@ Then proceed sequentially while keeping `Plans.md` and `Tests.md` updated.
 - `npm run test:unit`: run unit tests
 - `npm run test:integration`: run integration tests
 - `npm test`: run all tests
+
+## Windows UTF-8 Notes
+If Chinese text appears garbled in Windows PowerShell, apply UTF-8 settings below.
+
+Temporary (current session only):
+
+```powershell
+chcp 65001 > $null
+[Console]::InputEncoding  = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding           = [System.Text.UTF8Encoding]::new($false)
+```
+
+Persist for future sessions (PowerShell profile):
+
+```powershell
+if (!(Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE -Force | Out-Null }
+
+@'
+chcp 65001 > $null
+[Console]::InputEncoding  = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding           = [System.Text.UTF8Encoding]::new($false)
+'@ | Add-Content -Path $PROFILE
+```
+
+Verify:
+
+```powershell
+"中文 UTF-8 检查：初始化 CLI 工程骨架"
+Get-Content .\\Plans.md -TotalCount 20
+Get-Content .\\Tests.md -TotalCount 20
+```
