@@ -93,821 +93,897 @@ Use this section structure for each task:
 ### T02 - REPL 空循环
 - Date:
 - Env:
-- Scope: REPL loop, echo, Ctrl+C exit
+- Scope: 实现交互循环、输入回显、Ctrl+C 安全退出
 - Unit Cases:
-  - [ ] 杈撳叆瑙ｆ瀽
-  - [ ] 绌鸿蹇界暐
-  - [ ] 瓒呴暱杈撳叆澶勭悊
-  - [ ] EOF 澶勭悊
-  - [ ] 涓柇淇″彿澶勭悊
-  - [ ] 杈撳嚭缂撳啿澶勭悊
+  - [ ] 输入解析
+  - [ ] 空行忽略
+  - [ ] 超长行处理
+  - [ ] EOF处理
+  - [ ] 中断信号处理
+  - [ ] 输出缓冲
 - Integration Cases:
-  - [ ] 瀛愯繘绋嬭緭鍏ヨ緭鍑哄洖鏄句竴鑷?- E2E Smoke:
-  - [ ] 鍚姩 -> 杈撳叆 -> 閫€鍑?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T03 - /help 涓?/exit
-- Date:
-- Env:
-- Scope: command routing, help, exit
-- Unit Cases:
-  - [ ] 鍛戒护鍖归厤
-  - [ ] 鏈煡鍛戒护鎻愮ず
-  - [ ] help 鍐呭瀹屾暣
-  - [ ] exit 閫€鍑烘爣蹇?  - [ ] 绌虹櫧瀛楃澶勭悊
-  - [ ] 澶у皬鍐欑瓥鐣?- Integration Cases:
-  - [ ] `/help -> /exit` 閾捐矾
+  - [ ] 子进程输入后可回显
 - E2E Smoke:
-  - [ ] 浜や簰閫€鍑烘垚鍔?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T04 - 鍙屽眰閰嶇疆鍔犺浇
-- Date:
-- Env:
-- Scope: global/project config merge
-- Unit Cases:
-  - [ ] 鍏ㄥ眬璺緞瑙ｆ瀽
-  - [ ] 椤圭洰璺緞瑙ｆ瀽
-  - [ ] 瑕嗙洊浼樺厛绾?  - [ ] 缂哄け鏂囦欢闄嶇骇
-  - [ ] 绌洪厤缃鐞?  - [ ] 娉ㄩ噴琛屽鐞?- Integration Cases:
-  - [ ] 鍙岄厤缃鐩栫粨鏋滄纭?- E2E Smoke:
-  - [ ] 鍚姩鏃跺姞杞介厤缃垚鍔?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T05 - 閰嶇疆鏍￠獙涓庢姤閿?- Date:
-- Env:
-- Scope: schema validation and errors
-- Unit Cases:
-  - [ ] 蹇呭～缂哄け
-  - [ ] 瀛楁绫诲瀷閿欒
-  - [ ] 闈炴硶鏋氫妇鍊?  - [ ] 鏈煡瀛楁澶勭悊
-  - [ ] 榛樿鍊兼敞鍏?  - [ ] 閿欒鏂囨鍙
-- Integration Cases:
-  - [ ] 鎹熷潖閰嶇疆鏃跺彲鎻愮ず骞剁户缁?- E2E Smoke:
-  - [ ] 閿欓厤閰嶇疆涓嬪惎鍔ㄨ涓哄彲棰勬祴
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 可进入 REPL 并交互
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T06 - LLMProvider 鎺ュ彛涓?Mock
+### T03 - /help 与 /exit
 - Date:
 - Env:
-- Scope: provider contract and mock
+- Scope: 实现命令路由与 /help、/exit
 - Unit Cases:
-  - [ ] 鎺ュ彛濂戠害鏍￠獙
-  - [ ] 璇锋眰缁撴瀯鏍￠獙
-  - [ ] 杩斿洖缁撴瀯鏍￠獙
-  - [ ] 寮傚父浼犻€?  - [ ] 绌烘秷鎭鐞?  - [ ] 澶氳疆娑堟伅鎷艰
+  - [ ] 命令匹配
+  - [ ] 未知命令提示
+  - [ ] help 内容
+  - [ ] exit 标志
+  - [ ] 空白处理
+  - [ ] 大小写策略
 - Integration Cases:
-  - [ ] REPL 璋冪敤 mock provider 鎴愬姛
+  - [ ] /help -> /exit 链路
 - E2E Smoke:
-  - [ ] mock 鑱婂ぉ娴佺▼鍙繍琛?- Commands:
-- Expected:
+  - [ ] 待补充
+- Commands:
+- Expected: 帮助和退出命令可用
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T07 - GLM OpenAI-compatible 閫氳矾
+### T04 - 双层配置加载
 - Date:
 - Env:
-- Scope: glm provider http path
+- Scope: 读取全局与项目配置并执行覆盖
 - Unit Cases:
-  - [ ] 璇锋眰澶存瀯閫?  - [ ] URL 鎷兼帴
-  - [ ] 榛樿妯″瀷鍊?  - [ ] 鍝嶅簲鏄犲皠
-  - [ ] 绌?choices 澶勭悊
-  - [ ] 缃戠粶閿欒鍖呰
+  - [ ] 全局路径
+  - [ ] 项目路径
+  - [ ] 覆盖优先级
+  - [ ] 缺失降级
+  - [ ] 空配置
+  - [ ] 注释处理
 - Integration Cases:
-  - [ ] 璇锋眰 mock API 鎴愬姛
+  - [ ] 双配置覆盖正确
 - E2E Smoke:
-  - [ ] provider 鍏ㄩ摼璺彲杩愯
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 配置合并结果正确
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T08 - /login 涓?/model
+### T05 - 配置校验与报错
 - Date:
 - Env:
-- Scope: key storage and model inspect
+- Scope: 增加配置 schema 校验与错误提示
 - Unit Cases:
-  - [ ] key 淇濆瓨璇诲彇
-  - [ ] key 鎺╃爜鏄剧ず
-  - [ ] 绌?key 鎷掔粷
-  - [ ] 妯″瀷鍥炴樉
-  - [ ] 閰嶇疆浼樺厛绾?  - [ ] 闈炴硶妯″瀷鍚嶅鐞?- Integration Cases:
-  - [ ] `/login` 鍚?`/model` 鍙敤
+  - [ ] 必填缺失
+  - [ ] 类型错误
+  - [ ] 非法枚举
+  - [ ] 未知字段
+  - [ ] 默认值注入
+  - [ ] 错误文案
+- Integration Cases:
+  - [ ] 损坏配置时可启动并提示
 - E2E Smoke:
-  - [ ] 鐧诲綍鍚庨棶绛斿墠缃潯浠舵弧瓒?- Commands:
-- Expected:
+  - [ ] 待补充
+- Commands:
+- Expected: 错误配置不崩溃
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T09 - 鍗曡疆闂瓟闂幆
+### T06 - LLMProvider 接口与 Mock
 - Date:
 - Env:
-- Scope: one-turn chat path
+- Scope: 定义 Provider 接口并实现最小 mock
 - Unit Cases:
-  - [ ] 杈撳叆鍒嗙被
-  - [ ] 璇锋眰鏋勯€?  - [ ] 鍥炲娓叉煋
-  - [ ] 绌哄洖澶嶉檷绾?  - [ ] 澶氳杈撳叆澶勭悊
-  - [ ] 杈撳嚭鎴柇澶勭悊
+  - [ ] 接口契约
+  - [ ] 请求结构
+  - [ ] 返回结构
+  - [ ] 异常传递
+  - [ ] 空消息
+  - [ ] 多轮拼装
 - Integration Cases:
-  - [ ] 鐧诲綍鍚庨棶绛旀垚鍔?- E2E Smoke:
-  - [ ] `login -> ask -> answer`
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T10 - 瓒呮椂涓庨敊璇槧灏?- Date:
-- Env:
-- Scope: timeout + 401/429/5xx handling
-- Unit Cases:
-  - [ ] 瓒呮椂瑙﹀彂
-  - [ ] 401 鏄犲皠
-  - [ ] 429 鏄犲皠
-  - [ ] 5xx 鏄犲皠
-  - [ ] 閲嶈瘯娆℃暟杈圭晫
-  - [ ] 涓嶅彲閲嶈瘯鍒嗘敮
-- Integration Cases:
-  - [ ] 429 閲嶈瘯鍚庢仮澶?- E2E Smoke:
-  - [ ] 寮傚父鎻愮ず鍙
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T11 - SQLite 涓?migration v1
-- Date:
-- Env:
-- Scope: db init and schema
-- Unit Cases:
-  - [ ] migration 骞傜瓑
-  - [ ] 琛ㄧ粨鏋勫瓨鍦?  - [ ] 绱㈠紩瀛樺湪
-  - [ ] 杩炴帴澶辫触澶勭悊
-  - [ ] 鏉冮檺閿欒澶勭悊
-  - [ ] 鏂囦欢閿佸鐞?- Integration Cases:
-  - [ ] 棣栨鍚姩鑷姩寤哄簱
+  - [ ] REPL 调用 mock 成功
 - E2E Smoke:
-  - [ ] 鍚姩鍚?DB 鏂囦欢鍙敤
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 可通过 mock 完成问答
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T12 - 娑堟伅鎸佷箙鍖栦粨鍌?- Date:
+### T07 - GLM OpenAI-compatible 通路
+- Date:
 - Env:
-- Scope: session/message repository
+- Scope: 实现 GLM Provider 的 HTTP 请求与响应映射
 - Unit Cases:
-  - [ ] 鏂板缓浼氳瘽
-  - [ ] 鍐欐秷鎭?  - [ ] 鎺掑簭璇诲彇
-  - [ ] 鍒嗛〉杈圭晫
-  - [ ] 绌虹粨鏋滃鐞?  - [ ] 浜嬪姟鍥炴粴
+  - [ ] 请求头
+  - [ ] URL拼接
+  - [ ] 默认模型
+  - [ ] 响应映射
+  - [ ] 空choices
+  - [ ] 网络错误包装
 - Integration Cases:
-  - [ ] 鍐欏悗璇讳竴鑷?- E2E Smoke:
-  - [ ] 閲嶅惎鍚庢秷鎭粛鍙鍙?- Commands:
-- Expected:
+  - [ ] 请求 mock API 成功
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: Provider 联通可用
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
+### T08 - /login 与 /model
+- Date:
+- Env:
+- Scope: 保存 API key、显示当前模型
+- Unit Cases:
+  - [ ] key 保存读取
+  - [ ] key 掩码
+  - [ ] 空key拒绝
+  - [ ] 模型回显
+  - [ ] 配置优先级
+  - [ ] 非法模型名
+- Integration Cases:
+  - [ ] /login 后 /model 可用
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 登录和模型查看可用
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T09 - 单轮问答闭环
+- Date:
+- Env:
+- Scope: 自然语言输入触发模型请求并输出回复
+- Unit Cases:
+  - [ ] 输入分类
+  - [ ] 请求构造
+  - [ ] 回复渲染
+  - [ ] 空回复降级
+  - [ ] 多行拼装
+  - [ ] 输出截断
+- Integration Cases:
+  - [ ] 登录后问答成功
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 最小聊天可用
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T10 - 超时与错误映射
+- Date:
+- Env:
+- Scope: 增加 timeout、401/429/5xx 错误映射与重试
+- Unit Cases:
+  - [ ] 超时
+  - [ ] 401
+  - [ ] 429
+  - [ ] 5xx
+  - [ ] 重试次数
+  - [ ] 不可重试
+- Integration Cases:
+  - [ ] 429 重试后成功
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 异常场景可预测
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T11 - SQLite 与 migration v1
+- Date:
+- Env:
+- Scope: 初始化数据库并创建 sessions/messages/command_history
+- Unit Cases:
+  - [ ] migration 幂等
+  - [ ] 表存在
+  - [ ] 索引存在
+  - [ ] 连接失败
+  - [ ] 权限错误
+  - [ ] 文件锁
+- Integration Cases:
+  - [ ] 首次启动自动建库
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 数据库可初始化
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T12 - 消息持久化仓储
+- Date:
+- Env:
+- Scope: 实现 SessionRepository 与 MessageRepository
+- Unit Cases:
+  - [ ] 新建会话
+  - [ ] 写消息
+  - [ ] 排序
+  - [ ] 分页边界
+  - [ ] 空结果
+  - [ ] 事务回滚
+- Integration Cases:
+  - [ ] 写后读一致
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 消息持久化稳定
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
 ### T13 - /new
 - Date:
 - Env:
-- Scope: create and switch session
+- Scope: 新建会话并切换当前会话
 - Unit Cases:
-  - [ ] 榛樿鍛藉悕
-  - [ ] 褰撳墠鎸囬拡鏇存柊
-  - [ ] 閲嶅悕澶勭悊
-  - [ ] 绌烘爣棰樺鐞?  - [ ] 鏃堕棿鎴崇敓鎴?  - [ ] 鍙傛暟瑙ｆ瀽
+  - [ ] 默认命名
+  - [ ] 当前指针更新
+  - [ ] 重名策略
+  - [ ] 空标题
+  - [ ] 时间戳
+  - [ ] 参数解析
 - Integration Cases:
-  - [ ] `/new` 鍚庢秷鎭啓鍏ユ柊浼氳瘽
+  - [ ] /new 后消息写入新会话
 - E2E Smoke:
-  - [ ] 鍒涘缓浼氳瘽鍚庡彲瀵硅瘽
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 会话可新建
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T14 - /sessions
 - Date:
 - Env:
-- Scope: list sessions
+- Scope: 列出会话并按最近活跃排序
 - Unit Cases:
-  - [ ] 鎺掑簭瑙勫垯
-  - [ ] 绌哄垪琛ㄦ彁绀?  - [ ] 褰撳墠浼氳瘽鏍囪
-  - [ ] 鍒嗛〉鍙傛暟
-  - [ ] 杈撳嚭鏍煎紡
-  - [ ] 杩囨护鏉′欢
+  - [ ] 排序
+  - [ ] 空列表
+  - [ ] 当前标记
+  - [ ] 分页
+  - [ ] 格式化
+  - [ ] 过滤
 - Integration Cases:
-  - [ ] 澶氫細璇濆睍绀烘纭?- E2E Smoke:
-  - [ ] 浼氳瘽鍒楄〃鍙煡鐪?- Commands:
-- Expected:
+  - [ ] 多会话展示正确
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 会话列表可用
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T15 - /switch
 - Date:
 - Env:
-- Scope: switch by id/index
+- Scope: 按 id 或索引切换会话
 - Unit Cases:
-  - [ ] id 鍒囨崲
-  - [ ] index 鍒囨崲
-  - [ ] 鐩爣涓嶅瓨鍦?  - [ ] 閲嶅鍒囨崲
-  - [ ] 鍙傛暟缂哄け
-  - [ ] 杈圭晫绱㈠紩
+  - [ ] id切换
+  - [ ] 索引切换
+  - [ ] 不存在目标
+  - [ ] 重复切换
+  - [ ] 缺参数
+  - [ ] 边界索引
 - Integration Cases:
-  - [ ] 鍒囨崲鍚庡啓鍏ョ洰鏍囦細璇?- E2E Smoke:
-  - [ ] 浼氳瘽鍒囨崲鍚庝笂涓嬫枃姝ｇ‘
+  - [ ] 切换后写入目标会话
+- E2E Smoke:
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 会话切换可靠
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T16 - /history
 - Date:
 - Env:
-- Scope: history with limits
+- Scope: 查看当前会话历史并支持条数限制
 - Unit Cases:
-  - [ ] 椤哄簭姝ｇ‘
-  - [ ] limit 鐢熸晥
-  - [ ] 绌哄巻鍙叉彁绀?  - [ ] 瑙掕壊鏄剧ず
-  - [ ] 瓒呴暱鎴柇
-  - [ ] 闈炴硶 limit
+  - [ ] 顺序
+  - [ ] limit
+  - [ ] 空历史
+  - [ ] 角色显示
+  - [ ] 截断
+  - [ ] 非法limit
 - Integration Cases:
-  - [ ] 浼氳瘽鍒囨崲鍘嗗彶闅旂
+  - [ ] 切换后历史隔离
 - E2E Smoke:
-  - [ ] 鍘嗗彶鏌ヨ鎴愬姛
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 历史查询稳定
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T17 - 鍛戒护娉ㄥ唽涓績
+### T17 - 命令注册中心
 - Date:
 - Env:
-- Scope: registry and metadata
+- Scope: 实现 CommandRegistry 与命令元数据
 - Unit Cases:
-  - [ ] 娉ㄥ唽鎴愬姛
-  - [ ] 鍒悕瑙ｆ瀽
-  - [ ] 閲嶅悕鍐茬獊
-  - [ ] 鏌ユ棤鍛戒护
-  - [ ] 鎵归噺娉ㄥ唽
-  - [ ] 椤哄簭绋冲畾
+  - [ ] 注册
+  - [ ] 别名解析
+  - [ ] 重名冲突
+  - [ ] 查无命令
+  - [ ] 批量注册
+  - [ ] 顺序稳定
 - Integration Cases:
-  - [ ] 璺敱鍣ㄦ寜娉ㄥ唽鎵ц
+  - [ ] 路由器从注册中心执行
 - E2E Smoke:
-  - [ ] 鍛戒护琛ㄥ彲灞曠ず
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 命令管理集中化
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T18 - / 琛ュ叏 v1
+### T18 - / 补全 v1
 - Date:
 - Env:
-- Scope: prefix completion
+- Scope: 实现前缀补全与候选展示
 - Unit Cases:
-  - [ ] 鍓嶇紑鍖归厤
-  - [ ] 绌哄墠缂€杩斿洖
-  - [ ] 鏃犲尮閰嶅鐞?  - [ ] 鍒悕妫€绱?  - [ ] 鎺掑簭绋冲畾
-  - [ ] 澶у皬鍐欑瓥鐣?- Integration Cases:
-  - [ ] `/mo` 鍊欓€夊寘鍚?`/model`
-- E2E Smoke:
-  - [ ] 杈撳叆 `/` 鏄剧ず鍊欓€?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T19 - Tab 鎺ュ彈琛ュ叏
-- Date:
-- Env:
-- Scope: tab accept flow
-- Unit Cases:
-  - [ ] 鍗曞€欓€夋帴鍙?  - [ ] 澶氬€欓€夋帴鍙楀綋鍓嶉」
-  - [ ] 鏃犲€欓€変繚鎸佷笉鍙?  - [ ] 鍏夋爣浣嶇疆淇濇寔
-  - [ ] 灏鹃殢绌烘牸澶勭悊
-  - [ ] 杩炵画 Tab 琛屼负
+  - [ ] 前缀匹配
+  - [ ] 空前缀
+  - [ ] 无匹配
+  - [ ] 别名检索
+  - [ ] 排序稳定
+  - [ ] 大小写策略
 - Integration Cases:
-  - [ ] `/mo + Tab -> /model`
+  - [ ] /mo 显示 /model
 - E2E Smoke:
-  - [ ] 琛ュ叏鍚庡彲鎵ц鍛戒护
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 补全基础可用
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T20 - 鍊欓€夊鑸笌鍙栨秷
+### T19 - Tab 接受补全
 - Date:
 - Env:
-- Scope: arrow navigation and esc close
+- Scope: 实现 Tab 键补全接受
 - Unit Cases:
-  - [ ] 涓嬫柟鍚戝惊鐜?  - [ ] 涓婃柟鍚戝惊鐜?  - [ ] Esc 娓呯┖鍊欓€?  - [ ] 鏃犲€欓€夋椂鎸夐敭蹇界暐
-  - [ ] 鐒︾偣鍒囨崲
-  - [ ] 鐘舵€佸浣?- Integration Cases:
-  - [ ] 瀵艰埅鍚?Tab 鍛戒腑姝ｇ‘椤?- E2E Smoke:
-  - [ ] 瀵艰埅涓庡彇娑堟祦绋嬪彲鐢?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T21 - 棰戞鎺掑簭
-- Date:
-- Env:
-- Scope: usage frequency ranking
-- Unit Cases:
-  - [ ] 棰戞绱姞
-  - [ ] 棣栨鍛戒护鍒濆鍖?  - [ ] 鍚岄绋冲畾鎺掑簭
-  - [ ] 棰戞鎸佷箙鍖?  - [ ] 閲嶅惎鍚庢帓搴忎繚鐣?  - [ ] 涓婇檺淇濇姢
+  - [ ] 单候选
+  - [ ] 多候选
+  - [ ] 无候选
+  - [ ] 光标位置
+  - [ ] 尾随空格
+  - [ ] 连续Tab
 - Integration Cases:
-  - [ ] 楂橀鍛戒护鍓嶇疆
+  - [ ] /mo+Tab -> /model
 - E2E Smoke:
-  - [ ] 杩炵画浣跨敤鍚庤ˉ鍏ㄥ彉鍖?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T22 - /run 鍙鎵ц鍣?- Date:
-- Env:
-- Scope: read-only run command
-- Unit Cases:
-  - [ ] 骞冲彴鍛戒护鎷兼帴
-  - [ ] 鐧藉悕鍗曟牎楠?  - [ ] 杈撳嚭鎹曡幏
-  - [ ] 閫€鍑虹爜鏄犲皠
-  - [ ] stderr 澶勭悊
-  - [ ] 闀胯緭鍑烘埅鏂?- Integration Cases:
-  - [ ] 鎵ц鍙鍛戒护鎴愬姛
-- E2E Smoke:
-  - [ ] `/run` 鍙繑鍥炶緭鍑?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T23 - 椋庨櫓鍒嗙骇鍣?- Date:
-- Env:
-- Scope: risk level classification
-- Unit Cases:
-  - [ ] low 鍒ゅ畾
-  - [ ] medium 鍒ゅ畾
-  - [ ] high 鍒ゅ畾
-  - [ ] 娣峰悎鍛戒护鍒ゅ畾
-  - [ ] 澶у皬鍐?绌虹櫧澶勭悊
-  - [ ] 缁曡繃鍐欐硶鎷︽埅
-- Integration Cases:
-  - [ ] `/run` 鎺ュ叆椋庨櫓鍒嗙被
-- E2E Smoke:
-  - [ ] 楂橀闄╁懡浠よ矾寰勮璇嗗埆
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: Tab 行为一致
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T24 - 纭娴佺▼
+### T20 - 候选导航与取消
 - Date:
 - Env:
-- Scope: medium/high approval gate
+- Scope: 实现方向键切换和 Esc 关闭
 - Unit Cases:
-  - [ ] 纭閫氳繃鎵ц
-  - [ ] 纭鎷掔粷闃绘柇
-  - [ ] 瓒呮椂榛樿鎷掔粷
-  - [ ] 闈炴硶杈撳叆閲嶈瘯
-  - [ ] high 椋庨櫓鎻愮ず
-  - [ ] 鐘舵€佸洖鏀?- Integration Cases:
-  - [ ] 鏈‘璁や笉鑳芥墽琛岄珮椋庨櫓
-- E2E Smoke:
-  - [ ] `reject -> no execution`
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T25 - 瀹¤璁板綍
-- Date:
-- Env:
-- Scope: audit trail and query
-- Unit Cases:
-  - [ ] 瀹¤鍏ュ簱
-  - [ ] 瀹℃壒鐘舵€佽褰?  - [ ] 缁撴灉瀛楁璁板綍
-  - [ ] 鏃堕棿鎴虫牸寮?  - [ ] 鏌ヨ杩囨护
-  - [ ] 鍒嗛〉
+  - [ ] 向下循环
+  - [ ] 向上循环
+  - [ ] Esc清空
+  - [ ] 无候选忽略
+  - [ ] 焦点切换
+  - [ ] 状态复位
 - Integration Cases:
-  - [ ] `/history --audit` 鍙煡璇?- E2E Smoke:
-  - [ ] 鎵ц鍚庡璁″彲瑙?- Commands:
-- Expected:
+  - [ ] 导航后 Tab 接受正确项
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 补全交互完整
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
+### T21 - 频次排序
+- Date:
+- Env:
+- Scope: 补全结果引入 usageFrequency 排序
+- Unit Cases:
+  - [ ] 频次累加
+  - [ ] 初始化
+  - [ ] 同频稳定
+  - [ ] 持久化
+  - [ ] 重启保留
+  - [ ] 上限防溢出
+- Integration Cases:
+  - [ ] 高频命令前置
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 补全越用越准
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T22 - /run 只读执行器
+- Date:
+- Env:
+- Scope: 实现跨平台 shell 执行与只读白名单
+- Unit Cases:
+  - [ ] 平台拼接
+  - [ ] 白名单校验
+  - [ ] 输出捕获
+  - [ ] 退出码映射
+  - [ ] stderr处理
+  - [ ] 输出截断
+- Integration Cases:
+  - [ ] 执行 pwd/Get-Location 成功
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 只读执行可用
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T23 - 风险分级器
+- Date:
+- Env:
+- Scope: 实现 low/medium/high 分级与黑名单匹配
+- Unit Cases:
+  - [ ] low判定
+  - [ ] medium判定
+  - [ ] high判定
+  - [ ] 混合命令
+  - [ ] 空白大小写
+  - [ ] 绕过拦截
+- Integration Cases:
+  - [ ] /run 接入分级
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 风险分类准确
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T24 - 确认流程
+- Date:
+- Env:
+- Scope: 实现 medium/high 执行前确认
+- Unit Cases:
+  - [ ] 确认执行
+  - [ ] 拒绝阻断
+  - [ ] 超时拒绝
+  - [ ] 非法输入重试
+  - [ ] high增强提示
+  - [ ] 状态回收
+- Integration Cases:
+  - [ ] 高风险未确认不执行
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 确认流程可靠
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T25 - 审计记录
+- Date:
+- Env:
+- Scope: 记录执行审计并提供查询
+- Unit Cases:
+  - [ ] 入库
+  - [ ] 审批状态
+  - [ ] 结果字段
+  - [ ] 时间戳
+  - [ ] 过滤
+  - [ ] 分页
+- Integration Cases:
+  - [ ] 执行后 /history --audit 可查
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 执行可追踪
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
 ### T26 - /add
 - Date:
 - Env:
-- Scope: add context files
+- Scope: 添加文件到上下文集合
 - Unit Cases:
-  - [ ] 璺緞瑙勮寖鍖?  - [ ] 閲嶅鍘婚噸
-  - [ ] 鏂囦欢涓嶅瓨鍦?  - [ ] 鐩綍杈撳叆澶勭悊
-  - [ ] 浜岃繘鍒舵帓闄?  - [ ] 缂栫爜寮傚父澶勭悊
+  - [ ] 路径规范化
+  - [ ] 去重
+  - [ ] 不存在报错
+  - [ ] 目录输入
+  - [ ] 二进制排除
+  - [ ] 编码异常
 - Integration Cases:
-  - [ ] 娣诲姞鍚庡垪琛ㄥ彲瑙?- E2E Smoke:
-  - [ ] 娣诲姞鍚庢彁闂彲寮曠敤涓婁笅鏂?- Commands:
-- Expected:
+  - [ ] 添加后列表可见
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 上下文可添加
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T27 - /drop
 - Date:
 - Env:
-- Scope: remove context files
+- Scope: 从上下文移除文件
 - Unit Cases:
-  - [ ] 鎸夎矾寰勭Щ闄?  - [ ] 鎸夌储寮曠Щ闄?  - [ ] 涓嶅瓨鍦ㄩ」澶勭悊
-  - [ ] 绌洪泦鍚堝鐞?  - [ ] 鎵归噺绉婚櫎
-  - [ ] 鎺掑簭淇濇寔
+  - [ ] 按路径移除
+  - [ ] 按索引移除
+  - [ ] 不存在项
+  - [ ] 空集合
+  - [ ] 批量移除
+  - [ ] 排序保持
 - Integration Cases:
-  - [ ] 绉婚櫎鍚庤姹備笉鍚鏂囦欢
+  - [ ] 移除后请求不含该文件
 - E2E Smoke:
-  - [ ] 绉婚櫎鍚庝笂涓嬫枃鏇存柊
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 上下文可移除
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T28 - /files
 - Date:
 - Env:
-- Scope: list context files
+- Scope: 列出当前上下文文件
 - Unit Cases:
-  - [ ] 绌哄垪琛ㄦ彁绀?  - [ ] 鎺掑簭瑙勫垯
-  - [ ] 璺緞缂╃暐鏄剧ず
-  - [ ] 鏉℃暟闄愬埗
-  - [ ] 杩囨护瑙勫垯
-  - [ ] 杈撳嚭鏍煎紡
+  - [ ] 空列表
+  - [ ] 排序
+  - [ ] 路径缩略
+  - [ ] 条数限制
+  - [ ] 过滤
+  - [ ] 格式化
 - Integration Cases:
-  - [ ] `/add` 鍚?`/files` 姝ｇ‘
+  - [ ] /add 后 /files 展示正确
 - E2E Smoke:
-  - [ ] 鍒楄〃鍙鍖栬緭鍑?- Commands:
-- Expected:
+  - [ ] 待补充
+- Commands:
+- Expected: 上下文可查看
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T29 - /grep
 - Date:
 - Env:
-- Scope: read-only grep
+- Scope: 实现项目只读检索
 - Unit Cases:
-  - [ ] pattern 鏍￠獙
-  - [ ] ignore 鐢熸晥
-  - [ ] 琛屽彿鏍煎紡
-  - [ ] 绌虹粨鏋滄彁绀?  - [ ] 闄愭祦澶勭悊
-  - [ ] 闈炴硶姝ｅ垯澶勭悊
+  - [ ] pattern校验
+  - [ ] ignore规则
+  - [ ] 行号格式
+  - [ ] 空结果
+  - [ ] 限流
+  - [ ] 非法正则
 - Integration Cases:
-  - [ ] 椤圭洰鐩綍妫€绱㈡垚鍔?- E2E Smoke:
-  - [ ] 妫€绱㈢粨鏋滃彲杩斿洖
+  - [ ] 真实目录检索成功
+- E2E Smoke:
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 只读检索可用
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T30 - /tree
 - Date:
 - Env:
-- Scope: project tree browsing
+- Scope: 实现目录树浏览与深度限制
 - Unit Cases:
-  - [ ] 鏍戞瀯寤?  - [ ] 娣卞害瑁佸壀
-  - [ ] ignore 瑙勫垯
-  - [ ] 绗﹀彿閾炬帴澶勭悊
-  - [ ] 鏉冮檺閿欒澶勭悊
-  - [ ] 杈撳嚭鏍煎紡绋冲畾
+  - [ ] 树构建
+  - [ ] 深度裁剪
+  - [ ] ignore生效
+  - [ ] 符号链接
+  - [ ] 权限错误
+  - [ ] 输出格式
 - Integration Cases:
-  - [ ] 鎸囧畾鐩綍杈撳嚭姝ｇ‘
+  - [ ] 目录树输出正确
 - E2E Smoke:
-  - [ ] tree 鍛戒护鍙繍琛?- Commands:
-- Expected:
+  - [ ] 待补充
+- Commands:
+- Expected: 目录浏览可用
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T31 - 涓婁笅鏂囩粍瑁呭櫒
+### T31 - 上下文组装器
 - Date:
 - Env:
-- Scope: context assembly to prompt
+- Scope: 将文件片段拼接到模型请求
 - Unit Cases:
-  - [ ] 鎷兼帴椤哄簭
-  - [ ] 瑙掕壊鏍囪
-  - [ ] 閲嶅鍘婚噸
-  - [ ] 绌轰笂涓嬫枃鐩撮€?  - [ ] 鍏冧俊鎭～鍏?  - [ ] 缂栫爜缁熶竴
+  - [ ] 拼接顺序
+  - [ ] 角色标签
+  - [ ] 去重
+  - [ ] 空上下文
+  - [ ] 元信息
+  - [ ] 编码统一
 - Integration Cases:
-  - [ ] 璇锋眰杞借嵎鍖呭惈涓婁笅鏂?- E2E Smoke:
-  - [ ] 涓婁笅鏂囬棶绛旇矾寰勬垚鍔?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T32 - Token 棰勭畻瑁佸壀
-- Date:
-- Env:
-- Scope: token budget and trimming
-- Unit Cases:
-  - [ ] 棰勭畻璁＄畻
-  - [ ] 杈圭晫绛変簬棰勭畻
-  - [ ] 瓒呴绠楁埅鏂?  - [ ] 浼樺厛绾т繚鐣?  - [ ] 鏋佸皬棰勭畻闄嶇骇
-  - [ ] 鎻愮ず鏂囨
-- Integration Cases:
-  - [ ] 闀夸笂涓嬫枃璇锋眰涓嶈秴闄?- E2E Smoke:
-  - [ ] 瓒呴檺鏃朵粛鍙畬鎴愯姹?- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T33 - JSON Schema 鍛戒护娉ㄥ唽
-- Date:
-- Env:
-- Scope: schema-driven registration
-- Unit Cases:
-  - [ ] schema 閫氳繃
-  - [ ] 缂哄瓧娈垫姤閿?  - [ ] 鍙傛暟绫诲瀷鏍￠獙
-  - [ ] handler 缂哄け鎶ラ敊
-  - [ ] alias 鍐茬獊鎶ラ敊
-  - [ ] examples 瑙ｆ瀽
-- Integration Cases:
-  - [ ] schema 娉ㄥ唽鍚庡懡浠ゅ彲鎵ц
+  - [ ] 请求含上下文字段
 - E2E Smoke:
-  - [ ] schema 鍛戒护鍑虹幇鍦?help
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 上下文能参与问答
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
-### T34 - 鍛戒护鎵╁睍鍒?18 鏉?- Date:
-- Env:
-- Scope: expand command set to 18
-- Unit Cases:
-  - [ ] 鍙傛暟瑙ｆ瀽
-  - [ ] 甯姪鏂囨
-  - [ ] 鏉冮檺鏍囪
-  - [ ] 榛樿鍙傛暟
-  - [ ] 閿欒鎻愮ず
-  - [ ] 鍒悕琛屼负
-- Integration Cases:
-  - [ ] 18 鏉″懡浠ゅ彲鏋氫妇鍙墽琛?- E2E Smoke:
-  - [ ] 澶氬懡浠よ矾寰勫彲杩愯
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T35 - 鎵╁睍鍒?27 鏉?+ 鍙傛暟琛ュ叏
+### T32 - Token 预算裁剪
 - Date:
 - Env:
-- Scope: full command set + arg completion
+- Scope: 实现超预算截断与提示
 - Unit Cases:
-  - [ ] 鍙傛暟鍊欓€夌敓鎴?  - [ ] 涓婁笅鏂囩浉鍏冲€欓€?  - [ ] 鏃犳晥鍙傛暟杩囨护
-  - [ ] 瀛愬懡浠よˉ鍏?  - [ ] 琛ュ叏涓庢墽琛屼竴鑷?  - [ ] 鍏夋爣浣嶇疆澶勭悊
+  - [ ] 预算计算
+  - [ ] 等预算边界
+  - [ ] 超预算截断
+  - [ ] 优先级保留
+  - [ ] 极小预算
+  - [ ] 提示文案
 - Integration Cases:
-  - [ ] `/config set` 鍙傛暟琛ュ叏
+  - [ ] 长上下文不超限
 - E2E Smoke:
-  - [ ] 鍛戒护涓庡弬鏁拌ˉ鍏ㄥ叏閾捐矾
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 请求稳定不过载
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
+### T33 - JSON Schema 命令注册
+- Date:
+- Env:
+- Scope: 实现 schema 驱动命令注册
+- Unit Cases:
+  - [ ] schema通过
+  - [ ] 缺字段报错
+  - [ ] 参数类型
+  - [ ] handler缺失
+  - [ ] alias冲突
+  - [ ] examples解析
+- Integration Cases:
+  - [ ] 通过 schema 注册并执行
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 命令声明式注册可用
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T34 - 命令扩展到 18 条
+- Date:
+- Env:
+- Scope: 扩展中批命令并接入补全
+- Unit Cases:
+  - [ ] 参数解析
+  - [ ] 帮助文案
+  - [ ] 权限标记
+  - [ ] 默认参数
+  - [ ] 错误提示
+  - [ ] 别名行为
+- Integration Cases:
+  - [ ] 18 条命令可枚举可执行
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 中规模命令集可用
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T35 - 扩展到 27 条 + 参数补全
+- Date:
+- Env:
+- Scope: 补齐命令并实现参数级补全
+- Unit Cases:
+  - [ ] 参数候选
+  - [ ] 上下文相关候选
+  - [ ] 无效过滤
+  - [ ] 子命令补全
+  - [ ] 补全执行一致
+  - [ ] 光标位置
+- Integration Cases:
+  - [ ] /config set 参数补全
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 足量命令与补全达标
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
 ### T36 - /config
 - Date:
 - Env:
-- Scope: read and set config
+- Scope: 查看与设置常用配置
 - Unit Cases:
-  - [ ] 璇诲彇閰嶇疆閿?  - [ ] 璁剧疆閰嶇疆閿?  - [ ] 绫诲瀷杞崲
-  - [ ] 鍙閿繚鎶?  - [ ] 鏈煡閿姤閿?  - [ ] 鍐欏洖鎸佷箙鍖?- Integration Cases:
-  - [ ] 閲嶅惎鍚庨厤缃敓鏁?- E2E Smoke:
-  - [ ] 鍔ㄦ€佷慨鏀归厤缃矾寰勫彲鐢?- Commands:
-- Expected:
+  - [ ] 读取键
+  - [ ] 设置键
+  - [ ] 类型转换
+  - [ ] 只读键保护
+  - [ ] 未知键报错
+  - [ ] 持久化
+- Integration Cases:
+  - [ ] 设置后重启生效
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 配置可动态管理
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
 ### T37 - /export
 - Date:
 - Env:
-- Scope: export session to json/md
+- Scope: 导出会话为 json/md
 - Unit Cases:
-  - [ ] 瀵煎嚭鏍煎紡鐢熸垚
-  - [ ] 鏂囦欢鍚嶈鑼?  - [ ] 绌轰細璇濆鐞?  - [ ] 鏉冮檺閿欒澶勭悊
-  - [ ] 瑕嗙洊绛栫暐
-  - [ ] 缂栫爜涓€鑷存€?- Integration Cases:
-  - [ ] 瀵煎嚭鏂囦欢鍙鍙?- E2E Smoke:
-  - [ ] 瀵煎嚭鍚庢枃浠跺瓨鍦ㄤ笖鍐呭姝ｇ‘
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T38 - Shell 缁熶竴閫傞厤灞?- Date:
-- Env:
-- Scope: cross-platform shell adapter
-- Unit Cases:
-  - [ ] 骞冲彴妫€娴?  - [ ] 鍛戒护杞箟
-  - [ ] 鐜鍙橀噺娉ㄥ叆
-  - [ ] 宸ヤ綔鐩綍鍒囨崲
-  - [ ] 瓒呮椂缁堟
-  - [ ] 淇″彿澶勭悊
+  - [ ] 格式生成
+  - [ ] 文件名规范
+  - [ ] 空会话
+  - [ ] 权限错误
+  - [ ] 覆盖策略
+  - [ ] 编码一致
 - Integration Cases:
-  - [ ] Win/Linux 閫傞厤琛屼负涓€鑷?- E2E Smoke:
-  - [ ] 璺ㄥ钩鍙板懡浠ゆ墽琛岄€氳繃
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T39 - 鎵撳寘鍙戝竷浜х墿
-- Date:
-- Env:
-- Scope: build distributable binaries
-- Unit Cases:
-  - [ ] 鏋勫缓閰嶇疆瑙ｆ瀽
-  - [ ] 鐗堟湰鍙锋敞鍏?  - [ ] 浜х墿鍛藉悕瑙勫垯
-  - [ ] 缂轰緷璧栨姤閿?  - [ ] 鍏ュ彛鏍￠獙
-  - [ ] 鍙傛暟杈圭晫
-- Integration Cases:
-  - [ ] 浜х墿 `--version` 鍙墽琛?- E2E Smoke:
-  - [ ] 涓嬭浇鍚庡惎鍔?smoke 鎴愬姛
-- Commands:
-- Expected:
-- Actual:
-- Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
-
-### T40 - CI 璐ㄩ噺闂ㄧ
-- Date:
-- Env:
-- Scope: CI pipeline and quality gates
-- Unit Cases:
-  - [ ] CI 閰嶇疆璇硶
-  - [ ] 瑕嗙洊鐜囬槇鍊肩瓥鐣?  - [ ] 浠诲姟椤哄簭渚濊禆
-  - [ ] 澶辫触閲嶈瘯绛栫暐
-  - [ ] 缂撳瓨绛栫暐
-  - [ ] 宸ヤ欢褰掓。绛栫暐
-- Integration Cases:
-  - [ ] 妯℃嫙 PR 娴佺▼閫氳繃
+  - [ ] 导出文件可读取
 - E2E Smoke:
-  - [ ] 榛勯噾璺緞鍦?CI 鎴愬姛
+  - [ ] 待补充
 - Commands:
-- Expected:
+- Expected: 会话可导出
 - Actual:
 - Coverage:
   - Core:
   - Overall:
 - Result:
 - Notes:
-
+### T38 - Shell 统一适配层
+- Date:
+- Env:
+- Scope: 统一 Windows/Linux 执行抽象
+- Unit Cases:
+  - [ ] 平台检测
+  - [ ] 命令转义
+  - [ ] 环境变量
+  - [ ] 工作目录
+  - [ ] 超时终止
+  - [ ] 信号处理
+- Integration Cases:
+  - [ ] 双平台 mock 适配验证
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 跨平台执行一致
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T39 - 打包发布产物
+- Date:
+- Env:
+- Scope: esbuild+pkg 产出 win/linux 二进制
+- Unit Cases:
+  - [ ] 构建配置
+  - [ ] 版本注入
+  - [ ] 命名规范
+  - [ ] 缺依赖报错
+  - [ ] 入口校验
+  - [ ] 参数边界
+- Integration Cases:
+  - [ ] 产物可运行 --version
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: 可分发二进制可用
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
+### T40 - CI 质量门禁
+- Date:
+- Env:
+- Scope: 配置 typecheck/unit/integration/coverage/e2e 流水线
+- Unit Cases:
+  - [ ] CI语法
+  - [ ] 覆盖阈值
+  - [ ] 任务顺序
+  - [ ] 失败重试
+  - [ ] 缓存策略
+  - [ ] 工件归档
+- Integration Cases:
+  - [ ] 模拟 PR 通过
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+- Expected: CI 可稳定守门
+- Actual:
+- Coverage:
+  - Core:
+  - Overall:
+- Result:
+- Notes:
