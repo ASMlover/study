@@ -61,3 +61,49 @@ test("repl echoes input in subprocess mode", async (t) => {
   assert.match(stdout, /echo: hello repl/);
   assert.match(stdout, /EOF received\. Bye\./);
 });
+
+test("repl supports /help to /exit flow", async (t) => {
+  const child = await spawnRepl(t);
+  if (child === null) {
+    return;
+  }
+
+  let stdout = "";
+  let stderr = "";
+
+  child.stdout.on("data", (chunk: Buffer) => {
+    stdout += chunk.toString("utf8");
+  });
+  child.stderr.on("data", (chunk: Buffer) => {
+    stderr += chunk.toString("utf8");
+  });
+
+  child.stdin.write("/help\n");
+  child.stdin.write("/exit\n");
+  child.stdin.end();
+
+  let blocked = false;
+  const exitCode = await new Promise<number>((resolve, reject) => {
+    child.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EPERM") {
+        t.skip("subprocess spawning is blocked in this environment");
+        blocked = true;
+        resolve(0);
+        return;
+      }
+      reject(error);
+    });
+    child.on("close", (code) => resolve(code ?? -1));
+  });
+
+  if (blocked) {
+    return;
+  }
+
+  assert.equal(exitCode, 0);
+  assert.equal(stderr, "");
+  assert.match(stdout, /Available commands:/);
+  assert.match(stdout, /\/help Show this help message/);
+  assert.match(stdout, /\/exit Exit MiniCLI/);
+  assert.match(stdout, /Bye\./);
+});

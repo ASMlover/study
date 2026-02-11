@@ -116,28 +116,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Integration subprocess test uses runtime guard to skip only in restricted sandbox environments.
 ### T03 - /help 与 /exit
-- Date:
-- Env:
+- Date: 2026-02-11
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现命令路由与 /help、/exit
 - Unit Cases:
-  - [ ] 命令匹配
-  - [ ] 未知命令提示
-  - [ ] help 内容
-  - [ ] exit 标志
-  - [ ] 空白处理
-  - [ ] 大小写策略
+  - [x] 命令匹配
+  - [x] 未知命令提示
+  - [x] help 内容
+  - [x] exit 标志
+  - [x] 空白处理
+  - [x] 大小写策略
 - Integration Cases:
-  - [ ] /help -> /exit 链路
+  - [x] /help -> /exit 链路（受限环境下按 EPERM 条件跳过）
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] `node build/src/index.js` 支持 `/help` 后 `/exit` 退出
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: 帮助和退出命令可用
-- Actual:
+- Actual: Added REPL slash-command routing with `/help` and `/exit`, unknown command hinting, whitespace handling, and case-sensitive command strategy. `/exit` now closes REPL without emitting EOF message; SIGINT and EOF remain independently handled.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T03)
+  - Overall: N/A (coverage tooling not added in T03)
+- Result: PASS
+- Notes: Integration subprocess tests are guarded to skip only when sandbox blocks `spawn` with `EPERM`.
 ### T04 - 双层配置加载
 - Date:
 - Env:

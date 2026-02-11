@@ -2,6 +2,8 @@ import readline from "node:readline";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
+export const HELP_TEXT =
+  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n";
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -47,10 +49,16 @@ export class OutputBuffer {
 }
 
 export interface ReplSession {
-  onLine: (line: string) => void;
+  onLine: (line: string) => boolean;
   onClose: () => void;
   onSigint: () => void;
 }
+
+export type ReplCommandMatch =
+  | { kind: "help" }
+  | { kind: "exit" }
+  | { kind: "unknown"; token: string }
+  | { kind: "none" };
 
 export function parseReplLine(
   line: string,
@@ -72,6 +80,27 @@ export function parseReplLine(
   };
 }
 
+export function matchReplCommand(text: string): ReplCommandMatch {
+  if (!text.startsWith("/")) {
+    return { kind: "none" };
+  }
+
+  const [token, ...rest] = text.split(/\s+/);
+  if (rest.length !== 0) {
+    return { kind: "unknown", token };
+  }
+
+  if (token === "/help") {
+    return { kind: "help" };
+  }
+
+  if (token === "/exit") {
+    return { kind: "exit" };
+  }
+
+  return { kind: "unknown", token };
+}
+
 export function createReplSession(
   writers: ReplWriters,
   maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH
@@ -82,7 +111,7 @@ export function createReplSession(
     onLine: (line: string) => {
       const parsed = parseReplLine(line, maxInputLength);
       if (parsed.kind === "empty") {
-        return;
+        return false;
       }
 
       if (parsed.truncated) {
@@ -91,8 +120,27 @@ export function createReplSession(
         );
       }
 
+      const command = matchReplCommand(parsed.text);
+      if (command.kind === "help") {
+        writers.stdout(HELP_TEXT);
+        return false;
+      }
+
+      if (command.kind === "exit") {
+        writers.stdout("Bye.\n");
+        return true;
+      }
+
+      if (command.kind === "unknown") {
+        writers.stderr(
+          `Unknown command: ${command.token}. Type /help for commands.\n`
+        );
+        return false;
+      }
+
       buffer.append(`echo: ${parsed.text}\n`);
       buffer.flush();
+      return false;
     },
     onClose: () => {
       buffer.flush();
@@ -110,6 +158,8 @@ export function startRepl(
   maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH
 ): readline.Interface {
   const session = createReplSession(runtime, maxInputLength);
+  let closedByExit = false;
+  let closedBySigint = false;
   const rl = readline.createInterface({
     input: runtime.input,
     output: runtime.output,
@@ -121,15 +171,24 @@ export function startRepl(
   rl.prompt();
 
   rl.on("line", (line: string) => {
-    session.onLine(line);
+    const shouldExit = session.onLine(line);
+    if (shouldExit) {
+      closedByExit = true;
+      rl.close();
+      return;
+    }
     rl.prompt();
   });
 
   rl.on("close", () => {
+    if (closedByExit || closedBySigint) {
+      return;
+    }
     session.onClose();
   });
 
   rl.on("SIGINT", () => {
+    closedBySigint = true;
     session.onSigint();
     rl.close();
   });
