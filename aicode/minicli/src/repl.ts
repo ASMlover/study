@@ -1,4 +1,11 @@
 import readline from "node:readline";
+import { RuntimeConfig } from "./config";
+import {
+  buildChatRequest,
+  ChatMessage,
+  LLMProvider,
+  MockLLMProvider
+} from "./provider";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
@@ -49,9 +56,14 @@ export class OutputBuffer {
 }
 
 export interface ReplSession {
-  onLine: (line: string) => boolean;
+  onLine: (line: string) => Promise<boolean>;
   onClose: () => void;
   onSigint: () => void;
+}
+
+export interface ReplSessionOptions {
+  provider?: LLMProvider;
+  config?: RuntimeConfig;
 }
 
 export type ReplCommandMatch =
@@ -103,12 +115,19 @@ export function matchReplCommand(text: string): ReplCommandMatch {
 
 export function createReplSession(
   writers: ReplWriters,
-  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH
+  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH,
+  options?: ReplSessionOptions
 ): ReplSession {
   const buffer = new OutputBuffer(writers.stdout);
+  const provider = options?.provider ?? new MockLLMProvider();
+  const config: RuntimeConfig = options?.config ?? {
+    model: "mock-mini",
+    timeoutMs: 30000
+  };
+  const conversation: ChatMessage[] = [];
 
   return {
-    onLine: (line: string) => {
+    onLine: async (line: string) => {
       const parsed = parseReplLine(line, maxInputLength);
       if (parsed.kind === "empty") {
         return false;
@@ -138,8 +157,23 @@ export function createReplSession(
         return false;
       }
 
-      buffer.append(`echo: ${parsed.text}\n`);
-      buffer.flush();
+      try {
+        const request = buildChatRequest(conversation, parsed.text, config);
+        const response = await provider.complete(request);
+        conversation.push(
+          {
+            role: "user",
+            content: parsed.text
+          },
+          response.message
+        );
+        buffer.append(`${response.message.content}\n`);
+        buffer.flush();
+      } catch (error) {
+        const e = error as Error;
+        writers.stderr(`[provider:error] ${e.message}\n`);
+      }
+
       return false;
     },
     onClose: () => {
@@ -155,9 +189,10 @@ export function createReplSession(
 
 export function startRepl(
   runtime: ReplRuntime,
-  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH
+  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH,
+  options?: ReplSessionOptions
 ): readline.Interface {
-  const session = createReplSession(runtime, maxInputLength);
+  const session = createReplSession(runtime, maxInputLength, options);
   let closedByExit = false;
   let closedBySigint = false;
   const rl = readline.createInterface({
@@ -170,8 +205,8 @@ export function startRepl(
   rl.setPrompt("> ");
   rl.prompt();
 
-  rl.on("line", (line: string) => {
-    const shouldExit = session.onLine(line);
+  rl.on("line", async (line: string) => {
+    const shouldExit = await session.onLine(line);
     if (shouldExit) {
       closedByExit = true;
       rl.close();

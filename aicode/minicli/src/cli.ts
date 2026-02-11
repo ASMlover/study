@@ -62,6 +62,8 @@ export function runCli(
         output: io.output,
         stdout: io.stdout,
         stderr: io.stderr
+      }, undefined, {
+        config: loadedConfig.config
       });
       io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
       return 0;

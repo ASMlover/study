@@ -191,28 +191,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Empty config files remain silent (no false missing-required warning). Malformed config parse errors are downgraded to warnings for resilient startup.
 ### T06 - LLMProvider 接口与 Mock
-- Date:
-- Env:
+- Date: 2026-02-11
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 定义 Provider 接口并实现最小 mock
 - Unit Cases:
-  - [ ] 接口契约
-  - [ ] 请求结构
-  - [ ] 返回结构
-  - [ ] 异常传递
-  - [ ] 空消息
-  - [ ] 多轮拼装
+  - [x] 接口契约
+  - [x] 请求结构
+  - [x] 返回结构
+  - [x] 异常传递
+  - [x] 空消息
+  - [x] 多轮拼装
 - Integration Cases:
-  - [ ] REPL 调用 mock 成功
+  - [x] REPL 调用 mock 成功（受限环境下按 EPERM 条件跳过）
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] REPL 文本输入触发 mock 回复并输出
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: 可通过 mock 完成问答
-- Actual:
+- Actual: Added `src/provider.ts` with `LLMProvider` contract, `MockLLMProvider`, chat request/response structures, and `buildChatRequest` helper for multi-turn assembly. REPL now routes自然语言输入 through provider calls, maintains conversation history, and prints provider replies (with provider-error fallback to stderr).
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T06)
+  - Overall: N/A (coverage tooling not added in T06)
+- Result: PASS
+- Notes: REPL line handling is now async to support provider calls. Subprocess integration remains conditionally skipped only when sandbox denies `spawn` with `EPERM`.
 ### T07 - GLM OpenAI-compatible 通路
 - Date:
 - Env:

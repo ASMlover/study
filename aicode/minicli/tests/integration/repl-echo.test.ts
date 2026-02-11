@@ -19,7 +19,7 @@ async function spawnRepl(t: TestContext) {
   }
 }
 
-test("repl echoes input in subprocess mode", async (t) => {
+test("repl calls mock provider and prints response in subprocess mode", async (t) => {
   const child = await spawnRepl(t);
   if (child === null) {
     return;
@@ -58,7 +58,7 @@ test("repl echoes input in subprocess mode", async (t) => {
 
   assert.equal(exitCode, 0);
   assert.equal(stderr, "");
-  assert.match(stdout, /echo: hello repl/);
+  assert.match(stdout, /mock\(glm-4\): hello repl/);
   assert.match(stdout, /EOF received\. Bye\./);
 });
 
