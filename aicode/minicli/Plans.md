@@ -28,7 +28,7 @@
 | Task | Title | Milestone | Status | Owner | Start Date | End Date | Notes |
 |---|---|---|---|---|---|---|---|
 | T01 | 初始化 CLI 工程骨架 | M1 | DONE | Codex | 2026-02-10 | 2026-02-10 | Node22+TS5 scaffold, CLI entry, --version, unit/integration tests |
-| T02 | REPL 空循环 | M1 | TODO | - | - | - | - |
+| T02 | REPL 空循环 | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Implemented readline REPL loop, input echo, EOF/SIGINT safe exit, and tests |
 | T03 | /help 与 /exit | M1 | TODO | - | - | - | - |
 | T04 | 双层配置加载 | M1 | TODO | - | - | - | - |
 | T05 | 配置校验与报错 | M1 | TODO | - | - | - | - |
@@ -73,3 +73,4 @@
 |---|---|---|---|
 | 2026-02-10 | Init | Created planning tracker | - |
 | 2026-02-10 | T01 | Completed Node22+TS5 scaffold with CLI entrypoint and passing tests | Codex |
+| 2026-02-11 | T02 | Completed REPL loop with echo, long-line truncation, EOF/SIGINT handling, and tests | Codex |

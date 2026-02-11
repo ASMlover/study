@@ -1,4 +1,5 @@
 import { formatVersionOutput } from "./version";
+import { startRepl } from "./repl";
 
 export type CliMode = "version" | "repl" | "invalid";
 
@@ -10,6 +11,8 @@ export interface ParsedArgs {
 export interface CliIo {
   stdout: (message: string) => void;
   stderr: (message: string) => void;
+  stdin?: NodeJS.ReadableStream;
+  output?: NodeJS.WritableStream;
 }
 
 export function parseArguments(argv: string[]): ParsedArgs {
@@ -32,7 +35,9 @@ export function runCli(
   argv: string[],
   io: CliIo = {
     stdout: (message: string) => process.stdout.write(message),
-    stderr: (message: string) => process.stderr.write(message)
+    stderr: (message: string) => process.stderr.write(message),
+    stdin: process.stdin,
+    output: process.stdout
   },
   platform: NodeJS.Platform = process.platform
 ): number {
@@ -44,9 +49,18 @@ export function runCli(
   }
 
   if (parsed.mode === "repl") {
-    io.stdout(
-      `Starting ${resolveBinaryName(platform)} interactive shell (stub).\n`
-    );
+    if (io.stdin && io.output) {
+      startRepl({
+        input: io.stdin,
+        output: io.output,
+        stdout: io.stdout,
+        stderr: io.stderr
+      });
+      io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
+      return 0;
+    }
+
+    io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
     return 0;
   }
 
