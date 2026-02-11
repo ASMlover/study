@@ -2,11 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import {
+  formatConfigIssue,
   loadConfigFile,
   loadMergedConfig,
+  loadRuntimeConfig,
   parseConfig,
   resolveGlobalConfigPath,
-  resolveProjectConfigPath
+  resolveProjectConfigPath,
+  validateAndNormalizeConfig
 } from "../../src/config";
 
 test("resolves global config path", () => {
@@ -110,4 +113,74 @@ test("loadConfigFile returns empty for missing file", () => {
   );
 
   assert.deepEqual(loaded, {});
+});
+
+test("validateAndNormalizeConfig reports missing required field", () => {
+  const validated = validateAndNormalizeConfig({ timeoutMs: 1000 });
+  assert.equal(validated.issues.some((x) => x.code === "missing_required"), true);
+  assert.equal(validated.config.model, "glm-4");
+});
+
+test("validateAndNormalizeConfig reports type mismatch", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "glm-4",
+    timeoutMs: "fast"
+  });
+  assert.equal(validated.issues.some((x) => x.path === "timeoutMs"), true);
+  assert.equal(validated.config.timeoutMs, 30000);
+});
+
+test("validateAndNormalizeConfig reports invalid enum", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "gpt-4.1"
+  });
+  assert.equal(validated.issues.some((x) => x.code === "invalid_enum"), true);
+  assert.equal(validated.config.model, "glm-4");
+});
+
+test("validateAndNormalizeConfig reports unknown field", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "glm-4",
+    surprise: true
+  });
+  assert.equal(validated.issues.some((x) => x.code === "unknown_field"), true);
+});
+
+test("validateAndNormalizeConfig injects defaults", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "glm-4-air"
+  });
+  assert.deepEqual(validated.issues, []);
+  assert.equal(validated.config.model, "glm-4-air");
+  assert.equal(validated.config.timeoutMs, 30000);
+});
+
+test("formatConfigIssue returns readable message", () => {
+  const message = formatConfigIssue({
+    code: "invalid_enum",
+    path: "model",
+    message: "Field \"model\" must be one of: glm-4."
+  });
+  assert.match(message, /\[config:invalid_enum\]/);
+  assert.match(message, /model/);
+});
+
+test("loadRuntimeConfig keeps startup resilient on parse error", () => {
+  const brokenPath = path.join("CWD", ".minicli", "config.json");
+  const loaded = loadRuntimeConfig({
+    homeDir: "HOME",
+    cwd: "CWD",
+    readFileSync: ((filePath: string) => {
+      if (filePath === brokenPath) {
+        throw new Error("Unexpected token } in JSON");
+      }
+      const e = new Error("missing") as NodeJS.ErrnoException;
+      e.code = "ENOENT";
+      throw e;
+    }) as typeof import("node:fs").readFileSync
+  });
+
+  assert.equal(loaded.config.model, "glm-4");
+  assert.equal(loaded.config.timeoutMs, 30000);
+  assert.equal(loaded.issues.some((x) => x.code === "parse_error"), true);
 });

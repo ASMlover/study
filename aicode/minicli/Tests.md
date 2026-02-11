@@ -166,28 +166,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Comment parsing supports `//`, `/* ... */`, and line-start `#` while preserving comment-like text inside JSON strings.
 ### T05 - 配置校验与报错
-- Date:
-- Env:
+- Date: 2026-02-11
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 增加配置 schema 校验与错误提示
 - Unit Cases:
-  - [ ] 必填缺失
-  - [ ] 类型错误
-  - [ ] 非法枚举
-  - [ ] 未知字段
-  - [ ] 默认值注入
-  - [ ] 错误文案
+  - [x] 必填缺失
+  - [x] 类型错误
+  - [x] 非法枚举
+  - [x] 未知字段
+  - [x] 默认值注入
+  - [x] 错误文案
 - Integration Cases:
-  - [ ] 损坏配置时可启动并提示
+  - [x] 损坏配置时可启动并提示
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] REPL 启动路径可打印配置告警且不中断
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: 错误配置不崩溃
-- Actual:
+- Actual: Added runtime config schema validation (`model`, `timeoutMs`), issue taxonomy (`missing_required`, `type_mismatch`, `invalid_enum`, `unknown_field`, `parse_error`), default injection, and formatted warning text. REPL startup now loads config, prints warnings to stderr, and still starts successfully even when config is malformed.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T05)
+  - Overall: N/A (coverage tooling not added in T05)
+- Result: PASS
+- Notes: Empty config files remain silent (no false missing-required warning). Malformed config parse errors are downgraded to warnings for resilient startup.
 ### T06 - LLMProvider 接口与 Mock
 - Date:
 - Env:

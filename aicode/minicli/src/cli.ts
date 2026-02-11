@@ -1,5 +1,6 @@
 import { formatVersionOutput } from "./version";
 import { startRepl } from "./repl";
+import { formatConfigIssue, loadRuntimeConfig, LoadedRuntimeConfig } from "./config";
 
 export type CliMode = "version" | "repl" | "invalid";
 
@@ -13,6 +14,7 @@ export interface CliIo {
   stderr: (message: string) => void;
   stdin?: NodeJS.ReadableStream;
   output?: NodeJS.WritableStream;
+  loadConfig?: () => LoadedRuntimeConfig;
 }
 
 export function parseArguments(argv: string[]): ParsedArgs {
@@ -49,6 +51,11 @@ export function runCli(
   }
 
   if (parsed.mode === "repl") {
+    const loadedConfig = io.loadConfig ? io.loadConfig() : loadRuntimeConfig();
+    for (const issue of loadedConfig.issues) {
+      io.stderr(`${formatConfigIssue(issue)}\n`);
+    }
+
     if (io.stdin && io.output) {
       startRepl({
         input: io.stdin,
