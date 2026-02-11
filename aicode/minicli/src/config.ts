@@ -3,17 +3,17 @@ import os from "node:os";
 import path from "node:path";
 
 export type MiniCliConfig = Record<string, unknown>;
-export type ModelName = "glm-4" | "glm-4-air" | "mock-mini";
+export type ModelName = string;
 
 export interface RuntimeConfig {
   model: ModelName;
   timeoutMs: number;
+  apiKey?: string;
 }
 
 export type ConfigIssueCode =
   | "missing_required"
   | "type_mismatch"
-  | "invalid_enum"
   | "unknown_field"
   | "parse_error";
 
@@ -39,6 +39,8 @@ export interface LoadedRuntimeConfig {
 }
 
 type ReadFileSync = typeof fs.readFileSync;
+type WriteFileSync = typeof fs.writeFileSync;
+type MkdirSync = typeof fs.mkdirSync;
 
 export function resolveGlobalConfigPath(homeDir: string): string {
   return path.join(homeDir, ".minicli", "config.json");
@@ -176,12 +178,22 @@ export function loadMergedConfig(params?: {
   };
 }
 
-const ALLOWED_MODELS: readonly ModelName[] = ["glm-4", "glm-4-air", "mock-mini"];
-const ALLOWED_KEYS = new Set(["model", "timeoutMs"]);
+const ALLOWED_KEYS = new Set(["model", "timeoutMs", "apiKey"]);
 const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   model: "glm-4",
   timeoutMs: 30000
 };
+
+export function isSupportedModelName(model: string): model is ModelName {
+  return model.trim().length > 0;
+}
+
+export function maskSecret(secret: string): string {
+  if (secret.length <= 4) {
+    return "*".repeat(secret.length);
+  }
+  return `${"*".repeat(secret.length - 4)}${secret.slice(-4)}`;
+}
 
 export function validateAndNormalizeConfig(
   config: MiniCliConfig,
@@ -219,31 +231,48 @@ export function validateAndNormalizeConfig(
       path: "model",
       message: `Field "model" must be string, got ${typeof rawModel}.`
     });
-  } else if (!ALLOWED_MODELS.includes(rawModel as ModelName)) {
+  } else if (rawModel.trim().length === 0) {
     issues.push({
-      code: "invalid_enum",
+      code: "type_mismatch",
       path: "model",
-      message: `Field "model" must be one of: ${ALLOWED_MODELS.join(", ")}.`
+      message: "Field \"model\" cannot be empty."
     });
   } else {
-    normalized.model = rawModel as ModelName;
+    normalized.model = rawModel.trim();
   }
 
   const rawTimeout = config.timeoutMs;
-  if (rawTimeout === undefined) {
-    return { config: normalized, issues };
+  if (rawTimeout !== undefined) {
+    if (typeof rawTimeout !== "number" || Number.isNaN(rawTimeout)) {
+      issues.push({
+        code: "type_mismatch",
+        path: "timeoutMs",
+        message: `Field "timeoutMs" must be number, got ${typeof rawTimeout}.`
+      });
+    } else {
+      normalized.timeoutMs = rawTimeout;
+    }
   }
 
-  if (typeof rawTimeout !== "number" || Number.isNaN(rawTimeout)) {
-    issues.push({
-      code: "type_mismatch",
-      path: "timeoutMs",
-      message: `Field "timeoutMs" must be number, got ${typeof rawTimeout}.`
-    });
-    return { config: normalized, issues };
+  const rawApiKey = config.apiKey;
+  if (rawApiKey !== undefined) {
+    if (typeof rawApiKey !== "string") {
+      issues.push({
+        code: "type_mismatch",
+        path: "apiKey",
+        message: `Field "apiKey" must be string, got ${typeof rawApiKey}.`
+      });
+    } else if (rawApiKey.trim().length === 0) {
+      issues.push({
+        code: "type_mismatch",
+        path: "apiKey",
+        message: "Field \"apiKey\" cannot be empty."
+      });
+    } else {
+      normalized.apiKey = rawApiKey;
+    }
   }
 
-  normalized.timeoutMs = rawTimeout;
   return { config: normalized, issues };
 }
 
@@ -294,4 +323,67 @@ export function loadRuntimeConfig(params?: {
     config: validated.config,
     issues: [...issues, ...validated.issues]
   };
+}
+
+interface WriteConfigOptions {
+  writeFileSync?: WriteFileSync;
+  mkdirSync?: MkdirSync;
+  readFileSync?: ReadFileSync;
+}
+
+export function writeConfigFile(
+  filePath: string,
+  config: MiniCliConfig,
+  options?: WriteConfigOptions
+): void {
+  const writeFileSync = options?.writeFileSync ?? fs.writeFileSync;
+  const mkdirSync = options?.mkdirSync ?? fs.mkdirSync;
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+}
+
+export function saveApiKeyToGlobalConfig(
+  globalConfigPath: string,
+  apiKey: string,
+  options?: WriteConfigOptions
+): void {
+  const normalized = apiKey.trim();
+  if (normalized.length === 0) {
+    throw new Error("API key cannot be empty.");
+  }
+
+  const readFileSync = options?.readFileSync ?? fs.readFileSync;
+  const current = loadConfigFile(globalConfigPath, readFileSync);
+  writeConfigFile(
+    globalConfigPath,
+    {
+      ...current,
+      apiKey: normalized
+    },
+    options
+  );
+}
+
+export function saveModelToProjectConfig(
+  projectConfigPath: string,
+  model: string,
+  options?: WriteConfigOptions
+): ModelName {
+  const normalized = model.trim();
+  if (!isSupportedModelName(normalized)) {
+    throw new Error("Model name cannot be empty.");
+  }
+
+  const readFileSync = options?.readFileSync ?? fs.readFileSync;
+  const current = loadConfigFile(projectConfigPath, readFileSync);
+  writeConfigFile(
+    projectConfigPath,
+    {
+      ...current,
+      model: normalized
+    },
+    options
+  );
+
+  return normalized;
 }

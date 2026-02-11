@@ -26,7 +26,16 @@ test("empty arguments returns success and non-empty output", () => {
     [],
     {
       stdout: (message) => writes.push(message),
-      stderr: (message) => errors.push(message)
+      stderr: (message) => errors.push(message),
+      loadConfig: () => ({
+        globalPath: "HOME/.minicli/config.json",
+        projectPath: "CWD/.minicli/config.json",
+        config: {
+          model: "glm-4",
+          timeoutMs: 30000
+        },
+        issues: []
+      })
     },
     "linux"
   );

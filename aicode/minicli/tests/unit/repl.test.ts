@@ -1,12 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  classifyReplInput,
+  createRuntimeProvider,
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
+  EMPTY_REPLY_PLACEHOLDER,
   HELP_TEXT,
   matchReplCommand,
   OutputBuffer,
-  parseReplLine
+  parseReplLine,
+  renderAssistantReply
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
 
@@ -40,6 +44,50 @@ test("parseReplLine truncates overlong input", () => {
   assert.equal(parsed.truncated, true);
 });
 
+test("classifyReplInput classifies empty, command, and message", () => {
+  assert.deepEqual(classifyReplInput("   "), { kind: "empty" });
+  assert.deepEqual(classifyReplInput("/help"), {
+    kind: "command",
+    command: { kind: "help" }
+  });
+  assert.deepEqual(classifyReplInput("hello"), {
+    kind: "message",
+    text: "hello",
+    truncated: false
+  });
+});
+
+test("renderAssistantReply uses fallback for empty content", () => {
+  const rendered = renderAssistantReply("   ");
+  assert.equal(rendered.text, EMPTY_REPLY_PLACEHOLDER);
+  assert.equal(rendered.usedFallback, true);
+  assert.equal(rendered.truncated, false);
+});
+
+test("renderAssistantReply truncates overlong content", () => {
+  const rendered = renderAssistantReply("abcdefghij", 5);
+  assert.equal(rendered.text, "abcde...[truncated]");
+  assert.equal(rendered.truncated, true);
+  assert.equal(rendered.usedFallback, false);
+});
+
+test("createRuntimeProvider selects mock when apiKey is absent", () => {
+  const provider = createRuntimeProvider({
+    model: "glm-4",
+    timeoutMs: 30000
+  });
+  assert.equal(provider.id, "mock");
+});
+
+test("createRuntimeProvider selects GLM provider when apiKey exists", () => {
+  const provider = createRuntimeProvider({
+    model: "glm-4",
+    timeoutMs: 30000,
+    apiKey: "sk-test"
+  });
+  assert.equal(provider.id, "glm-openai-compatible");
+});
+
 test("repl session ignores empty line and sends non-empty line to mock provider", async () => {
   const writes: string[] = [];
   const errors: string[] = [];
@@ -57,9 +105,57 @@ test("repl session ignores empty line and sends non-empty line to mock provider"
   assert.equal(writes.join(""), "mock(mock-mini): ping\n");
 });
 
+test("repl session builds request using configured model and user input", async () => {
+  const writes: string[] = [];
+  let capturedModel = "";
+  let capturedMessages: Array<{ role: string; content: string }> = [];
+  const provider: LLMProvider = {
+    id: "capture",
+    complete: async (request) => {
+      capturedModel = request.model;
+      capturedMessages = request.messages;
+      return {
+        message: {
+          role: "assistant",
+          content: "ok"
+        }
+      };
+    }
+  };
+
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      provider,
+      config: {
+        model: "glm-4-air",
+        timeoutMs: 30000
+      }
+    }
+  );
+
+  await session.onLine("hello request");
+
+  assert.equal(capturedModel, "glm-4-air");
+  assert.deepEqual(capturedMessages, [{ role: "user", content: "hello request" }]);
+  assert.match(writes.join(""), /ok/);
+});
+
 test("matchReplCommand matches help and exit commands", () => {
   assert.deepEqual(matchReplCommand("/help"), { kind: "help" });
   assert.deepEqual(matchReplCommand("/exit"), { kind: "exit" });
+  assert.deepEqual(matchReplCommand("/login token"), {
+    kind: "login",
+    args: ["token"]
+  });
+  assert.deepEqual(matchReplCommand("/model"), {
+    kind: "model",
+    args: []
+  });
 });
 
 test("matchReplCommand handles unknown command and non-command input", () => {
@@ -120,6 +216,183 @@ test("repl session routes unknown slash command to stderr", async () => {
   assert.equal(shouldExit, false);
   assert.equal(writes.length, 0);
   assert.match(errors.join(""), /Unknown command: \/nope/);
+});
+
+test("repl session renders multiline reply content", async () => {
+  const writes: string[] = [];
+  const provider: LLMProvider = {
+    id: "multiline",
+    complete: async () => ({
+      message: {
+        role: "assistant",
+        content: "line-1\nline-2"
+      }
+    })
+  };
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    { provider }
+  );
+
+  await session.onLine("show lines");
+
+  assert.equal(writes.join(""), "line-1\nline-2\n");
+});
+
+test("repl session falls back for empty provider reply", async () => {
+  const writes: string[] = [];
+  const provider: LLMProvider = {
+    id: "empty",
+    complete: async () => ({
+      message: {
+        role: "assistant",
+        content: "   "
+      }
+    })
+  };
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    { provider }
+  );
+
+  await session.onLine("question");
+
+  assert.equal(writes.join(""), `${EMPTY_REPLY_PLACEHOLDER}\n`);
+});
+
+test("repl session truncates overlong provider reply", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const provider: LLMProvider = {
+    id: "long",
+    complete: async () => ({
+      message: {
+        role: "assistant",
+        content: "abcdefghij"
+      }
+    })
+  };
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      provider,
+      maxReplyLength: 5
+    }
+  );
+
+  await session.onLine("question");
+
+  assert.equal(writes.join(""), "abcde...[truncated]\n");
+  assert.match(errors.join(""), /reply exceeded 5 chars; truncated/);
+});
+
+test("repl /login saves key with masked output", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  let savedKey = "";
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      saveApiKey: (apiKey) => {
+        savedKey = apiKey;
+      }
+    }
+  );
+
+  const shouldExit = await session.onLine("/login sk-12345678");
+
+  assert.equal(shouldExit, false);
+  assert.equal(savedKey, "sk-12345678");
+  assert.equal(errors.length, 0);
+  assert.match(writes.join(""), /API key saved: \*+5678/);
+});
+
+test("repl /login rejects empty key", async () => {
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: () => {},
+    stderr: (message) => errors.push(message)
+  });
+
+  const shouldExit = await session.onLine("/login");
+
+  assert.equal(shouldExit, false);
+  assert.match(errors.join(""), /Usage: \/login <apiKey>/);
+});
+
+test("repl /model echoes configured model", async () => {
+  const writes: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      config: {
+        model: "glm-4-air",
+        timeoutMs: 30000
+      }
+    }
+  );
+
+  const shouldExit = await session.onLine("/model");
+
+  assert.equal(shouldExit, false);
+  assert.match(writes.join(""), /Current model: glm-4-air/);
+});
+
+test("repl /model updates model and calls save callback", async () => {
+  const writes: string[] = [];
+  let savedModel = "";
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      saveModel: (model) => {
+        savedModel = model;
+      }
+    }
+  );
+
+  await session.onLine("/model gpt-4.1");
+  await session.onLine("/model");
+
+  assert.equal(savedModel, "gpt-4.1");
+  assert.match(writes.join(""), /Model updated: gpt-4.1/);
+  assert.match(writes.join(""), /Current model: gpt-4.1/);
+});
+
+test("repl /model rejects empty model name", async () => {
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: () => {},
+    stderr: (message) => errors.push(message)
+  });
+
+  const shouldExit = await session.onLine("/model one two");
+
+  assert.equal(shouldExit, false);
+  assert.match(errors.join(""), /Usage: \/model \[name\]/);
 });
 
 test("repl command handling trims surrounding whitespace", async () => {

@@ -1,16 +1,23 @@
 import readline from "node:readline";
-import { RuntimeConfig } from "./config";
+import {
+  isSupportedModelName,
+  maskSecret,
+  RuntimeConfig
+} from "./config";
 import {
   buildChatRequest,
   ChatMessage,
+  GLMOpenAIProvider,
   LLMProvider,
   MockLLMProvider
 } from "./provider";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
+export const DEFAULT_MAX_REPLY_LENGTH = 2048;
+export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const HELP_TEXT =
-  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n";
+  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n";
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -64,13 +71,38 @@ export interface ReplSession {
 export interface ReplSessionOptions {
   provider?: LLMProvider;
   config?: RuntimeConfig;
+  saveApiKey?: (apiKey: string) => void;
+  saveModel?: (model: string) => void;
+  maxReplyLength?: number;
 }
 
 export type ReplCommandMatch =
   | { kind: "help" }
   | { kind: "exit" }
+  | { kind: "login"; args: string[] }
+  | { kind: "model"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
+
+export type ReplInputClassification =
+  | { kind: "empty" }
+  | { kind: "command"; command: Exclude<ReplCommandMatch, { kind: "none" }> }
+  | { kind: "message"; text: string; truncated: boolean };
+
+export interface RenderedAssistantReply {
+  text: string;
+  truncated: boolean;
+  usedFallback: boolean;
+}
+
+export function createRuntimeProvider(config: RuntimeConfig): LLMProvider {
+  if (config.apiKey && config.apiKey.trim().length > 0) {
+    return new GLMOpenAIProvider({
+      apiKey: config.apiKey
+    });
+  }
+  return new MockLLMProvider();
+}
 
 export function parseReplLine(
   line: string,
@@ -97,20 +129,75 @@ export function matchReplCommand(text: string): ReplCommandMatch {
     return { kind: "none" };
   }
 
-  const [token, ...rest] = text.split(/\s+/);
-  if (rest.length !== 0) {
-    return { kind: "unknown", token };
-  }
+  const [token, ...args] = text.split(/\s+/);
 
   if (token === "/help") {
+    if (args.length !== 0) {
+      return { kind: "unknown", token };
+    }
     return { kind: "help" };
   }
 
   if (token === "/exit") {
+    if (args.length !== 0) {
+      return { kind: "unknown", token };
+    }
     return { kind: "exit" };
   }
 
+  if (token === "/login") {
+    return { kind: "login", args };
+  }
+
+  if (token === "/model") {
+    return { kind: "model", args };
+  }
+
   return { kind: "unknown", token };
+}
+
+export function classifyReplInput(
+  line: string,
+  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH
+): ReplInputClassification {
+  const parsed = parseReplLine(line, maxInputLength);
+  if (parsed.kind === "empty") {
+    return { kind: "empty" };
+  }
+
+  const command = matchReplCommand(parsed.text);
+  if (command.kind !== "none") {
+    return { kind: "command", command };
+  }
+
+  return {
+    kind: "message",
+    text: parsed.text,
+    truncated: parsed.truncated
+  };
+}
+
+export function renderAssistantReply(
+  content: string,
+  maxReplyLength: number = DEFAULT_MAX_REPLY_LENGTH
+): RenderedAssistantReply {
+  const trimmed = content.trim();
+  const baseText = trimmed.length === 0 ? EMPTY_REPLY_PLACEHOLDER : content;
+  const usedFallback = trimmed.length === 0;
+
+  if (baseText.length <= maxReplyLength) {
+    return {
+      text: baseText,
+      truncated: false,
+      usedFallback
+    };
+  }
+
+  return {
+    text: `${baseText.slice(0, maxReplyLength)}...[truncated]`,
+    truncated: true,
+    usedFallback
+  };
 }
 
 export function createReplSession(
@@ -119,55 +206,130 @@ export function createReplSession(
   options?: ReplSessionOptions
 ): ReplSession {
   const buffer = new OutputBuffer(writers.stdout);
-  const provider = options?.provider ?? new MockLLMProvider();
+  const hasFixedProvider = options?.provider !== undefined;
   const config: RuntimeConfig = options?.config ?? {
     model: "mock-mini",
     timeoutMs: 30000
   };
+  let provider = options?.provider ?? createRuntimeProvider(config);
+  const maxReplyLength = options?.maxReplyLength ?? DEFAULT_MAX_REPLY_LENGTH;
   const conversation: ChatMessage[] = [];
 
   return {
     onLine: async (line: string) => {
-      const parsed = parseReplLine(line, maxInputLength);
-      if (parsed.kind === "empty") {
+      const input = classifyReplInput(line, maxInputLength);
+      if (input.kind === "empty") {
         return false;
       }
 
-      if (parsed.truncated) {
+      if (input.kind === "message" && input.truncated) {
         writers.stderr(
           `[warn] input exceeded ${maxInputLength} chars; truncated.\n`
         );
       }
 
-      const command = matchReplCommand(parsed.text);
-      if (command.kind === "help") {
+      if (input.kind === "command" && input.command.kind === "help") {
         writers.stdout(HELP_TEXT);
         return false;
       }
 
-      if (command.kind === "exit") {
+      if (input.kind === "command" && input.command.kind === "exit") {
         writers.stdout("Bye.\n");
         return true;
       }
 
-      if (command.kind === "unknown") {
+      if (input.kind === "command" && input.command.kind === "unknown") {
         writers.stderr(
-          `Unknown command: ${command.token}. Type /help for commands.\n`
+          `Unknown command: ${input.command.token}. Type /help for commands.\n`
         );
         return false;
       }
 
+      if (input.kind === "command" && input.command.kind === "login") {
+        if (input.command.args.length !== 1) {
+          writers.stderr("Usage: /login <apiKey>\n");
+          return false;
+        }
+
+        const apiKey = input.command.args[0].trim();
+        if (apiKey.length === 0) {
+          writers.stderr("API key cannot be empty.\n");
+          return false;
+        }
+
+        try {
+          options?.saveApiKey?.(apiKey);
+        } catch (error) {
+          const e = error as Error;
+          writers.stderr(`[config:error] ${e.message}\n`);
+          return false;
+        }
+
+        config.apiKey = apiKey;
+        if (!hasFixedProvider) {
+          provider = createRuntimeProvider(config);
+        }
+        writers.stdout(`API key saved: ${maskSecret(apiKey)}\n`);
+        return false;
+      }
+
+      if (input.kind === "command" && input.command.kind === "model") {
+        if (input.command.args.length === 0) {
+          writers.stdout(`Current model: ${config.model}\n`);
+          return false;
+        }
+
+        if (input.command.args.length > 1) {
+          writers.stderr("Usage: /model [name]\n");
+          return false;
+        }
+
+        const nextModel = input.command.args[0].trim();
+        if (!isSupportedModelName(nextModel)) {
+          writers.stderr("Model name cannot be empty.\n");
+          return false;
+        }
+
+        try {
+          options?.saveModel?.(nextModel);
+        } catch (error) {
+          const e = error as Error;
+          writers.stderr(`[config:error] ${e.message}\n`);
+          return false;
+        }
+
+        config.model = nextModel;
+        writers.stdout(`Model updated: ${config.model}\n`);
+        return false;
+      }
+
+      if (input.kind !== "message") {
+        return false;
+      }
+
       try {
-        const request = buildChatRequest(conversation, parsed.text, config);
+        const request = buildChatRequest(conversation, input.text, config);
         const response = await provider.complete(request);
+        const renderedReply = renderAssistantReply(
+          response.message.content,
+          maxReplyLength
+        );
+        if (renderedReply.truncated) {
+          writers.stderr(
+            `[warn] reply exceeded ${maxReplyLength} chars; truncated.\n`
+          );
+        }
         conversation.push(
           {
             role: "user",
-            content: parsed.text
+            content: input.text
           },
-          response.message
+          {
+            role: response.message.role,
+            content: renderedReply.text
+          }
         );
-        buffer.append(`${response.message.content}\n`);
+        buffer.append(`${renderedReply.text}\n`);
         buffer.flush();
       } catch (error) {
         const e = error as Error;

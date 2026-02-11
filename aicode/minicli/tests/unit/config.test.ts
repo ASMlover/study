@@ -6,9 +6,12 @@ import {
   loadConfigFile,
   loadMergedConfig,
   loadRuntimeConfig,
+  maskSecret,
   parseConfig,
   resolveGlobalConfigPath,
   resolveProjectConfigPath,
+  saveApiKeyToGlobalConfig,
+  saveModelToProjectConfig,
   validateAndNormalizeConfig
 } from "../../src/config";
 
@@ -130,11 +133,19 @@ test("validateAndNormalizeConfig reports type mismatch", () => {
   assert.equal(validated.config.timeoutMs, 30000);
 });
 
-test("validateAndNormalizeConfig reports invalid enum", () => {
+test("validateAndNormalizeConfig allows arbitrary non-empty model name", () => {
   const validated = validateAndNormalizeConfig({
     model: "gpt-4.1"
   });
-  assert.equal(validated.issues.some((x) => x.code === "invalid_enum"), true);
+  assert.deepEqual(validated.issues, []);
+  assert.equal(validated.config.model, "gpt-4.1");
+});
+
+test("validateAndNormalizeConfig rejects empty model name", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "   "
+  });
+  assert.equal(validated.issues.some((x) => x.path === "model"), true);
   assert.equal(validated.config.model, "glm-4");
 });
 
@@ -155,13 +166,32 @@ test("validateAndNormalizeConfig injects defaults", () => {
   assert.equal(validated.config.timeoutMs, 30000);
 });
 
+test("validateAndNormalizeConfig reads apiKey when valid", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "glm-4",
+    apiKey: "secret-key"
+  });
+
+  assert.equal(validated.issues.length, 0);
+  assert.equal(validated.config.apiKey, "secret-key");
+});
+
+test("validateAndNormalizeConfig reports empty apiKey", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "glm-4",
+    apiKey: "   "
+  });
+
+  assert.equal(validated.issues.some((x) => x.path === "apiKey"), true);
+});
+
 test("formatConfigIssue returns readable message", () => {
   const message = formatConfigIssue({
-    code: "invalid_enum",
+    code: "type_mismatch",
     path: "model",
-    message: "Field \"model\" must be one of: glm-4."
+    message: "Field \"model\" cannot be empty."
   });
-  assert.match(message, /\[config:invalid_enum\]/);
+  assert.match(message, /\[config:type_mismatch\]/);
   assert.match(message, /model/);
 });
 
@@ -183,4 +213,70 @@ test("loadRuntimeConfig keeps startup resilient on parse error", () => {
   assert.equal(loaded.config.model, "glm-4");
   assert.equal(loaded.config.timeoutMs, 30000);
   assert.equal(loaded.issues.some((x) => x.code === "parse_error"), true);
+});
+
+test("saveApiKeyToGlobalConfig persists and reloads key", () => {
+  const files = new Map<string, string>();
+  const dirs: string[] = [];
+  const globalPath = path.join("HOME", ".minicli", "config.json");
+
+  saveApiKeyToGlobalConfig(globalPath, "sk-12345678", {
+    readFileSync: (() => {
+      const error = new Error("missing") as NodeJS.ErrnoException;
+      error.code = "ENOENT";
+      throw error;
+    }) as typeof import("node:fs").readFileSync,
+    mkdirSync: ((dirPath: string) => {
+      dirs.push(dirPath);
+    }) as typeof import("node:fs").mkdirSync,
+    writeFileSync: ((filePath: string, content: string) => {
+      files.set(filePath, content);
+    }) as typeof import("node:fs").writeFileSync
+  });
+
+  assert.equal(dirs.length, 1);
+  assert.equal(files.has(globalPath), true);
+  const saved = JSON.parse(String(files.get(globalPath))) as { apiKey: string };
+  assert.equal(saved.apiKey, "sk-12345678");
+});
+
+test("saveApiKeyToGlobalConfig rejects empty key", () => {
+  assert.throws(
+    () => saveApiKeyToGlobalConfig("C:/x/.minicli/config.json", "   "),
+    /API key cannot be empty/
+  );
+});
+
+test("maskSecret masks key value", () => {
+  assert.equal(maskSecret("abcd"), "****");
+  assert.equal(maskSecret("sk-12345678"), "*******5678");
+});
+
+test("saveModelToProjectConfig trims and saves arbitrary model name", () => {
+  const files = new Map<string, string>();
+  const projectPath = path.join("CWD", ".minicli", "config.json");
+
+  const saved = saveModelToProjectConfig(projectPath, "  gpt-4.1  ", {
+    readFileSync: ((_: string) =>
+      JSON.stringify({ timeoutMs: 1000 })) as typeof import("node:fs").readFileSync,
+    mkdirSync: (() => {}) as typeof import("node:fs").mkdirSync,
+    writeFileSync: ((filePath: string, content: string) => {
+      files.set(filePath, content);
+    }) as typeof import("node:fs").writeFileSync
+  });
+
+  assert.equal(saved, "gpt-4.1");
+  const parsed = JSON.parse(String(files.get(projectPath))) as {
+    model: string;
+    timeoutMs: number;
+  };
+  assert.equal(parsed.model, "gpt-4.1");
+  assert.equal(parsed.timeoutMs, 1000);
+});
+
+test("saveModelToProjectConfig rejects empty model name", () => {
+  assert.throws(
+    () => saveModelToProjectConfig("C:/x/.minicli/config.json", "   "),
+    /Model name cannot be empty/
+  );
 });

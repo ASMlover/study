@@ -1,6 +1,12 @@
 import { formatVersionOutput } from "./version";
 import { startRepl } from "./repl";
-import { formatConfigIssue, loadRuntimeConfig, LoadedRuntimeConfig } from "./config";
+import {
+  formatConfigIssue,
+  loadRuntimeConfig,
+  LoadedRuntimeConfig,
+  saveApiKeyToGlobalConfig,
+  saveModelToProjectConfig
+} from "./config";
 
 export type CliMode = "version" | "repl" | "invalid";
 
@@ -63,7 +69,11 @@ export function runCli(
         stdout: io.stdout,
         stderr: io.stderr
       }, undefined, {
-        config: loadedConfig.config
+        config: loadedConfig.config,
+        saveApiKey: (apiKey: string) =>
+          saveApiKeyToGlobalConfig(loadedConfig.globalPath, apiKey),
+        saveModel: (model: string) =>
+          saveModelToProjectConfig(loadedConfig.projectPath, model)
       });
       io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
       return 0;
