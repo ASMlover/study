@@ -33,7 +33,7 @@
 | T04 | 双层配置加载 | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added global+project config loading, merge override, and comment-aware parsing with tests |
 | T05 | 配置校验与报错 | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added schema validation, default injection, warning formatting, and resilient startup for malformed config |
 | T06 | LLMProvider 接口与 Mock | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added provider interface, mock provider, multi-turn request assembly, and REPL integration |
-| T07 | GLM OpenAI-compatible 閫氳矾 | M1 | TODO | - | - | - | - |
+| T07 | GLM OpenAI-compatible 通路 | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added GLM OpenAI-compatible provider with request/response mapping and mock API integration tests |
 | T08 | /login 涓?/model | M1 | TODO | - | - | - | - |
 | T09 | 鍗曡疆闂瓟闂幆 | M1 | TODO | - | - | - | - |
 | T10 | 瓒呮椂涓庨敊璇槧灏?| M1 | TODO | - | - | - | - |
@@ -78,3 +78,4 @@
 | 2026-02-11 | T04 | Completed dual-layer config loading with project-over-global merge behavior and tests | Codex |
 | 2026-02-11 | T05 | Completed config schema validation and non-crashing warning flow for invalid config | Codex |
 | 2026-02-11 | T06 | Completed LLMProvider contract and mock-backed REPL Q&A flow with tests | Codex |
+| 2026-02-11 | T07 | Completed GLM OpenAI-compatible provider path with unit and mock API integration coverage | Codex |

@@ -216,28 +216,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: REPL line handling is now async to support provider calls. Subprocess integration remains conditionally skipped only when sandbox denies `spawn` with `EPERM`.
 ### T07 - GLM OpenAI-compatible 通路
-- Date:
-- Env:
+- Date: 2026-02-11
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 GLM Provider 的 HTTP 请求与响应映射
 - Unit Cases:
-  - [ ] 请求头
-  - [ ] URL拼接
-  - [ ] 默认模型
-  - [ ] 响应映射
-  - [ ] 空choices
-  - [ ] 网络错误包装
+  - [x] 请求头
+  - [x] URL拼接
+  - [x] 默认模型
+  - [x] 响应映射
+  - [x] 空choices
+  - [x] 网络错误包装
 - Integration Cases:
-  - [ ] 请求 mock API 成功
+  - [x] 请求 mock API 成功
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] Provider 通过本地 mock OpenAI-compatible 服务完成一次请求
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: Provider 联通可用
-- Actual:
+- Actual: Extended `src/provider.ts` with `GLMOpenAIProvider`, OpenAI-compatible URL/header builders, response mapper, and `ProviderNetworkError` wrapping. Added unit tests for all required edge cases and integration test using local HTTP mock API to validate end-to-end request/response compatibility.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T07)
+  - Overall: N/A (coverage tooling not added in T07)
+- Result: PASS
+- Notes: T07 introduces provider connectivity but does not switch runtime REPL provider selection yet; current REPL mock flow remains stable.
 ### T08 - /login 与 /model
 - Date:
 - Env:
