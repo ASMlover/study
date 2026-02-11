@@ -30,7 +30,7 @@
 | T01 | 鍒濆鍖?CLI 宸ョ▼楠ㄦ灦 | M1 | DONE | Codex | 2026-02-10 | 2026-02-10 | Node22+TS5 scaffold, CLI entry, --version, unit/integration tests |
 | T02 | REPL 绌哄惊鐜?| M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Implemented readline REPL loop, input echo, EOF/SIGINT safe exit, and tests |
 | T03 | /help 与 /exit | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added REPL command routing with /help and /exit, unknown command hints, and tests |
-| T04 | 鍙屽眰閰嶇疆鍔犺浇 | M1 | TODO | - | - | - | - |
+| T04 | 双层配置加载 | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added global+project config loading, merge override, and comment-aware parsing with tests |
 | T05 | 閰嶇疆鏍￠獙涓庢姤閿?| M1 | TODO | - | - | - | - |
 | T06 | LLMProvider 鎺ュ彛涓?Mock | M1 | TODO | - | - | - | - |
 | T07 | GLM OpenAI-compatible 閫氳矾 | M1 | TODO | - | - | - | - |
@@ -75,3 +75,4 @@
 | 2026-02-10 | T01 | Completed Node22+TS5 scaffold with CLI entrypoint and passing tests | Codex |
 | 2026-02-11 | T02 | Completed REPL loop with echo, long-line truncation, EOF/SIGINT handling, and tests | Codex |
 | 2026-02-11 | T03 | Completed /help and /exit command routing with unit/integration coverage | Codex |
+| 2026-02-11 | T04 | Completed dual-layer config loading with project-over-global merge behavior and tests | Codex |

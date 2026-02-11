@@ -141,28 +141,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Integration subprocess tests are guarded to skip only when sandbox blocks `spawn` with `EPERM`.
 ### T04 - 双层配置加载
-- Date:
-- Env:
+- Date: 2026-02-11
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 读取全局与项目配置并执行覆盖
 - Unit Cases:
-  - [ ] 全局路径
-  - [ ] 项目路径
-  - [ ] 覆盖优先级
-  - [ ] 缺失降级
-  - [ ] 空配置
-  - [ ] 注释处理
+  - [x] 全局路径
+  - [x] 项目路径
+  - [x] 覆盖优先级
+  - [x] 缺失降级
+  - [x] 空配置
+  - [x] 注释处理
 - Integration Cases:
-  - [ ] 双配置覆盖正确
+  - [x] 双配置覆盖正确
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 通过真实文件布局加载并合并配置
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: 配置合并结果正确
-- Actual:
+- Actual: Implemented `src/config.ts` with global/project path resolvers, comment-aware JSON parser, missing-file fallback, and shallow merge where project config overrides global keys. Added unit tests for all required cases and integration test for dual-config merge behavior.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T04)
+  - Overall: N/A (coverage tooling not added in T04)
+- Result: PASS
+- Notes: Comment parsing supports `//`, `/* ... */`, and line-start `#` while preserving comment-like text inside JSON strings.
 ### T05 - 配置校验与报错
 - Date:
 - Env:
