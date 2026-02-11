@@ -8,7 +8,8 @@ import {
   GLMOpenAIProvider,
   LLMProvider,
   mapOpenAICompatibleResponse,
-  MockLLMProvider
+  MockLLMProvider,
+  ProviderNetworkError
 } from "../../src/provider";
 
 test("provider interface contract can be implemented", async () => {
@@ -174,6 +175,7 @@ test("GLM provider throws for empty choices", async () => {
 test("GLM provider wraps network errors", async () => {
   const provider = new GLMOpenAIProvider({
     apiKey: "k",
+    maxRetries: 0,
     fetchImpl: (async () => {
       throw new Error("connect ECONNREFUSED");
     }) as typeof fetch
@@ -187,4 +189,152 @@ test("GLM provider wraps network errors", async () => {
     }),
     /GLM network error/
   );
+});
+
+test("GLM provider maps timeout error", async () => {
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 0,
+    fetchImpl: ((_input: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const abortError = new Error("The operation was aborted.");
+          abortError.name = "AbortError";
+          reject(abortError);
+        });
+      })) as typeof fetch
+  });
+
+  await assert.rejects(
+    provider.complete({
+      model: "glm-4",
+      timeoutMs: 20,
+      messages: [{ role: "user", content: "hello" }]
+    }),
+    /timed out/
+  );
+});
+
+test("GLM provider maps 401 without retry", async () => {
+  let attempts = 0;
+  const provider = new GLMOpenAIProvider({
+    apiKey: "bad-key",
+    maxRetries: 3,
+    retryDelayMs: 0,
+    fetchImpl: (async () => {
+      attempts += 1;
+      return new Response("unauthorized", { status: 401 });
+    }) as typeof fetch
+  });
+
+  await assert.rejects(
+    provider.complete({
+      model: "glm-4",
+      timeoutMs: 100,
+      messages: [{ role: "user", content: "hello" }]
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof ProviderNetworkError);
+      assert.equal(error.code, "http_401");
+      return true;
+    }
+  );
+  assert.equal(attempts, 1);
+});
+
+test("GLM provider maps 429 to retryable error", async () => {
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 0,
+    fetchImpl: (async () => new Response("too many requests", { status: 429 })) as typeof fetch
+  });
+
+  await assert.rejects(
+    provider.complete({
+      model: "glm-4",
+      timeoutMs: 100,
+      messages: [{ role: "user", content: "hello" }]
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof ProviderNetworkError);
+      assert.equal(error.code, "http_429");
+      assert.equal(error.retryable, true);
+      return true;
+    }
+  );
+});
+
+test("GLM provider maps 5xx to retryable error", async () => {
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 0,
+    fetchImpl: (async () => new Response("server error", { status: 503 })) as typeof fetch
+  });
+
+  await assert.rejects(
+    provider.complete({
+      model: "glm-4",
+      timeoutMs: 100,
+      messages: [{ role: "user", content: "hello" }]
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof ProviderNetworkError);
+      assert.equal(error.code, "http_5xx");
+      assert.equal(error.retryable, true);
+      return true;
+    }
+  );
+});
+
+test("GLM provider retries retryable status until success", async () => {
+  let attempts = 0;
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 2,
+    retryDelayMs: 0,
+    fetchImpl: (async () => {
+      attempts += 1;
+      if (attempts < 3) {
+        return new Response("too many requests", { status: 429 });
+      }
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "ok after retry" } }]
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }) as typeof fetch
+  });
+
+  const response = await provider.complete({
+    model: "glm-4",
+    timeoutMs: 100,
+    messages: [{ role: "user", content: "hello" }]
+  });
+
+  assert.equal(response.message.content, "ok after retry");
+  assert.equal(attempts, 3);
+});
+
+test("GLM provider does not retry non-retryable status", async () => {
+  let attempts = 0;
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 5,
+    retryDelayMs: 0,
+    fetchImpl: (async () => {
+      attempts += 1;
+      return new Response("unauthorized", { status: 401 });
+    }) as typeof fetch
+  });
+
+  await assert.rejects(
+    provider.complete({
+      model: "glm-4",
+      timeoutMs: 100,
+      messages: [{ role: "user", content: "hello" }]
+    }),
+    /Authentication failed/
+  );
+  assert.equal(attempts, 1);
 });

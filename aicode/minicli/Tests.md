@@ -291,28 +291,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Subprocess integration remains skip-guarded for restricted environments where `spawn` fails with `EPERM`; all runnable assertions passed.
 ### T10 - 超时与错误映射
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 增加 timeout、401/429/5xx 错误映射与重试
 - Unit Cases:
-  - [ ] 超时
-  - [ ] 401
-  - [ ] 429
-  - [ ] 5xx
-  - [ ] 重试次数
-  - [ ] 不可重试
+  - [x] 超时
+  - [x] 401
+  - [x] 429
+  - [x] 5xx
+  - [x] 重试次数
+  - [x] 不可重试
 - Integration Cases:
-  - [ ] 429 重试后成功
+  - [x] 429 重试后成功
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] Provider 本地 mock 服务下 429->200 重试链路通过
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: 异常场景可预测
-- Actual:
+- Actual: Added structured provider error mapping for timeout, 401, 429, and 5xx statuses, including retryable metadata and bounded retry policy. Unit tests cover timeout mapping, status mapping, retry attempt count, and non-retryable short-circuit behavior. Integration test verifies first-call 429 then success on retry against local HTTP mock API.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T10)
+  - Overall: N/A (coverage tooling not added in T10)
+- Result: PASS
+- Notes: Full suite passed (unit 78/78, integration 5 pass + 4 skipped due sandbox `spawn` restrictions unrelated to T10 scope).
 ### T11 - SQLite 与 migration v1
 - Date:
 - Env:
