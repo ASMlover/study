@@ -6,12 +6,15 @@ import {
   createRuntimeProvider,
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
+  DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
   EMPTY_REPLY_PLACEHOLDER,
+  formatHistoryList,
   formatSessionList,
   formatSessionTimestamp,
   HELP_TEXT,
   matchReplCommand,
   OutputBuffer,
+  parseHistoryCommandArgs,
   parseNewSessionTitle,
   parseSwitchCommandArgs,
   parseSessionsCommandArgs,
@@ -47,6 +50,42 @@ function createInMemorySessionRepository(initialTitles: string[] = []): {
       sessions.push(created);
       return created;
     }
+  };
+}
+
+function createInMemoryMessageRepository(
+  sessions: { sessions: SessionRecord[] }
+): {
+  messages: MessageRecord[];
+  createMessage: (input: {
+    sessionId: number;
+    role: "system" | "user" | "assistant" | "tool";
+    content: string;
+  }) => MessageRecord;
+  listMessagesBySession: (sessionId: number) => MessageRecord[];
+} {
+  const messages: MessageRecord[] = [];
+  return {
+    messages,
+    createMessage: (input) => {
+      const created: MessageRecord = {
+        id: messages.length + 1,
+        sessionId: input.sessionId,
+        role: input.role,
+        content: input.content,
+        createdAt: `2026-02-13 00:00:0${messages.length}`
+      };
+      messages.push(created);
+      const session = sessions.sessions.find((item) => item.id === input.sessionId);
+      if (session) {
+        session.updatedAt = created.createdAt;
+      }
+      return created;
+    },
+    listMessagesBySession: (sessionId: number) =>
+      messages
+        .filter((item) => item.sessionId === sessionId)
+        .map((item) => ({ ...item }))
   };
 }
 
@@ -208,6 +247,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "switch",
     args: ["#2"]
   });
+  assert.deepEqual(matchReplCommand("/history --limit 3"), {
+    kind: "history",
+    args: ["--limit", "3"]
+  });
 });
 
 test("parseNewSessionTitle joins args and trims spaces", () => {
@@ -271,6 +314,48 @@ test("parseSwitchCommandArgs validates malformed targets", () => {
     parseSwitchCommandArgs(["0"]).error ?? "",
     /Session index must be a positive integer/
   );
+});
+
+test("parseHistoryCommandArgs parses optional limit", () => {
+  assert.deepEqual(parseHistoryCommandArgs([]), {
+    options: {}
+  });
+  assert.deepEqual(parseHistoryCommandArgs(["--limit", "2"]), {
+    options: {
+      limit: 2
+    }
+  });
+});
+
+test("parseHistoryCommandArgs validates invalid limit", () => {
+  assert.match(parseHistoryCommandArgs(["--limit"]).error ?? "", /Missing value/);
+  assert.match(
+    parseHistoryCommandArgs(["--limit", "0"]).error ?? "",
+    /positive integer/
+  );
+  assert.match(
+    parseHistoryCommandArgs(["oops"]).error ?? "",
+    /Unknown argument/
+  );
+});
+
+test("formatHistoryList truncates overlong content and preserves role labels", () => {
+  const output = formatHistoryList(
+    [
+      {
+        role: "user",
+        content: "hello"
+      },
+      {
+        role: "assistant",
+        content: "x".repeat(DEFAULT_MAX_HISTORY_PREVIEW_LENGTH + 5)
+      }
+    ],
+    DEFAULT_MAX_HISTORY_PREVIEW_LENGTH
+  );
+
+  assert.match(output, /\[1\] user: hello/);
+  assert.match(output, /\[2\] assistant: x+\.\.\.\[truncated\]/);
 });
 
 test("formatSessionTimestamp renders ISO-like second precision", () => {
@@ -457,7 +542,11 @@ test("repl /new updates current session pointer for subsequent writes", async ()
           };
           persistedMessages.push(created);
           return created;
-        }
+        },
+        listMessagesBySession: (sessionId: number) =>
+          persistedMessages
+            .filter((item) => item.sessionId === sessionId)
+            .map((item) => ({ ...item }))
       }
     }
   );
@@ -710,6 +799,162 @@ test("repl /switch reports repeated switch without state changes", async () => {
   await session.onLine("/switch #1");
 
   assert.match(writes.join(""), /Already in session #1: alpha/);
+});
+
+test("repl /history prints empty state for current session with no messages", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const messageRepo = createInMemoryMessageRepository(sessionRepo);
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: messageRepo.createMessage,
+        listMessagesBySession: messageRepo.listMessagesBySession
+      }
+    }
+  );
+
+  await session.onLine("/new alpha");
+  writes.length = 0;
+  await session.onLine("/history");
+
+  assert.equal(writes.join(""), "No history.\n");
+});
+
+test("repl /history preserves message order and role labels", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const messageRepo = createInMemoryMessageRepository(sessionRepo);
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: messageRepo.createMessage,
+        listMessagesBySession: messageRepo.listMessagesBySession
+      }
+    }
+  );
+
+  await session.onLine("/new alpha");
+  await session.onLine("first");
+  await session.onLine("second");
+  writes.length = 0;
+  await session.onLine("/history");
+
+  const output = writes.join("");
+  assert.match(output, /\[1\] user: first/);
+  assert.match(output, /\[2\] assistant: mock\(mock-mini\): first/);
+  assert.match(output, /\[3\] user: second/);
+  assert.match(output, /\[4\] assistant: mock\(mock-mini\): second/);
+});
+
+test("repl /history applies limit to tail messages", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const messageRepo = createInMemoryMessageRepository(sessionRepo);
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: messageRepo.createMessage,
+        listMessagesBySession: messageRepo.listMessagesBySession
+      }
+    }
+  );
+
+  await session.onLine("/new alpha");
+  await session.onLine("first");
+  await session.onLine("second");
+  writes.length = 0;
+  await session.onLine("/history --limit 2");
+
+  const output = writes.join("");
+  assert.doesNotMatch(output, /\[1\] user: first/);
+  assert.match(output, /\[1\] user: second/);
+  assert.match(output, /\[2\] assistant: mock\(mock-mini\): second/);
+});
+
+test("repl /history truncates overlong message content", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const messageRepo = createInMemoryMessageRepository(sessionRepo);
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: messageRepo.createMessage,
+        listMessagesBySession: messageRepo.listMessagesBySession
+      }
+    }
+  );
+
+  await session.onLine("/new alpha");
+  await session.onLine("x".repeat(DEFAULT_MAX_HISTORY_PREVIEW_LENGTH + 20));
+  writes.length = 0;
+  await session.onLine("/history");
+
+  assert.match(writes.join(""), /\.\.\.\[truncated\]/);
+});
+
+test("repl /history reports invalid limit value", async () => {
+  const errors: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const messageRepo = createInMemoryMessageRepository(sessionRepo);
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: messageRepo.createMessage,
+        listMessagesBySession: messageRepo.listMessagesBySession
+      }
+    }
+  );
+
+  await session.onLine("/new alpha");
+  await session.onLine("/history --limit 0");
+
+  assert.match(errors.join(""), /Usage: \/history \[--limit N\]/);
 });
 
 test("repl session marks /exit as exit signal", async () => {

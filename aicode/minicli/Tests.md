@@ -441,28 +441,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: All unit tests passed (112/112). Integration passed with expected subprocess skip guards in restricted sandbox (`8 skipped`, including the new T15 spawn-based case).
 ### T16 - /history
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 查看当前会话历史并支持条数限制
 - Unit Cases:
-  - [ ] 顺序
-  - [ ] limit
-  - [ ] 空历史
-  - [ ] 角色显示
-  - [ ] 截断
-  - [ ] 非法limit
+  - [x] 顺序
+  - [x] limit
+  - [x] 空历史
+  - [x] 角色显示
+  - [x] 截断
+  - [x] 非法limit
 - Integration Cases:
-  - [ ] 切换后历史隔离
+  - [x] 切换后历史隔离
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 执行 `/new alpha -> alpha 提问 -> /new beta -> beta 提问 -> /switch #1 -> /history -> /exit` 并校验 history 仅包含 alpha 消息（受限环境按 EPERM 条件跳过）
 - Commands:
+  - `npm run test:unit`
+  - `npm run test:integration`
 - Expected: 历史查询稳定
-- Actual:
+- Actual: Added `/history [--limit N]` command routing with `--limit` argument parsing/validation, current-session history retrieval, role-labeled output formatting, and per-message truncation (`...[truncated]`) for long content. Added helper functions for parser and formatter plus unit coverage for order, limit, empty history, role display, truncation, and invalid limit. Added integration test validating history isolation after switching sessions.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T16)
+  - Overall: N/A (coverage tooling not added in T16)
+- Result: PASS
+- Notes: Full suite passed. Unit tests passed 120/120. Integration passed with expected subprocess skip guards in restricted sandbox (`9 skipped`, including the new T16 spawn-based case).
 ### T17 - 命令注册中心
 - Date:
 - Env:

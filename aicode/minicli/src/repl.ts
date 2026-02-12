@@ -16,9 +16,10 @@ import { MessageRepository, SessionRecord, SessionRepository } from "./repositor
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
 export const DEFAULT_MAX_REPLY_LENGTH = 2048;
+export const DEFAULT_MAX_HISTORY_PREVIEW_LENGTH = 120;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const HELP_TEXT =
-  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n/sessions [--limit N] [--offset N] [--q keyword] List sessions\n/switch <#id|index> Switch to a specific session\n";
+  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n/sessions [--limit N] [--offset N] [--q keyword] List sessions\n/switch <#id|index> Switch to a specific session\n/history [--limit N] Show messages in current session\n";
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -76,7 +77,10 @@ export interface ReplSessionOptions {
   saveModel?: (model: string) => void;
   maxReplyLength?: number;
   sessionRepository?: Pick<SessionRepository, "createSession" | "listSessions">;
-  messageRepository?: Pick<MessageRepository, "createMessage">;
+  messageRepository?: Pick<
+    MessageRepository,
+    "createMessage" | "listMessagesBySession"
+  >;
   now?: () => Date;
 }
 
@@ -88,6 +92,7 @@ export type ReplCommandMatch =
   | { kind: "new"; args: string[] }
   | { kind: "sessions"; args: string[] }
   | { kind: "switch"; args: string[] }
+  | { kind: "history"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -106,6 +111,10 @@ export interface SessionsCommandOptions {
   limit?: number;
   offset: number;
   query?: string;
+}
+
+export interface HistoryCommandOptions {
+  limit?: number;
 }
 
 export type SwitchCommandTarget =
@@ -180,6 +189,10 @@ export function matchReplCommand(text: string): ReplCommandMatch {
 
   if (token === "/switch") {
     return { kind: "switch", args };
+  }
+
+  if (token === "/history") {
+    return { kind: "history", args };
   }
 
   return { kind: "unknown", token };
@@ -310,6 +323,32 @@ export function parseSwitchCommandArgs(
   };
 }
 
+export function parseHistoryCommandArgs(
+  args: string[]
+): { options?: HistoryCommandOptions; error?: string } {
+  const options: HistoryCommandOptions = {};
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === "--limit") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --limit." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value <= 0) {
+        return { error: "--limit must be a positive integer." };
+      }
+      options.limit = value;
+      index += 1;
+      continue;
+    }
+
+    return { error: `Unknown argument: ${token}` };
+  }
+
+  return { options };
+}
+
 export function sortSessionsByRecent(sessions: SessionRecord[]): SessionRecord[] {
   return [...sessions].sort((left, right) => {
     if (left.updatedAt === right.updatedAt) {
@@ -330,6 +369,34 @@ export function formatSessionList(
   const lines = sessions.map((session, index) => {
     const marker = session.id === currentSessionId ? "*" : " ";
     return `${marker} [${index + 1}] #${session.id} ${session.title} (updated ${session.updatedAt})`;
+  });
+  return `${lines.join("\n")}\n`;
+}
+
+export function truncateHistoryContent(
+  content: string,
+  maxLength: number = DEFAULT_MAX_HISTORY_PREVIEW_LENGTH
+): string {
+  if (content.length <= maxLength) {
+    return content;
+  }
+  return `${content.slice(0, maxLength)}...[truncated]`;
+}
+
+export function formatHistoryList(
+  messages: Array<{
+    role: string;
+    content: string;
+  }>,
+  maxContentLength: number = DEFAULT_MAX_HISTORY_PREVIEW_LENGTH
+): string {
+  if (messages.length === 0) {
+    return "No history.\n";
+  }
+
+  const lines = messages.map((message, index) => {
+    const content = truncateHistoryContent(message.content, maxContentLength);
+    return `[${index + 1}] ${message.role}: ${content}`;
   });
   return `${lines.join("\n")}\n`;
 }
@@ -585,6 +652,34 @@ export function createReplSession(
         currentSessionId = target.id;
         conversation.length = 0;
         writers.stdout(`Switched to session #${target.id}: ${target.title}\n`);
+        return false;
+      }
+
+      if (input.kind === "command" && input.command.kind === "history") {
+        if (!messageRepository) {
+          writers.stderr("Session storage is unavailable.\n");
+          return false;
+        }
+
+        const parsed = parseHistoryCommandArgs(input.command.args);
+        if (!parsed.options) {
+          writers.stderr(`${parsed.error}\nUsage: /history [--limit N]\n`);
+          return false;
+        }
+
+        if (currentSessionId === null) {
+          writers.stdout("No active session.\n");
+          return false;
+        }
+
+        const allMessages = messageRepository.listMessagesBySession(
+          currentSessionId
+        );
+        const selected =
+          parsed.options.limit === undefined
+            ? allMessages
+            : allMessages.slice(-parsed.options.limit);
+        writers.stdout(formatHistoryList(selected));
         return false;
       }
 
