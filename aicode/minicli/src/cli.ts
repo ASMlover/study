@@ -7,7 +7,8 @@ import {
   saveApiKeyToGlobalConfig,
   saveModelToProjectConfig
 } from "./config";
-import { initializeDatabase } from "./db";
+import { DatabaseConnection, initializeDatabase } from "./db";
+import { createRepositories } from "./repository";
 
 export type CliMode = "version" | "repl" | "invalid";
 
@@ -22,7 +23,15 @@ export interface CliIo {
   stdin?: NodeJS.ReadableStream;
   output?: NodeJS.WritableStream;
   loadConfig?: () => LoadedRuntimeConfig;
-  initDatabase?: () => void;
+  initDatabase?: () => { databasePath: string } | void;
+  openDatabase?: (databasePath: string) => DatabaseConnection;
+}
+
+function openSQLite(databasePath: string): DatabaseConnection {
+  const sqliteModule = require("node:sqlite") as {
+    DatabaseSync: new (dbPath: string) => DatabaseConnection;
+  };
+  return new sqliteModule.DatabaseSync(databasePath);
 }
 
 export function parseArguments(argv: string[]): ParsedArgs {
@@ -59,11 +68,13 @@ export function runCli(
   }
 
   if (parsed.mode === "repl") {
+    let connection: DatabaseConnection | undefined;
     try {
-      if (io.initDatabase) {
-        io.initDatabase();
-      } else {
-        initializeDatabase();
+      const initResult = io.initDatabase ? io.initDatabase() : initializeDatabase();
+      const databasePath = initResult?.databasePath;
+      if (databasePath) {
+        const openDatabase = io.openDatabase ?? openSQLite;
+        connection = openDatabase(databasePath);
       }
     } catch (error) {
       const e = error as Error;
@@ -71,30 +82,50 @@ export function runCli(
       return 1;
     }
 
-    const loadedConfig = io.loadConfig ? io.loadConfig() : loadRuntimeConfig();
-    for (const issue of loadedConfig.issues) {
-      io.stderr(`${formatConfigIssue(issue)}\n`);
-    }
+    try {
+      const repositories = connection ? createRepositories(connection) : undefined;
 
-    if (io.stdin && io.output) {
-      startRepl({
-        input: io.stdin,
-        output: io.output,
-        stdout: io.stdout,
-        stderr: io.stderr
-      }, undefined, {
-        config: loadedConfig.config,
-        saveApiKey: (apiKey: string) =>
-          saveApiKeyToGlobalConfig(loadedConfig.globalPath, apiKey),
-        saveModel: (model: string) =>
-          saveModelToProjectConfig(loadedConfig.projectPath, model)
-      });
+      const loadedConfig = io.loadConfig ? io.loadConfig() : loadRuntimeConfig();
+      for (const issue of loadedConfig.issues) {
+        io.stderr(`${formatConfigIssue(issue)}\n`);
+      }
+
+      if (io.stdin && io.output) {
+        const rl = startRepl({
+          input: io.stdin,
+          output: io.output,
+          stdout: io.stdout,
+          stderr: io.stderr
+        }, undefined, {
+          config: loadedConfig.config,
+          saveApiKey: (apiKey: string) =>
+            saveApiKeyToGlobalConfig(loadedConfig.globalPath, apiKey),
+          saveModel: (model: string) =>
+            saveModelToProjectConfig(loadedConfig.projectPath, model),
+          sessionRepository: repositories?.sessions,
+          messageRepository: repositories?.messages
+        });
+        if (connection) {
+          rl.on("close", () => {
+            connection?.close();
+            connection = undefined;
+          });
+        }
+        io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
+        return 0;
+      }
+
       io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
+      connection?.close();
+      connection = undefined;
       return 0;
+    } catch (error) {
+      const e = error as Error;
+      io.stderr(`[runtime:error] ${e.message}\n`);
+      connection?.close();
+      connection = undefined;
+      return 1;
     }
-
-    io.stdout(`Starting ${resolveBinaryName(platform)} interactive shell.\n`);
-    return 0;
   }
 
   io.stderr(`Unknown argument: ${parsed.invalidArg ?? "(none)"}\n`);

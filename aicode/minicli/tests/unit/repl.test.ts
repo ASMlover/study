@@ -1,18 +1,50 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildDefaultSessionTitle,
   classifyReplInput,
   createRuntimeProvider,
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
   EMPTY_REPLY_PLACEHOLDER,
+  formatSessionTimestamp,
   HELP_TEXT,
   matchReplCommand,
   OutputBuffer,
+  parseNewSessionTitle,
   parseReplLine,
-  renderAssistantReply
+  renderAssistantReply,
+  resolveUniqueSessionTitle
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
+import { MessageRecord, SessionRecord } from "../../src/repository";
+
+function createInMemorySessionRepository(initialTitles: string[] = []): {
+  sessions: SessionRecord[];
+  listSessions: () => SessionRecord[];
+  createSession: (title: string) => SessionRecord;
+} {
+  const sessions: SessionRecord[] = initialTitles.map((title, index) => ({
+    id: index + 1,
+    title,
+    createdAt: "2026-02-13 00:00:00",
+    updatedAt: "2026-02-13 00:00:00"
+  }));
+  return {
+    sessions,
+    listSessions: () => sessions.map((x) => ({ ...x })),
+    createSession: (title: string) => {
+      const created: SessionRecord = {
+        id: sessions.length + 1,
+        title,
+        createdAt: "2026-02-13 00:00:00",
+        updatedAt: "2026-02-13 00:00:00"
+      };
+      sessions.push(created);
+      return created;
+    }
+  };
+}
 
 test("parseReplLine parses regular input", () => {
   const parsed = parseReplLine("hello world");
@@ -156,6 +188,38 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "model",
     args: []
   });
+  assert.deepEqual(matchReplCommand("/new"), {
+    kind: "new",
+    args: []
+  });
+  assert.deepEqual(matchReplCommand("/new sprint planning"), {
+    kind: "new",
+    args: ["sprint", "planning"]
+  });
+});
+
+test("parseNewSessionTitle joins args and trims spaces", () => {
+  assert.equal(parseNewSessionTitle(["my", "chat"]), "my chat");
+  assert.equal(parseNewSessionTitle([]), undefined);
+  assert.equal(parseNewSessionTitle(["   "]), undefined);
+});
+
+test("formatSessionTimestamp renders ISO-like second precision", () => {
+  const date = new Date("2026-02-13T00:12:34.999Z");
+  assert.equal(formatSessionTimestamp(date), "2026-02-13 00:12:34");
+  assert.equal(
+    buildDefaultSessionTitle(date),
+    "New Session 2026-02-13 00:12:34"
+  );
+});
+
+test("resolveUniqueSessionTitle appends numeric suffix for duplicates", () => {
+  assert.equal(resolveUniqueSessionTitle("Work", []), "Work");
+  assert.equal(resolveUniqueSessionTitle("Work", ["Work"]), "Work (2)");
+  assert.equal(
+    resolveUniqueSessionTitle("Work", ["Work", "Work (2)"]),
+    "Work (3)"
+  );
 });
 
 test("matchReplCommand handles unknown command and non-command input", () => {
@@ -188,6 +252,107 @@ test("repl session prints help content", async () => {
 
   assert.equal(shouldExit, false);
   assert.equal(writes.join(""), HELP_TEXT);
+});
+
+test("repl /new uses default timestamp title for empty input", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      now: () => new Date("2026-02-13T00:00:00.000Z")
+    }
+  );
+
+  await session.onLine("/new");
+
+  assert.match(writes.join(""), /Switched to session #1: New Session 2026-02-13 00:00:00/);
+});
+
+test("repl /new applies duplicate title strategy", async () => {
+  const sessionRepo = createInMemorySessionRepository(["Plan", "Plan (2)"]);
+  const writes: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/new Plan");
+
+  assert.match(writes.join(""), /Switched to session #3: Plan \(3\)/);
+});
+
+test("repl /new updates current session pointer for subsequent writes", async () => {
+  const writes: string[] = [];
+  const persistedMessages: MessageRecord[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const provider: LLMProvider = {
+    id: "ok",
+    complete: async () => ({
+      message: {
+        role: "assistant",
+        content: "done"
+      }
+    })
+  };
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      provider,
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: (input: {
+          sessionId: number;
+          role: "system" | "user" | "assistant" | "tool";
+          content: string;
+        }) => {
+          const created: MessageRecord = {
+            id: persistedMessages.length,
+            sessionId: input.sessionId,
+            role: input.role,
+            content: input.content,
+            createdAt: "2026-02-13 00:00:00"
+          };
+          persistedMessages.push(created);
+          return created;
+        }
+      }
+    }
+  );
+
+  await session.onLine("/new first");
+  await session.onLine("/new second");
+  await session.onLine("hello");
+
+  assert.match(writes.join(""), /Switched to session #2: second/);
+  assert.deepEqual(
+    persistedMessages.map((item) => item.sessionId),
+    [2, 2]
+  );
 });
 
 test("repl session marks /exit as exit signal", async () => {

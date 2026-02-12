@@ -11,13 +11,14 @@ import {
   LLMProvider,
   MockLLMProvider
 } from "./provider";
+import { MessageRepository, SessionRepository } from "./repository";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
 export const DEFAULT_MAX_REPLY_LENGTH = 2048;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const HELP_TEXT =
-  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n";
+  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n";
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -74,6 +75,9 @@ export interface ReplSessionOptions {
   saveApiKey?: (apiKey: string) => void;
   saveModel?: (model: string) => void;
   maxReplyLength?: number;
+  sessionRepository?: Pick<SessionRepository, "createSession" | "listSessions">;
+  messageRepository?: Pick<MessageRepository, "createMessage">;
+  now?: () => Date;
 }
 
 export type ReplCommandMatch =
@@ -81,6 +85,7 @@ export type ReplCommandMatch =
   | { kind: "exit" }
   | { kind: "login"; args: string[] }
   | { kind: "model"; args: string[] }
+  | { kind: "new"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -153,7 +158,39 @@ export function matchReplCommand(text: string): ReplCommandMatch {
     return { kind: "model", args };
   }
 
+  if (token === "/new") {
+    return { kind: "new", args };
+  }
+
   return { kind: "unknown", token };
+}
+
+export function formatSessionTimestamp(date: Date): string {
+  return date.toISOString().replace("T", " ").slice(0, 19);
+}
+
+export function buildDefaultSessionTitle(date: Date): string {
+  return `New Session ${formatSessionTimestamp(date)}`;
+}
+
+export function parseNewSessionTitle(args: string[]): string | undefined {
+  const title = args.join(" ").trim();
+  return title.length > 0 ? title : undefined;
+}
+
+export function resolveUniqueSessionTitle(
+  baseTitle: string,
+  existingTitles: string[]
+): string {
+  if (!existingTitles.includes(baseTitle)) {
+    return baseTitle;
+  }
+
+  let index = 2;
+  while (existingTitles.includes(`${baseTitle} (${index})`)) {
+    index += 1;
+  }
+  return `${baseTitle} (${index})`;
 }
 
 export function classifyReplInput(
@@ -213,7 +250,30 @@ export function createReplSession(
   };
   let provider = options?.provider ?? createRuntimeProvider(config);
   const maxReplyLength = options?.maxReplyLength ?? DEFAULT_MAX_REPLY_LENGTH;
+  const sessionRepository = options?.sessionRepository;
+  const messageRepository = options?.messageRepository;
+  const now = options?.now ?? (() => new Date());
   const conversation: ChatMessage[] = [];
+  let currentSessionId: number | null = null;
+
+  const createAndSwitchSession = (requestedTitle?: string): {
+    id?: number;
+    title: string;
+  } => {
+    const baseTitle = requestedTitle ?? buildDefaultSessionTitle(now());
+    if (!sessionRepository) {
+      currentSessionId = null;
+      return { title: baseTitle };
+    }
+
+    const existingTitles = sessionRepository
+      .listSessions()
+      .map((session) => session.title);
+    const uniqueTitle = resolveUniqueSessionTitle(baseTitle, existingTitles);
+    const created = sessionRepository.createSession(uniqueTitle);
+    currentSessionId = created.id;
+    return { id: created.id, title: created.title };
+  };
 
   return {
     onLine: async (line: string) => {
@@ -303,8 +363,47 @@ export function createReplSession(
         return false;
       }
 
+      if (input.kind === "command" && input.command.kind === "new") {
+        const requestedTitle = parseNewSessionTitle(input.command.args);
+        try {
+          const next = createAndSwitchSession(requestedTitle);
+          conversation.length = 0;
+          if (next.id === undefined) {
+            writers.stdout(`Started new session: ${next.title}\n`);
+          } else {
+            writers.stdout(`Switched to session #${next.id}: ${next.title}\n`);
+          }
+        } catch (error) {
+          const e = error as Error;
+          writers.stderr(`[session:error] ${e.message}\n`);
+        }
+        return false;
+      }
+
       if (input.kind !== "message") {
         return false;
+      }
+
+      if (sessionRepository && messageRepository) {
+        try {
+          if (currentSessionId === null) {
+            const next = createAndSwitchSession();
+            if (next.id !== undefined) {
+              writers.stdout(`Switched to session #${next.id}: ${next.title}\n`);
+            }
+          }
+          if (currentSessionId !== null) {
+            messageRepository.createMessage({
+              sessionId: currentSessionId,
+              role: "user",
+              content: input.text
+            });
+          }
+        } catch (error) {
+          const e = error as Error;
+          writers.stderr(`[session:error] ${e.message}\n`);
+          return false;
+        }
       }
 
       try {
@@ -329,6 +428,13 @@ export function createReplSession(
             content: renderedReply.text
           }
         );
+        if (currentSessionId !== null && messageRepository) {
+          messageRepository.createMessage({
+            sessionId: currentSessionId,
+            role: "assistant",
+            content: renderedReply.text
+          });
+        }
         buffer.append(`${renderedReply.text}\n`);
         buffer.flush();
       } catch (error) {

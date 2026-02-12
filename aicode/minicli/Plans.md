@@ -39,7 +39,7 @@
 | T10 | 超时与错误映射 | M1 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added timeout/status error mapping with retry policy and coverage for retryable/non-retryable paths |
 | T11 | SQLite 与 migration v1 | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added SQLite initialization, migration v1 tables/indexes, startup auto-init, and tests |
 | T12 | 消息持久化仓储 | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Implemented SessionRepository/MessageRepository with pagination, sorting, and transaction rollback tests |
-| T13 | /new | M2 | TODO | - | - | - | - |
+| T13 | /new | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added `/new [title]` creation+switch, unique title strategy, timestamped default naming, and message persistence to current session |
 | T14 | /sessions | M2 | TODO | - | - | - | - |
 | T15 | /switch | M2 | TODO | - | - | - | - |
 | T16 | /history | M2 | TODO | - | - | - | - |
@@ -87,3 +87,4 @@
 | 2026-02-12 | ci T11 | Created task commit for T11 implementation and tests | Codex |
 | 2026-02-12 | T12 | Completed session/message persistence repositories with create/list/pagination and transactional rollback coverage | Codex |
 | 2026-02-12 | ci T12 | Created task commit for T12 implementation and tests | Codex |
+| 2026-02-12 | T13 | Completed `/new` command with session switch, default timestamp title, duplicate naming policy, and integration-verified new-session message persistence | Codex |
