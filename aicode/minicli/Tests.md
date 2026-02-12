@@ -466,28 +466,31 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Full suite passed. Unit tests passed 120/120. Integration passed with expected subprocess skip guards in restricted sandbox (`9 skipped`, including the new T16 spawn-based case).
 ### T17 - 命令注册中心
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 CommandRegistry 与命令元数据
 - Unit Cases:
-  - [ ] 注册
-  - [ ] 别名解析
-  - [ ] 重名冲突
-  - [ ] 查无命令
-  - [ ] 批量注册
-  - [ ] 顺序稳定
+  - [x] 注册
+  - [x] 别名解析
+  - [x] 重名冲突
+  - [x] 查无命令
+  - [x] 批量注册
+  - [x] 顺序稳定
 - Integration Cases:
-  - [ ] 路由器从注册中心执行
+  - [x] 路由器从注册中心执行
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 执行 `/quit` 别名命令触发退出路由（受限环境按 EPERM 条件跳过）
 - Commands:
+- `npm run typecheck`
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 命令管理集中化
-- Actual:
+- Actual: Added `src/command-registry.ts` with centralized `CommandRegistry` and command metadata (name/usage/description), plus alias mapping and duplicate-token/kind rejection. REPL command matching now resolves via registry; command dispatch is handled by a centralized handler table keyed by registered command kind. Help text is generated from registry metadata to keep command docs and router source aligned. Added unit tests for register/alias/conflict/not-found/bulk/stable-order and integration test validating alias command execution via registry-driven router.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T17)
+  - Overall: N/A (coverage tooling not added in T17)
+- Result: PASS
+- Notes: `npm run typecheck` passed. Unit tests passed `126/126` (including new `command-registry` cases). Integration tests passed `6` with `10` skip-guarded subprocess cases due sandbox `EPERM`; new T17 integration case is included in the guarded subprocess set.
 ### T18 - / 补全 v1
 - Date:
 - Env:

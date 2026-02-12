@@ -223,6 +223,7 @@ test("repl session builds request using configured model and user input", async 
 test("matchReplCommand matches help and exit commands", () => {
   assert.deepEqual(matchReplCommand("/help"), { kind: "help" });
   assert.deepEqual(matchReplCommand("/exit"), { kind: "exit" });
+  assert.deepEqual(matchReplCommand("/quit"), { kind: "exit" });
   assert.deepEqual(matchReplCommand("/login token"), {
     kind: "login",
     args: ["token"]

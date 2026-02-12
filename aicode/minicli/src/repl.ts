@@ -1,5 +1,9 @@
 import readline from "node:readline";
 import {
+  CommandRegistration,
+  CommandRegistry
+} from "./command-registry";
+import {
   isSupportedModelName,
   maskSecret,
   RuntimeConfig
@@ -18,8 +22,111 @@ export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
 export const DEFAULT_MAX_REPLY_LENGTH = 2048;
 export const DEFAULT_MAX_HISTORY_PREVIEW_LENGTH = 120;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
-export const HELP_TEXT =
-  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n/sessions [--limit N] [--offset N] [--q keyword] List sessions\n/switch <#id|index> Switch to a specific session\n/history [--limit N] Show messages in current session\n";
+
+export type KnownReplCommandKind =
+  | "help"
+  | "exit"
+  | "login"
+  | "model"
+  | "new"
+  | "sessions"
+  | "switch"
+  | "history";
+
+interface ReplCommandRegistration
+  extends CommandRegistration<KnownReplCommandKind> {
+  readonly acceptsArgs: boolean;
+}
+
+function createReplCommand(
+  kind: KnownReplCommandKind,
+  name: string,
+  usage: string,
+  description: string,
+  acceptsArgs: boolean,
+  aliases: readonly string[] = []
+): ReplCommandRegistration {
+  return {
+    kind,
+    metadata: {
+      name,
+      usage,
+      description
+    },
+    acceptsArgs,
+    aliases
+  };
+}
+
+export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCommandKind> {
+  const registry = new CommandRegistry<KnownReplCommandKind>();
+  registry.registerMany([
+    createReplCommand("help", "/help", "/help", "Show this help message", false),
+    createReplCommand(
+      "exit",
+      "/exit",
+      "/exit",
+      "Exit MiniCLI",
+      false,
+      ["/quit"]
+    ),
+    createReplCommand(
+      "login",
+      "/login",
+      "/login <apiKey>",
+      "Save API key to global config",
+      true
+    ),
+    createReplCommand(
+      "model",
+      "/model",
+      "/model [name]",
+      "Show or set current model",
+      true
+    ),
+    createReplCommand(
+      "new",
+      "/new",
+      "/new [title]",
+      "Create and switch to a new session",
+      true
+    ),
+    createReplCommand(
+      "sessions",
+      "/sessions",
+      "/sessions [--limit N] [--offset N] [--q keyword]",
+      "List sessions",
+      true
+    ),
+    createReplCommand(
+      "switch",
+      "/switch",
+      "/switch <#id|index>",
+      "Switch to a specific session",
+      true
+    ),
+    createReplCommand(
+      "history",
+      "/history",
+      "/history [--limit N]",
+      "Show messages in current session",
+      true
+    )
+  ]);
+  return registry;
+}
+
+function formatHelpText(
+  registry: CommandRegistry<KnownReplCommandKind>
+): string {
+  const lines = registry.list().map((command) => {
+    return `${command.metadata.usage} ${command.metadata.description}`;
+  });
+  return `Available commands:\n${lines.join("\n")}\n`;
+}
+
+const DEFAULT_COMMAND_REGISTRY = createDefaultReplCommandRegistry();
+export const HELP_TEXT = formatHelpText(DEFAULT_COMMAND_REGISTRY);
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -81,6 +188,7 @@ export interface ReplSessionOptions {
     MessageRepository,
     "createMessage" | "listMessagesBySession"
   >;
+  commandRegistry?: CommandRegistry<KnownReplCommandKind>;
   now?: () => Date;
 }
 
@@ -95,6 +203,34 @@ export type ReplCommandMatch =
   | { kind: "history"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
+
+function matchResolvedReplCommand(
+  kind: KnownReplCommandKind,
+  args: string[]
+): ReplCommandMatch {
+  if (kind === "help") {
+    return { kind: "help" };
+  }
+  if (kind === "exit") {
+    return { kind: "exit" };
+  }
+  if (kind === "login") {
+    return { kind: "login", args };
+  }
+  if (kind === "model") {
+    return { kind: "model", args };
+  }
+  if (kind === "new") {
+    return { kind: "new", args };
+  }
+  if (kind === "sessions") {
+    return { kind: "sessions", args };
+  }
+  if (kind === "switch") {
+    return { kind: "switch", args };
+  }
+  return { kind: "history", args };
+}
 
 export type ReplInputClassification =
   | { kind: "empty" }
@@ -150,52 +286,26 @@ export function parseReplLine(
   };
 }
 
-export function matchReplCommand(text: string): ReplCommandMatch {
+export function matchReplCommand(
+  text: string,
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+): ReplCommandMatch {
   if (!text.startsWith("/")) {
     return { kind: "none" };
   }
 
   const [token, ...args] = text.split(/\s+/);
-
-  if (token === "/help") {
-    if (args.length !== 0) {
-      return { kind: "unknown", token };
-    }
-    return { kind: "help" };
+  const resolved = registry.resolve(token);
+  if (!resolved) {
+    return { kind: "unknown", token };
   }
 
-  if (token === "/exit") {
-    if (args.length !== 0) {
-      return { kind: "unknown", token };
-    }
-    return { kind: "exit" };
+  const definition = resolved as ReplCommandRegistration;
+  if (!definition.acceptsArgs && args.length > 0) {
+    return { kind: "unknown", token };
   }
 
-  if (token === "/login") {
-    return { kind: "login", args };
-  }
-
-  if (token === "/model") {
-    return { kind: "model", args };
-  }
-
-  if (token === "/new") {
-    return { kind: "new", args };
-  }
-
-  if (token === "/sessions") {
-    return { kind: "sessions", args };
-  }
-
-  if (token === "/switch") {
-    return { kind: "switch", args };
-  }
-
-  if (token === "/history") {
-    return { kind: "history", args };
-  }
-
-  return { kind: "unknown", token };
+  return matchResolvedReplCommand(definition.kind, args);
 }
 
 export function formatSessionTimestamp(date: Date): string {
@@ -403,14 +513,15 @@ export function formatHistoryList(
 
 export function classifyReplInput(
   line: string,
-  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH
+  maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH,
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
 ): ReplInputClassification {
   const parsed = parseReplLine(line, maxInputLength);
   if (parsed.kind === "empty") {
     return { kind: "empty" };
   }
 
-  const command = matchReplCommand(parsed.text);
+  const command = matchReplCommand(parsed.text, registry);
   if (command.kind !== "none") {
     return { kind: "command", command };
   }
@@ -460,6 +571,8 @@ export function createReplSession(
   const maxReplyLength = options?.maxReplyLength ?? DEFAULT_MAX_REPLY_LENGTH;
   const sessionRepository = options?.sessionRepository;
   const messageRepository = options?.messageRepository;
+  const commandRegistry = options?.commandRegistry ?? DEFAULT_COMMAND_REGISTRY;
+  const helpText = formatHelpText(commandRegistry);
   const now = options?.now ?? (() => new Date());
   const conversation: ChatMessage[] = [];
   let currentSessionId: number | null = null;
@@ -483,9 +596,182 @@ export function createReplSession(
     return { id: created.id, title: created.title };
   };
 
+  const commandHandlers: Record<
+    KnownReplCommandKind,
+    (args: string[]) => Promise<boolean>
+  > = {
+    help: async () => {
+      writers.stdout(helpText);
+      return false;
+    },
+    exit: async () => {
+      writers.stdout("Bye.\n");
+      return true;
+    },
+    login: async (args) => {
+      if (args.length !== 1) {
+        writers.stderr("Usage: /login <apiKey>\n");
+        return false;
+      }
+
+      const apiKey = args[0].trim();
+      if (apiKey.length === 0) {
+        writers.stderr("API key cannot be empty.\n");
+        return false;
+      }
+
+      try {
+        options?.saveApiKey?.(apiKey);
+      } catch (error) {
+        const e = error as Error;
+        writers.stderr(`[config:error] ${e.message}\n`);
+        return false;
+      }
+
+      config.apiKey = apiKey;
+      if (!hasFixedProvider) {
+        provider = createRuntimeProvider(config);
+      }
+      writers.stdout(`API key saved: ${maskSecret(apiKey)}\n`);
+      return false;
+    },
+    model: async (args) => {
+      if (args.length === 0) {
+        writers.stdout(`Current model: ${config.model}\n`);
+        return false;
+      }
+
+      if (args.length > 1) {
+        writers.stderr("Usage: /model [name]\n");
+        return false;
+      }
+
+      const nextModel = args[0].trim();
+      if (!isSupportedModelName(nextModel)) {
+        writers.stderr("Model name cannot be empty.\n");
+        return false;
+      }
+
+      try {
+        options?.saveModel?.(nextModel);
+      } catch (error) {
+        const e = error as Error;
+        writers.stderr(`[config:error] ${e.message}\n`);
+        return false;
+      }
+
+      config.model = nextModel;
+      writers.stdout(`Model updated: ${config.model}\n`);
+      return false;
+    },
+    new: async (args) => {
+      const requestedTitle = parseNewSessionTitle(args);
+      try {
+        const next = createAndSwitchSession(requestedTitle);
+        conversation.length = 0;
+        if (next.id === undefined) {
+          writers.stdout(`Started new session: ${next.title}\n`);
+        } else {
+          writers.stdout(`Switched to session #${next.id}: ${next.title}\n`);
+        }
+      } catch (error) {
+        const e = error as Error;
+        writers.stderr(`[session:error] ${e.message}\n`);
+      }
+      return false;
+    },
+    sessions: async (args) => {
+      if (!sessionRepository) {
+        writers.stderr("Session storage is unavailable.\n");
+        return false;
+      }
+
+      const parsed = parseSessionsCommandArgs(args);
+      if (!parsed.options) {
+        writers.stderr(
+          `${parsed.error}\nUsage: /sessions [--limit N] [--offset N] [--q keyword]\n`
+        );
+        return false;
+      }
+      const options = parsed.options;
+
+      const ordered = sortSessionsByRecent(sessionRepository.listSessions());
+      const query = options.query;
+      const filtered =
+        query === undefined
+          ? ordered
+          : ordered.filter((session) =>
+              session.title.toLowerCase().includes(query.toLowerCase())
+            );
+      const sliced =
+        options.limit === undefined
+          ? filtered.slice(options.offset)
+          : filtered.slice(options.offset, options.offset + options.limit);
+      writers.stdout(formatSessionList(sliced, currentSessionId));
+      return false;
+    },
+    switch: async (args) => {
+      if (!sessionRepository) {
+        writers.stderr("Session storage is unavailable.\n");
+        return false;
+      }
+
+      const parsed = parseSwitchCommandArgs(args);
+      if (!parsed.target) {
+        writers.stderr(`${parsed.error}\nUsage: /switch <#id|index>\n`);
+        return false;
+      }
+
+      const ordered = sortSessionsByRecent(sessionRepository.listSessions());
+      const target =
+        parsed.target.mode === "id"
+          ? ordered.find((session) => session.id === parsed.target?.value)
+          : ordered[parsed.target.value - 1];
+      if (!target) {
+        writers.stderr("[session:error] target session does not exist.\n");
+        return false;
+      }
+
+      if (target.id === currentSessionId) {
+        writers.stdout(`Already in session #${target.id}: ${target.title}\n`);
+        return false;
+      }
+
+      currentSessionId = target.id;
+      conversation.length = 0;
+      writers.stdout(`Switched to session #${target.id}: ${target.title}\n`);
+      return false;
+    },
+    history: async (args) => {
+      if (!messageRepository) {
+        writers.stderr("Session storage is unavailable.\n");
+        return false;
+      }
+
+      const parsed = parseHistoryCommandArgs(args);
+      if (!parsed.options) {
+        writers.stderr(`${parsed.error}\nUsage: /history [--limit N]\n`);
+        return false;
+      }
+
+      if (currentSessionId === null) {
+        writers.stdout("No active session.\n");
+        return false;
+      }
+
+      const allMessages = messageRepository.listMessagesBySession(currentSessionId);
+      const selected =
+        parsed.options.limit === undefined
+          ? allMessages
+          : allMessages.slice(-parsed.options.limit);
+      writers.stdout(formatHistoryList(selected));
+      return false;
+    }
+  };
+
   return {
     onLine: async (line: string) => {
-      const input = classifyReplInput(line, maxInputLength);
+      const input = classifyReplInput(line, maxInputLength, commandRegistry);
       if (input.kind === "empty") {
         return false;
       }
@@ -496,16 +782,6 @@ export function createReplSession(
         );
       }
 
-      if (input.kind === "command" && input.command.kind === "help") {
-        writers.stdout(HELP_TEXT);
-        return false;
-      }
-
-      if (input.kind === "command" && input.command.kind === "exit") {
-        writers.stdout("Bye.\n");
-        return true;
-      }
-
       if (input.kind === "command" && input.command.kind === "unknown") {
         writers.stderr(
           `Unknown command: ${input.command.token}. Type /help for commands.\n`
@@ -513,174 +789,22 @@ export function createReplSession(
         return false;
       }
 
-      if (input.kind === "command" && input.command.kind === "login") {
-        if (input.command.args.length !== 1) {
-          writers.stderr("Usage: /login <apiKey>\n");
-          return false;
+      if (input.kind === "command") {
+        const command = input.command;
+        const args = "args" in command ? command.args : [];
+        switch (command.kind) {
+          case "help":
+          case "exit":
+          case "login":
+          case "model":
+          case "new":
+          case "sessions":
+          case "switch":
+          case "history":
+            return commandHandlers[command.kind](args);
+          default:
+            return false;
         }
-
-        const apiKey = input.command.args[0].trim();
-        if (apiKey.length === 0) {
-          writers.stderr("API key cannot be empty.\n");
-          return false;
-        }
-
-        try {
-          options?.saveApiKey?.(apiKey);
-        } catch (error) {
-          const e = error as Error;
-          writers.stderr(`[config:error] ${e.message}\n`);
-          return false;
-        }
-
-        config.apiKey = apiKey;
-        if (!hasFixedProvider) {
-          provider = createRuntimeProvider(config);
-        }
-        writers.stdout(`API key saved: ${maskSecret(apiKey)}\n`);
-        return false;
-      }
-
-      if (input.kind === "command" && input.command.kind === "model") {
-        if (input.command.args.length === 0) {
-          writers.stdout(`Current model: ${config.model}\n`);
-          return false;
-        }
-
-        if (input.command.args.length > 1) {
-          writers.stderr("Usage: /model [name]\n");
-          return false;
-        }
-
-        const nextModel = input.command.args[0].trim();
-        if (!isSupportedModelName(nextModel)) {
-          writers.stderr("Model name cannot be empty.\n");
-          return false;
-        }
-
-        try {
-          options?.saveModel?.(nextModel);
-        } catch (error) {
-          const e = error as Error;
-          writers.stderr(`[config:error] ${e.message}\n`);
-          return false;
-        }
-
-        config.model = nextModel;
-        writers.stdout(`Model updated: ${config.model}\n`);
-        return false;
-      }
-
-      if (input.kind === "command" && input.command.kind === "new") {
-        const requestedTitle = parseNewSessionTitle(input.command.args);
-        try {
-          const next = createAndSwitchSession(requestedTitle);
-          conversation.length = 0;
-          if (next.id === undefined) {
-            writers.stdout(`Started new session: ${next.title}\n`);
-          } else {
-            writers.stdout(`Switched to session #${next.id}: ${next.title}\n`);
-          }
-        } catch (error) {
-          const e = error as Error;
-          writers.stderr(`[session:error] ${e.message}\n`);
-        }
-        return false;
-      }
-
-      if (input.kind === "command" && input.command.kind === "sessions") {
-        if (!sessionRepository) {
-          writers.stderr("Session storage is unavailable.\n");
-          return false;
-        }
-
-        const parsed = parseSessionsCommandArgs(input.command.args);
-        if (!parsed.options) {
-          writers.stderr(
-            `${parsed.error}\nUsage: /sessions [--limit N] [--offset N] [--q keyword]\n`
-          );
-          return false;
-        }
-        const options = parsed.options;
-
-        const ordered = sortSessionsByRecent(sessionRepository.listSessions());
-        const query = options.query;
-        const filtered =
-          query === undefined
-            ? ordered
-            : ordered.filter((session) =>
-                session.title.toLowerCase().includes(query.toLowerCase())
-              );
-        const sliced =
-          options.limit === undefined
-            ? filtered.slice(options.offset)
-            : filtered.slice(
-                options.offset,
-                options.offset + options.limit
-              );
-        writers.stdout(formatSessionList(sliced, currentSessionId));
-        return false;
-      }
-
-      if (input.kind === "command" && input.command.kind === "switch") {
-        if (!sessionRepository) {
-          writers.stderr("Session storage is unavailable.\n");
-          return false;
-        }
-
-        const parsed = parseSwitchCommandArgs(input.command.args);
-        if (!parsed.target) {
-          writers.stderr(`${parsed.error}\nUsage: /switch <#id|index>\n`);
-          return false;
-        }
-
-        const ordered = sortSessionsByRecent(sessionRepository.listSessions());
-        const target =
-          parsed.target.mode === "id"
-            ? ordered.find((session) => session.id === parsed.target?.value)
-            : ordered[parsed.target.value - 1];
-        if (!target) {
-          writers.stderr("[session:error] target session does not exist.\n");
-          return false;
-        }
-
-        if (target.id === currentSessionId) {
-          writers.stdout(`Already in session #${target.id}: ${target.title}\n`);
-          return false;
-        }
-
-        currentSessionId = target.id;
-        conversation.length = 0;
-        writers.stdout(`Switched to session #${target.id}: ${target.title}\n`);
-        return false;
-      }
-
-      if (input.kind === "command" && input.command.kind === "history") {
-        if (!messageRepository) {
-          writers.stderr("Session storage is unavailable.\n");
-          return false;
-        }
-
-        const parsed = parseHistoryCommandArgs(input.command.args);
-        if (!parsed.options) {
-          writers.stderr(`${parsed.error}\nUsage: /history [--limit N]\n`);
-          return false;
-        }
-
-        if (currentSessionId === null) {
-          writers.stdout("No active session.\n");
-          return false;
-        }
-
-        const allMessages = messageRepository.listMessagesBySession(
-          currentSessionId
-        );
-        const selected =
-          parsed.options.limit === undefined
-            ? allMessages
-            : allMessages.slice(-parsed.options.limit);
-        writers.stdout(formatHistoryList(selected));
-        return false;
       }
 
       if (input.kind !== "message") {

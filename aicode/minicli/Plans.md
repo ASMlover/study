@@ -43,7 +43,7 @@
 | T14 | /sessions | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added `/sessions` with recent-first ordering, current marker, pagination/filter args, and list formatting |
 | T15 | /switch | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added id/index session switch, duplicate/no-target handling, and switch-write integration coverage |
 | T16 | /history | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added current-session history listing with limit/truncation and switch-isolation integration coverage |
-| T17 | 命令注册中心 | M3 | TODO | - | - | - | - |
+| T17 | 命令注册中心 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added centralized CommandRegistry with metadata/aliases, registry-driven routing, and T17 unit+integration coverage |
 | T18 | / 补全 v1 | M3 | TODO | - | - | - | - |
 | T19 | Tab 接受补全 | M3 | TODO | - | - | - | - |
 | T20 | 候选导航与取消 | M3 | TODO | - | - | - | - |
@@ -91,3 +91,5 @@
 | 2026-02-12 | T14 | Completed `/sessions` command with recent ordering, current-session marker, pagination/filter options, and integration list-output coverage | Codex |
 | 2026-02-12 | T15 | Completed `/switch` command with `#id` and list-index targeting, repeated-switch/no-target guards, and integration-verified switched-session persistence | Codex |
 | 2026-02-12 | T16 | Completed `/history` command with `--limit` parsing, role-labeled/truncated output, and integration-verified session history isolation after switch | Codex |
+| 2026-02-12 | T17 | Completed command registry center with metadata + alias resolution, conflict-safe registration, stable ordering, and registry-driven REPL command routing | Codex |
+| 2026-02-12 | ci T17 | Created task commit for T17 command registry implementation and tests | Codex |
