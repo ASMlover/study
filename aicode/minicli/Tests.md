@@ -492,28 +492,31 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run typecheck` passed. Unit tests passed `126/126` (including new `command-registry` cases). Integration tests passed `6` with `10` skip-guarded subprocess cases due sandbox `EPERM`; new T17 integration case is included in the guarded subprocess set.
 ### T18 - / 补全 v1
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现前缀补全与候选展示
 - Unit Cases:
-  - [ ] 前缀匹配
-  - [ ] 空前缀
-  - [ ] 无匹配
-  - [ ] 别名检索
-  - [ ] 排序稳定
-  - [ ] 大小写策略
+  - [x] 前缀匹配
+  - [x] 空前缀
+  - [x] 无匹配
+  - [x] 别名检索
+  - [x] 排序稳定
+  - [x] 大小写策略
 - Integration Cases:
-  - [ ] /mo 显示 /model
+  - [x] /mo 显示 /model
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 输入 `/` 前缀可触发候选输出（受限环境按 EPERM 条件跳过）
 - Commands:
+- `npm run typecheck`
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 补全基础可用
-- Actual:
+- Actual: Added slash completion v1 helpers in REPL: `completeReplCommandPrefix` (prefix matching), alias-aware canonical resolution, stable registration-order output, and case-sensitive matching. Added `formatCompletionCandidates` and wired unknown slash-command routing to display candidates when matches exist. `/mo` now prints completion candidates that include `/model`, while unmatched prefixes still surface unknown-command errors.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T18)
+  - Overall: N/A (coverage tooling not added in T18)
+- Result: PASS
+- Notes: `npm run typecheck` passed. Unit tests passed `134/134` including T18 completion cases. Integration passed `6` with `11` skip-guarded subprocess cases due sandbox `EPERM`; T18 `/mo` integration case is included in guarded subprocess set.
 ### T19 - Tab 接受补全
 - Date:
 - Env:

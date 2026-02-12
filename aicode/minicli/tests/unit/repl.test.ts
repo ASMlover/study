@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import {
   buildDefaultSessionTitle,
   classifyReplInput,
+  completeReplCommandPrefix,
   createRuntimeProvider,
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
   DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
   EMPTY_REPLY_PLACEHOLDER,
+  formatCompletionCandidates,
   formatHistoryList,
   formatSessionList,
   formatSessionTimestamp,
@@ -252,6 +254,55 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "history",
     args: ["--limit", "3"]
   });
+});
+
+test("completeReplCommandPrefix matches slash prefixes", () => {
+  assert.deepEqual(completeReplCommandPrefix("/mo"), ["/model"]);
+});
+
+test("completeReplCommandPrefix returns all commands for empty slash prefix", () => {
+  assert.deepEqual(completeReplCommandPrefix("/"), [
+    "/help",
+    "/exit",
+    "/login",
+    "/model",
+    "/new",
+    "/sessions",
+    "/switch",
+    "/history"
+  ]);
+});
+
+test("completeReplCommandPrefix returns empty list for no matches", () => {
+  assert.deepEqual(completeReplCommandPrefix("/zzz"), []);
+});
+
+test("completeReplCommandPrefix supports alias lookup and returns canonical name", () => {
+  assert.deepEqual(completeReplCommandPrefix("/qu"), ["/exit"]);
+});
+
+test("completeReplCommandPrefix keeps registry order stable", () => {
+  assert.deepEqual(completeReplCommandPrefix("/"), [
+    "/help",
+    "/exit",
+    "/login",
+    "/model",
+    "/new",
+    "/sessions",
+    "/switch",
+    "/history"
+  ]);
+});
+
+test("completeReplCommandPrefix is case-sensitive", () => {
+  assert.deepEqual(completeReplCommandPrefix("/MO"), []);
+});
+
+test("formatCompletionCandidates renders candidate list", () => {
+  assert.equal(
+    formatCompletionCandidates(["/model", "/mock"]),
+    "Completions:\n/model\n/mock\n"
+  );
 });
 
 test("parseNewSessionTitle joins args and trims spaces", () => {
@@ -984,6 +1035,21 @@ test("repl session routes unknown slash command to stderr", async () => {
   assert.equal(shouldExit, false);
   assert.equal(writes.length, 0);
   assert.match(errors.join(""), /Unknown command: \/nope/);
+});
+
+test("repl session shows completions for command prefix input", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: (message) => writes.push(message),
+    stderr: (message) => errors.push(message)
+  });
+
+  const shouldExit = await session.onLine("/mo");
+
+  assert.equal(shouldExit, false);
+  assert.equal(errors.length, 0);
+  assert.equal(writes.join(""), "Completions:\n/model\n");
 });
 
 test("repl session renders multiline reply content", async () => {

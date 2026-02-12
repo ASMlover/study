@@ -128,6 +128,30 @@ function formatHelpText(
 const DEFAULT_COMMAND_REGISTRY = createDefaultReplCommandRegistry();
 export const HELP_TEXT = formatHelpText(DEFAULT_COMMAND_REGISTRY);
 
+export function completeReplCommandPrefix(
+  prefix: string,
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+): string[] {
+  if (!prefix.startsWith("/")) {
+    return [];
+  }
+
+  const matches: string[] = [];
+  for (const command of registry.list()) {
+    const tokens = [command.metadata.name, ...(command.aliases ?? [])];
+    const hasMatch = tokens.some((token) => token.startsWith(prefix));
+    if (hasMatch) {
+      matches.push(command.metadata.name);
+    }
+  }
+
+  return matches;
+}
+
+export function formatCompletionCandidates(candidates: string[]): string {
+  return `Completions:\n${candidates.join("\n")}\n`;
+}
+
 export interface ParsedReplLine {
   kind: "empty" | "message";
   text: string;
@@ -783,6 +807,14 @@ export function createReplSession(
       }
 
       if (input.kind === "command" && input.command.kind === "unknown") {
+        const completions = completeReplCommandPrefix(
+          input.command.token,
+          commandRegistry
+        );
+        if (completions.length > 0) {
+          writers.stdout(formatCompletionCandidates(completions));
+          return false;
+        }
         writers.stderr(
           `Unknown command: ${input.command.token}. Type /help for commands.\n`
         );
