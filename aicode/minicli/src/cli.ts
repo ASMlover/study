@@ -7,6 +7,7 @@ import {
   saveApiKeyToGlobalConfig,
   saveModelToProjectConfig
 } from "./config";
+import { initializeDatabase } from "./db";
 
 export type CliMode = "version" | "repl" | "invalid";
 
@@ -21,6 +22,7 @@ export interface CliIo {
   stdin?: NodeJS.ReadableStream;
   output?: NodeJS.WritableStream;
   loadConfig?: () => LoadedRuntimeConfig;
+  initDatabase?: () => void;
 }
 
 export function parseArguments(argv: string[]): ParsedArgs {
@@ -57,6 +59,18 @@ export function runCli(
   }
 
   if (parsed.mode === "repl") {
+    try {
+      if (io.initDatabase) {
+        io.initDatabase();
+      } else {
+        initializeDatabase();
+      }
+    } catch (error) {
+      const e = error as Error;
+      io.stderr(`[db:error] ${e.message}\n`);
+      return 1;
+    }
+
     const loadedConfig = io.loadConfig ? io.loadConfig() : loadRuntimeConfig();
     for (const issue of loadedConfig.issues) {
       io.stderr(`${formatConfigIssue(issue)}\n`);

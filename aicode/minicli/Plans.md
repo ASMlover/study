@@ -37,7 +37,7 @@
 | T08 | /login 与 /model | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added /login API key persistence and /model show/set with validation and tests |
 | T09 | 单轮问答闭环 | M1 | DONE | Codex | 2026-02-11 | 2026-02-11 | Added single-turn Q&A flow helpers, empty reply fallback, reply truncation, and tests |
 | T10 | 超时与错误映射 | M1 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added timeout/status error mapping with retry policy and coverage for retryable/non-retryable paths |
-| T11 | SQLite 与 migration v1 | M2 | TODO | - | - | - | - |
+| T11 | SQLite 与 migration v1 | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added SQLite initialization, migration v1 tables/indexes, startup auto-init, and tests |
 | T12 | 消息持久化仓储 | M2 | TODO | - | - | - | - |
 | T13 | /new | M2 | TODO | - | - | - | - |
 | T14 | /sessions | M2 | TODO | - | - | - | - |
@@ -83,3 +83,5 @@
 | 2026-02-11 | T09 | Completed single-turn chat loop with input classification, reply rendering/fallback, truncation, and tests | Codex |
 | 2026-02-11 | Follow-up | Relaxed model validation to allow arbitrary non-empty AI model names in config and `/model` | Codex |
 | 2026-02-12 | T10 | Completed timeout handling, 401/429/5xx error mapping, retry policy, and 429-retry integration coverage | Codex |
+| 2026-02-12 | T11 | Completed SQLite initialization + migration v1 (`sessions/messages/command_history`), startup auto-init, and migration/error-path tests | Codex |
+| 2026-02-12 | ci T11 | Created task commit for T11 implementation and tests | Codex |

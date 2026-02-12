@@ -35,7 +35,8 @@ test("empty arguments returns success and non-empty output", () => {
           timeoutMs: 30000
         },
         issues: []
-      })
+      }),
+      initDatabase: () => {}
     },
     "linux"
   );
