@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  acceptReplTabCompletion,
   buildDefaultSessionTitle,
   classifyReplInput,
   completeReplCommandPrefix,
+  createReplReadlineCompleter,
   createRuntimeProvider,
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
@@ -21,8 +23,10 @@ import {
   parseSwitchCommandArgs,
   parseSessionsCommandArgs,
   parseReplLine,
+  resolveInlineTabCompletions,
   renderAssistantReply,
   resolveUniqueSessionTitle,
+  shouldUseTerminalMode,
   sortSessionsByRecent
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
@@ -302,6 +306,92 @@ test("formatCompletionCandidates renders candidate list", () => {
   assert.equal(
     formatCompletionCandidates(["/model", "/mock"]),
     "Completions:\n/model\n/mock\n"
+  );
+});
+
+test("acceptReplTabCompletion accepts single candidate and appends trailing space", () => {
+  const result = acceptReplTabCompletion("/mo", 3);
+  assert.equal(result.accepted, true);
+  assert.deepEqual(result.candidates, ["/model"]);
+  assert.equal(result.line, "/model ");
+  assert.equal(result.cursor, 7);
+});
+
+test("acceptReplTabCompletion leaves line unchanged when multiple candidates exist", () => {
+  const result = acceptReplTabCompletion("/s", 2);
+  assert.equal(result.accepted, false);
+  assert.deepEqual(result.candidates, ["/sessions", "/switch"]);
+  assert.equal(result.line, "/s");
+  assert.equal(result.cursor, 2);
+});
+
+test("acceptReplTabCompletion leaves line unchanged when no candidate exists", () => {
+  const result = acceptReplTabCompletion("/zz", 3);
+  assert.equal(result.accepted, false);
+  assert.deepEqual(result.candidates, []);
+  assert.equal(result.line, "/zz");
+  assert.equal(result.cursor, 3);
+});
+
+test("acceptReplTabCompletion replaces token using cursor position inside first token", () => {
+  const result = acceptReplTabCompletion("/mo target", 3);
+  assert.equal(result.accepted, true);
+  assert.equal(result.line, "/model target");
+  assert.equal(result.cursor, 6);
+});
+
+test("acceptReplTabCompletion is no-op after completed token and trailing space", () => {
+  const result = acceptReplTabCompletion("/model ", 7);
+  assert.equal(result.accepted, false);
+  assert.equal(result.line, "/model ");
+  assert.equal(result.cursor, 7);
+});
+
+test("resolveInlineTabCompletions handles consecutive tabs", () => {
+  assert.equal(resolveInlineTabCompletions("/mo\t\t"), "/model ");
+});
+
+test("createReplReadlineCompleter returns single hit for /mo", () => {
+  const completer = createReplReadlineCompleter();
+  const [hits, token] = completer("/mo");
+  assert.deepEqual(hits, ["/model"]);
+  assert.equal(token, "/mo");
+});
+
+test("createReplReadlineCompleter returns multiple hits for /s", () => {
+  const completer = createReplReadlineCompleter();
+  const [hits, token] = completer("/s");
+  assert.deepEqual(hits, ["/sessions", "/switch"]);
+  assert.equal(token, "/s");
+});
+
+test("shouldUseTerminalMode returns true when either input or output is TTY", () => {
+  assert.equal(
+    shouldUseTerminalMode({
+      input: { isTTY: true } as unknown as NodeJS.ReadableStream,
+      output: { isTTY: false } as unknown as NodeJS.WritableStream,
+      stdout: () => {},
+      stderr: () => {}
+    }),
+    true
+  );
+  assert.equal(
+    shouldUseTerminalMode({
+      input: { isTTY: false } as unknown as NodeJS.ReadableStream,
+      output: { isTTY: true } as unknown as NodeJS.WritableStream,
+      stdout: () => {},
+      stderr: () => {}
+    }),
+    true
+  );
+  assert.equal(
+    shouldUseTerminalMode({
+      input: { isTTY: false } as unknown as NodeJS.ReadableStream,
+      output: { isTTY: false } as unknown as NodeJS.WritableStream,
+      stdout: () => {},
+      stderr: () => {}
+    }),
+    false
   );
 });
 

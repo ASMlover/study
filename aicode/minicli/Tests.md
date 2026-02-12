@@ -518,28 +518,33 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run typecheck` passed. Unit tests passed `134/134` including T18 completion cases. Integration passed `6` with `11` skip-guarded subprocess cases due sandbox `EPERM`; T18 `/mo` integration case is included in guarded subprocess set.
 ### T19 - Tab 接受补全
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 Tab 键补全接受
 - Unit Cases:
-  - [ ] 单候选
-  - [ ] 多候选
-  - [ ] 无候选
-  - [ ] 光标位置
-  - [ ] 尾随空格
-  - [ ] 连续Tab
+  - [x] 单候选
+  - [x] 多候选
+  - [x] 无候选
+  - [x] 光标位置
+  - [x] 尾随空格
+  - [x] 连续Tab
 - Integration Cases:
-  - [ ] /mo+Tab -> /model
+  - [x] /mo+Tab -> /model
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 输入 `/mo<Tab>` 后执行 `/model`（受限环境按 EPERM 条件跳过）
 - Commands:
+- `npm run typecheck`
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: Tab 行为一致
-- Actual:
+- Actual: Added `acceptReplTabCompletion` for cursor-aware first-token completion acceptance with single-candidate apply, no-op on multiple/none, and automatic trailing-space append at end-of-line. Added `resolveInlineTabCompletions` so input lines containing one or more `\t` are normalized before command classification, enabling deterministic `/mo<Tab>` acceptance in subprocess and non-TTY test flows. Unit tests cover all required T19 cases; integration adds `/mo+Tab -> /model`.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T19)
+  - Overall: N/A (coverage tooling not added in T19)
+- Result: PASS
+- Notes: `npm run typecheck` and `npm run test:unit` passed (`140/140`). Integration passed (`6`) with `12` skip-guarded subprocess tests due sandbox `EPERM`; T19 integration case is included in guarded subprocess set.
+  Follow-up: fixed interactive TTY Tab inserting whitespace by wiring `readline` `completer` in `startRepl`; added unit coverage for completer single-hit and multi-hit behavior; `npm run test:unit` now passes `142/142`.
+  Follow-up-2: fixed terminal-mode detection (`input.isTTY || output.isTTY`) so `/` prefix completion and candidate display are not disabled in wrapped terminals where only one stream reports TTY; added `shouldUseTerminalMode` unit tests; `npm run test:unit` now passes `143/143`.
 ### T20 - 候选导航与取消
 - Date:
 - Env:

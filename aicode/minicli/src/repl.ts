@@ -152,6 +152,135 @@ export function formatCompletionCandidates(candidates: string[]): string {
   return `Completions:\n${candidates.join("\n")}\n`;
 }
 
+export interface TabCompletionResult {
+  line: string;
+  cursor: number;
+  accepted: boolean;
+  candidates: string[];
+}
+
+interface ReplCompletionContext {
+  prefix: string;
+  firstTokenStart: number;
+  firstTokenEnd: number;
+}
+
+function resolveReplCompletionContext(
+  line: string,
+  cursor: number
+): ReplCompletionContext | undefined {
+  const boundedCursor = Math.max(0, Math.min(cursor, line.length));
+  const leadingWhitespaceLength = line.match(/^\s*/)?.[0].length ?? 0;
+  const firstTokenStart = leadingWhitespaceLength;
+
+  if (firstTokenStart >= line.length || line[firstTokenStart] !== "/") {
+    return undefined;
+  }
+
+  let firstTokenEnd = line.length;
+  for (let index = firstTokenStart; index < line.length; index += 1) {
+    if (/\s/.test(line[index])) {
+      firstTokenEnd = index;
+      break;
+    }
+  }
+
+  if (boundedCursor < firstTokenStart || boundedCursor > firstTokenEnd) {
+    return undefined;
+  }
+
+  return {
+    prefix: line.slice(firstTokenStart, boundedCursor),
+    firstTokenStart,
+    firstTokenEnd
+  };
+}
+
+export function acceptReplTabCompletion(
+  line: string,
+  cursor: number,
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+): TabCompletionResult {
+  const boundedCursor = Math.max(0, Math.min(cursor, line.length));
+  const context = resolveReplCompletionContext(line, boundedCursor);
+  if (!context) {
+    return {
+      line,
+      cursor: boundedCursor,
+      accepted: false,
+      candidates: []
+    };
+  }
+
+  const candidates = completeReplCommandPrefix(context.prefix, registry);
+  if (candidates.length !== 1) {
+    return {
+      line,
+      cursor: boundedCursor,
+      accepted: false,
+      candidates
+    };
+  }
+
+  const completedToken = candidates[0];
+  const beforeToken = line.slice(0, context.firstTokenStart);
+  const afterToken = line.slice(context.firstTokenEnd);
+  const hasWhitespaceSeparator = /^\s/.test(afterToken[0] ?? "");
+  const lineWithToken = `${beforeToken}${completedToken}${afterToken}`;
+  const nextLine =
+    afterToken.length === 0
+      ? `${lineWithToken} `
+      : hasWhitespaceSeparator
+        ? lineWithToken
+        : `${beforeToken}${completedToken} ${afterToken}`;
+  const nextCursor =
+    afterToken.length === 0
+      ? beforeToken.length + completedToken.length + 1
+      : beforeToken.length + completedToken.length;
+  return {
+    line: nextLine,
+    cursor: nextCursor,
+    accepted: true,
+    candidates
+  };
+}
+
+export function resolveInlineTabCompletions(
+  line: string,
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+): string {
+  let resolved = line;
+  let tabIndex = resolved.indexOf("\t");
+  while (tabIndex !== -1) {
+    const withoutTab = `${resolved.slice(0, tabIndex)}${resolved.slice(tabIndex + 1)}`;
+    const result = acceptReplTabCompletion(withoutTab, tabIndex, registry);
+    resolved = result.line;
+    tabIndex = resolved.indexOf("\t");
+  }
+  return resolved;
+}
+
+export function createReplReadlineCompleter(
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+): (line: string) => [string[], string] {
+  return (line: string) => {
+    const context = resolveReplCompletionContext(line, line.length);
+    if (!context) {
+      return [[], ""];
+    }
+
+    const accepted = acceptReplTabCompletion(line, line.length, registry);
+    if (accepted.accepted) {
+      const completedToken = accepted.line
+        .slice(context.firstTokenStart)
+        .split(/\s/, 1)[0];
+      return [[completedToken], context.prefix];
+    }
+
+    return [accepted.candidates, context.prefix];
+  };
+}
+
 export interface ParsedReplLine {
   kind: "empty" | "message";
   text: string;
@@ -166,6 +295,13 @@ export interface ReplWriters {
 export interface ReplRuntime extends ReplWriters {
   input: NodeJS.ReadableStream;
   output: NodeJS.WritableStream;
+}
+
+export function shouldUseTerminalMode(runtime: ReplRuntime): boolean {
+  const inputIsTTY = (runtime.input as Partial<NodeJS.ReadStream>).isTTY === true;
+  const outputIsTTY =
+    (runtime.output as Partial<NodeJS.WriteStream>).isTTY === true;
+  return inputIsTTY || outputIsTTY;
 }
 
 export class OutputBuffer {
@@ -795,7 +931,12 @@ export function createReplSession(
 
   return {
     onLine: async (line: string) => {
-      const input = classifyReplInput(line, maxInputLength, commandRegistry);
+      const resolvedLine = resolveInlineTabCompletions(line, commandRegistry);
+      const input = classifyReplInput(
+        resolvedLine,
+        maxInputLength,
+        commandRegistry
+      );
       if (input.kind === "empty") {
         return false;
       }
@@ -925,7 +1066,8 @@ export function startRepl(
   const rl = readline.createInterface({
     input: runtime.input,
     output: runtime.output,
-    terminal: (runtime.output as Partial<NodeJS.WriteStream>).isTTY === true
+    terminal: shouldUseTerminalMode(runtime),
+    completer: createReplReadlineCompleter(options?.commandRegistry)
   });
 
   runtime.stdout("MiniCLI REPL ready. Type your message.\n");

@@ -45,7 +45,7 @@
 | T16 | /history | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added current-session history listing with limit/truncation and switch-isolation integration coverage |
 | T17 | 命令注册中心 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added centralized CommandRegistry with metadata/aliases, registry-driven routing, and T17 unit+integration coverage |
 | T18 | / 补全 v1 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added slash-prefix completion candidate generation/display with alias-aware matching and integration coverage |
-| T19 | Tab 接受补全 | M3 | TODO | - | - | - | - |
+| T19 | Tab 接受补全 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added Tab accept flow with single-candidate insertion, trailing-space behavior, inline tab normalization, and T19 unit/integration coverage |
 | T20 | 候选导航与取消 | M3 | TODO | - | - | - | - |
 | T21 | 频次排序 | M3 | TODO | - | - | - | - |
 | T22 | /run 只读执行器 | M4 | TODO | - | - | - | - |
@@ -95,3 +95,6 @@
 | 2026-02-12 | ci T17 | Created task commit for T17 command registry implementation and tests | Codex |
 | 2026-02-12 | T18 | Completed slash completion v1 with prefix matching, alias-aware suggestions, stable ordering, case-sensitive strategy, and `/mo` integration coverage | Codex |
 | 2026-02-12 | ci T18 | Created task commit for T18 slash completion implementation and tests | Codex |
+| 2026-02-12 | T19 | Completed Tab completion acceptance with single-candidate apply, cursor-aware replacement, trailing-space rule, consecutive-tab normalization, and `/mo+Tab` integration coverage | Codex |
+| 2026-02-12 | T19 Follow-up | Wired Node readline completer to prevent literal whitespace insertion on Tab and route interactive Tab through command completion | Codex |
+| 2026-02-12 | ci T19 | Created task commit for T19 Tab completion acceptance, readline completer wiring, and completion behavior tests | Codex |
