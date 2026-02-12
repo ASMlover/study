@@ -7,14 +7,17 @@ import {
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
   EMPTY_REPLY_PLACEHOLDER,
+  formatSessionList,
   formatSessionTimestamp,
   HELP_TEXT,
   matchReplCommand,
   OutputBuffer,
   parseNewSessionTitle,
+  parseSessionsCommandArgs,
   parseReplLine,
   renderAssistantReply,
-  resolveUniqueSessionTitle
+  resolveUniqueSessionTitle,
+  sortSessionsByRecent
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
 import { MessageRecord, SessionRecord } from "../../src/repository";
@@ -196,12 +199,46 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "new",
     args: ["sprint", "planning"]
   });
+  assert.deepEqual(matchReplCommand("/sessions --limit 2"), {
+    kind: "sessions",
+    args: ["--limit", "2"]
+  });
 });
 
 test("parseNewSessionTitle joins args and trims spaces", () => {
   assert.equal(parseNewSessionTitle(["my", "chat"]), "my chat");
   assert.equal(parseNewSessionTitle([]), undefined);
   assert.equal(parseNewSessionTitle(["   "]), undefined);
+});
+
+test("parseSessionsCommandArgs parses pagination and query", () => {
+  assert.deepEqual(
+    parseSessionsCommandArgs(["--limit", "2", "--offset", "1", "--q", "plan"]),
+    {
+      options: {
+        limit: 2,
+        offset: 1,
+        query: "plan"
+      }
+    }
+  );
+  assert.deepEqual(parseSessionsCommandArgs([]), {
+    options: {
+      offset: 0
+    }
+  });
+});
+
+test("parseSessionsCommandArgs rejects invalid values", () => {
+  assert.match(
+    parseSessionsCommandArgs(["--limit", "0"]).error ?? "",
+    /positive integer/
+  );
+  assert.match(
+    parseSessionsCommandArgs(["--offset", "-1"]).error ?? "",
+    /non-negative integer/
+  );
+  assert.match(parseSessionsCommandArgs(["--q"]).error ?? "", /Missing value/);
 });
 
 test("formatSessionTimestamp renders ISO-like second precision", () => {
@@ -220,6 +257,55 @@ test("resolveUniqueSessionTitle appends numeric suffix for duplicates", () => {
     resolveUniqueSessionTitle("Work", ["Work", "Work (2)"]),
     "Work (3)"
   );
+});
+
+test("sortSessionsByRecent sorts by updatedAt desc then id desc", () => {
+  const sorted = sortSessionsByRecent([
+    {
+      id: 1,
+      title: "alpha",
+      createdAt: "2026-02-13 00:00:00",
+      updatedAt: "2026-02-13 00:00:00"
+    },
+    {
+      id: 3,
+      title: "charlie",
+      createdAt: "2026-02-13 00:00:00",
+      updatedAt: "2026-02-14 00:00:00"
+    },
+    {
+      id: 2,
+      title: "bravo",
+      createdAt: "2026-02-13 00:00:00",
+      updatedAt: "2026-02-14 00:00:00"
+    }
+  ]);
+  assert.deepEqual(
+    sorted.map((item) => item.id),
+    [3, 2, 1]
+  );
+});
+
+test("formatSessionList renders marker and numbered rows", () => {
+  const output = formatSessionList(
+    [
+      {
+        id: 2,
+        title: "second",
+        createdAt: "2026-02-13 00:00:00",
+        updatedAt: "2026-02-14 00:00:00"
+      },
+      {
+        id: 1,
+        title: "first",
+        createdAt: "2026-02-13 00:00:00",
+        updatedAt: "2026-02-13 00:00:00"
+      }
+    ],
+    1
+  );
+  assert.match(output, /  \[1\] #2 second/);
+  assert.match(output, /\* \[2\] #1 first/);
 });
 
 test("matchReplCommand handles unknown command and non-command input", () => {
@@ -353,6 +439,105 @@ test("repl /new updates current session pointer for subsequent writes", async ()
     persistedMessages.map((item) => item.sessionId),
     [2, 2]
   );
+});
+
+test("repl /sessions prints empty state when no sessions exist", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/sessions");
+
+  assert.equal(writes.join(""), "No sessions.\n");
+});
+
+test("repl /sessions marks current session and keeps recent-first order", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/new alpha");
+  await session.onLine("/new beta");
+  await session.onLine("/sessions");
+
+  const all = writes.join("");
+  assert.match(all, /\* \[1\] #2 beta/);
+  assert.match(all, /  \[2\] #1 alpha/);
+});
+
+test("repl /sessions supports pagination and filtering", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/new plan-alpha");
+  await session.onLine("/new chat");
+  await session.onLine("/new plan-beta");
+  writes.length = 0;
+
+  await session.onLine("/sessions --q plan --limit 1 --offset 1");
+
+  const output = writes.join("");
+  assert.match(output, /#1 plan-alpha/);
+  assert.doesNotMatch(output, /plan-beta/);
+});
+
+test("repl /sessions reports bad arguments", async () => {
+  const errors: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/sessions --limit 0");
+
+  assert.match(errors.join(""), /Usage: \/sessions \[--limit N\] \[--offset N\] \[--q keyword\]/);
 });
 
 test("repl session marks /exit as exit signal", async () => {

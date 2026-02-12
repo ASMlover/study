@@ -11,14 +11,14 @@ import {
   LLMProvider,
   MockLLMProvider
 } from "./provider";
-import { MessageRepository, SessionRepository } from "./repository";
+import { MessageRepository, SessionRecord, SessionRepository } from "./repository";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
 export const DEFAULT_MAX_REPLY_LENGTH = 2048;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const HELP_TEXT =
-  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n";
+  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n/sessions [--limit N] [--offset N] [--q keyword] List sessions\n";
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -86,6 +86,7 @@ export type ReplCommandMatch =
   | { kind: "login"; args: string[] }
   | { kind: "model"; args: string[] }
   | { kind: "new"; args: string[] }
+  | { kind: "sessions"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -98,6 +99,12 @@ export interface RenderedAssistantReply {
   text: string;
   truncated: boolean;
   usedFallback: boolean;
+}
+
+export interface SessionsCommandOptions {
+  limit?: number;
+  offset: number;
+  query?: string;
 }
 
 export function createRuntimeProvider(config: RuntimeConfig): LLMProvider {
@@ -162,6 +169,10 @@ export function matchReplCommand(text: string): ReplCommandMatch {
     return { kind: "new", args };
   }
 
+  if (token === "/sessions") {
+    return { kind: "sessions", args };
+  }
+
   return { kind: "unknown", token };
 }
 
@@ -191,6 +202,87 @@ export function resolveUniqueSessionTitle(
     index += 1;
   }
   return `${baseTitle} (${index})`;
+}
+
+export function parseSessionsCommandArgs(
+  args: string[]
+): { options?: SessionsCommandOptions; error?: string } {
+  const options: SessionsCommandOptions = {
+    offset: 0
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === "--limit") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --limit." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value <= 0) {
+        return { error: "--limit must be a positive integer." };
+      }
+      options.limit = value;
+      index += 1;
+      continue;
+    }
+
+    if (token === "--offset") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --offset." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value < 0) {
+        return { error: "--offset must be a non-negative integer." };
+      }
+      options.offset = value;
+      index += 1;
+      continue;
+    }
+
+    if (token === "--q") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --q." };
+      }
+      const query = raw.trim();
+      if (query.length === 0) {
+        return { error: "--q cannot be empty." };
+      }
+      options.query = query;
+      index += 1;
+      continue;
+    }
+
+    return { error: `Unknown argument: ${token}` };
+  }
+
+  return { options };
+}
+
+export function sortSessionsByRecent(sessions: SessionRecord[]): SessionRecord[] {
+  return [...sessions].sort((left, right) => {
+    if (left.updatedAt === right.updatedAt) {
+      return right.id - left.id;
+    }
+    return right.updatedAt.localeCompare(left.updatedAt);
+  });
+}
+
+export function formatSessionList(
+  sessions: SessionRecord[],
+  currentSessionId: number | null
+): string {
+  if (sessions.length === 0) {
+    return "No sessions.\n";
+  }
+
+  const lines = sessions.map((session, index) => {
+    const marker = session.id === currentSessionId ? "*" : " ";
+    return `${marker} [${index + 1}] #${session.id} ${session.title} (updated ${session.updatedAt})`;
+  });
+  return `${lines.join("\n")}\n`;
 }
 
 export function classifyReplInput(
@@ -377,6 +469,40 @@ export function createReplSession(
           const e = error as Error;
           writers.stderr(`[session:error] ${e.message}\n`);
         }
+        return false;
+      }
+
+      if (input.kind === "command" && input.command.kind === "sessions") {
+        if (!sessionRepository) {
+          writers.stderr("Session storage is unavailable.\n");
+          return false;
+        }
+
+        const parsed = parseSessionsCommandArgs(input.command.args);
+        if (!parsed.options) {
+          writers.stderr(
+            `${parsed.error}\nUsage: /sessions [--limit N] [--offset N] [--q keyword]\n`
+          );
+          return false;
+        }
+        const options = parsed.options;
+
+        const ordered = sortSessionsByRecent(sessionRepository.listSessions());
+        const query = options.query;
+        const filtered =
+          query === undefined
+            ? ordered
+            : ordered.filter((session) =>
+                session.title.toLowerCase().includes(query.toLowerCase())
+              );
+        const sliced =
+          options.limit === undefined
+            ? filtered.slice(options.offset)
+            : filtered.slice(
+                options.offset,
+                options.offset + options.limit
+              );
+        writers.stdout(formatSessionList(sliced, currentSessionId));
         return false;
       }
 
