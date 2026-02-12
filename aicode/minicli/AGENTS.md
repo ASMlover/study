@@ -49,5 +49,8 @@ Recent history in the parent repo uses conventional-style subjects with scope an
 - All code files must automatically remove trailing whitespace.
 - At the start of every task round, read `Plans.md`; at the end of every task round, update `Plans.md`.
 - When a task round finishes successfully, update `Tests.md` in the same round.
-- If the input is `go tasks/TXX.md`, implement the feature and tests defined in that task file.
-  Example: `go tasks/T01.md` means implement `tasks/T01.md` functionality and its corresponding test cases.
+- If the input is `go TXX`, implement the feature and tests defined in `tasks/TXX.md`.
+  Example: `go T01` means implement `tasks/T01.md` functionality and its corresponding test cases.
+- If the input is `ci TXX`, create a git commit for files implementing the feature and tests defined in `tasks/TXX.md`.
+  Example: `ci T01` means commit the files that implement `tasks/T01.md` functionality and its corresponding test cases.
+  Commit message must include the corresponding task's implemented functionality (not only task ID).
