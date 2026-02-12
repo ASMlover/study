@@ -546,28 +546,30 @@ Use this section structure for each task:
   Follow-up: fixed interactive TTY Tab inserting whitespace by wiring `readline` `completer` in `startRepl`; added unit coverage for completer single-hit and multi-hit behavior; `npm run test:unit` now passes `142/142`.
   Follow-up-2: fixed terminal-mode detection (`input.isTTY || output.isTTY`) so `/` prefix completion and candidate display are not disabled in wrapped terminals where only one stream reports TTY; added `shouldUseTerminalMode` unit tests; `npm run test:unit` now passes `143/143`.
 ### T20 - 候选导航与取消
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现方向键切换和 Esc 关闭
 - Unit Cases:
-  - [ ] 向下循环
-  - [ ] 向上循环
-  - [ ] Esc清空
-  - [ ] 无候选忽略
-  - [ ] 焦点切换
-  - [ ] 状态复位
+  - [x] 向下循环
+  - [x] 向上循环
+  - [x] Esc清空
+  - [x] 无候选忽略
+  - [x] 焦点切换
+  - [x] 状态复位
 - Integration Cases:
-  - [ ] 导航后 Tab 接受正确项
+  - [x] 导航后 Tab 接受正确项
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 输入 `/s<Tab><Down><Tab><Enter>` 可落到 `/switch` 路由（受限环境按 EPERM 条件跳过）
 - Commands:
+- `npm run typecheck`
+- `npm test`
 - Expected: 补全交互完整
-- Actual:
+- Actual: 在 `resolveInlineTabCompletions` 中加入候选导航状态机，支持 `ArrowDown/ArrowUp` 循环选择、`Esc` 取消、输入焦点切换后状态清空、接受后状态复位。`Tab` 在多候选场景下保持 T19 行为（默认不接受），仅在已导航状态下接受当前候选。新增 6 个 T20 单测覆盖上述行为，并新增集成用例验证“导航后 Tab 接受正确项”。
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T20)
+  - Overall: N/A (coverage tooling not added in T20)
+- Result: PASS
+- Notes: `npm test` 全量通过。单测 `149/149` 通过；集成 `19` 项中 `6` 通过、`13` 因受限环境 `spawn` EPERM 跳过（包含 T20 子进程导航用例）。
 ### T21 - 频次排序
 - Date:
 - Env:

@@ -46,7 +46,7 @@
 | T17 | 命令注册中心 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added centralized CommandRegistry with metadata/aliases, registry-driven routing, and T17 unit+integration coverage |
 | T18 | / 补全 v1 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added slash-prefix completion candidate generation/display with alias-aware matching and integration coverage |
 | T19 | Tab 接受补全 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added Tab accept flow with single-candidate insertion, trailing-space behavior, inline tab normalization, and T19 unit/integration coverage |
-| T20 | 候选导航与取消 | M3 | TODO | - | - | - | - |
+| T20 | 候选导航与取消 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added arrow-key candidate navigation, Esc cancel, state reset semantics, and navigation+Tab acceptance tests |
 | T21 | 频次排序 | M3 | TODO | - | - | - | - |
 | T22 | /run 只读执行器 | M4 | TODO | - | - | - | - |
 | T23 | 风险分级器 | M4 | TODO | - | - | - | - |
@@ -98,3 +98,5 @@
 | 2026-02-12 | T19 | Completed Tab completion acceptance with single-candidate apply, cursor-aware replacement, trailing-space rule, consecutive-tab normalization, and `/mo+Tab` integration coverage | Codex |
 | 2026-02-12 | T19 Follow-up | Wired Node readline completer to prevent literal whitespace insertion on Tab and route interactive Tab through command completion | Codex |
 | 2026-02-12 | ci T19 | Created task commit for T19 Tab completion acceptance, readline completer wiring, and completion behavior tests | Codex |
+| 2026-02-12 | T20 | Completed completion candidate navigation with ArrowUp/ArrowDown cycling, Esc cancel, focus/state reset rules, and navigation+Tab acceptance coverage | Codex |
+| 2026-02-12 | ci T20 | Created task commit for T20 completion candidate navigation/cancel implementation and tests | Codex |

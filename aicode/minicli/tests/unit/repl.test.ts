@@ -351,6 +351,31 @@ test("resolveInlineTabCompletions handles consecutive tabs", () => {
   assert.equal(resolveInlineTabCompletions("/mo\t\t"), "/model ");
 });
 
+test("resolveInlineTabCompletions cycles down through candidates", () => {
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\t"), "/switch ");
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\u001b[B\t"), "/sessions ");
+});
+
+test("resolveInlineTabCompletions cycles up through candidates", () => {
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[A\t"), "/switch ");
+});
+
+test("resolveInlineTabCompletions clears candidate navigation on Esc", () => {
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\u001b\t"), "/s");
+});
+
+test("resolveInlineTabCompletions ignores arrow navigation when no candidates exist", () => {
+  assert.equal(resolveInlineTabCompletions("/zz\u001b[B\t"), "/zz");
+});
+
+test("resolveInlineTabCompletions resets completion focus after regular typing", () => {
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[Bx\t"), "/sx");
+});
+
+test("resolveInlineTabCompletions resets state after accepting a candidate", () => {
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\t\u001b[A\t"), "/switch ");
+});
+
 test("createReplReadlineCompleter returns single hit for /mo", () => {
   const completer = createReplReadlineCompleter();
   const [hits, token] = completer("/mo");

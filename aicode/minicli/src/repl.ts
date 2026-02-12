@@ -159,6 +159,13 @@ export interface TabCompletionResult {
   candidates: string[];
 }
 
+interface InlineCompletionState {
+  prefix: string;
+  candidates: string[];
+  selectedIndex: number;
+  navigated: boolean;
+}
+
 interface ReplCompletionContext {
   prefix: string;
   firstTokenStart: number;
@@ -196,6 +203,31 @@ function resolveReplCompletionContext(
   };
 }
 
+function applyResolvedCompletionCandidate(
+  line: string,
+  context: ReplCompletionContext,
+  candidate: string
+): { line: string; cursor: number } {
+  const beforeToken = line.slice(0, context.firstTokenStart);
+  const afterToken = line.slice(context.firstTokenEnd);
+  const hasWhitespaceSeparator = /^\s/.test(afterToken[0] ?? "");
+  const lineWithToken = `${beforeToken}${candidate}${afterToken}`;
+  const nextLine =
+    afterToken.length === 0
+      ? `${lineWithToken} `
+      : hasWhitespaceSeparator
+        ? lineWithToken
+        : `${beforeToken}${candidate} ${afterToken}`;
+  const nextCursor =
+    afterToken.length === 0
+      ? beforeToken.length + candidate.length + 1
+      : beforeToken.length + candidate.length;
+  return {
+    line: nextLine,
+    cursor: nextCursor
+  };
+}
+
 export function acceptReplTabCompletion(
   line: string,
   cursor: number,
@@ -222,24 +254,14 @@ export function acceptReplTabCompletion(
     };
   }
 
-  const completedToken = candidates[0];
-  const beforeToken = line.slice(0, context.firstTokenStart);
-  const afterToken = line.slice(context.firstTokenEnd);
-  const hasWhitespaceSeparator = /^\s/.test(afterToken[0] ?? "");
-  const lineWithToken = `${beforeToken}${completedToken}${afterToken}`;
-  const nextLine =
-    afterToken.length === 0
-      ? `${lineWithToken} `
-      : hasWhitespaceSeparator
-        ? lineWithToken
-        : `${beforeToken}${completedToken} ${afterToken}`;
-  const nextCursor =
-    afterToken.length === 0
-      ? beforeToken.length + completedToken.length + 1
-      : beforeToken.length + completedToken.length;
+  const completed = applyResolvedCompletionCandidate(
+    line,
+    context,
+    candidates[0]
+  );
   return {
-    line: nextLine,
-    cursor: nextCursor,
+    line: completed.line,
+    cursor: completed.cursor,
     accepted: true,
     candidates
   };
@@ -249,14 +271,105 @@ export function resolveInlineTabCompletions(
   line: string,
   registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
 ): string {
-  let resolved = line;
-  let tabIndex = resolved.indexOf("\t");
-  while (tabIndex !== -1) {
-    const withoutTab = `${resolved.slice(0, tabIndex)}${resolved.slice(tabIndex + 1)}`;
-    const result = acceptReplTabCompletion(withoutTab, tabIndex, registry);
-    resolved = result.line;
-    tabIndex = resolved.indexOf("\t");
+  let resolved = "";
+  let completionState: InlineCompletionState | undefined;
+  let index = 0;
+
+  while (index < line.length) {
+    if (line.startsWith("\u001b[A", index)) {
+      if (completionState) {
+        const nextIndex =
+          (completionState.selectedIndex - 1 + completionState.candidates.length) %
+          completionState.candidates.length;
+        completionState = {
+          ...completionState,
+          selectedIndex: nextIndex,
+          navigated: true
+        };
+      }
+      index += 3;
+      continue;
+    }
+
+    if (line.startsWith("\u001b[B", index)) {
+      if (completionState) {
+        const nextIndex =
+          (completionState.selectedIndex + 1) %
+          completionState.candidates.length;
+        completionState = {
+          ...completionState,
+          selectedIndex: nextIndex,
+          navigated: true
+        };
+      }
+      index += 3;
+      continue;
+    }
+
+    if (line[index] === "\u001b") {
+      completionState = undefined;
+      index += 1;
+      continue;
+    }
+
+    if (line[index] === "\t") {
+      const context = resolveReplCompletionContext(resolved, resolved.length);
+      if (!context) {
+        completionState = undefined;
+        index += 1;
+        continue;
+      }
+
+      const candidates = completeReplCommandPrefix(context.prefix, registry);
+      if (candidates.length === 0) {
+        completionState = undefined;
+        index += 1;
+        continue;
+      }
+
+      if (candidates.length === 1) {
+        const completed = applyResolvedCompletionCandidate(
+          resolved,
+          context,
+          candidates[0]
+        );
+        resolved = completed.line;
+        completionState = undefined;
+        index += 1;
+        continue;
+      }
+
+      const canAcceptSelection =
+        completionState?.prefix === context.prefix &&
+        completionState.navigated === true;
+      if (canAcceptSelection) {
+        const activeState = completionState;
+        const selected =
+          activeState?.candidates[activeState.selectedIndex] ?? candidates[0];
+        const completed = applyResolvedCompletionCandidate(
+          resolved,
+          context,
+          selected
+        );
+        resolved = completed.line;
+        completionState = undefined;
+      } else {
+        completionState = {
+          prefix: context.prefix,
+          candidates,
+          selectedIndex: 0,
+          navigated: false
+        };
+      }
+      index += 1;
+      continue;
+    }
+
+    resolved += line[index];
+    completionState = undefined;
+    index += 1;
   }
+
   return resolved;
 }
 
