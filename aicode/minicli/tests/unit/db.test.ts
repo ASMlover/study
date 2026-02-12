@@ -113,7 +113,9 @@ test("initializeDatabase closes connection when migration fails due to lock", ()
             throw new Error("SQLITE_BUSY: database is locked");
           },
           prepare: () => ({
-            get: () => undefined
+            all: () => [],
+            get: () => undefined,
+            run: () => undefined
           }),
           close: () => {
             closed = true;

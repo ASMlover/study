@@ -2,7 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 export interface DatabaseStatement {
+  all: (...params: unknown[]) => unknown[];
   get: (...params: unknown[]) => unknown;
+  run: (...params: unknown[]) => unknown;
 }
 
 export interface DatabaseConnection {
@@ -67,6 +69,25 @@ export function resolveDatabasePath(cwd: string): string {
 
 export function runMigrationV1(connection: DatabaseConnection): void {
   connection.exec(MIGRATION_V1);
+}
+
+export function withTransaction<T>(
+  connection: DatabaseConnection,
+  work: () => T
+): T {
+  connection.exec("BEGIN");
+  try {
+    const result = work();
+    connection.exec("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      connection.exec("ROLLBACK");
+    } catch {
+      // Ignore rollback errors and preserve original error.
+    }
+    throw error;
+  }
 }
 
 function defaultOpenDatabase(databasePath: string): DatabaseConnection {

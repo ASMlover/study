@@ -341,28 +341,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Full suite passed (unit 84/84, integration 5 pass + 5 skipped due sandbox `spawn` restrictions). Node v22 reports `node:sqlite` experimental warning during test run. `ci T11` commit created on 2026-02-12 for this scope.
 ### T12 - 消息持久化仓储
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 SessionRepository 与 MessageRepository
 - Unit Cases:
-  - [ ] 新建会话
-  - [ ] 写消息
-  - [ ] 排序
-  - [ ] 分页边界
-  - [ ] 空结果
-  - [ ] 事务回滚
+  - [x] 新建会话
+  - [x] 写消息
+  - [x] 排序
+  - [x] 分页边界
+  - [x] 空结果
+  - [x] 事务回滚
 - Integration Cases:
-  - [ ] 写后读一致
+  - [x] 写后读一致
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 仓储层通过真实 SQLite 文件完成写入后重开读取
 - Commands:
+  - `npm run typecheck`
+  - `npm test`
 - Expected: 消息持久化稳定
-- Actual:
+- Actual: Added `src/repository.ts` with `SessionRepository` and `MessageRepository`, covering session creation, message write/read, deterministic ordering, pagination, and transactional batch write (`createMessagesInTransaction`) with rollback on failure. Added `withTransaction` helper in `src/db.ts` and expanded statement interface to support repository operations.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T12)
+  - Overall: N/A (coverage tooling not added in T12)
+- Result: PASS
+- Notes: Full suite passed (unit 90/90, integration 6 pass + 5 skipped due sandbox `spawn` restrictions). Node v22 continues to report `node:sqlite` experimental warning. `ci T12` commit created on 2026-02-12 for this scope.
 ### T13 - /new
 - Date:
 - Env:
