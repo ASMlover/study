@@ -195,12 +195,49 @@ export class MessageRepository {
   }
 }
 
+export class CommandHistoryRepository {
+  constructor(private readonly connection: DatabaseConnection) {}
+
+  recordCommand(input: { command: string; cwd: string; exitCode?: number }): void {
+    const command = input.command.trim();
+    if (command.length === 0) {
+      return;
+    }
+
+    this.connection
+      .prepare(
+        "INSERT INTO command_history(command, cwd, exit_code) VALUES (?, ?, ?)"
+      )
+      .run(command, input.cwd, input.exitCode ?? null);
+  }
+
+  listUsageFrequency(): Record<string, number> {
+    const rows = this.connection
+      .prepare(
+        "SELECT command, COUNT(*) AS usage_count FROM command_history GROUP BY command"
+      )
+      .all();
+
+    const frequencies: Record<string, number> = {};
+    for (const row of rows) {
+      const typed = row as {
+        command: string;
+        usage_count: number;
+      };
+      frequencies[typed.command] = typed.usage_count;
+    }
+    return frequencies;
+  }
+}
+
 export function createRepositories(connection: DatabaseConnection): {
   sessions: SessionRepository;
   messages: MessageRepository;
+  commandHistory: CommandHistoryRepository;
 } {
   return {
     sessions: new SessionRepository(connection),
-    messages: new MessageRepository(connection)
+    messages: new MessageRepository(connection),
+    commandHistory: new CommandHistoryRepository(connection)
   };
 }

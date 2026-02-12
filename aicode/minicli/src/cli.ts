@@ -103,7 +103,8 @@ export function runCli(
           saveModel: (model: string) =>
             saveModelToProjectConfig(loadedConfig.projectPath, model),
           sessionRepository: repositories?.sessions,
-          messageRepository: repositories?.messages
+          messageRepository: repositories?.messages,
+          commandHistoryRepository: repositories?.commandHistory
         });
         if (connection) {
           rl.on("close", () => {

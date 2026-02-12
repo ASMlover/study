@@ -163,3 +163,53 @@ test("MessageRepository transactional write rolls back on failure", () => {
     storage.cleanup();
   }
 });
+
+test("CommandHistoryRepository records command usage and aggregates frequency", () => {
+  const storage = createTestStorage();
+  try {
+    const repositories = createRepositories(storage.connection);
+    repositories.commandHistory.recordCommand({
+      command: "/switch",
+      cwd: storage.tmpRoot
+    });
+    repositories.commandHistory.recordCommand({
+      command: "/switch",
+      cwd: storage.tmpRoot
+    });
+    repositories.commandHistory.recordCommand({
+      command: "/sessions",
+      cwd: storage.tmpRoot
+    });
+
+    const frequencies = repositories.commandHistory.listUsageFrequency();
+    assert.equal(frequencies["/switch"], 2);
+    assert.equal(frequencies["/sessions"], 1);
+  } finally {
+    storage.cleanup();
+  }
+});
+
+test("CommandHistoryRepository persists usage across reopened connections", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-history-reopen-"));
+  const init = initializeDatabase({ cwd: tmpRoot });
+  const first = openSQLite(init.databasePath);
+  try {
+    const repositories = createRepositories(first);
+    repositories.commandHistory.recordCommand({
+      command: "/switch",
+      cwd: tmpRoot
+    });
+  } finally {
+    first.close();
+  }
+
+  const second = openSQLite(init.databasePath);
+  try {
+    const repositories = createRepositories(second);
+    const frequencies = repositories.commandHistory.listUsageFrequency();
+    assert.equal(frequencies["/switch"], 1);
+  } finally {
+    second.close();
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});

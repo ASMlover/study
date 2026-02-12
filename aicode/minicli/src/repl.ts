@@ -15,13 +15,19 @@ import {
   LLMProvider,
   MockLLMProvider
 } from "./provider";
-import { MessageRepository, SessionRecord, SessionRepository } from "./repository";
+import {
+  CommandHistoryRepository,
+  MessageRepository,
+  SessionRecord,
+  SessionRepository
+} from "./repository";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
 export const DEFAULT_MAX_REPLY_LENGTH = 2048;
 export const DEFAULT_MAX_HISTORY_PREVIEW_LENGTH = 120;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
+export const MAX_COMPLETION_USAGE_FREQUENCY = 2_147_483_647;
 
 export type KnownReplCommandKind =
   | "help"
@@ -130,7 +136,8 @@ export const HELP_TEXT = formatHelpText(DEFAULT_COMMAND_REGISTRY);
 
 export function completeReplCommandPrefix(
   prefix: string,
-  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY,
+  usageFrequency: Readonly<Record<string, number>> = {}
 ): string[] {
   if (!prefix.startsWith("/")) {
     return [];
@@ -145,7 +152,7 @@ export function completeReplCommandPrefix(
     }
   }
 
-  return matches;
+  return sortCompletionCandidatesByUsageFrequency(matches, usageFrequency);
 }
 
 export function formatCompletionCandidates(candidates: string[]): string {
@@ -170,6 +177,47 @@ interface ReplCompletionContext {
   prefix: string;
   firstTokenStart: number;
   firstTokenEnd: number;
+}
+
+function resolveCommandUsageFrequency(
+  commandName: string,
+  usageFrequency: Readonly<Record<string, number>>
+): number {
+  const raw = usageFrequency[commandName];
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return 0;
+  }
+  return Math.floor(raw);
+}
+
+export function sortCompletionCandidatesByUsageFrequency(
+  candidates: string[],
+  usageFrequency: Readonly<Record<string, number>>
+): string[] {
+  return candidates
+    .map((candidate, index) => ({
+      candidate,
+      index,
+      frequency: resolveCommandUsageFrequency(candidate, usageFrequency)
+    }))
+    .sort((left, right) => {
+      if (left.frequency !== right.frequency) {
+        return right.frequency - left.frequency;
+      }
+      return left.index - right.index;
+    })
+    .map((item) => item.candidate);
+}
+
+export function incrementCompletionUsageFrequency(
+  usageFrequency: Record<string, number>,
+  commandName: string,
+  maxFrequency: number = MAX_COMPLETION_USAGE_FREQUENCY
+): number {
+  const previous = resolveCommandUsageFrequency(commandName, usageFrequency);
+  const next = Math.min(previous + 1, maxFrequency);
+  usageFrequency[commandName] = next;
+  return next;
 }
 
 function resolveReplCompletionContext(
@@ -231,7 +279,8 @@ function applyResolvedCompletionCandidate(
 export function acceptReplTabCompletion(
   line: string,
   cursor: number,
-  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY,
+  usageFrequency: Readonly<Record<string, number>> = {}
 ): TabCompletionResult {
   const boundedCursor = Math.max(0, Math.min(cursor, line.length));
   const context = resolveReplCompletionContext(line, boundedCursor);
@@ -244,7 +293,11 @@ export function acceptReplTabCompletion(
     };
   }
 
-  const candidates = completeReplCommandPrefix(context.prefix, registry);
+  const candidates = completeReplCommandPrefix(
+    context.prefix,
+    registry,
+    usageFrequency
+  );
   if (candidates.length !== 1) {
     return {
       line,
@@ -269,7 +322,8 @@ export function acceptReplTabCompletion(
 
 export function resolveInlineTabCompletions(
   line: string,
-  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY,
+  usageFrequency: Readonly<Record<string, number>> = {}
 ): string {
   let resolved = "";
   let completionState: InlineCompletionState | undefined;
@@ -320,7 +374,11 @@ export function resolveInlineTabCompletions(
         continue;
       }
 
-      const candidates = completeReplCommandPrefix(context.prefix, registry);
+      const candidates = completeReplCommandPrefix(
+        context.prefix,
+        registry,
+        usageFrequency
+      );
       if (candidates.length === 0) {
         completionState = undefined;
         index += 1;
@@ -374,7 +432,8 @@ export function resolveInlineTabCompletions(
 }
 
 export function createReplReadlineCompleter(
-  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY,
+  usageFrequency: Readonly<Record<string, number>> = {}
 ): (line: string) => [string[], string] {
   return (line: string) => {
     const context = resolveReplCompletionContext(line, line.length);
@@ -382,7 +441,12 @@ export function createReplReadlineCompleter(
       return [[], ""];
     }
 
-    const accepted = acceptReplTabCompletion(line, line.length, registry);
+    const accepted = acceptReplTabCompletion(
+      line,
+      line.length,
+      registry,
+      usageFrequency
+    );
     if (accepted.accepted) {
       const completedToken = accepted.line
         .slice(context.firstTokenStart)
@@ -461,6 +525,11 @@ export interface ReplSessionOptions {
     MessageRepository,
     "createMessage" | "listMessagesBySession"
   >;
+  commandHistoryRepository?: Pick<
+    CommandHistoryRepository,
+    "recordCommand" | "listUsageFrequency"
+  >;
+  completionUsageFrequency?: Record<string, number>;
   commandRegistry?: CommandRegistry<KnownReplCommandKind>;
   now?: () => Date;
 }
@@ -844,7 +913,12 @@ export function createReplSession(
   const maxReplyLength = options?.maxReplyLength ?? DEFAULT_MAX_REPLY_LENGTH;
   const sessionRepository = options?.sessionRepository;
   const messageRepository = options?.messageRepository;
+  const commandHistoryRepository = options?.commandHistoryRepository;
   const commandRegistry = options?.commandRegistry ?? DEFAULT_COMMAND_REGISTRY;
+  const completionUsageFrequency: Record<string, number> =
+    options?.completionUsageFrequency ??
+    commandHistoryRepository?.listUsageFrequency() ??
+    {};
   const helpText = formatHelpText(commandRegistry);
   const now = options?.now ?? (() => new Date());
   const conversation: ChatMessage[] = [];
@@ -1044,7 +1118,11 @@ export function createReplSession(
 
   return {
     onLine: async (line: string) => {
-      const resolvedLine = resolveInlineTabCompletions(line, commandRegistry);
+      const resolvedLine = resolveInlineTabCompletions(
+        line,
+        commandRegistry,
+        completionUsageFrequency
+      );
       const input = classifyReplInput(
         resolvedLine,
         maxInputLength,
@@ -1063,7 +1141,8 @@ export function createReplSession(
       if (input.kind === "command" && input.command.kind === "unknown") {
         const completions = completeReplCommandPrefix(
           input.command.token,
-          commandRegistry
+          commandRegistry,
+          completionUsageFrequency
         );
         if (completions.length > 0) {
           writers.stdout(formatCompletionCandidates(completions));
@@ -1076,6 +1155,19 @@ export function createReplSession(
       }
 
       if (input.kind === "command") {
+        const normalizedCommandToken = resolvedLine.trim().split(/\s+/, 1)[0];
+        const resolvedCommand = commandRegistry.resolve(normalizedCommandToken);
+        if (resolvedCommand) {
+          incrementCompletionUsageFrequency(
+            completionUsageFrequency,
+            resolvedCommand.metadata.name
+          );
+          commandHistoryRepository?.recordCommand({
+            command: resolvedCommand.metadata.name,
+            cwd: process.cwd()
+          });
+        }
+
         const command = input.command;
         const args = "args" in command ? command.args : [];
         switch (command.kind) {
@@ -1173,14 +1265,24 @@ export function startRepl(
   maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH,
   options?: ReplSessionOptions
 ): readline.Interface {
-  const session = createReplSession(runtime, maxInputLength, options);
+  const sharedCompletionUsageFrequency =
+    options?.completionUsageFrequency ??
+    options?.commandHistoryRepository?.listUsageFrequency() ??
+    {};
+  const session = createReplSession(runtime, maxInputLength, {
+    ...(options ?? {}),
+    completionUsageFrequency: sharedCompletionUsageFrequency
+  });
   let closedByExit = false;
   let closedBySigint = false;
   const rl = readline.createInterface({
     input: runtime.input,
     output: runtime.output,
     terminal: shouldUseTerminalMode(runtime),
-    completer: createReplReadlineCompleter(options?.commandRegistry)
+    completer: createReplReadlineCompleter(
+      options?.commandRegistry,
+      sharedCompletionUsageFrequency
+    )
   });
 
   runtime.stdout("MiniCLI REPL ready. Type your message.\n");

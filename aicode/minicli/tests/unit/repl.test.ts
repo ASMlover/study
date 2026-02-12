@@ -16,6 +16,8 @@ import {
   formatSessionList,
   formatSessionTimestamp,
   HELP_TEXT,
+  incrementCompletionUsageFrequency,
+  MAX_COMPLETION_USAGE_FREQUENCY,
   matchReplCommand,
   OutputBuffer,
   parseHistoryCommandArgs,
@@ -27,6 +29,7 @@ import {
   renderAssistantReply,
   resolveUniqueSessionTitle,
   shouldUseTerminalMode,
+  sortCompletionCandidatesByUsageFrequency,
   sortSessionsByRecent
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
@@ -298,8 +301,50 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
   ]);
 });
 
+test("completeReplCommandPrefix prioritizes higher frequency commands", () => {
+  assert.deepEqual(
+    completeReplCommandPrefix("/s", undefined, {
+      "/switch": 3,
+      "/sessions": 1
+    }),
+    ["/switch", "/sessions"]
+  );
+});
+
 test("completeReplCommandPrefix is case-sensitive", () => {
   assert.deepEqual(completeReplCommandPrefix("/MO"), []);
+});
+
+test("sortCompletionCandidatesByUsageFrequency keeps stable order when same frequency", () => {
+  assert.deepEqual(
+    sortCompletionCandidatesByUsageFrequency(
+      ["/sessions", "/switch", "/search"],
+      {
+        "/sessions": 2,
+        "/switch": 2,
+        "/search": 2
+      }
+    ),
+    ["/sessions", "/switch", "/search"]
+  );
+});
+
+test("incrementCompletionUsageFrequency initializes and accumulates", () => {
+  const usage: Record<string, number> = {};
+  assert.equal(incrementCompletionUsageFrequency(usage, "/switch"), 1);
+  assert.equal(incrementCompletionUsageFrequency(usage, "/switch"), 2);
+  assert.equal(usage["/switch"], 2);
+});
+
+test("incrementCompletionUsageFrequency caps overflow at configured maximum", () => {
+  const usage: Record<string, number> = {
+    "/switch": MAX_COMPLETION_USAGE_FREQUENCY
+  };
+  assert.equal(
+    incrementCompletionUsageFrequency(usage, "/switch"),
+    MAX_COMPLETION_USAGE_FREQUENCY
+  );
+  assert.equal(usage["/switch"], MAX_COMPLETION_USAGE_FREQUENCY);
 });
 
 test("formatCompletionCandidates renders candidate list", () => {
@@ -1165,6 +1210,53 @@ test("repl session shows completions for command prefix input", async () => {
   assert.equal(shouldExit, false);
   assert.equal(errors.length, 0);
   assert.equal(writes.join(""), "Completions:\n/model\n");
+});
+
+test("repl session preserves completion frequency ordering across restarts", async () => {
+  const history: string[] = [];
+  const commandHistoryRepository = {
+    recordCommand: (input: { command: string; cwd: string; exitCode?: number }) => {
+      history.push(input.command);
+    },
+    listUsageFrequency: (): Record<string, number> => {
+      const result: Record<string, number> = {};
+      for (const command of history) {
+        result[command] = (result[command] ?? 0) + 1;
+      }
+      return result;
+    }
+  };
+
+  const firstErrors: string[] = [];
+  const firstSession = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => firstErrors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    { commandHistoryRepository }
+  );
+
+  await firstSession.onLine("/switch #1");
+  await firstSession.onLine("/switch #2");
+  assert.equal(history.length, 2);
+  assert.match(firstErrors.join(""), /Session storage is unavailable/);
+
+  const secondWrites: string[] = [];
+  const secondErrors: string[] = [];
+  const secondSession = createReplSession(
+    {
+      stdout: (message) => secondWrites.push(message),
+      stderr: (message) => secondErrors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    { commandHistoryRepository }
+  );
+
+  await secondSession.onLine("/s");
+
+  assert.equal(secondErrors.length, 0);
+  assert.equal(secondWrites.join(""), "Completions:\n/switch\n/sessions\n");
 });
 
 test("repl session renders multiline reply content", async () => {

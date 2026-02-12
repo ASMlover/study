@@ -571,28 +571,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` 全量通过。单测 `149/149` 通过；集成 `19` 项中 `6` 通过、`13` 因受限环境 `spawn` EPERM 跳过（包含 T20 子进程导航用例）。
 ### T21 - 频次排序
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 补全结果引入 usageFrequency 排序
 - Unit Cases:
-  - [ ] 频次累加
-  - [ ] 初始化
-  - [ ] 同频稳定
-  - [ ] 持久化
-  - [ ] 重启保留
-  - [ ] 上限防溢出
+  - [x] 频次累加
+  - [x] 初始化
+  - [x] 同频稳定
+  - [x] 持久化
+  - [x] 重启保留
+  - [x] 上限防溢出
 - Integration Cases:
-  - [ ] 高频命令前置
+  - [x] 高频命令前置
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 连续执行高频命令后 `/s` 候选优先展示高频项（受限环境按 EPERM 条件跳过）
 - Commands:
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 补全越用越准
-- Actual:
+- Actual: 为补全候选增加基于 usageFrequency 的降序排序（同频保持注册顺序稳定）；在 REPL 命令执行路径中累加命令频次并写入 `command_history`，下次启动通过历史聚合恢复频次，实现重启后排序保留。新增频次工具函数与单测覆盖初始化、累加、同频稳定、溢出上限；新增 `CommandHistoryRepository` 聚合与重开连接持久化单测；新增集成用例验证高频命令优先展示。
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T21)
+  - Overall: N/A (coverage tooling not added in T21)
+- Result: PASS
+- Notes: `npm run test:unit` 全部通过（`156/156`）。`npm run test:integration` 通过（`6` pass，`14` skip，子进程类用例受沙箱 `EPERM` 限制，包含 T21 集成项）。
 ### T22 - /run 只读执行器
 - Date:
 - Env:
