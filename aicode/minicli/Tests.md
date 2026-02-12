@@ -416,28 +416,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: Full suite passed. Subprocess integration tests are skip-guarded in restricted sandbox environments; in this run, spawn-based integration cases (including T14) were skipped with expected `EPERM` guard behavior.
 ### T15 - /switch
-- Date:
-- Env:
+- Date: 2026-02-12
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 按 id 或索引切换会话
 - Unit Cases:
-  - [ ] id切换
-  - [ ] 索引切换
-  - [ ] 不存在目标
-  - [ ] 重复切换
-  - [ ] 缺参数
-  - [ ] 边界索引
+  - [x] id切换
+  - [x] 索引切换
+  - [x] 不存在目标
+  - [x] 重复切换
+  - [x] 缺参数
+  - [x] 边界索引
 - Integration Cases:
-  - [ ] 切换后写入目标会话
+  - [x] 切换后写入目标会话
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 子进程 REPL 执行 `/new alpha -> /new beta -> /switch #1 -> 提问 -> /exit` 并校验消息仅落入 alpha（受限环境按 EPERM 条件跳过）
 - Commands:
+  - `npm run test:unit`
+  - `npm run test:integration`
 - Expected: 会话切换可靠
-- Actual:
+- Actual: Added `/switch <#id|index>` command routing and parser, with positive-integer validation, target lookup by session id or `/sessions` display index, non-existent target guard, repeated-switch guard, and conversation reset on successful switch. Added unit tests for all required T15 cases and integration test verifying post-switch user/assistant messages persist in the switched target session.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T15)
+  - Overall: N/A (coverage tooling not added in T15)
+- Result: PASS
+- Notes: All unit tests passed (112/112). Integration passed with expected subprocess skip guards in restricted sandbox (`8 skipped`, including the new T15 spawn-based case).
 ### T16 - /history
 - Date:
 - Env:

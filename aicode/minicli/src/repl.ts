@@ -18,7 +18,7 @@ export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
 export const DEFAULT_MAX_REPLY_LENGTH = 2048;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const HELP_TEXT =
-  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n/sessions [--limit N] [--offset N] [--q keyword] List sessions\n";
+  "Available commands:\n/help Show this help message\n/exit Exit MiniCLI\n/login <apiKey> Save API key to global config\n/model [name] Show or set current model\n/new [title] Create and switch to a new session\n/sessions [--limit N] [--offset N] [--q keyword] List sessions\n/switch <#id|index> Switch to a specific session\n";
 
 export interface ParsedReplLine {
   kind: "empty" | "message";
@@ -87,6 +87,7 @@ export type ReplCommandMatch =
   | { kind: "model"; args: string[] }
   | { kind: "new"; args: string[] }
   | { kind: "sessions"; args: string[] }
+  | { kind: "switch"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -106,6 +107,10 @@ export interface SessionsCommandOptions {
   offset: number;
   query?: string;
 }
+
+export type SwitchCommandTarget =
+  | { mode: "id"; value: number }
+  | { mode: "index"; value: number };
 
 export function createRuntimeProvider(config: RuntimeConfig): LLMProvider {
   if (config.apiKey && config.apiKey.trim().length > 0) {
@@ -171,6 +176,10 @@ export function matchReplCommand(text: string): ReplCommandMatch {
 
   if (token === "/sessions") {
     return { kind: "sessions", args };
+  }
+
+  if (token === "/switch") {
+    return { kind: "switch", args };
   }
 
   return { kind: "unknown", token };
@@ -259,6 +268,46 @@ export function parseSessionsCommandArgs(
   }
 
   return { options };
+}
+
+export function parseSwitchCommandArgs(
+  args: string[]
+): { target?: SwitchCommandTarget; error?: string } {
+  if (args.length === 0) {
+    return { error: "Missing switch target." };
+  }
+  if (args.length > 1) {
+    return { error: "Usage: /switch <#id|index>" };
+  }
+
+  const raw = args[0].trim();
+  if (raw.length === 0) {
+    return { error: "Missing switch target." };
+  }
+
+  if (raw.startsWith("#")) {
+    const numeric = Number(raw.slice(1));
+    if (!Number.isInteger(numeric) || numeric <= 0) {
+      return { error: "Session id must be a positive integer like #3." };
+    }
+    return {
+      target: {
+        mode: "id",
+        value: numeric
+      }
+    };
+  }
+
+  const index = Number(raw);
+  if (!Number.isInteger(index) || index <= 0) {
+    return { error: "Session index must be a positive integer like 1." };
+  }
+  return {
+    target: {
+      mode: "index",
+      value: index
+    }
+  };
 }
 
 export function sortSessionsByRecent(sessions: SessionRecord[]): SessionRecord[] {
@@ -503,6 +552,39 @@ export function createReplSession(
                 options.offset + options.limit
               );
         writers.stdout(formatSessionList(sliced, currentSessionId));
+        return false;
+      }
+
+      if (input.kind === "command" && input.command.kind === "switch") {
+        if (!sessionRepository) {
+          writers.stderr("Session storage is unavailable.\n");
+          return false;
+        }
+
+        const parsed = parseSwitchCommandArgs(input.command.args);
+        if (!parsed.target) {
+          writers.stderr(`${parsed.error}\nUsage: /switch <#id|index>\n`);
+          return false;
+        }
+
+        const ordered = sortSessionsByRecent(sessionRepository.listSessions());
+        const target =
+          parsed.target.mode === "id"
+            ? ordered.find((session) => session.id === parsed.target?.value)
+            : ordered[parsed.target.value - 1];
+        if (!target) {
+          writers.stderr("[session:error] target session does not exist.\n");
+          return false;
+        }
+
+        if (target.id === currentSessionId) {
+          writers.stdout(`Already in session #${target.id}: ${target.title}\n`);
+          return false;
+        }
+
+        currentSessionId = target.id;
+        conversation.length = 0;
+        writers.stdout(`Switched to session #${target.id}: ${target.title}\n`);
         return false;
       }
 

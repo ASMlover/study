@@ -41,7 +41,7 @@
 | T12 | 消息持久化仓储 | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Implemented SessionRepository/MessageRepository with pagination, sorting, and transaction rollback tests |
 | T13 | /new | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added `/new [title]` creation+switch, unique title strategy, timestamped default naming, and message persistence to current session |
 | T14 | /sessions | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added `/sessions` with recent-first ordering, current marker, pagination/filter args, and list formatting |
-| T15 | /switch | M2 | TODO | - | - | - | - |
+| T15 | /switch | M2 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added id/index session switch, duplicate/no-target handling, and switch-write integration coverage |
 | T16 | /history | M2 | TODO | - | - | - | - |
 | T17 | 命令注册中心 | M3 | TODO | - | - | - | - |
 | T18 | / 补全 v1 | M3 | TODO | - | - | - | - |
@@ -89,3 +89,4 @@
 | 2026-02-12 | ci T12 | Created task commit for T12 implementation and tests | Codex |
 | 2026-02-12 | T13 | Completed `/new` command with session switch, default timestamp title, duplicate naming policy, and integration-verified new-session message persistence | Codex |
 | 2026-02-12 | T14 | Completed `/sessions` command with recent ordering, current-session marker, pagination/filter options, and integration list-output coverage | Codex |
+| 2026-02-12 | T15 | Completed `/switch` command with `#id` and list-index targeting, repeated-switch/no-target guards, and integration-verified switched-session persistence | Codex |

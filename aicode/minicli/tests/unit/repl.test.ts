@@ -13,6 +13,7 @@ import {
   matchReplCommand,
   OutputBuffer,
   parseNewSessionTitle,
+  parseSwitchCommandArgs,
   parseSessionsCommandArgs,
   parseReplLine,
   renderAssistantReply,
@@ -203,6 +204,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "sessions",
     args: ["--limit", "2"]
   });
+  assert.deepEqual(matchReplCommand("/switch #2"), {
+    kind: "switch",
+    args: ["#2"]
+  });
 });
 
 test("parseNewSessionTitle joins args and trims spaces", () => {
@@ -239,6 +244,33 @@ test("parseSessionsCommandArgs rejects invalid values", () => {
     /non-negative integer/
   );
   assert.match(parseSessionsCommandArgs(["--q"]).error ?? "", /Missing value/);
+});
+
+test("parseSwitchCommandArgs supports id and index targets", () => {
+  assert.deepEqual(parseSwitchCommandArgs(["#4"]), {
+    target: {
+      mode: "id",
+      value: 4
+    }
+  });
+  assert.deepEqual(parseSwitchCommandArgs(["2"]), {
+    target: {
+      mode: "index",
+      value: 2
+    }
+  });
+});
+
+test("parseSwitchCommandArgs validates malformed targets", () => {
+  assert.match(parseSwitchCommandArgs([]).error ?? "", /Missing switch target/);
+  assert.match(
+    parseSwitchCommandArgs(["#0"]).error ?? "",
+    /Session id must be a positive integer/
+  );
+  assert.match(
+    parseSwitchCommandArgs(["0"]).error ?? "",
+    /Session index must be a positive integer/
+  );
 });
 
 test("formatSessionTimestamp renders ISO-like second precision", () => {
@@ -538,6 +570,146 @@ test("repl /sessions reports bad arguments", async () => {
   await session.onLine("/sessions --limit 0");
 
   assert.match(errors.join(""), /Usage: \/sessions \[--limit N\] \[--offset N\] \[--q keyword\]/);
+});
+
+test("repl /switch switches by id target", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  sessionRepo.createSession("alpha");
+  sessionRepo.createSession("beta");
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/switch #1");
+
+  assert.match(writes.join(""), /Switched to session #1: alpha/);
+});
+
+test("repl /switch switches by index target", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  sessionRepo.createSession("alpha");
+  sessionRepo.createSession("beta");
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/switch 1");
+
+  assert.match(writes.join(""), /Switched to session #2: beta/);
+});
+
+test("repl /switch reports missing target argument", async () => {
+  const errors: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/switch");
+
+  assert.match(errors.join(""), /Usage: \/switch <#id\|index>/);
+});
+
+test("repl /switch reports out-of-range index boundary", async () => {
+  const errors: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  sessionRepo.createSession("solo");
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/switch 2");
+
+  assert.match(errors.join(""), /target session does not exist/);
+});
+
+test("repl /switch reports non-existent id target", async () => {
+  const errors: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  sessionRepo.createSession("solo");
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/switch #8");
+
+  assert.match(errors.join(""), /target session does not exist/);
+});
+
+test("repl /switch reports repeated switch without state changes", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  sessionRepo.createSession("alpha");
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      }
+    }
+  );
+
+  await session.onLine("/switch #1");
+  await session.onLine("/switch #1");
+
+  assert.match(writes.join(""), /Already in session #1: alpha/);
 });
 
 test("repl session marks /exit as exit signal", async () => {
