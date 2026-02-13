@@ -742,28 +742,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed. Unit tests `195/195` passed. Integration tests `26` total with `11` pass and `15` skipped due sandbox subprocess/shell restrictions; new T27 integration case runs in-process and passed.
 ### T28 - /files
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 列出当前上下文文件
 - Unit Cases:
-  - [ ] 空列表
-  - [ ] 排序
-  - [ ] 路径缩略
-  - [ ] 条数限制
-  - [ ] 过滤
-  - [ ] 格式化
+  - [x] 空列表
+  - [x] 排序
+  - [x] 路径缩略
+  - [x] 条数限制
+  - [x] 过滤
+  - [x] 格式化
 - Integration Cases:
-  - [ ] /add 后 /files 展示正确
+  - [x] /add 后 /files 展示正确
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm run test:unit`
+  - `npm run test:integration`
 - Expected: 上下文可查看
-- Actual:
+- Actual: Added `/files [--limit N] [--q keyword]` command and formatter pipeline for sorted context display, optional case-insensitive filtering, output limit, and long-path abbreviation. Added parser/formatter unit tests for all required T28 cases and REPL-level command tests. Added integration test `context-files-list` to verify `/add` followed by `/files --q ... --limit ...` outputs the expected entry.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T28)
+  - Overall: N/A (coverage tooling not added in T28)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`204/204`). `npm run test:integration` passed with `12` pass + `15` skip (sandbox subprocess/shell restrictions); new T28 integration case runs in-process and passed.
 ### T29 - /grep
 - Date:
 - Env:

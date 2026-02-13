@@ -54,7 +54,8 @@ export type KnownReplCommandKind =
   | "history"
   | "run"
   | "add"
-  | "drop";
+  | "drop"
+  | "files";
 
 interface ReplCommandRegistration
   extends CommandRegistration<KnownReplCommandKind> {
@@ -154,6 +155,13 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
       "/drop",
       "/drop <path|index> [more paths or indexes]",
       "Remove file(s) from context collection",
+      true
+    ),
+    createReplCommand(
+      "files",
+      "/files",
+      "/files [--limit N] [--q keyword]",
+      "List context files",
       true
     )
   ]);
@@ -636,6 +644,7 @@ export type ReplCommandMatch =
   | { kind: "run"; args: string[] }
   | { kind: "add"; args: string[] }
   | { kind: "drop"; args: string[] }
+  | { kind: "files"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -673,6 +682,9 @@ function matchResolvedReplCommand(
   if (kind === "drop") {
     return { kind: "drop", args };
   }
+  if (kind === "files") {
+    return { kind: "files", args };
+  }
   return { kind: "history", args };
 }
 
@@ -698,6 +710,11 @@ export interface HistoryCommandOptions {
   offset: number;
   audit: boolean;
   approvalStatus?: RunAuditApprovalStatus;
+}
+
+export interface FilesCommandOptions {
+  limit?: number;
+  query?: string;
 }
 
 function normalizeContextPathForDedup(filePath: string): string {
@@ -947,6 +964,99 @@ export function formatContextFileList(
   return `Context files:\n${lines.join("\n")}\n`;
 }
 
+function resolveContextDisplayPath(filePath: string, cwd: string): string {
+  const relative = path.relative(cwd, filePath);
+  return relative.length === 0 || relative.startsWith("..") ? filePath : relative;
+}
+
+export function abbreviateContextPath(
+  displayPath: string,
+  maxLength: number = 80
+): string {
+  if (displayPath.length <= maxLength) {
+    return displayPath;
+  }
+  if (maxLength <= 3) {
+    return displayPath.slice(-maxLength);
+  }
+  return `...${displayPath.slice(-(maxLength - 3))}`;
+}
+
+export function parseFilesCommandArgs(
+  args: string[]
+): { options?: FilesCommandOptions; error?: string } {
+  const options: FilesCommandOptions = {};
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === "--limit") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --limit." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value <= 0) {
+        return { error: "--limit must be a positive integer." };
+      }
+      options.limit = value;
+      index += 1;
+      continue;
+    }
+
+    if (token === "--q") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --q." };
+      }
+      const query = raw.trim();
+      if (query.length === 0) {
+        return { error: "--q cannot be empty." };
+      }
+      options.query = query;
+      index += 1;
+      continue;
+    }
+
+    return { error: `Unknown argument: ${token}` };
+  }
+
+  return { options };
+}
+
+export function formatFilesCommandOutput(
+  files: string[],
+  options: FilesCommandOptions = {},
+  cwd: string = process.cwd(),
+  maxPathLength: number = 80
+): string {
+  const sorted = [...files].sort((left, right) =>
+    resolveContextDisplayPath(left, cwd).localeCompare(
+      resolveContextDisplayPath(right, cwd),
+      undefined,
+      { sensitivity: "base" }
+    )
+  );
+  const filtered =
+    options.query === undefined
+      ? sorted
+      : sorted.filter((filePath) =>
+          resolveContextDisplayPath(filePath, cwd)
+            .toLowerCase()
+            .includes(options.query?.toLowerCase() ?? "")
+        );
+  const limited =
+    options.limit === undefined
+      ? filtered
+      : filtered.slice(0, Math.max(0, options.limit));
+  if (limited.length === 0) {
+    return "No context files.\n";
+  }
+  const lines = limited.map((filePath, index) => {
+    const displayPath = resolveContextDisplayPath(filePath, cwd);
+    return `[${index + 1}] ${abbreviateContextPath(displayPath, maxPathLength)}`;
+  });
+  return `Context files:\n${lines.join("\n")}\n`;
+}
+
 export function buildContextSystemMessage(
   files: string[],
   cwd: string = process.cwd()
@@ -955,9 +1065,7 @@ export function buildContextSystemMessage(
     return undefined;
   }
   const lines = files.map((filePath) => {
-    const relative = path.relative(cwd, filePath);
-    const displayPath =
-      relative.length === 0 || relative.startsWith("..") ? filePath : relative;
+    const displayPath = resolveContextDisplayPath(filePath, cwd);
     return `- ${displayPath}`;
   });
   return {
@@ -1701,6 +1809,17 @@ export function createReplSession(
       writers.stdout(`[drop] removed ${result.removed.length} file(s).\n`);
       writers.stdout(formatContextFileList(contextFiles, process.cwd()));
       return false;
+    },
+    files: async (args) => {
+      const parsed = parseFilesCommandArgs(args);
+      if (!parsed.options) {
+        writers.stderr(`${parsed.error}\nUsage: /files [--limit N] [--q keyword]\n`);
+        return false;
+      }
+      writers.stdout(
+        formatFilesCommandOutput(contextFiles, parsed.options, process.cwd())
+      );
+      return false;
     }
   };
 
@@ -1821,6 +1940,7 @@ export function createReplSession(
           case "run":
           case "add":
           case "drop":
+          case "files":
             return commandHandlers[command.kind](args);
           default:
             return false;

@@ -54,7 +54,7 @@
 | T25 | 审计记录 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/run` audit persistence and `/history --audit` query with status filter/pagination and tests |
 | T26 | /add | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context file collection with path normalization, dedup, file validation, and list-visible output |
 | T27 | /drop | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context file removal by path/index with bulk targets, stable remaining order, and request-context exclusion after drop |
-| T28 | /files | M5 | TODO | - | - | - | - |
+| T28 | /files | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/files` with sort/filter/limit/path abbreviation and integration-visible listing after `/add` |
 | T29 | /grep | M5 | TODO | - | - | - | - |
 | T30 | /tree | M5 | TODO | - | - | - | - |
 | T31 | 上下文组装器 | M5 | TODO | - | - | - | - |
@@ -108,3 +108,5 @@
 | 2026-02-13 | T25 | Completed run audit logging (`run_audit`) with approval state and result fields, plus `/history --audit` query supporting filter/pagination and passing unit/integration coverage | Codex |
 | 2026-02-13 | T26 | Completed `/add` context collection with normalized path handling, dedup, missing/dir/binary/invalid-utf8 guards, and integration-visible list output | Codex |
 | 2026-02-13 | T27 | Completed `/drop` context removal by path/index with bulk deletion, stable order retention, and integration coverage verifying dropped files are excluded from request context | Codex |
+| 2026-02-13 | T28 | Completed `/files` context listing with sorted display, optional `--q` filter and `--limit`, path abbreviation, and unit+integration coverage | Codex |
+| 2026-02-13 | ci T28 | Created task commit for `/files` context listing implementation and tests | Codex |

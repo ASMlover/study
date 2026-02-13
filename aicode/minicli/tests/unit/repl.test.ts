@@ -17,6 +17,7 @@ import {
   DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
   dropContextFiles,
   EMPTY_REPLY_PLACEHOLDER,
+  formatFilesCommandOutput,
   formatCompletionCandidates,
   formatContextFileList,
   formatHistoryList,
@@ -30,6 +31,7 @@ import {
   normalizeContextFilePath,
   OutputBuffer,
   parseHistoryCommandArgs,
+  parseFilesCommandArgs,
   parseNewSessionTitle,
   parseSwitchCommandArgs,
   parseSessionsCommandArgs,
@@ -283,6 +285,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "drop",
     args: ["1"]
   });
+  assert.deepEqual(matchReplCommand("/files --limit 2"), {
+    kind: "files",
+    args: ["--limit", "2"]
+  });
 });
 
 test("completeReplCommandPrefix matches slash prefixes", () => {
@@ -301,7 +307,8 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/history",
     "/run",
     "/add",
-    "/drop"
+    "/drop",
+    "/files"
   ]);
 });
 
@@ -325,7 +332,8 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/history",
     "/run",
     "/add",
-    "/drop"
+    "/drop",
+    "/files"
   ]);
 });
 
@@ -554,6 +562,30 @@ test("parseSwitchCommandArgs validates malformed targets", () => {
     parseSwitchCommandArgs(["0"]).error ?? "",
     /Session index must be a positive integer/
   );
+});
+
+test("parseFilesCommandArgs parses query and limit", () => {
+  assert.deepEqual(parseFilesCommandArgs(["--limit", "2", "--q", "src"]), {
+    options: {
+      limit: 2,
+      query: "src"
+    }
+  });
+  assert.deepEqual(parseFilesCommandArgs([]), { options: {} });
+});
+
+test("parseFilesCommandArgs validates malformed values", () => {
+  assert.match(parseFilesCommandArgs(["--limit"]).error ?? "", /Missing value/);
+  assert.match(
+    parseFilesCommandArgs(["--limit", "0"]).error ?? "",
+    /positive integer/
+  );
+  assert.match(parseFilesCommandArgs(["--q"]).error ?? "", /Missing value/);
+  assert.match(
+    parseFilesCommandArgs(["--q", "   "]).error ?? "",
+    /cannot be empty/
+  );
+  assert.match(parseFilesCommandArgs(["--x"]).error ?? "", /Unknown argument/);
 });
 
 test("parseHistoryCommandArgs parses optional limit", () => {
@@ -1559,6 +1591,85 @@ test("formatContextFileList renders indexed context entries", () => {
   assert.equal(output, `Context files:\n[1] ${path.join("src", "repl.ts")}\n`);
 });
 
+test("formatFilesCommandOutput returns empty message for empty files", () => {
+  assert.equal(formatFilesCommandOutput([], {}, process.cwd()), "No context files.\n");
+});
+
+test("formatFilesCommandOutput sorts entries by display path", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const output = formatFilesCommandOutput(
+    [
+      path.join(cwd, "z-last.txt"),
+      path.join(cwd, "A-first.txt"),
+      path.join(cwd, "m-middle.txt")
+    ],
+    {},
+    cwd
+  );
+  assert.equal(
+    output,
+    [
+      "Context files:",
+      "[1] A-first.txt",
+      "[2] m-middle.txt",
+      "[3] z-last.txt",
+      ""
+    ].join("\n")
+  );
+});
+
+test("formatFilesCommandOutput abbreviates long paths", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const longRelative = path.join("nested", "deep", "path", "very-long-file-name.txt");
+  const output = formatFilesCommandOutput(
+    [path.join(cwd, longRelative)],
+    {},
+    cwd,
+    20
+  );
+  assert.match(output, /\[1\] \.\.\./);
+  assert.match(output, /file-name\.txt/);
+});
+
+test("formatFilesCommandOutput supports result limit", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const output = formatFilesCommandOutput(
+    [
+      path.join(cwd, "b.txt"),
+      path.join(cwd, "a.txt"),
+      path.join(cwd, "c.txt")
+    ],
+    { limit: 2 },
+    cwd
+  );
+  assert.equal(output, "Context files:\n[1] a.txt\n[2] b.txt\n");
+});
+
+test("formatFilesCommandOutput supports case-insensitive filtering", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const output = formatFilesCommandOutput(
+    [
+      path.join(cwd, "docs", "Guide.md"),
+      path.join(cwd, "src", "main.ts")
+    ],
+    { query: "GUIDE" },
+    cwd
+  );
+  assert.equal(output, `Context files:\n[1] ${path.join("docs", "Guide.md")}\n`);
+});
+
+test("formatFilesCommandOutput formats numbered lines", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const output = formatFilesCommandOutput(
+    [path.join(cwd, "notes.md"), path.join(cwd, "src", "repl.ts")],
+    {},
+    cwd
+  );
+  assert.match(output, /^Context files:\n\[1\] /);
+  assert.match(output, /\n\[2\] /);
+  assert.match(output, /\n$/);
+});
+
 test("dropContextFiles removes item by path", () => {
   const cwd = path.join("C:", "workspace", "minicli");
   const first = path.join(cwd, "a.txt");
@@ -1694,6 +1805,39 @@ test("repl /drop removes by index and updates context list", async () => {
     assert.match(output, /\[drop\] removed 1 file\(s\)\./);
     assert.doesNotMatch(output, /\[1\] a\.txt/);
     assert.match(output, /\[1\] b\.txt/);
+  } finally {
+    process.chdir(prevCwd);
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("repl /files shows sorted, filtered context list", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-repl-files-"));
+  const prevCwd = process.cwd();
+  try {
+    fs.mkdirSync(path.join(tmpRoot, "docs"));
+    fs.mkdirSync(path.join(tmpRoot, "src"));
+    fs.writeFileSync(path.join(tmpRoot, "src", "z.ts"), "z\n", "utf8");
+    fs.writeFileSync(path.join(tmpRoot, "docs", "a.md"), "a\n", "utf8");
+    process.chdir(tmpRoot);
+
+    const session = createReplSession(
+      {
+        stdout: (message) => writes.push(message),
+        stderr: (message) => errors.push(message)
+      },
+      DEFAULT_MAX_INPUT_LENGTH
+    );
+    await session.onLine("/add src/z.ts");
+    await session.onLine("/add docs/a.md");
+    writes.length = 0;
+    await session.onLine("/files --q docs --limit 1");
+
+    const output = writes.join("");
+    assert.equal(errors.join(""), "");
+    assert.equal(output, `Context files:\n[1] ${path.join("docs", "a.md")}\n`);
   } finally {
     process.chdir(prevCwd);
     fs.rmSync(tmpRoot, { recursive: true, force: true });
