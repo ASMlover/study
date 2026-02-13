@@ -18,6 +18,7 @@ import {
   dropContextFiles,
   EMPTY_REPLY_PLACEHOLDER,
   formatGrepMatches,
+  formatProjectTree,
   formatFilesCommandOutput,
   formatCompletionCandidates,
   formatContextFileList,
@@ -35,6 +36,7 @@ import {
   parseFilesCommandArgs,
   parseGrepCommandArgs,
   parseGrepPattern,
+  parseTreeCommandArgs,
   parseNewSessionTitle,
   parseSwitchCommandArgs,
   parseSessionsCommandArgs,
@@ -46,7 +48,8 @@ import {
   sortCompletionCandidatesByUsageFrequency,
   sortSessionsByRecent,
   validateAddContextFile,
-  grepProjectText
+  grepProjectText,
+  buildProjectTree
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
 import { MessageRecord, SessionRecord } from "../../src/repository";
@@ -297,6 +300,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "grep",
     args: ["TODO", "--limit", "3"]
   });
+  assert.deepEqual(matchReplCommand("/tree src --depth 2"), {
+    kind: "tree",
+    args: ["src", "--depth", "2"]
+  });
 });
 
 test("completeReplCommandPrefix matches slash prefixes", () => {
@@ -317,7 +324,8 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/add",
     "/drop",
     "/files",
-    "/grep"
+    "/grep",
+    "/tree"
   ]);
 });
 
@@ -343,7 +351,8 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/add",
     "/drop",
     "/files",
-    "/grep"
+    "/grep",
+    "/tree"
   ]);
 });
 
@@ -619,6 +628,231 @@ test("parseGrepPattern reports invalid regex syntax", () => {
   const invalid = parseGrepPattern("[");
   assert.equal(invalid.regex, undefined);
   assert.match(invalid.error ?? "", /Invalid regex pattern/);
+});
+
+test("parseTreeCommandArgs supports path and depth", () => {
+  assert.deepEqual(parseTreeCommandArgs(["src", "--depth", "2"]), {
+    options: {
+      rootPath: "src",
+      depth: 2
+    }
+  });
+  assert.deepEqual(parseTreeCommandArgs([]), {
+    options: {
+      depth: 3
+    }
+  });
+  assert.match(parseTreeCommandArgs(["--depth"]).error ?? "", /Missing value/);
+  assert.match(
+    parseTreeCommandArgs(["--depth", "-1"]).error ?? "",
+    /non-negative integer/
+  );
+});
+
+test("buildProjectTree builds nested tree structure", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-tree-build-"));
+  try {
+    fs.mkdirSync(path.join(tmpRoot, "src"));
+    fs.writeFileSync(path.join(tmpRoot, "README.md"), "readme\n", "utf8");
+    fs.writeFileSync(path.join(tmpRoot, "src", "main.ts"), "main\n", "utf8");
+
+    const tree = buildProjectTree({
+      cwd: tmpRoot,
+      rootPath: ".",
+      depth: 3
+    });
+    assert.equal(tree.root.kind, "directory");
+    assert.equal(tree.root.name, ".");
+    assert.deepEqual(
+      tree.root.children.map((child) => child.name),
+      ["README.md", "src"]
+    );
+    const srcNode = tree.root.children.find((child) => child.name === "src");
+    assert.ok(srcNode);
+    assert.equal(srcNode?.kind, "directory");
+    assert.deepEqual(srcNode?.children.map((child) => child.name), ["main.ts"]);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("buildProjectTree prunes child traversal by depth limit", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-tree-depth-"));
+  try {
+    fs.mkdirSync(path.join(tmpRoot, "src"));
+    fs.writeFileSync(path.join(tmpRoot, "src", "main.ts"), "main\n", "utf8");
+
+    const tree = buildProjectTree({
+      cwd: tmpRoot,
+      rootPath: ".",
+      depth: 1
+    });
+    const srcNode = tree.root.children.find((child) => child.name === "src");
+    assert.ok(srcNode);
+    assert.deepEqual(srcNode?.children, []);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("buildProjectTree applies ignored directory rules", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-tree-ignore-"));
+  try {
+    fs.mkdirSync(path.join(tmpRoot, "src"));
+    fs.mkdirSync(path.join(tmpRoot, "node_modules"));
+    fs.writeFileSync(path.join(tmpRoot, "src", "main.ts"), "main\n", "utf8");
+    fs.writeFileSync(path.join(tmpRoot, "node_modules", "skip.js"), "skip\n", "utf8");
+
+    const tree = buildProjectTree({
+      cwd: tmpRoot,
+      rootPath: ".",
+      depth: 3
+    });
+    assert.deepEqual(
+      tree.root.children.map((child) => child.name),
+      ["src"]
+    );
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("buildProjectTree marks symbolic links and does not traverse them", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const root = path.join(cwd, "root");
+  const symlinkPath = path.join(root, "link");
+
+  const fileSystem = {
+    lstatSync: (targetPath: string) => {
+      if (targetPath === root) {
+        return {
+          isDirectory: () => true,
+          isFile: () => false,
+          isSymbolicLink: () => false
+        };
+      }
+      if (targetPath === symlinkPath) {
+        return {
+          isDirectory: () => false,
+          isFile: () => false,
+          isSymbolicLink: () => true
+        };
+      }
+      throw new Error(`unexpected path: ${targetPath}`);
+    },
+    readdirSync: () =>
+      [
+        {
+          name: "link",
+          isDirectory: () => false,
+          isFile: () => false,
+          isSymbolicLink: () => true
+        }
+      ] as unknown as fs.Dirent[]
+  };
+
+  const tree = buildProjectTree({
+    cwd,
+    rootPath: "root",
+    depth: 3,
+    fileSystem
+  });
+  assert.equal(tree.root.children.length, 1);
+  assert.equal(tree.root.children[0].kind, "symlink");
+  assert.equal(tree.root.children[0].children.length, 0);
+});
+
+test("buildProjectTree captures directory read errors", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const root = path.join(cwd, "root");
+  const blockedDir = path.join(root, "blocked");
+
+  const fileSystem = {
+    lstatSync: (targetPath: string) => {
+      if (targetPath === root || targetPath === blockedDir) {
+        return {
+          isDirectory: () => true,
+          isFile: () => false,
+          isSymbolicLink: () => false
+        };
+      }
+      throw new Error(`unexpected path: ${targetPath}`);
+    },
+    readdirSync: (targetPath: string) => {
+      if (targetPath === root) {
+        return [
+          {
+            name: "blocked",
+            isDirectory: () => true,
+            isFile: () => false,
+            isSymbolicLink: () => false
+          }
+        ] as unknown as fs.Dirent[];
+      }
+      throw new Error("EACCES: permission denied");
+    }
+  };
+
+  const tree = buildProjectTree({
+    cwd,
+    rootPath: "root",
+    depth: 3,
+    fileSystem
+  });
+  assert.equal(tree.root.children.length, 1);
+  assert.equal(tree.root.children[0].kind, "error");
+  assert.match(tree.root.children[0].error ?? "", /EACCES/);
+});
+
+test("formatProjectTree prints tree branches and markers", () => {
+  const output = formatProjectTree({
+    root: {
+      name: ".",
+      filePath: ".",
+      kind: "directory",
+      children: [
+        {
+          name: "docs",
+          filePath: "docs",
+          kind: "directory",
+          children: [
+            {
+              name: "guide.md",
+              filePath: "docs/guide.md",
+              kind: "file",
+              children: []
+            }
+          ]
+        },
+        {
+          name: "link",
+          filePath: "link",
+          kind: "symlink",
+          children: []
+        },
+        {
+          name: "private",
+          filePath: "private",
+          kind: "error",
+          error: "EACCES",
+          children: []
+        }
+      ]
+    }
+  });
+
+  assert.equal(
+    output,
+    [
+      "Tree:",
+      "./",
+      "|-- docs/",
+      "|   `-- guide.md",
+      "|-- link@",
+      "`-- private [error: EACCES]",
+      ""
+    ].join("\n")
+  );
 });
 
 test("grepProjectText ignores configured directories", () => {

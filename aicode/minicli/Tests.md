@@ -792,28 +792,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`210/210`). `npm run test:integration` passed (`13` pass + `15` skip due sandbox subprocess/shell restrictions); new T29 integration case runs in-process and passed.
 ### T30 - /tree
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现目录树浏览与深度限制
 - Unit Cases:
-  - [ ] 树构建
-  - [ ] 深度裁剪
-  - [ ] ignore生效
-  - [ ] 符号链接
-  - [ ] 权限错误
-  - [ ] 输出格式
+  - [x] 树构建
+  - [x] 深度裁剪
+  - [x] ignore生效
+  - [x] 符号链接
+  - [x] 权限错误
+  - [x] 输出格式
 - Integration Cases:
-  - [ ] 目录树输出正确
+  - [x] 目录树输出正确
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 目录浏览可用
-- Actual:
+- Actual: Added `/tree [path] [--depth N]` command, parser, tree builder, and formatter in `src/repl.ts`. Tree traversal now supports depth clipping, default ignore directories (`.git/.minicli/build/node_modules`), symlink marking without traversal, and unreadable-directory error rendering. Added unit tests for tree build/depth/ignore/symlink/permission-error/output-format and one integration test validating end-to-end `/tree --depth 2` output in a real temporary project layout.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T30)
+  - Overall: N/A (coverage tooling not added in T30)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`217/217`). `npm run test:integration` passed with `14` pass and `15` skip; skip cases are expected sandbox subprocess/shell restrictions and unrelated to T30. New T30 integration test runs in-process and passed.
 ### T31 - 上下文组装器
 - Date:
 - Env:

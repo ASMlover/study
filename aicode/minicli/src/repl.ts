@@ -47,6 +47,9 @@ export const DEFAULT_GREP_IGNORED_DIRECTORY_NAMES = [
   "build",
   "node_modules"
 ] as const;
+export const DEFAULT_TREE_DEPTH_LIMIT = 3;
+export const DEFAULT_TREE_IGNORED_DIRECTORY_NAMES =
+  DEFAULT_GREP_IGNORED_DIRECTORY_NAMES;
 
 export type RunConfirmationDecision = "confirm" | "reject" | "invalid";
 
@@ -63,7 +66,8 @@ export type KnownReplCommandKind =
   | "add"
   | "drop"
   | "files"
-  | "grep";
+  | "grep"
+  | "tree";
 
 interface ReplCommandRegistration
   extends CommandRegistration<KnownReplCommandKind> {
@@ -177,6 +181,13 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
       "/grep",
       "/grep <pattern> [--limit N]",
       "Search project text by regex pattern",
+      true
+    ),
+    createReplCommand(
+      "tree",
+      "/tree",
+      "/tree [path] [--depth N]",
+      "Show project directory tree",
       true
     )
   ]);
@@ -661,6 +672,7 @@ export type ReplCommandMatch =
   | { kind: "drop"; args: string[] }
   | { kind: "files"; args: string[] }
   | { kind: "grep"; args: string[] }
+  | { kind: "tree"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -704,6 +716,9 @@ function matchResolvedReplCommand(
   if (kind === "grep") {
     return { kind: "grep", args };
   }
+  if (kind === "tree") {
+    return { kind: "tree", args };
+  }
   return { kind: "history", args };
 }
 
@@ -740,6 +755,11 @@ export interface GrepCommandOptions {
   limit: number;
 }
 
+export interface TreeCommandOptions {
+  depth: number;
+  rootPath?: string;
+}
+
 export interface GrepMatchRecord {
   filePath: string;
   lineNumber: number;
@@ -749,6 +769,18 @@ export interface GrepMatchRecord {
 export interface GrepSearchResult {
   matches: GrepMatchRecord[];
   truncated: boolean;
+}
+
+export interface ProjectTreeNode {
+  name: string;
+  filePath: string;
+  kind: "directory" | "file" | "symlink" | "error";
+  error?: string;
+  children: ProjectTreeNode[];
+}
+
+export interface ProjectTreeResult {
+  root: ProjectTreeNode;
 }
 
 function normalizeContextPathForDedup(filePath: string): string {
@@ -1132,6 +1164,42 @@ export function parseGrepCommandArgs(
   return { pattern, options };
 }
 
+export function parseTreeCommandArgs(
+  args: string[]
+): { options?: TreeCommandOptions; error?: string } {
+  const options: TreeCommandOptions = {
+    depth: DEFAULT_TREE_DEPTH_LIMIT
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === "--depth") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --depth." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value < 0) {
+        return { error: "--depth must be a non-negative integer." };
+      }
+      options.depth = value;
+      index += 1;
+      continue;
+    }
+
+    if (token.startsWith("--")) {
+      return { error: `Unknown argument: ${token}` };
+    }
+
+    if (options.rootPath !== undefined) {
+      return { error: "Path must be a single token." };
+    }
+    options.rootPath = token;
+  }
+
+  return { options };
+}
+
 export function parseGrepPattern(
   rawPattern: string
 ): { regex?: RegExp; error?: string } {
@@ -1158,6 +1226,13 @@ export function parseGrepPattern(
 }
 
 function normalizeGrepIgnoreName(name: string): string {
+  if (process.platform === "win32") {
+    return name.toLowerCase();
+  }
+  return name;
+}
+
+function normalizeTreeIgnoreName(name: string): string {
   if (process.platform === "win32") {
     return name.toLowerCase();
   }
@@ -1277,6 +1352,205 @@ export function grepProjectText(
     matches,
     truncated
   };
+}
+
+interface TreeDirentLike {
+  name: string;
+  isDirectory: () => boolean;
+  isFile: () => boolean;
+  isSymbolicLink: () => boolean;
+}
+
+interface TreeStatsLike {
+  isDirectory: () => boolean;
+  isFile: () => boolean;
+  isSymbolicLink: () => boolean;
+}
+
+interface TreeFileSystemLike {
+  lstatSync: (targetPath: string) => TreeStatsLike;
+  readdirSync: (
+    targetPath: string,
+    options: {
+      withFileTypes: true;
+    }
+  ) => TreeDirentLike[];
+}
+
+function resolveTreeNodeName(
+  filePath: string,
+  depth: number,
+  rootDisplayName: string
+): string {
+  if (depth === 0) {
+    return rootDisplayName;
+  }
+  return path.basename(filePath);
+}
+
+export function buildProjectTree(options?: {
+  cwd?: string;
+  rootPath?: string;
+  depth?: number;
+  ignoredDirectoryNames?: readonly string[];
+  fileSystem?: TreeFileSystemLike;
+}): ProjectTreeResult {
+  const cwd = options?.cwd ?? process.cwd();
+  const resolvedRootPath = normalizeContextFilePath(options?.rootPath ?? ".", cwd);
+  const depth = Math.max(
+    0,
+    Math.floor(options?.depth ?? DEFAULT_TREE_DEPTH_LIMIT)
+  );
+  const rawRootPath = options?.rootPath?.trim();
+  const rootDisplayName =
+    rawRootPath === undefined || rawRootPath.length === 0 || rawRootPath === "."
+      ? "."
+      : resolveContextDisplayPath(resolvedRootPath, cwd);
+  const ignoredDirectoryNames = new Set(
+    (options?.ignoredDirectoryNames ?? DEFAULT_TREE_IGNORED_DIRECTORY_NAMES).map(
+      normalizeTreeIgnoreName
+    )
+  );
+  const fileSystem: TreeFileSystemLike = options?.fileSystem ?? {
+    lstatSync: (targetPath: string) => fs.lstatSync(targetPath),
+    readdirSync: (targetPath: string, readdirOptions: { withFileTypes: true }) =>
+      fs.readdirSync(targetPath, readdirOptions)
+  };
+
+  const visit = (filePath: string, currentDepth: number): ProjectTreeNode => {
+    const nodeName = resolveTreeNodeName(filePath, currentDepth, rootDisplayName);
+    let stats: TreeStatsLike;
+    try {
+      stats = fileSystem.lstatSync(filePath);
+    } catch (error) {
+      const e = error as Error;
+      return {
+        name: nodeName,
+        filePath,
+        kind: "error",
+        error: e.message,
+        children: []
+      };
+    }
+
+    if (stats.isSymbolicLink()) {
+      return {
+        name: nodeName,
+        filePath,
+        kind: "symlink",
+        children: []
+      };
+    }
+
+    if (!stats.isDirectory()) {
+      return {
+        name: nodeName,
+        filePath,
+        kind: "file",
+        children: []
+      };
+    }
+
+    if (currentDepth >= depth) {
+      return {
+        name: nodeName,
+        filePath,
+        kind: "directory",
+        children: []
+      };
+    }
+
+    let entries: TreeDirentLike[] = [];
+    try {
+      entries = fileSystem.readdirSync(filePath, {
+        withFileTypes: true
+      });
+    } catch (error) {
+      const e = error as Error;
+      return {
+        name: nodeName,
+        filePath,
+        kind: "error",
+        error: e.message,
+        children: []
+      };
+    }
+
+    entries.sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, {
+        sensitivity: "base"
+      })
+    );
+
+    const children: ProjectTreeNode[] = [];
+    for (const entry of entries) {
+      if (
+        entry.isDirectory() &&
+        ignoredDirectoryNames.has(normalizeTreeIgnoreName(entry.name))
+      ) {
+        continue;
+      }
+      children.push(visit(path.join(filePath, entry.name), currentDepth + 1));
+    }
+
+    return {
+      name: nodeName,
+      filePath,
+      kind: "directory",
+      children
+    };
+  };
+
+  return {
+    root: visit(resolvedRootPath, 0)
+  };
+}
+
+function formatProjectTreeNodeLabel(node: ProjectTreeNode): string {
+  if (node.kind === "directory") {
+    return `${node.name}/`;
+  }
+  if (node.kind === "symlink") {
+    return `${node.name}@`;
+  }
+  if (node.kind === "error") {
+    return `${node.name} [error: ${node.error ?? "unreadable"}]`;
+  }
+  return node.name;
+}
+
+export function formatProjectTree(tree: ProjectTreeResult): string {
+  const lines: string[] = [];
+  const renderNode = (
+    node: ProjectTreeNode,
+    prefix: string,
+    isLast: boolean,
+    isRoot: boolean
+  ): void => {
+    const label = formatProjectTreeNodeLabel(node);
+    if (isRoot) {
+      lines.push(label);
+    } else {
+      const branch = isLast ? "`-- " : "|-- ";
+      lines.push(`${prefix}${branch}${label}`);
+    }
+
+    if (node.children.length === 0) {
+      return;
+    }
+    const childPrefix = isRoot ? "" : `${prefix}${isLast ? "    " : "|   "}`;
+    for (let index = 0; index < node.children.length; index += 1) {
+      renderNode(
+        node.children[index],
+        childPrefix,
+        index === node.children.length - 1,
+        false
+      );
+    }
+  };
+
+  renderNode(tree.root, "", true, true);
+  return `Tree:\n${lines.join("\n")}\n`;
 }
 
 export function formatGrepMatches(
@@ -2083,6 +2357,20 @@ export function createReplSession(
         );
       }
       return false;
+    },
+    tree: async (args) => {
+      const parsed = parseTreeCommandArgs(args);
+      if (!parsed.options) {
+        writers.stderr(`${parsed.error}\nUsage: /tree [path] [--depth N]\n`);
+        return false;
+      }
+      const tree = buildProjectTree({
+        cwd: process.cwd(),
+        rootPath: parsed.options.rootPath,
+        depth: parsed.options.depth
+      });
+      writers.stdout(formatProjectTree(tree));
+      return false;
     }
   };
 
@@ -2205,6 +2493,7 @@ export function createReplSession(
           case "drop":
           case "files":
           case "grep":
+          case "tree":
             return commandHandlers[command.kind](args);
           default:
             return false;
