@@ -40,6 +40,7 @@ export const DEFAULT_MAX_HISTORY_PREVIEW_LENGTH = 120;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const MAX_COMPLETION_USAGE_FREQUENCY = 2_147_483_647;
 export const DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS = 15_000;
+export const DEFAULT_REQUEST_TOKEN_BUDGET = 4_000;
 export const DEFAULT_GREP_MATCH_LIMIT = 20;
 export const DEFAULT_GREP_IGNORED_DIRECTORY_NAMES = [
   ".git",
@@ -592,6 +593,7 @@ export interface ReplSessionOptions {
   saveApiKey?: (apiKey: string) => void;
   saveModel?: (model: string) => void;
   maxReplyLength?: number;
+  requestTokenBudget?: number;
   sessionRepository?: Pick<SessionRepository, "createSession" | "listSessions">;
   messageRepository?: Pick<
     MessageRepository,
@@ -731,6 +733,14 @@ export interface RenderedAssistantReply {
   text: string;
   truncated: boolean;
   usedFallback: boolean;
+}
+
+export interface TokenBudgetTrimResult {
+  messages: ChatMessage[];
+  estimatedTokens: number;
+  truncated: boolean;
+  droppedMessages: number;
+  trimmedMessages: number;
 }
 
 export interface SessionsCommandOptions {
@@ -2009,6 +2019,157 @@ export function renderAssistantReply(
   };
 }
 
+export function estimateMessageTokens(message: ChatMessage): number {
+  const normalizedLength = message.content.length;
+  const contentTokens = Math.ceil(normalizedLength / 4);
+  return 1 + contentTokens;
+}
+
+export function estimateChatRequestTokens(messages: ChatMessage[]): number {
+  return messages.reduce((sum, message) => sum + estimateMessageTokens(message), 0);
+}
+
+function clipContentToTokenBudget(content: string, tokenBudget: number): string {
+  const maxChars = Math.max(0, tokenBudget * 4);
+  if (content.length <= maxChars) {
+    return content;
+  }
+  if (maxChars === 0) {
+    return "";
+  }
+  const suffix = "\n[...truncated by token budget]";
+  if (maxChars <= suffix.length) {
+    return content.slice(0, maxChars);
+  }
+  return `${content.slice(0, maxChars - suffix.length)}${suffix}`;
+}
+
+function trimMessageToBudget(
+  message: ChatMessage,
+  budget: number
+): ChatMessage | undefined {
+  if (budget <= 0) {
+    return undefined;
+  }
+  const availableContentTokens = Math.max(0, budget - 1);
+  const clipped = clipContentToTokenBudget(message.content, availableContentTokens);
+  const candidate: ChatMessage = {
+    role: message.role,
+    content: clipped
+  };
+  if (estimateMessageTokens(candidate) <= budget) {
+    return candidate;
+  }
+  return {
+    role: message.role,
+    content: ""
+  };
+}
+
+function normalizeTokenBudget(tokenBudget: number): number {
+  if (!Number.isFinite(tokenBudget) || tokenBudget <= 0) {
+    return DEFAULT_REQUEST_TOKEN_BUDGET;
+  }
+  return Math.floor(tokenBudget);
+}
+
+export function trimMessagesToTokenBudget(
+  messages: ChatMessage[],
+  tokenBudget: number = DEFAULT_REQUEST_TOKEN_BUDGET
+): TokenBudgetTrimResult {
+  const normalizedBudget = normalizeTokenBudget(tokenBudget);
+  const initialTokens = estimateChatRequestTokens(messages);
+  if (initialTokens <= normalizedBudget) {
+    return {
+      messages: [...messages],
+      estimatedTokens: initialTokens,
+      truncated: false,
+      droppedMessages: 0,
+      trimmedMessages: 0
+    };
+  }
+
+  const latestUserIndex = (() => {
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      if (messages[index].role === "user") {
+        return index;
+      }
+    }
+    return -1;
+  })();
+
+  const selected = new Map<number, ChatMessage>();
+  let remaining = normalizedBudget;
+  let trimmedMessages = 0;
+
+  const includeCandidate = (
+    index: number,
+    allowTrim: boolean
+  ): void => {
+    if (selected.has(index) || remaining <= 0) {
+      return;
+    }
+    const message = messages[index];
+    const tokens = estimateMessageTokens(message);
+    if (tokens <= remaining) {
+      selected.set(index, { ...message });
+      remaining -= tokens;
+      return;
+    }
+    if (!allowTrim) {
+      return;
+    }
+    const trimmed = trimMessageToBudget(message, remaining);
+    if (!trimmed) {
+      return;
+    }
+    selected.set(index, trimmed);
+    remaining -= estimateMessageTokens(trimmed);
+    trimmedMessages += 1;
+  };
+
+  if (latestUserIndex >= 0) {
+    includeCandidate(latestUserIndex, true);
+  }
+
+  for (let index = 0; index < messages.length; index += 1) {
+    if (messages[index].role === "system") {
+      includeCandidate(index, true);
+    }
+  }
+
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (index === latestUserIndex) {
+      continue;
+    }
+    if (messages[index].role === "system") {
+      continue;
+    }
+    includeCandidate(index, false);
+  }
+
+  const keptIndexes = [...selected.keys()].sort((left, right) => left - right);
+  const keptMessages = keptIndexes.map((index) => selected.get(index) as ChatMessage);
+  const estimatedTokens = estimateChatRequestTokens(keptMessages);
+  const droppedMessages = Math.max(0, messages.length - keptMessages.length);
+  const truncated = droppedMessages > 0 || trimmedMessages > 0;
+
+  return {
+    messages: keptMessages,
+    estimatedTokens,
+    truncated,
+    droppedMessages,
+    trimmedMessages
+  };
+}
+
+export function formatTokenBudgetTrimNotice(
+  result: TokenBudgetTrimResult,
+  tokenBudget: number
+): string {
+  return `[context:warn] request exceeded token budget ${tokenBudget}; dropped ${result.droppedMessages} message(s), trimmed ${result.trimmedMessages} message(s), estimated tokens ${result.estimatedTokens}.\n`;
+}
+
 export function createReplSession(
   writers: ReplWriters,
   maxInputLength: number = DEFAULT_MAX_INPUT_LENGTH,
@@ -2022,6 +2183,9 @@ export function createReplSession(
   };
   let provider = options?.provider ?? createRuntimeProvider(config);
   const maxReplyLength = options?.maxReplyLength ?? DEFAULT_MAX_REPLY_LENGTH;
+  const requestTokenBudget = normalizeTokenBudget(
+    options?.requestTokenBudget ?? DEFAULT_REQUEST_TOKEN_BUDGET
+  );
   const sessionRepository = options?.sessionRepository;
   const messageRepository = options?.messageRepository;
   const commandHistoryRepository = options?.commandHistoryRepository;
@@ -2587,6 +2751,14 @@ export function createReplSession(
         );
         if (contextMessage) {
           request.messages = [contextMessage, ...request.messages];
+        }
+        const trimmed = trimMessagesToTokenBudget(
+          request.messages,
+          requestTokenBudget
+        );
+        request.messages = trimmed.messages;
+        if (trimmed.truncated) {
+          writers.stderr(formatTokenBudgetTrimNotice(trimmed, requestTokenBudget));
         }
         const response = await provider.complete(request);
         const renderedReply = renderAssistantReply(

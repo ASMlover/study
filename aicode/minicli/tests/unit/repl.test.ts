@@ -17,6 +17,9 @@ import {
   DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
   dropContextFiles,
   EMPTY_REPLY_PLACEHOLDER,
+  estimateChatRequestTokens,
+  estimateMessageTokens,
+  formatTokenBudgetTrimNotice,
   formatGrepMatches,
   formatProjectTree,
   formatFilesCommandOutput,
@@ -47,6 +50,7 @@ import {
   shouldUseTerminalMode,
   sortCompletionCandidatesByUsageFrequency,
   sortSessionsByRecent,
+  trimMessagesToTokenBudget,
   validateAddContextFile,
   grepProjectText,
   buildProjectTree
@@ -172,6 +176,103 @@ test("renderAssistantReply truncates overlong content", () => {
   assert.equal(rendered.text, "abcde...[truncated]");
   assert.equal(rendered.truncated, true);
   assert.equal(rendered.usedFallback, false);
+});
+
+test("estimateMessageTokens and estimateChatRequestTokens compute request budget", () => {
+  assert.equal(estimateMessageTokens({ role: "user", content: "" }), 1);
+  assert.equal(estimateMessageTokens({ role: "assistant", content: "abcd" }), 2);
+  assert.equal(
+    estimateChatRequestTokens([
+      { role: "system", content: "abcd" },
+      { role: "user", content: "abcdefgh" }
+    ]),
+    5
+  );
+});
+
+test("trimMessagesToTokenBudget keeps messages at exact budget boundary", () => {
+  const messages = [
+    { role: "system", content: "abcd" },
+    { role: "user", content: "abcdefgh" }
+  ] as const;
+  const result = trimMessagesToTokenBudget(
+    messages.map((item) => ({ ...item })),
+    5
+  );
+  assert.equal(result.truncated, false);
+  assert.equal(result.estimatedTokens, 5);
+  assert.deepEqual(result.messages, messages);
+});
+
+test("trimMessagesToTokenBudget drops old history when over budget", () => {
+  const result = trimMessagesToTokenBudget(
+    [
+      { role: "assistant", content: "old assistant text that should be dropped" },
+      { role: "user", content: "old user text that should be dropped" },
+      { role: "assistant", content: "recent assistant" },
+      { role: "user", content: "latest question" }
+    ],
+    12
+  );
+  assert.equal(result.truncated, true);
+  assert.equal(result.estimatedTokens <= 12, true);
+  assert.equal(result.messages.some((message) => message.content.includes("latest question")), true);
+  assert.equal(
+    result.messages.some((message) => message.content.includes("old assistant text")),
+    false
+  );
+});
+
+test("trimMessagesToTokenBudget keeps latest user and system as higher priority", () => {
+  const result = trimMessagesToTokenBudget(
+    [
+      { role: "assistant", content: "older answer" },
+      { role: "system", content: "context block that should be preferred" },
+      { role: "assistant", content: "recent answer" },
+      { role: "user", content: "latest question should survive" }
+    ],
+    20
+  );
+  assert.equal(result.truncated, true);
+  assert.equal(
+    result.messages.some((message) => message.role === "system"),
+    true
+  );
+  assert.equal(
+    result.messages.some((message) =>
+      message.content.includes("latest question should survive")
+    ),
+    true
+  );
+});
+
+test("trimMessagesToTokenBudget handles tiny budgets by trimming required message", () => {
+  const result = trimMessagesToTokenBudget(
+    [
+      { role: "user", content: "this message is much longer than one token" }
+    ],
+    1
+  );
+  assert.equal(result.truncated, true);
+  assert.equal(result.estimatedTokens <= 1, true);
+  assert.equal(result.messages.length, 1);
+});
+
+test("formatTokenBudgetTrimNotice renders warning text", () => {
+  const warning = formatTokenBudgetTrimNotice(
+    {
+      messages: [{ role: "user", content: "hello" }],
+      estimatedTokens: 9,
+      truncated: true,
+      droppedMessages: 2,
+      trimmedMessages: 1
+    },
+    8
+  );
+  assert.match(warning, /\[context:warn\]/);
+  assert.match(warning, /budget 8/);
+  assert.match(warning, /dropped 2 message\(s\)/);
+  assert.match(warning, /trimmed 1 message\(s\)/);
 });
 
 test("createRuntimeProvider selects mock when apiKey is absent", () => {

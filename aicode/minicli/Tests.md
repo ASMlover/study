@@ -842,28 +842,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`222/222`). `npm run test:integration` passed with `15` pass and `15` skip; skipped cases are expected due sandbox subprocess/shell restrictions and unrelated to T31.
 ### T32 - Token 预算裁剪
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows (Node.js 22, TypeScript 5)
 - Scope: 实现超预算截断与提示
 - Unit Cases:
-  - [ ] 预算计算
-  - [ ] 等预算边界
-  - [ ] 超预算截断
-  - [ ] 优先级保留
-  - [ ] 极小预算
-  - [ ] 提示文案
+  - [x] 预算计算
+  - [x] 等预算边界
+  - [x] 超预算截断
+  - [x] 优先级保留
+  - [x] 极小预算
+  - [x] 提示文案
 - Integration Cases:
-  - [ ] 长上下文不超限
+  - [x] 长上下文不超限
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 请求稳定不过载
-- Actual:
+- Actual: Added request token budget controls in `src/repl.ts` with `estimateMessageTokens`, `estimateChatRequestTokens`, `trimMessagesToTokenBudget`, and `formatTokenBudgetTrimNotice`. Chat requests are now budget-trimmed before provider calls, prioritizing latest user message and system context, dropping older history first, and trimming content for tiny budgets. Added warning output when trimming occurs and new unit tests covering calculation/equality/over-budget/priority/tiny-budget/warning-text plus integration test `context-token-budget-limit` validating long context stays within configured request budget.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T32)
+  - Overall: N/A (coverage tooling not added in T32)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`228/228`). `npm run test:integration` passed with `16` pass and `15` skip; skipped cases are expected sandbox subprocess/shell restrictions and unrelated to T32.
 ### T33 - JSON Schema 命令注册
 - Date:
 - Env:
