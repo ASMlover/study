@@ -596,28 +596,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` 全部通过（`156/156`）。`npm run test:integration` 通过（`6` pass，`14` skip，子进程类用例受沙箱 `EPERM` 限制，包含 T21 集成项）。
 ### T22 - /run 只读执行器
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现跨平台 shell 执行与只读白名单
 - Unit Cases:
-  - [ ] 平台拼接
-  - [ ] 白名单校验
-  - [ ] 输出捕获
-  - [ ] 退出码映射
-  - [ ] stderr处理
-  - [ ] 输出截断
+  - [x] 平台拼接
+  - [x] 白名单校验
+  - [x] 输出捕获
+  - [x] 退出码映射
+  - [x] stderr处理
+  - [x] 输出截断
 - Integration Cases:
-  - [ ] 执行 pwd/Get-Location 成功
+  - [x] 执行 pwd/Get-Location 成功（受限环境按 EPERM 条件跳过）
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 只读执行可用
-- Actual:
+- Actual: Added `src/run-executor.ts` with platform-specific shell invocation (`powershell.exe -Command` / `/bin/sh -lc`), read-only allowlist validation, stdout/stderr capture, exit-code mapping, and output truncation. Wired `/run <command>` into REPL registry/router and added command-level validation and warning/error messages.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T22)
+  - Overall: N/A (coverage tooling not added in T22)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`164/164`). `npm run test:integration` passed (`21` total with `6` pass and `15` skipped due sandbox/subprocess restrictions). T22 integration case is guarded to skip when shell execution is blocked (`EPERM`).
 ### T23 - 风险分级器
 - Date:
 - Env:

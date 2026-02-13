@@ -48,7 +48,7 @@
 | T19 | Tab 接受补全 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added Tab accept flow with single-candidate insertion, trailing-space behavior, inline tab normalization, and T19 unit/integration coverage |
 | T20 | 候选导航与取消 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added arrow-key candidate navigation, Esc cancel, state reset semantics, and navigation+Tab acceptance tests |
 | T21 | 频次排序 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added usage-frequency completion ranking with command-history persistence, stable tie order, and restart-retained prioritization tests |
-| T22 | /run 只读执行器 | M4 | TODO | - | - | - | - |
+| T22 | /run 只读执行器 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/run` read-only executor with platform shell adapter, allowlist guard, output capture/truncation, exit-code mapping, and tests |
 | T23 | 风险分级器 | M4 | TODO | - | - | - | - |
 | T24 | 确认流程 | M4 | TODO | - | - | - | - |
 | T25 | 审计记录 | M4 | TODO | - | - | - | - |
@@ -102,3 +102,4 @@
 | 2026-02-12 | ci T20 | Created task commit for T20 completion candidate navigation/cancel implementation and tests | Codex |
 | 2026-02-12 | T21 | Completed usage-frequency-based completion sorting with command-history persistence, stable tie handling, overflow cap, and restart-retained ranking coverage | Codex |
 | 2026-02-12 | ci T21 | Created task commit for T21 usage-frequency completion sorting implementation and tests | Codex |
+| 2026-02-13 | T22 | Completed `/run` read-only executor with cross-platform shell invocation, whitelist validation, output capture/stderr handling, exit-code mapping, and truncation coverage | Codex |

@@ -21,6 +21,10 @@ import {
   SessionRecord,
   SessionRepository
 } from "./repository";
+import {
+  DEFAULT_RUN_OUTPUT_LIMIT,
+  executeReadOnlyCommand
+} from "./run-executor";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
@@ -37,7 +41,8 @@ export type KnownReplCommandKind =
   | "new"
   | "sessions"
   | "switch"
-  | "history";
+  | "history"
+  | "run";
 
 interface ReplCommandRegistration
   extends CommandRegistration<KnownReplCommandKind> {
@@ -116,6 +121,13 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
       "/history",
       "/history [--limit N]",
       "Show messages in current session",
+      true
+    ),
+    createReplCommand(
+      "run",
+      "/run",
+      "/run <command>",
+      "Execute a read-only shell command",
       true
     )
   ]);
@@ -543,6 +555,7 @@ export type ReplCommandMatch =
   | { kind: "sessions"; args: string[] }
   | { kind: "switch"; args: string[] }
   | { kind: "history"; args: string[] }
+  | { kind: "run"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -570,6 +583,9 @@ function matchResolvedReplCommand(
   }
   if (kind === "switch") {
     return { kind: "switch", args };
+  }
+  if (kind === "run") {
+    return { kind: "run", args };
   }
   return { kind: "history", args };
 }
@@ -1113,6 +1129,41 @@ export function createReplSession(
           : allMessages.slice(-parsed.options.limit);
       writers.stdout(formatHistoryList(selected));
       return false;
+    },
+    run: async (args) => {
+      const raw = args.join(" ").trim();
+      const result = executeReadOnlyCommand(raw, {
+        cwd: process.cwd()
+      });
+      if (!result.ok) {
+        writers.stderr(`[run:error] ${result.error}\n`);
+        return false;
+      }
+
+      if (result.stdout.length > 0) {
+        writers.stdout(
+          result.stdout.endsWith("\n") ? result.stdout : `${result.stdout}\n`
+        );
+      }
+      if (result.stderr.length > 0) {
+        writers.stderr(
+          result.stderr.endsWith("\n") ? result.stderr : `${result.stderr}\n`
+        );
+      }
+      if (result.stdoutTruncated) {
+        writers.stderr(
+          `[run:warn] stdout exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
+        );
+      }
+      if (result.stderrTruncated) {
+        writers.stderr(
+          `[run:warn] stderr exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
+        );
+      }
+      if (result.exitCode !== 0) {
+        writers.stderr(`[run:error] command exited with code ${result.exitCode}.\n`);
+      }
+      return false;
     }
   };
 
@@ -1179,6 +1230,7 @@ export function createReplSession(
           case "sessions":
           case "switch":
           case "history":
+          case "run":
             return commandHandlers[command.kind](args);
           default:
             return false;

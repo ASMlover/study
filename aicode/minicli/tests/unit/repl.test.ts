@@ -261,6 +261,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "history",
     args: ["--limit", "3"]
   });
+  assert.deepEqual(matchReplCommand("/run pwd"), {
+    kind: "run",
+    args: ["pwd"]
+  });
 });
 
 test("completeReplCommandPrefix matches slash prefixes", () => {
@@ -276,7 +280,8 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/new",
     "/sessions",
     "/switch",
-    "/history"
+    "/history",
+    "/run"
   ]);
 });
 
@@ -297,7 +302,8 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/new",
     "/sessions",
     "/switch",
-    "/history"
+    "/history",
+    "/run"
   ]);
 });
 
@@ -1167,6 +1173,36 @@ test("repl /history reports invalid limit value", async () => {
   await session.onLine("/history --limit 0");
 
   assert.match(errors.join(""), /Usage: \/history \[--limit N\]/);
+});
+
+test("repl /run rejects non-read-only commands", async () => {
+  const errors: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH
+  );
+
+  await session.onLine("/run rm -rf .");
+
+  assert.match(errors.join(""), /\[run:error\] Command is not allowed in read-only mode\./);
+});
+
+test("repl /run validates missing command argument", async () => {
+  const errors: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH
+  );
+
+  await session.onLine("/run");
+
+  assert.match(errors.join(""), /\[run:error\] Usage: \/run <command>/);
 });
 
 test("repl session marks /exit as exit signal", async () => {
