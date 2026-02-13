@@ -40,6 +40,13 @@ export const DEFAULT_MAX_HISTORY_PREVIEW_LENGTH = 120;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const MAX_COMPLETION_USAGE_FREQUENCY = 2_147_483_647;
 export const DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS = 15_000;
+export const DEFAULT_GREP_MATCH_LIMIT = 20;
+export const DEFAULT_GREP_IGNORED_DIRECTORY_NAMES = [
+  ".git",
+  ".minicli",
+  "build",
+  "node_modules"
+] as const;
 
 export type RunConfirmationDecision = "confirm" | "reject" | "invalid";
 
@@ -55,7 +62,8 @@ export type KnownReplCommandKind =
   | "run"
   | "add"
   | "drop"
-  | "files";
+  | "files"
+  | "grep";
 
 interface ReplCommandRegistration
   extends CommandRegistration<KnownReplCommandKind> {
@@ -162,6 +170,13 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
       "/files",
       "/files [--limit N] [--q keyword]",
       "List context files",
+      true
+    ),
+    createReplCommand(
+      "grep",
+      "/grep",
+      "/grep <pattern> [--limit N]",
+      "Search project text by regex pattern",
       true
     )
   ]);
@@ -645,6 +660,7 @@ export type ReplCommandMatch =
   | { kind: "add"; args: string[] }
   | { kind: "drop"; args: string[] }
   | { kind: "files"; args: string[] }
+  | { kind: "grep"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -685,6 +701,9 @@ function matchResolvedReplCommand(
   if (kind === "files") {
     return { kind: "files", args };
   }
+  if (kind === "grep") {
+    return { kind: "grep", args };
+  }
   return { kind: "history", args };
 }
 
@@ -715,6 +734,21 @@ export interface HistoryCommandOptions {
 export interface FilesCommandOptions {
   limit?: number;
   query?: string;
+}
+
+export interface GrepCommandOptions {
+  limit: number;
+}
+
+export interface GrepMatchRecord {
+  filePath: string;
+  lineNumber: number;
+  lineText: string;
+}
+
+export interface GrepSearchResult {
+  matches: GrepMatchRecord[];
+  truncated: boolean;
 }
 
 function normalizeContextPathForDedup(filePath: string): string {
@@ -1055,6 +1089,210 @@ export function formatFilesCommandOutput(
     return `[${index + 1}] ${abbreviateContextPath(displayPath, maxPathLength)}`;
   });
   return `Context files:\n${lines.join("\n")}\n`;
+}
+
+export function parseGrepCommandArgs(
+  args: string[]
+): { pattern?: string; options?: GrepCommandOptions; error?: string } {
+  const options: GrepCommandOptions = {
+    limit: DEFAULT_GREP_MATCH_LIMIT
+  };
+  let pattern: string | undefined;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === "--limit") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --limit." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value <= 0) {
+        return { error: "--limit must be a positive integer." };
+      }
+      options.limit = value;
+      index += 1;
+      continue;
+    }
+
+    if (token.startsWith("--")) {
+      return { error: `Unknown argument: ${token}` };
+    }
+
+    if (pattern !== undefined) {
+      return { error: "Pattern must be a single token." };
+    }
+    pattern = token;
+  }
+
+  if (pattern === undefined || pattern.trim().length === 0) {
+    return { error: "Missing grep pattern." };
+  }
+
+  return { pattern, options };
+}
+
+export function parseGrepPattern(
+  rawPattern: string
+): { regex?: RegExp; error?: string } {
+  const trimmed = rawPattern.trim();
+  if (trimmed.length === 0) {
+    return { error: "Pattern cannot be empty." };
+  }
+
+  const literalMatch = /^\/(.+)\/([a-z]*)$/.exec(trimmed);
+  try {
+    if (literalMatch) {
+      const [, source, flags] = literalMatch;
+      return {
+        regex: new RegExp(source, flags.replace(/[gy]/g, ""))
+      };
+    }
+    return {
+      regex: new RegExp(trimmed)
+    };
+  } catch (error) {
+    const e = error as Error;
+    return { error: `Invalid regex pattern: ${e.message}` };
+  }
+}
+
+function normalizeGrepIgnoreName(name: string): string {
+  if (process.platform === "win32") {
+    return name.toLowerCase();
+  }
+  return name;
+}
+
+function shouldIgnoreGrepEntry(
+  name: string,
+  ignoredDirectoryNames: ReadonlySet<string>
+): boolean {
+  return ignoredDirectoryNames.has(normalizeGrepIgnoreName(name));
+}
+
+function createSafeRegexForLineTest(regex: RegExp): RegExp {
+  if (!regex.global && !regex.sticky) {
+    return regex;
+  }
+  return new RegExp(regex.source, regex.flags.replace(/[gy]/g, ""));
+}
+
+export function grepProjectText(
+  pattern: RegExp,
+  options?: {
+    cwd?: string;
+    limit?: number;
+    ignoredDirectoryNames?: readonly string[];
+    fileSystem?: Pick<typeof fs, "readdirSync" | "readFileSync">;
+  }
+): GrepSearchResult {
+  const cwd = options?.cwd ?? process.cwd();
+  const limit = Math.max(1, Math.floor(options?.limit ?? DEFAULT_GREP_MATCH_LIMIT));
+  const ignoredDirectoryNames = new Set(
+    (options?.ignoredDirectoryNames ?? DEFAULT_GREP_IGNORED_DIRECTORY_NAMES).map(
+      normalizeGrepIgnoreName
+    )
+  );
+  const fileSystem = options?.fileSystem ?? fs;
+  const regex = createSafeRegexForLineTest(pattern);
+  const matches: GrepMatchRecord[] = [];
+  let truncated = false;
+  const stack: string[] = [cwd];
+
+  while (stack.length > 0 && !truncated) {
+    const currentDir = stack.pop() as string;
+    let entries: fs.Dirent[];
+    try {
+      entries = fileSystem.readdirSync(currentDir, {
+        withFileTypes: true
+      });
+    } catch {
+      continue;
+    }
+
+    entries.sort((left, right) =>
+      left.name.localeCompare(right.name, undefined, {
+        sensitivity: "base"
+      })
+    );
+
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) {
+        continue;
+      }
+
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        if (!shouldIgnoreGrepEntry(entry.name, ignoredDirectoryNames)) {
+          stack.push(fullPath);
+        }
+        continue;
+      }
+      if (!entry.isFile()) {
+        continue;
+      }
+
+      let content: Buffer;
+      try {
+        content = fileSystem.readFileSync(fullPath);
+      } catch {
+        continue;
+      }
+      if (isBinaryContent(content)) {
+        continue;
+      }
+
+      let decoded = "";
+      try {
+        decoded = new TextDecoder("utf-8", { fatal: true }).decode(content);
+      } catch {
+        continue;
+      }
+
+      const lines = decoded.split(/\r?\n/);
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        regex.lastIndex = 0;
+        if (!regex.test(lines[lineIndex])) {
+          continue;
+        }
+        matches.push({
+          filePath: fullPath,
+          lineNumber: lineIndex + 1,
+          lineText: lines[lineIndex]
+        });
+        if (matches.length >= limit) {
+          truncated = true;
+          break;
+        }
+      }
+
+      if (truncated) {
+        break;
+      }
+    }
+  }
+
+  return {
+    matches,
+    truncated
+  };
+}
+
+export function formatGrepMatches(
+  matches: GrepMatchRecord[],
+  cwd: string = process.cwd(),
+  maxLineLength: number = 160
+): string {
+  if (matches.length === 0) {
+    return "No matches.\n";
+  }
+  const lines = matches.map((match, index) => {
+    const displayPath = resolveContextDisplayPath(match.filePath, cwd);
+    const lineText = truncateHistoryContent(match.lineText, maxLineLength);
+    return `[${index + 1}] ${displayPath}:${match.lineNumber}: ${lineText}`;
+  });
+  return `Grep matches:\n${lines.join("\n")}\n`;
 }
 
 export function buildContextSystemMessage(
@@ -1820,6 +2058,31 @@ export function createReplSession(
         formatFilesCommandOutput(contextFiles, parsed.options, process.cwd())
       );
       return false;
+    },
+    grep: async (args) => {
+      const parsed = parseGrepCommandArgs(args);
+      if (!parsed.options || !parsed.pattern) {
+        writers.stderr(`${parsed.error}\nUsage: /grep <pattern> [--limit N]\n`);
+        return false;
+      }
+
+      const resolvedPattern = parseGrepPattern(parsed.pattern);
+      if (!resolvedPattern.regex) {
+        writers.stderr(`[grep:error] ${resolvedPattern.error}\n`);
+        return false;
+      }
+
+      const result = grepProjectText(resolvedPattern.regex, {
+        cwd: process.cwd(),
+        limit: parsed.options.limit
+      });
+      writers.stdout(formatGrepMatches(result.matches, process.cwd()));
+      if (result.truncated) {
+        writers.stderr(
+          `[grep:warn] reached match limit (${parsed.options.limit}); refine pattern or increase --limit.\n`
+        );
+      }
+      return false;
     }
   };
 
@@ -1941,6 +2204,7 @@ export function createReplSession(
           case "add":
           case "drop":
           case "files":
+          case "grep":
             return commandHandlers[command.kind](args);
           default:
             return false;

@@ -767,28 +767,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`204/204`). `npm run test:integration` passed with `12` pass + `15` skip (sandbox subprocess/shell restrictions); new T28 integration case runs in-process and passed.
 ### T29 - /grep
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现项目只读检索
 - Unit Cases:
-  - [ ] pattern校验
-  - [ ] ignore规则
-  - [ ] 行号格式
-  - [ ] 空结果
-  - [ ] 限流
-  - [ ] 非法正则
+  - [x] pattern校验
+  - [x] ignore规则
+  - [x] 行号格式
+  - [x] 空结果
+  - [x] 限流
+  - [x] 非法正则
 - Integration Cases:
-  - [ ] 真实目录检索成功
+  - [x] 真实目录检索成功
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm run test:unit`
+  - `npm run test:integration`
 - Expected: 只读检索可用
-- Actual:
+- Actual: Added `/grep <pattern> [--limit N]` command with regex parsing/validation (`parseGrepPattern`), argument parsing (`parseGrepCommandArgs`), project traversal search (`grepProjectText`), default ignore rules (`.git/.minicli/build/node_modules`), line-numbered result formatting (`formatGrepMatches`), empty-result output, and match-limit truncation warning. Added unit tests covering all required T29 cases and integration test `project-grep-search` for real-directory search success.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T29)
+  - Overall: N/A (coverage tooling not added in T29)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`210/210`). `npm run test:integration` passed (`13` pass + `15` skip due sandbox subprocess/shell restrictions); new T29 integration case runs in-process and passed.
 ### T30 - /tree
 - Date:
 - Env:

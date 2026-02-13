@@ -55,7 +55,7 @@
 | T26 | /add | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context file collection with path normalization, dedup, file validation, and list-visible output |
 | T27 | /drop | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context file removal by path/index with bulk targets, stable remaining order, and request-context exclusion after drop |
 | T28 | /files | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/files` with sort/filter/limit/path abbreviation and integration-visible listing after `/add` |
-| T29 | /grep | M5 | TODO | - | - | - | - |
+| T29 | /grep | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added project text search with regex validation, ignore rules, line-numbered output, and match-limit control |
 | T30 | /tree | M5 | TODO | - | - | - | - |
 | T31 | 上下文组装器 | M5 | TODO | - | - | - | - |
 | T32 | Token 预算裁剪 | M5 | TODO | - | - | - | - |
@@ -110,3 +110,5 @@
 | 2026-02-13 | T27 | Completed `/drop` context removal by path/index with bulk deletion, stable order retention, and integration coverage verifying dropped files are excluded from request context | Codex |
 | 2026-02-13 | T28 | Completed `/files` context listing with sorted display, optional `--q` filter and `--limit`, path abbreviation, and unit+integration coverage | Codex |
 | 2026-02-13 | ci T28 | Created task commit for `/files` context listing implementation and tests | Codex |
+| 2026-02-13 | T29 | Completed `/grep` project search with regex pattern validation, ignore-directory rules, line-number formatting, empty-result handling, limit truncation warning, and integration coverage | Codex |
+| 2026-02-13 | ci T29 | Created task commit for `/grep` project regex search implementation and tests | Codex |

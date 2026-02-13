@@ -17,6 +17,7 @@ import {
   DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
   dropContextFiles,
   EMPTY_REPLY_PLACEHOLDER,
+  formatGrepMatches,
   formatFilesCommandOutput,
   formatCompletionCandidates,
   formatContextFileList,
@@ -32,6 +33,8 @@ import {
   OutputBuffer,
   parseHistoryCommandArgs,
   parseFilesCommandArgs,
+  parseGrepCommandArgs,
+  parseGrepPattern,
   parseNewSessionTitle,
   parseSwitchCommandArgs,
   parseSessionsCommandArgs,
@@ -42,7 +45,8 @@ import {
   shouldUseTerminalMode,
   sortCompletionCandidatesByUsageFrequency,
   sortSessionsByRecent,
-  validateAddContextFile
+  validateAddContextFile,
+  grepProjectText
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
 import { MessageRecord, SessionRecord } from "../../src/repository";
@@ -289,6 +293,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "files",
     args: ["--limit", "2"]
   });
+  assert.deepEqual(matchReplCommand("/grep TODO --limit 3"), {
+    kind: "grep",
+    args: ["TODO", "--limit", "3"]
+  });
 });
 
 test("completeReplCommandPrefix matches slash prefixes", () => {
@@ -308,7 +316,8 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/run",
     "/add",
     "/drop",
-    "/files"
+    "/files",
+    "/grep"
   ]);
 });
 
@@ -333,7 +342,8 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/run",
     "/add",
     "/drop",
-    "/files"
+    "/files",
+    "/grep"
   ]);
 });
 
@@ -586,6 +596,88 @@ test("parseFilesCommandArgs validates malformed values", () => {
     /cannot be empty/
   );
   assert.match(parseFilesCommandArgs(["--x"]).error ?? "", /Unknown argument/);
+});
+
+test("parseGrepCommandArgs validates required pattern and optional limit", () => {
+  assert.deepEqual(parseGrepCommandArgs(["TODO", "--limit", "2"]), {
+    pattern: "TODO",
+    options: {
+      limit: 2
+    }
+  });
+  assert.match(parseGrepCommandArgs([]).error ?? "", /Missing grep pattern/);
+  assert.match(parseGrepCommandArgs(["--limit"]).error ?? "", /Missing value/);
+  assert.match(
+    parseGrepCommandArgs(["TODO", "--limit", "0"]).error ?? "",
+    /positive integer/
+  );
+});
+
+test("parseGrepPattern reports invalid regex syntax", () => {
+  const valid = parseGrepPattern("TODO");
+  assert.ok(valid.regex);
+  const invalid = parseGrepPattern("[");
+  assert.equal(invalid.regex, undefined);
+  assert.match(invalid.error ?? "", /Invalid regex pattern/);
+});
+
+test("grepProjectText ignores configured directories", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-grep-ignore-"));
+  try {
+    fs.mkdirSync(path.join(tmpRoot, "src"));
+    fs.mkdirSync(path.join(tmpRoot, "node_modules"));
+    fs.writeFileSync(path.join(tmpRoot, "src", "main.ts"), "const TODO = 1;\n", "utf8");
+    fs.writeFileSync(
+      path.join(tmpRoot, "node_modules", "skip.js"),
+      "const TODO = 2;\n",
+      "utf8"
+    );
+
+    const result = grepProjectText(/TODO/, { cwd: tmpRoot, limit: 10 });
+    assert.equal(result.matches.length, 1);
+    assert.match(result.matches[0].filePath, /src[\\/]main\.ts$/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("formatGrepMatches uses file:line format with line numbers", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const output = formatGrepMatches(
+    [
+      {
+        filePath: path.join(cwd, "src", "repl.ts"),
+        lineNumber: 42,
+        lineText: "const needle = true;"
+      }
+    ],
+    cwd
+  );
+  assert.equal(
+    output,
+    `Grep matches:\n[1] ${path.join("src", "repl.ts")}:42: const needle = true;\n`
+  );
+});
+
+test("formatGrepMatches returns empty message for no results", () => {
+  assert.equal(formatGrepMatches([], process.cwd()), "No matches.\n");
+});
+
+test("grepProjectText enforces result limit and reports truncation", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-grep-limit-"));
+  try {
+    fs.writeFileSync(
+      path.join(tmpRoot, "many.txt"),
+      ["TODO one", "TODO two", "TODO three"].join("\n"),
+      "utf8"
+    );
+
+    const result = grepProjectText(/TODO/, { cwd: tmpRoot, limit: 2 });
+    assert.equal(result.matches.length, 2);
+    assert.equal(result.truncated, true);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 });
 
 test("parseHistoryCommandArgs parses optional limit", () => {
