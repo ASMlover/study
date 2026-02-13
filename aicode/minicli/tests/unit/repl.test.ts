@@ -6,6 +6,7 @@ import path from "node:path";
 import {
   acceptReplTabCompletion,
   addContextFile,
+  buildContextSystemMessage,
   buildDefaultSessionTitle,
   classifyReplInput,
   completeReplCommandPrefix,
@@ -14,6 +15,7 @@ import {
   createReplSession,
   DEFAULT_MAX_INPUT_LENGTH,
   DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
+  dropContextFiles,
   EMPTY_REPLY_PLACEHOLDER,
   formatCompletionCandidates,
   formatContextFileList,
@@ -277,6 +279,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "add",
     args: ["src/repl.ts"]
   });
+  assert.deepEqual(matchReplCommand("/drop 1"), {
+    kind: "drop",
+    args: ["1"]
+  });
 });
 
 test("completeReplCommandPrefix matches slash prefixes", () => {
@@ -294,7 +300,8 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/switch",
     "/history",
     "/run",
-    "/add"
+    "/add",
+    "/drop"
   ]);
 });
 
@@ -317,7 +324,8 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/switch",
     "/history",
     "/run",
-    "/add"
+    "/add",
+    "/drop"
   ]);
 });
 
@@ -1551,6 +1559,84 @@ test("formatContextFileList renders indexed context entries", () => {
   assert.equal(output, `Context files:\n[1] ${path.join("src", "repl.ts")}\n`);
 });
 
+test("dropContextFiles removes item by path", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const first = path.join(cwd, "a.txt");
+  const second = path.join(cwd, "b.txt");
+  const files = [first, second];
+  const result = dropContextFiles(files, [first], cwd);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.removed, [first]);
+  assert.deepEqual(files, [second]);
+});
+
+test("dropContextFiles removes item by index", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const files = [
+    path.join(cwd, "a.txt"),
+    path.join(cwd, "b.txt"),
+    path.join(cwd, "c.txt")
+  ];
+  const result = dropContextFiles(files, ["2"], cwd);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.removed, [path.join(cwd, "b.txt")]);
+  assert.deepEqual(files, [path.join(cwd, "a.txt"), path.join(cwd, "c.txt")]);
+});
+
+test("dropContextFiles reports non-existent target", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const files = [path.join(cwd, "a.txt")];
+  const result = dropContextFiles(files, ["#3"], cwd);
+  assert.equal(result.ok, false);
+  assert.match(result.error ?? "", /out of range/);
+  assert.deepEqual(files, [path.join(cwd, "a.txt")]);
+});
+
+test("dropContextFiles reports empty collection", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const files: string[] = [];
+  const result = dropContextFiles(files, ["1"], cwd);
+  assert.equal(result.ok, false);
+  assert.match(result.error ?? "", /empty/);
+});
+
+test("dropContextFiles supports bulk removal by mixed targets", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const files = [
+    path.join(cwd, "a.txt"),
+    path.join(cwd, "b.txt"),
+    path.join(cwd, "c.txt"),
+    path.join(cwd, "d.txt")
+  ];
+  const result = dropContextFiles(files, ["#1", path.join(cwd, "d.txt")], cwd);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.removed, [path.join(cwd, "a.txt"), path.join(cwd, "d.txt")]);
+  assert.deepEqual(files, [path.join(cwd, "b.txt"), path.join(cwd, "c.txt")]);
+});
+
+test("dropContextFiles keeps remaining order stable after removals", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const files = [
+    path.join(cwd, "a.txt"),
+    path.join(cwd, "b.txt"),
+    path.join(cwd, "c.txt"),
+    path.join(cwd, "d.txt")
+  ];
+  const result = dropContextFiles(files, ["2", "4"], cwd);
+  assert.equal(result.ok, true);
+  assert.deepEqual(files, [path.join(cwd, "a.txt"), path.join(cwd, "c.txt")]);
+});
+
+test("buildContextSystemMessage returns paths for current context", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const files = [path.join(cwd, "src", "repl.ts"), path.join(cwd, "README.md")];
+  const message = buildContextSystemMessage(files, cwd);
+  assert.deepEqual(message, {
+    role: "system",
+    content: `Context files:\n- ${path.join("src", "repl.ts")}\n- README.md`
+  });
+});
+
 test("repl /add appends file into context list output", async () => {
   const writes: string[] = [];
   const errors: string[] = [];
@@ -1575,6 +1661,39 @@ test("repl /add appends file into context list output", async () => {
     assert.match(output, /\[add\] added:/);
     assert.match(output, /Context files:/);
     assert.match(output, /\[1\] notes\.txt/);
+  } finally {
+    process.chdir(prevCwd);
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("repl /drop removes by index and updates context list", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-repl-drop-"));
+  const prevCwd = process.cwd();
+  try {
+    fs.writeFileSync(path.join(tmpRoot, "a.txt"), "a\n", "utf8");
+    fs.writeFileSync(path.join(tmpRoot, "b.txt"), "b\n", "utf8");
+    process.chdir(tmpRoot);
+
+    const session = createReplSession(
+      {
+        stdout: (message) => writes.push(message),
+        stderr: (message) => errors.push(message)
+      },
+      DEFAULT_MAX_INPUT_LENGTH
+    );
+    await session.onLine("/add a.txt");
+    await session.onLine("/add b.txt");
+    writes.length = 0;
+    await session.onLine("/drop 1");
+
+    const output = writes.join("");
+    assert.equal(errors.join(""), "");
+    assert.match(output, /\[drop\] removed 1 file\(s\)\./);
+    assert.doesNotMatch(output, /\[1\] a\.txt/);
+    assert.match(output, /\[1\] b\.txt/);
   } finally {
     process.chdir(prevCwd);
     fs.rmSync(tmpRoot, { recursive: true, force: true });

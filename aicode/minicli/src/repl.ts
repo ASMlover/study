@@ -53,7 +53,8 @@ export type KnownReplCommandKind =
   | "switch"
   | "history"
   | "run"
-  | "add";
+  | "add"
+  | "drop";
 
 interface ReplCommandRegistration
   extends CommandRegistration<KnownReplCommandKind> {
@@ -146,6 +147,13 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
       "/add",
       "/add <path>",
       "Add a text file into context collection",
+      true
+    ),
+    createReplCommand(
+      "drop",
+      "/drop",
+      "/drop <path|index> [more paths or indexes]",
+      "Remove file(s) from context collection",
       true
     )
   ]);
@@ -627,6 +635,7 @@ export type ReplCommandMatch =
   | { kind: "history"; args: string[] }
   | { kind: "run"; args: string[] }
   | { kind: "add"; args: string[] }
+  | { kind: "drop"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -660,6 +669,9 @@ function matchResolvedReplCommand(
   }
   if (kind === "add") {
     return { kind: "add", args };
+  }
+  if (kind === "drop") {
+    return { kind: "drop", args };
   }
   return { kind: "history", args };
 }
@@ -824,6 +836,101 @@ export function addContextFile(
   };
 }
 
+function tryResolveDropTargetAsIndex(target: string): number | undefined {
+  const trimmed = target.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+  const normalized = trimmed.startsWith("#") ? trimmed.slice(1) : trimmed;
+  if (!/^\d+$/.test(normalized)) {
+    return undefined;
+  }
+  const numeric = Number(normalized);
+  if (!Number.isInteger(numeric) || numeric <= 0) {
+    return undefined;
+  }
+  return numeric;
+}
+
+export function dropContextFiles(
+  existingFiles: string[],
+  targets: string[],
+  cwd: string = process.cwd()
+): {
+  ok: boolean;
+  removed: string[];
+  error?: string;
+} {
+  if (existingFiles.length === 0) {
+    return {
+      ok: false,
+      removed: [],
+      error: "Context file collection is empty."
+    };
+  }
+  if (targets.length === 0) {
+    return {
+      ok: false,
+      removed: [],
+      error: "Missing drop target."
+    };
+  }
+
+  const selectedIndexes = new Set<number>();
+  for (const target of targets) {
+    const index = tryResolveDropTargetAsIndex(target);
+    if (index !== undefined) {
+      if (index > existingFiles.length) {
+        return {
+          ok: false,
+          removed: [],
+          error: `Context index out of range: ${index}`
+        };
+      }
+      selectedIndexes.add(index - 1);
+      continue;
+    }
+
+    let normalizedPath = "";
+    try {
+      normalizedPath = normalizeContextFilePath(target, cwd);
+    } catch (error) {
+      const e = error as Error;
+      return {
+        ok: false,
+        removed: [],
+        error: e.message
+      };
+    }
+
+    const normalizedKey = normalizeContextPathForDedup(normalizedPath);
+    const foundIndex = existingFiles.findIndex(
+      (item) => normalizeContextPathForDedup(item) === normalizedKey
+    );
+    if (foundIndex < 0) {
+      return {
+        ok: false,
+        removed: [],
+        error: `Context file not found: ${normalizedPath}`
+      };
+    }
+    selectedIndexes.add(foundIndex);
+  }
+
+  const removed = [...selectedIndexes]
+    .sort((left, right) => left - right)
+    .map((index) => existingFiles[index]);
+  const descending = [...selectedIndexes].sort((left, right) => right - left);
+  for (const index of descending) {
+    existingFiles.splice(index, 1);
+  }
+
+  return {
+    ok: true,
+    removed
+  };
+}
+
 export function formatContextFileList(
   files: string[],
   cwd: string = process.cwd()
@@ -838,6 +945,25 @@ export function formatContextFileList(
     return `[${index + 1}] ${displayPath}`;
   });
   return `Context files:\n${lines.join("\n")}\n`;
+}
+
+export function buildContextSystemMessage(
+  files: string[],
+  cwd: string = process.cwd()
+): ChatMessage | undefined {
+  if (files.length === 0) {
+    return undefined;
+  }
+  const lines = files.map((filePath) => {
+    const relative = path.relative(cwd, filePath);
+    const displayPath =
+      relative.length === 0 || relative.startsWith("..") ? filePath : relative;
+    return `- ${displayPath}`;
+  });
+  return {
+    role: "system",
+    content: `Context files:\n${lines.join("\n")}`
+  };
 }
 
 export type SwitchCommandTarget =
@@ -1560,6 +1686,21 @@ export function createReplSession(
       writers.stdout(`[add] ${status}: ${result.normalizedPath}\n`);
       writers.stdout(formatContextFileList(contextFiles, process.cwd()));
       return false;
+    },
+    drop: async (args) => {
+      if (args.length === 0) {
+        writers.stderr("Usage: /drop <path|index> [more paths or indexes]\n");
+        return false;
+      }
+      const result = dropContextFiles(contextFiles, args, process.cwd());
+      if (!result.ok) {
+        writers.stderr(`[drop:error] ${result.error}\n`);
+        return false;
+      }
+
+      writers.stdout(`[drop] removed ${result.removed.length} file(s).\n`);
+      writers.stdout(formatContextFileList(contextFiles, process.cwd()));
+      return false;
     }
   };
 
@@ -1679,6 +1820,7 @@ export function createReplSession(
           case "history":
           case "run":
           case "add":
+          case "drop":
             return commandHandlers[command.kind](args);
           default:
             return false;
@@ -1713,6 +1855,13 @@ export function createReplSession(
 
       try {
         const request = buildChatRequest(conversation, input.text, config);
+        const contextMessage = buildContextSystemMessage(
+          contextFiles,
+          process.cwd()
+        );
+        if (contextMessage) {
+          request.messages = [contextMessage, ...request.messages];
+        }
         const response = await provider.complete(request);
         const renderedReply = renderAssistantReply(
           response.message.content,

@@ -718,28 +718,29 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed fully. Unit tests `187/187` passed. Integration tests `25` total with `10` pass and `15` skip (expected subprocess/shell restrictions in sandbox); new T26 integration case runs in-process and passed.
 ### T27 - /drop
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 从上下文移除文件
 - Unit Cases:
-  - [ ] 按路径移除
-  - [ ] 按索引移除
-  - [ ] 不存在项
-  - [ ] 空集合
-  - [ ] 批量移除
-  - [ ] 排序保持
+  - [x] 按路径移除
+  - [x] 按索引移除
+  - [x] 不存在项
+  - [x] 空集合
+  - [x] 批量移除
+  - [x] 排序保持
 - Integration Cases:
-  - [ ] 移除后请求不含该文件
+  - [x] 移除后请求不含该文件
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm test`
 - Expected: 上下文可移除
-- Actual:
+- Actual: Added `/drop <path|index> [more paths or indexes]` command. Supports path-based remove, index-based remove (`#n` or `n`), and bulk mixed-target removal. Invalid/missing targets and empty collection are rejected with explicit errors. Remaining context file order is preserved after removal. Added request-level context metadata message (paths only), and integration coverage verifies removed files are excluded from subsequent chat request context.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T27)
+  - Overall: N/A (coverage tooling not added in T27)
+- Result: PASS
+- Notes: `npm test` passed. Unit tests `195/195` passed. Integration tests `26` total with `11` pass and `15` skipped due sandbox subprocess/shell restrictions; new T27 integration case runs in-process and passed.
 ### T28 - /files
 - Date:
 - Env:
