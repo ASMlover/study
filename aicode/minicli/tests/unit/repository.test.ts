@@ -213,3 +213,111 @@ test("CommandHistoryRepository persists usage across reopened connections", () =
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
 });
+
+test("RunAuditRepository stores audit rows with approval status and result fields", () => {
+  const storage = createTestStorage();
+  try {
+    const repositories = createRepositories(storage.connection);
+    const created = repositories.runAudit.recordAudit({
+      command: "pwd | wc -c",
+      riskLevel: "medium",
+      approvalStatus: "approved",
+      executed: true,
+      exitCode: 0,
+      stdout: "42",
+      stderr: ""
+    });
+
+    assert.equal(created.id > 0, true);
+    assert.equal(created.command, "pwd | wc -c");
+    assert.equal(created.riskLevel, "medium");
+    assert.equal(created.approvalStatus, "approved");
+    assert.equal(created.executed, true);
+    assert.equal(created.exitCode, 0);
+    assert.equal(created.stdout, "42");
+    assert.equal(created.stderr, "");
+    assert.match(created.createdAt, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
+  } finally {
+    storage.cleanup();
+  }
+});
+
+test("RunAuditRepository supports approval status filtering", () => {
+  const storage = createTestStorage();
+  try {
+    const repositories = createRepositories(storage.connection);
+    repositories.runAudit.recordAudit({
+      command: "pwd | wc -c",
+      riskLevel: "medium",
+      approvalStatus: "rejected",
+      executed: false
+    });
+    repositories.runAudit.recordAudit({
+      command: "rm -rf .",
+      riskLevel: "high",
+      approvalStatus: "timeout",
+      executed: false
+    });
+    repositories.runAudit.recordAudit({
+      command: "pwd",
+      riskLevel: "low",
+      approvalStatus: "not_required",
+      executed: true,
+      exitCode: 0
+    });
+
+    const onlyRejected = repositories.runAudit.listAudits({
+      approvalStatus: "rejected"
+    });
+    assert.equal(onlyRejected.length, 1);
+    assert.equal(onlyRejected[0].approvalStatus, "rejected");
+    assert.equal(onlyRejected[0].command, "pwd | wc -c");
+  } finally {
+    storage.cleanup();
+  }
+});
+
+test("RunAuditRepository supports pagination with recent-first order", () => {
+  const storage = createTestStorage();
+  try {
+    const repositories = createRepositories(storage.connection);
+    const first = repositories.runAudit.recordAudit({
+      command: "first",
+      riskLevel: "low",
+      approvalStatus: "not_required",
+      executed: true,
+      exitCode: 0
+    });
+    const second = repositories.runAudit.recordAudit({
+      command: "second",
+      riskLevel: "medium",
+      approvalStatus: "rejected",
+      executed: false
+    });
+    const third = repositories.runAudit.recordAudit({
+      command: "third",
+      riskLevel: "high",
+      approvalStatus: "timeout",
+      executed: false
+    });
+
+    storage.connection
+      .prepare("UPDATE run_audit SET created_at = ? WHERE id = ?")
+      .run("2026-01-01 00:00:00", first.id);
+    storage.connection
+      .prepare("UPDATE run_audit SET created_at = ? WHERE id = ?")
+      .run("2026-01-02 00:00:00", second.id);
+    storage.connection
+      .prepare("UPDATE run_audit SET created_at = ? WHERE id = ?")
+      .run("2026-01-03 00:00:00", third.id);
+
+    const paged = repositories.runAudit.listAudits({
+      limit: 1,
+      offset: 1
+    });
+    assert.equal(paged.length, 1);
+    assert.equal(paged[0].command, "second");
+  } finally {
+    storage.cleanup();
+  }
+});

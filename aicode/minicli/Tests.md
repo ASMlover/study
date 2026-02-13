@@ -670,28 +670,29 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed. Unit tests `175/175` passed. Integration tests `23` total with `8` pass and `15` skip (expected subprocess/shell restrictions in sandbox). Newly added T24 confirmation integration tests run without subprocess dependency and passed.
 ### T25 - 审计记录
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 记录执行审计并提供查询
 - Unit Cases:
-  - [ ] 入库
-  - [ ] 审批状态
-  - [ ] 结果字段
-  - [ ] 时间戳
-  - [ ] 过滤
-  - [ ] 分页
+  - [x] 入库
+  - [x] 审批状态
+  - [x] 结果字段
+  - [x] 时间戳
+  - [x] 过滤
+  - [x] 分页
 - Integration Cases:
-  - [ ] 执行后 /history --audit 可查
+  - [x] 执行后 /history --audit 可查
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm test`
 - Expected: 执行可追踪
-- Actual:
+- Actual: Added `run_audit` persistence table and repository APIs for audit insertion/query. `/run` now writes audit records with risk level, approval status, execution flag, exit code, stdout/stderr, and timestamp. `/history --audit` now supports audit query output plus `--status` filter and `--offset/--limit` pagination. Added unit tests for insert/status/result/timestamp/filter/pagination and integration coverage for `/run` followed by `/history --audit`.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T25)
+  - Overall: N/A (coverage tooling not added in T25)
+- Result: PASS
+- Notes: `npm test` passed. Unit tests `179/179` passed. Integration tests `24` total with `9` pass and `15` skipped due sandbox subprocess/shell restrictions; T25 integration (`/history --audit`) runs in-process and passed.
 ### T26 - /add
 - Date:
 - Env:

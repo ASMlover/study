@@ -22,6 +22,25 @@ export interface PaginationParams {
   offset?: number;
 }
 
+export type RunAuditRiskLevel = "low" | "medium" | "high";
+export type RunAuditApprovalStatus =
+  | "not_required"
+  | "approved"
+  | "rejected"
+  | "timeout";
+
+export interface RunAuditRecord {
+  id: number;
+  command: string;
+  riskLevel: RunAuditRiskLevel;
+  approvalStatus: RunAuditApprovalStatus;
+  executed: boolean;
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+  createdAt: string;
+}
+
 function normalizePagination(params?: PaginationParams): {
   limit?: number;
   offset: number;
@@ -73,6 +92,31 @@ function mapMessage(row: unknown): MessageRecord {
     sessionId: typed.session_id,
     role: typed.role,
     content: typed.content,
+    createdAt: typed.created_at
+  };
+}
+
+function mapRunAudit(row: unknown): RunAuditRecord {
+  const typed = row as {
+    id: number;
+    command: string;
+    risk_level: RunAuditRiskLevel;
+    approval_status: RunAuditApprovalStatus;
+    executed: number;
+    exit_code: number | null;
+    stdout: string;
+    stderr: string;
+    created_at: string;
+  };
+  return {
+    id: typed.id,
+    command: typed.command,
+    riskLevel: typed.risk_level,
+    approvalStatus: typed.approval_status,
+    executed: typed.executed === 1,
+    exitCode: typed.exit_code,
+    stdout: typed.stdout,
+    stderr: typed.stderr,
     createdAt: typed.created_at
   };
 }
@@ -230,14 +274,96 @@ export class CommandHistoryRepository {
   }
 }
 
+export class RunAuditRepository {
+  constructor(private readonly connection: DatabaseConnection) {}
+
+  recordAudit(input: {
+    command: string;
+    riskLevel: RunAuditRiskLevel;
+    approvalStatus: RunAuditApprovalStatus;
+    executed: boolean;
+    exitCode?: number | null;
+    stdout?: string;
+    stderr?: string;
+  }): RunAuditRecord {
+    const command = input.command.trim();
+    const normalizedCommand = command.length > 0 ? command : "(empty)";
+    const stdout = input.stdout ?? "";
+    const stderr = input.stderr ?? "";
+    const executed = input.executed ? 1 : 0;
+    this.connection
+      .prepare(
+        "INSERT INTO run_audit(command, risk_level, approval_status, executed, exit_code, stdout, stderr) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      )
+      .run(
+        normalizedCommand,
+        input.riskLevel,
+        input.approvalStatus,
+        executed,
+        input.exitCode ?? null,
+        stdout,
+        stderr
+      );
+
+    const created = this.connection
+      .prepare(
+        "SELECT id, command, risk_level, approval_status, executed, exit_code, stdout, stderr, created_at FROM run_audit WHERE id = last_insert_rowid()"
+      )
+      .get();
+    return mapRunAudit(created);
+  }
+
+  listAudits(params?: {
+    limit?: number;
+    offset?: number;
+    approvalStatus?: RunAuditApprovalStatus;
+  }): RunAuditRecord[] {
+    const pagination = normalizePagination(params);
+    if (pagination.limit === 0) {
+      return [];
+    }
+
+    const hasStatusFilter = params?.approvalStatus !== undefined;
+    if (pagination.limit === undefined) {
+      const rows = hasStatusFilter
+        ? this.connection
+            .prepare(
+              "SELECT id, command, risk_level, approval_status, executed, exit_code, stdout, stderr, created_at FROM run_audit WHERE approval_status = ? ORDER BY created_at DESC, id DESC"
+            )
+            .all(params?.approvalStatus)
+        : this.connection
+            .prepare(
+              "SELECT id, command, risk_level, approval_status, executed, exit_code, stdout, stderr, created_at FROM run_audit ORDER BY created_at DESC, id DESC"
+            )
+            .all();
+      return rows.map(mapRunAudit);
+    }
+
+    const rows = hasStatusFilter
+      ? this.connection
+          .prepare(
+            "SELECT id, command, risk_level, approval_status, executed, exit_code, stdout, stderr, created_at FROM run_audit WHERE approval_status = ? ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?"
+          )
+          .all(params?.approvalStatus, pagination.limit, pagination.offset)
+      : this.connection
+          .prepare(
+            "SELECT id, command, risk_level, approval_status, executed, exit_code, stdout, stderr, created_at FROM run_audit ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?"
+          )
+          .all(pagination.limit, pagination.offset);
+    return rows.map(mapRunAudit);
+  }
+}
+
 export function createRepositories(connection: DatabaseConnection): {
   sessions: SessionRepository;
   messages: MessageRepository;
   commandHistory: CommandHistoryRepository;
+  runAudit: RunAuditRepository;
 } {
   return {
     sessions: new SessionRepository(connection),
     messages: new MessageRepository(connection),
-    commandHistory: new CommandHistoryRepository(connection)
+    commandHistory: new CommandHistoryRepository(connection),
+    runAudit: new RunAuditRepository(connection)
   };
 }

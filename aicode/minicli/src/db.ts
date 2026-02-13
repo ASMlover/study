@@ -53,11 +53,26 @@ CREATE TABLE IF NOT EXISTS command_history (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS run_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  command TEXT NOT NULL,
+  risk_level TEXT NOT NULL CHECK (risk_level IN ('low', 'medium', 'high')),
+  approval_status TEXT NOT NULL CHECK (approval_status IN ('not_required', 'approved', 'rejected', 'timeout')),
+  executed INTEGER NOT NULL CHECK (executed IN (0, 1)),
+  exit_code INTEGER,
+  stdout TEXT NOT NULL DEFAULT '',
+  stderr TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_session_id_created_at
 ON messages(session_id, created_at, id);
 
 CREATE INDEX IF NOT EXISTS idx_command_history_created_at
 ON command_history(created_at, id);
+
+CREATE INDEX IF NOT EXISTS idx_run_audit_created_at
+ON run_audit(created_at, id);
 
 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
 VALUES (1, datetime('now'));

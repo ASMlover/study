@@ -45,8 +45,10 @@ test("initializeDatabase creates required tables and indexes", () => {
       assert.equal(hasTable("sessions"), true);
       assert.equal(hasTable("messages"), true);
       assert.equal(hasTable("command_history"), true);
+      assert.equal(hasTable("run_audit"), true);
       assert.equal(hasIndex("idx_messages_session_id_created_at"), true);
       assert.equal(hasIndex("idx_command_history_created_at"), true);
+      assert.equal(hasIndex("idx_run_audit_created_at"), true);
     } finally {
       connection.close();
     }

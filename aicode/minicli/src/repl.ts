@@ -18,6 +18,9 @@ import {
 import {
   CommandHistoryRepository,
   MessageRepository,
+  RunAuditApprovalStatus,
+  RunAuditRecord,
+  RunAuditRiskLevel,
   SessionRecord,
   SessionRepository
 } from "./repository";
@@ -124,7 +127,7 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
     createReplCommand(
       "history",
       "/history",
-      "/history [--limit N]",
+      "/history [--limit N] [--offset N] [--audit] [--status <not_required|approved|rejected|timeout>]",
       "Show messages in current session",
       true
     ),
@@ -546,11 +549,29 @@ export interface ReplSessionOptions {
     CommandHistoryRepository,
     "recordCommand" | "listUsageFrequency"
   >;
+  runAuditRepository?: Pick<RunAuditRepositoryLike, "recordAudit" | "listAudits">;
   completionUsageFrequency?: Record<string, number>;
   commandRegistry?: CommandRegistry<KnownReplCommandKind>;
   now?: () => Date;
   runConfirmationTimeoutMs?: number;
   executeRunCommand?: (command: string, cwd: string) => RunCommandResult;
+}
+
+interface RunAuditRepositoryLike {
+  recordAudit: (input: {
+    command: string;
+    riskLevel: RunAuditRiskLevel;
+    approvalStatus: RunAuditApprovalStatus;
+    executed: boolean;
+    exitCode?: number | null;
+    stdout?: string;
+    stderr?: string;
+  }) => RunAuditRecord;
+  listAudits: (params?: {
+    limit?: number;
+    offset?: number;
+    approvalStatus?: RunAuditApprovalStatus;
+  }) => RunAuditRecord[];
 }
 
 interface PendingRunConfirmation {
@@ -648,6 +669,9 @@ export interface SessionsCommandOptions {
 
 export interface HistoryCommandOptions {
   limit?: number;
+  offset: number;
+  audit: boolean;
+  approvalStatus?: RunAuditApprovalStatus;
 }
 
 export type SwitchCommandTarget =
@@ -833,9 +857,17 @@ export function parseSwitchCommandArgs(
 export function parseHistoryCommandArgs(
   args: string[]
 ): { options?: HistoryCommandOptions; error?: string } {
-  const options: HistoryCommandOptions = {};
+  const options: HistoryCommandOptions = {
+    offset: 0,
+    audit: false
+  };
   for (let index = 0; index < args.length; index += 1) {
     const token = args[index];
+    if (token === "--audit") {
+      options.audit = true;
+      continue;
+    }
+
     if (token === "--limit") {
       const raw = args[index + 1];
       if (raw === undefined) {
@@ -850,10 +882,69 @@ export function parseHistoryCommandArgs(
       continue;
     }
 
+    if (token === "--offset") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --offset." };
+      }
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value < 0) {
+        return { error: "--offset must be a non-negative integer." };
+      }
+      options.offset = value;
+      index += 1;
+      continue;
+    }
+
+    if (token === "--status") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --status." };
+      }
+      if (
+        raw !== "not_required" &&
+        raw !== "approved" &&
+        raw !== "rejected" &&
+        raw !== "timeout"
+      ) {
+        return {
+          error:
+            "--status must be one of: not_required, approved, rejected, timeout."
+        };
+      }
+      options.approvalStatus = raw;
+      index += 1;
+      continue;
+    }
+
     return { error: `Unknown argument: ${token}` };
   }
 
   return { options };
+}
+
+export function formatRunAuditList(
+  records: RunAuditRecord[],
+  maxPreviewLength: number = DEFAULT_MAX_HISTORY_PREVIEW_LENGTH
+): string {
+  if (records.length === 0) {
+    return "No audit records.\n";
+  }
+
+  const lines = records.map((record, index) => {
+    const stdoutPreview =
+      record.stdout.length === 0
+        ? "-"
+        : truncateHistoryContent(record.stdout, maxPreviewLength);
+    const stderrPreview =
+      record.stderr.length === 0
+        ? "-"
+        : truncateHistoryContent(record.stderr, maxPreviewLength);
+    const exitCode = record.exitCode === null ? "-" : String(record.exitCode);
+    const executed = record.executed ? "yes" : "no";
+    return `[${index + 1}] ${record.createdAt} status=${record.approvalStatus} risk=${record.riskLevel} executed=${executed} exit=${exitCode} cmd=${record.command} out=${stdoutPreview} err=${stderrPreview}`;
+  });
+  return `${lines.join("\n")}\n`;
 }
 
 export function sortSessionsByRecent(sessions: SessionRecord[]): SessionRecord[] {
@@ -969,6 +1060,7 @@ export function createReplSession(
   const sessionRepository = options?.sessionRepository;
   const messageRepository = options?.messageRepository;
   const commandHistoryRepository = options?.commandHistoryRepository;
+  const runAuditRepository = options?.runAuditRepository;
   const commandRegistry = options?.commandRegistry ?? DEFAULT_COMMAND_REGISTRY;
   const completionUsageFrequency: Record<string, number> =
     options?.completionUsageFrequency ??
@@ -987,6 +1079,59 @@ export function createReplSession(
   const conversation: ChatMessage[] = [];
   let currentSessionId: number | null = null;
   let pendingRunConfirmation: PendingRunConfirmation | undefined;
+
+  const recordRunAudit = (input: {
+    command: string;
+    riskLevel: RunAuditRiskLevel;
+    approvalStatus: RunAuditApprovalStatus;
+    executed: boolean;
+    exitCode?: number | null;
+    stdout?: string;
+    stderr?: string;
+  }): void => {
+    if (!runAuditRepository) {
+      return;
+    }
+    try {
+      runAuditRepository.recordAudit(input);
+    } catch (error) {
+      const e = error as Error;
+      writers.stderr(`[audit:error] ${e.message}\n`);
+    }
+  };
+
+  const executeAndRenderRunCommand = (
+    command: string
+  ): { result: RunCommandResult } => {
+    const result = executeRun(command, process.cwd());
+    if (!result.ok) {
+      writers.stderr(`[run:error] ${result.error}\n`);
+      return { result };
+    }
+
+    if (result.stdout.length > 0) {
+      writers.stdout(
+        result.stdout.endsWith("\n") ? result.stdout : `${result.stdout}\n`
+      );
+    }
+    if (result.stderr.length > 0) {
+      writers.stderr(result.stderr.endsWith("\n") ? result.stderr : `${result.stderr}\n`);
+    }
+    if (result.stdoutTruncated) {
+      writers.stderr(
+        `[run:warn] stdout exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
+      );
+    }
+    if (result.stderrTruncated) {
+      writers.stderr(
+        `[run:warn] stderr exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
+      );
+    }
+    if (result.exitCode !== 0) {
+      writers.stderr(`[run:error] command exited with code ${result.exitCode}.\n`);
+    }
+    return { result };
+  };
 
   const createAndSwitchSession = (requestedTitle?: string): {
     id?: number;
@@ -1154,14 +1299,31 @@ export function createReplSession(
       return false;
     },
     history: async (args) => {
-      if (!messageRepository) {
-        writers.stderr("Session storage is unavailable.\n");
+      const parsed = parseHistoryCommandArgs(args);
+      if (!parsed.options) {
+        writers.stderr(
+          `${parsed.error}\nUsage: /history [--limit N] [--offset N] [--audit] [--status <not_required|approved|rejected|timeout>]\n`
+        );
+        return false;
+      }
+      const options = parsed.options;
+
+      if (options.audit) {
+        if (!runAuditRepository) {
+          writers.stderr("Audit storage is unavailable.\n");
+          return false;
+        }
+        const audits = runAuditRepository.listAudits({
+          limit: options.limit,
+          offset: options.offset,
+          approvalStatus: options.approvalStatus
+        });
+        writers.stdout(formatRunAuditList(audits));
         return false;
       }
 
-      const parsed = parseHistoryCommandArgs(args);
-      if (!parsed.options) {
-        writers.stderr(`${parsed.error}\nUsage: /history [--limit N]\n`);
+      if (!messageRepository) {
+        writers.stderr("Session storage is unavailable.\n");
         return false;
       }
 
@@ -1172,9 +1334,11 @@ export function createReplSession(
 
       const allMessages = messageRepository.listMessagesBySession(currentSessionId);
       const selected =
-        parsed.options.limit === undefined
-          ? allMessages
-          : allMessages.slice(-parsed.options.limit);
+        options.limit === undefined
+          ? allMessages.slice(options.offset)
+          : options.offset === 0
+            ? allMessages.slice(-options.limit)
+            : allMessages.slice(options.offset, options.offset + options.limit);
       writers.stdout(formatHistoryList(selected));
       return false;
     },
@@ -1196,35 +1360,16 @@ export function createReplSession(
         return false;
       }
 
-      const result = executeRun(raw, process.cwd());
-      if (!result.ok) {
-        writers.stderr(`[run:error] ${result.error}\n`);
-        return false;
-      }
-
-      if (result.stdout.length > 0) {
-        writers.stdout(
-          result.stdout.endsWith("\n") ? result.stdout : `${result.stdout}\n`
-        );
-      }
-      if (result.stderr.length > 0) {
-        writers.stderr(
-          result.stderr.endsWith("\n") ? result.stderr : `${result.stderr}\n`
-        );
-      }
-      if (result.stdoutTruncated) {
-        writers.stderr(
-          `[run:warn] stdout exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
-        );
-      }
-      if (result.stderrTruncated) {
-        writers.stderr(
-          `[run:warn] stderr exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
-        );
-      }
-      if (result.exitCode !== 0) {
-        writers.stderr(`[run:error] command exited with code ${result.exitCode}.\n`);
-      }
+      const { result } = executeAndRenderRunCommand(raw);
+      recordRunAudit({
+        command: raw,
+        riskLevel: risk.level,
+        approvalStatus: "not_required",
+        executed: result.ok,
+        exitCode: result.ok ? result.exitCode : null,
+        stdout: result.stdout,
+        stderr: result.ok ? result.stderr : result.error
+      });
       return false;
     }
   };
@@ -1234,8 +1379,16 @@ export function createReplSession(
       if (pendingRunConfirmation) {
         const elapsedMs = now().getTime() - pendingRunConfirmation.requestedAtMs;
         if (elapsedMs > runConfirmationTimeoutMs) {
+          const timedOut = pendingRunConfirmation;
           pendingRunConfirmation = undefined;
           writers.stderr("[run:confirm] confirmation timed out; command cancelled.\n");
+          recordRunAudit({
+            command: timedOut.command,
+            riskLevel: timedOut.risk.level,
+            approvalStatus: "timeout",
+            executed: false,
+            exitCode: null
+          });
           return false;
         }
 
@@ -1246,41 +1399,31 @@ export function createReplSession(
         }
 
         if (decision === "reject") {
+          const rejected = pendingRunConfirmation;
           pendingRunConfirmation = undefined;
           writers.stderr("[run:confirm] command cancelled.\n");
+          recordRunAudit({
+            command: rejected.command,
+            riskLevel: rejected.risk.level,
+            approvalStatus: "rejected",
+            executed: false,
+            exitCode: null
+          });
           return false;
         }
 
         const approved = pendingRunConfirmation;
         pendingRunConfirmation = undefined;
-        const result = executeRun(approved.command, process.cwd());
-        if (!result.ok) {
-          writers.stderr(`[run:error] ${result.error}\n`);
-          return false;
-        }
-        if (result.stdout.length > 0) {
-          writers.stdout(
-            result.stdout.endsWith("\n") ? result.stdout : `${result.stdout}\n`
-          );
-        }
-        if (result.stderr.length > 0) {
-          writers.stderr(
-            result.stderr.endsWith("\n") ? result.stderr : `${result.stderr}\n`
-          );
-        }
-        if (result.stdoutTruncated) {
-          writers.stderr(
-            `[run:warn] stdout exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
-          );
-        }
-        if (result.stderrTruncated) {
-          writers.stderr(
-            `[run:warn] stderr exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
-          );
-        }
-        if (result.exitCode !== 0) {
-          writers.stderr(`[run:error] command exited with code ${result.exitCode}.\n`);
-        }
+        const { result } = executeAndRenderRunCommand(approved.command);
+        recordRunAudit({
+          command: approved.command,
+          riskLevel: approved.risk.level,
+          approvalStatus: "approved",
+          executed: result.ok,
+          exitCode: result.ok ? result.exitCode : null,
+          stdout: result.stdout,
+          stderr: result.ok ? result.stderr : result.error
+        });
         return false;
       }
 

@@ -536,13 +536,28 @@ test("parseSwitchCommandArgs validates malformed targets", () => {
 
 test("parseHistoryCommandArgs parses optional limit", () => {
   assert.deepEqual(parseHistoryCommandArgs([]), {
-    options: {}
+    options: {
+      offset: 0,
+      audit: false
+    }
   });
   assert.deepEqual(parseHistoryCommandArgs(["--limit", "2"]), {
     options: {
-      limit: 2
+      limit: 2,
+      offset: 0,
+      audit: false
     }
   });
+  assert.deepEqual(
+    parseHistoryCommandArgs(["--audit", "--status", "rejected", "--offset", "1"]),
+    {
+      options: {
+        offset: 1,
+        audit: true,
+        approvalStatus: "rejected"
+      }
+    }
+  );
 });
 
 test("parseHistoryCommandArgs validates invalid limit", () => {
@@ -550,6 +565,14 @@ test("parseHistoryCommandArgs validates invalid limit", () => {
   assert.match(
     parseHistoryCommandArgs(["--limit", "0"]).error ?? "",
     /positive integer/
+  );
+  assert.match(
+    parseHistoryCommandArgs(["--offset", "-1"]).error ?? "",
+    /non-negative integer/
+  );
+  assert.match(
+    parseHistoryCommandArgs(["--status", "oops"]).error ?? "",
+    /must be one of/
   );
   assert.match(
     parseHistoryCommandArgs(["oops"]).error ?? "",
@@ -1172,7 +1195,66 @@ test("repl /history reports invalid limit value", async () => {
   await session.onLine("/new alpha");
   await session.onLine("/history --limit 0");
 
-  assert.match(errors.join(""), /Usage: \/history \[--limit N\]/);
+  assert.match(
+    errors.join(""),
+    /Usage: \/history \[--limit N\] \[--offset N\] \[--audit\] \[--status <not_required\|approved\|rejected\|timeout>\]/
+  );
+});
+
+test("repl /history --audit shows run audit records", async () => {
+  const writes: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      runAuditRepository: {
+        recordAudit: () => ({
+          id: 1,
+          command: "pwd",
+          riskLevel: "low",
+          approvalStatus: "not_required",
+          executed: true,
+          exitCode: 0,
+          stdout: "C:/workspace",
+          stderr: "",
+          createdAt: "2026-02-13 00:00:00"
+        }),
+        listAudits: () => [
+          {
+            id: 1,
+            command: "pwd",
+            riskLevel: "low",
+            approvalStatus: "not_required",
+            executed: true,
+            exitCode: 0,
+            stdout: "C:/workspace",
+            stderr: "",
+            createdAt: "2026-02-13 00:00:00"
+          }
+        ]
+      },
+      executeRunCommand: () => ({
+        ok: true,
+        stdout: "C:/workspace",
+        stderr: "",
+        exitCode: 0,
+        stdoutTruncated: false,
+        stderrTruncated: false
+      })
+    }
+  );
+
+  await session.onLine("/run pwd");
+  writes.length = 0;
+  await session.onLine("/history --audit");
+
+  const output = writes.join("");
+  assert.match(output, /status=not_required/);
+  assert.match(output, /risk=low/);
+  assert.match(output, /cmd=pwd/);
 });
 
 test("repl /run executes medium-risk command after confirmation", async () => {
