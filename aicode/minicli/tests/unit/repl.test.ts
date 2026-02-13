@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   acceptReplTabCompletion,
+  addContextFile,
   buildDefaultSessionTitle,
   classifyReplInput,
   completeReplCommandPrefix,
@@ -12,13 +16,16 @@ import {
   DEFAULT_MAX_HISTORY_PREVIEW_LENGTH,
   EMPTY_REPLY_PLACEHOLDER,
   formatCompletionCandidates,
+  formatContextFileList,
   formatHistoryList,
   formatSessionList,
   formatSessionTimestamp,
   HELP_TEXT,
   incrementCompletionUsageFrequency,
+  isBinaryContent,
   MAX_COMPLETION_USAGE_FREQUENCY,
   matchReplCommand,
+  normalizeContextFilePath,
   OutputBuffer,
   parseHistoryCommandArgs,
   parseNewSessionTitle,
@@ -30,7 +37,8 @@ import {
   resolveUniqueSessionTitle,
   shouldUseTerminalMode,
   sortCompletionCandidatesByUsageFrequency,
-  sortSessionsByRecent
+  sortSessionsByRecent,
+  validateAddContextFile
 } from "../../src/repl";
 import { LLMProvider } from "../../src/provider";
 import { MessageRecord, SessionRecord } from "../../src/repository";
@@ -265,6 +273,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "run",
     args: ["pwd"]
   });
+  assert.deepEqual(matchReplCommand("/add src/repl.ts"), {
+    kind: "add",
+    args: ["src/repl.ts"]
+  });
 });
 
 test("completeReplCommandPrefix matches slash prefixes", () => {
@@ -281,7 +293,8 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/sessions",
     "/switch",
     "/history",
-    "/run"
+    "/run",
+    "/add"
   ]);
 });
 
@@ -303,7 +316,8 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/sessions",
     "/switch",
     "/history",
-    "/run"
+    "/run",
+    "/add"
   ]);
 });
 
@@ -1449,6 +1463,122 @@ test("repl /run validates missing command argument", async () => {
   await session.onLine("/run");
 
   assert.match(errors.join(""), /\[run:error\] Usage: \/run <command>/);
+});
+
+test("normalizeContextFilePath resolves and normalizes input path", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const normalized = normalizeContextFilePath(".\\src\\..\\src\\repl.ts", cwd);
+  assert.equal(
+    normalized,
+    path.normalize(path.join("C:", "workspace", "minicli", "src", "repl.ts"))
+  );
+});
+
+test("addContextFile deduplicates repeated file additions", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-add-dedupe-"));
+  try {
+    const target = path.join(tmpRoot, "note.txt");
+    fs.writeFileSync(target, "hello\n", "utf8");
+
+    const files: string[] = [];
+    const first = addContextFile(files, target, tmpRoot);
+    const second = addContextFile(files, target, tmpRoot);
+
+    assert.equal(first.ok, true);
+    assert.equal(first.added, true);
+    assert.equal(second.ok, true);
+    assert.equal(second.added, false);
+    assert.equal(files.length, 1);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("validateAddContextFile reports missing path", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-add-missing-"));
+  try {
+    const missing = path.join(tmpRoot, "missing.txt");
+    const result = validateAddContextFile(missing);
+    assert.equal(result.ok, false);
+    assert.match(result.error, /File does not exist/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("validateAddContextFile rejects directory path input", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-add-dir-"));
+  try {
+    const result = validateAddContextFile(tmpRoot);
+    assert.equal(result.ok, false);
+    assert.match(result.error, /Path is a directory/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("validateAddContextFile rejects binary content", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-add-binary-"));
+  try {
+    const target = path.join(tmpRoot, "binary.bin");
+    fs.writeFileSync(target, Buffer.from([0, 159, 146, 150]));
+    assert.equal(isBinaryContent(fs.readFileSync(target)), true);
+    const result = validateAddContextFile(target);
+    assert.equal(result.ok, false);
+    assert.match(result.error, /Binary file is not supported/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("validateAddContextFile rejects invalid utf-8 text file", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-add-encoding-"));
+  try {
+    const target = path.join(tmpRoot, "broken.txt");
+    fs.writeFileSync(target, Buffer.from([0xc3, 0x28]));
+    const result = validateAddContextFile(target);
+    assert.equal(result.ok, false);
+    assert.match(result.error, /not valid UTF-8/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("formatContextFileList renders indexed context entries", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const filePath = path.join(cwd, "src", "repl.ts");
+  const output = formatContextFileList([filePath], cwd);
+  assert.equal(output, `Context files:\n[1] ${path.join("src", "repl.ts")}\n`);
+});
+
+test("repl /add appends file into context list output", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-repl-add-"));
+  const prevCwd = process.cwd();
+  try {
+    const target = path.join(tmpRoot, "notes.txt");
+    fs.writeFileSync(target, "notes\n", "utf8");
+    process.chdir(tmpRoot);
+
+    const session = createReplSession(
+      {
+        stdout: (message) => writes.push(message),
+        stderr: (message) => errors.push(message)
+      },
+      DEFAULT_MAX_INPUT_LENGTH
+    );
+    await session.onLine("/add notes.txt");
+
+    const output = writes.join("");
+    assert.equal(errors.join(""), "");
+    assert.match(output, /\[add\] added:/);
+    assert.match(output, /Context files:/);
+    assert.match(output, /\[1\] notes\.txt/);
+  } finally {
+    process.chdir(prevCwd);
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 });
 
 test("repl session marks /exit as exit signal", async () => {

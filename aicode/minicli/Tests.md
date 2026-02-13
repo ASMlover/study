@@ -694,28 +694,29 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed. Unit tests `179/179` passed. Integration tests `24` total with `9` pass and `15` skipped due sandbox subprocess/shell restrictions; T25 integration (`/history --audit`) runs in-process and passed.
 ### T26 - /add
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 添加文件到上下文集合
 - Unit Cases:
-  - [ ] 路径规范化
-  - [ ] 去重
-  - [ ] 不存在报错
-  - [ ] 目录输入
-  - [ ] 二进制排除
-  - [ ] 编码异常
+  - [x] 路径规范化
+  - [x] 去重
+  - [x] 不存在报错
+  - [x] 目录输入
+  - [x] 二进制排除
+  - [x] 编码异常
 - Integration Cases:
-  - [ ] 添加后列表可见
+  - [x] 添加后列表可见
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm test`
 - Expected: 上下文可添加
-- Actual:
+- Actual: Added `/add <path>` command with absolute-path normalization, duplicate suppression, and file validation (missing path, directory input, binary file rejection, invalid UTF-8 rejection). On successful add, REPL prints current context collection list so added files are visible immediately. Added unit tests for all required T26 cases and integration test `context-add-list-visible`.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T26)
+  - Overall: N/A (coverage tooling not added in T26)
+- Result: PASS
+- Notes: `npm test` passed fully. Unit tests `187/187` passed. Integration tests `25` total with `10` pass and `15` skip (expected subprocess/shell restrictions in sandbox); new T26 integration case runs in-process and passed.
 ### T27 - /drop
 - Date:
 - Env:

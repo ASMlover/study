@@ -52,7 +52,7 @@
 | T23 | 风险分级器 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added low/medium/high risk classifier with blacklist + bypass detection and `/run` risk-gated routing with tests |
 | T24 | 确认流程 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added medium/high `/run` confirmation state with timeout, retry, and high-risk prompt; covered by unit/integration tests |
 | T25 | 审计记录 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/run` audit persistence and `/history --audit` query with status filter/pagination and tests |
-| T26 | /add | M5 | TODO | - | - | - | - |
+| T26 | /add | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context file collection with path normalization, dedup, file validation, and list-visible output |
 | T27 | /drop | M5 | TODO | - | - | - | - |
 | T28 | /files | M5 | TODO | - | - | - | - |
 | T29 | /grep | M5 | TODO | - | - | - | - |
@@ -106,3 +106,4 @@
 | 2026-02-13 | T23 | Completed `/run` risk classification with low/medium/high levels, blacklist + bypass matching, and integrated risk-block routing coverage | Codex |
 | 2026-02-13 | T24 | Completed `/run` confirmation workflow for medium/high risk commands with explicit yes/no gate, timeout cancellation, invalid-input retry, high-risk danger prompt, and state-recovery coverage | Codex |
 | 2026-02-13 | T25 | Completed run audit logging (`run_audit`) with approval state and result fields, plus `/history --audit` query supporting filter/pagination and passing unit/integration coverage | Codex |
+| 2026-02-13 | T26 | Completed `/add` context collection with normalized path handling, dedup, missing/dir/binary/invalid-utf8 guards, and integration-visible list output | Codex |

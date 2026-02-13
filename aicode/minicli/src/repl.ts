@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import readline from "node:readline";
 import {
   CommandRegistration,
@@ -50,7 +52,8 @@ export type KnownReplCommandKind =
   | "sessions"
   | "switch"
   | "history"
-  | "run";
+  | "run"
+  | "add";
 
 interface ReplCommandRegistration
   extends CommandRegistration<KnownReplCommandKind> {
@@ -136,6 +139,13 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
       "/run",
       "/run <command>",
       "Execute a read-only shell command",
+      true
+    ),
+    createReplCommand(
+      "add",
+      "/add",
+      "/add <path>",
+      "Add a text file into context collection",
       true
     )
   ]);
@@ -616,6 +626,7 @@ export type ReplCommandMatch =
   | { kind: "switch"; args: string[] }
   | { kind: "history"; args: string[] }
   | { kind: "run"; args: string[] }
+  | { kind: "add"; args: string[] }
   | { kind: "unknown"; token: string }
   | { kind: "none" };
 
@@ -647,6 +658,9 @@ function matchResolvedReplCommand(
   if (kind === "run") {
     return { kind: "run", args };
   }
+  if (kind === "add") {
+    return { kind: "add", args };
+  }
   return { kind: "history", args };
 }
 
@@ -672,6 +686,158 @@ export interface HistoryCommandOptions {
   offset: number;
   audit: boolean;
   approvalStatus?: RunAuditApprovalStatus;
+}
+
+function normalizeContextPathForDedup(filePath: string): string {
+  if (process.platform === "win32") {
+    return filePath.toLowerCase();
+  }
+  return filePath;
+}
+
+export function normalizeContextFilePath(
+  rawPath: string,
+  cwd: string = process.cwd()
+): string {
+  const trimmed = rawPath.trim();
+  if (trimmed.length === 0) {
+    throw new Error("Path cannot be empty.");
+  }
+  return path.normalize(path.resolve(cwd, trimmed));
+}
+
+export function isBinaryContent(content: Buffer): boolean {
+  const sampleLength = Math.min(content.length, 1024);
+  let suspiciousCount = 0;
+  for (let index = 0; index < sampleLength; index += 1) {
+    const value = content[index];
+    if (value === 0) {
+      return true;
+    }
+    const isTab = value === 9;
+    const isLineFeed = value === 10;
+    const isCarriageReturn = value === 13;
+    if (value < 32 && !isTab && !isLineFeed && !isCarriageReturn) {
+      suspiciousCount += 1;
+    }
+  }
+  if (sampleLength === 0) {
+    return false;
+  }
+  return suspiciousCount / sampleLength > 0.3;
+}
+
+export function validateAddContextFile(
+  filePath: string,
+  fileSystem: Pick<typeof fs, "existsSync" | "statSync" | "readFileSync"> = fs
+): { ok: true } | { ok: false; error: string } {
+  if (!fileSystem.existsSync(filePath)) {
+    return { ok: false, error: `File does not exist: ${filePath}` };
+  }
+
+  let stats: fs.Stats;
+  try {
+    stats = fileSystem.statSync(filePath);
+  } catch (error) {
+    const e = error as Error;
+    return { ok: false, error: `Cannot access path: ${e.message}` };
+  }
+
+  if (stats.isDirectory()) {
+    return { ok: false, error: `Path is a directory: ${filePath}` };
+  }
+
+  if (!stats.isFile()) {
+    return { ok: false, error: `Path is not a regular file: ${filePath}` };
+  }
+
+  let content: Buffer;
+  try {
+    content = fileSystem.readFileSync(filePath);
+  } catch (error) {
+    const e = error as Error;
+    return { ok: false, error: `Failed to read file: ${e.message}` };
+  }
+
+  if (isBinaryContent(content)) {
+    return { ok: false, error: `Binary file is not supported: ${filePath}` };
+  }
+
+  try {
+    new TextDecoder("utf-8", { fatal: true }).decode(content);
+  } catch {
+    return { ok: false, error: `File is not valid UTF-8: ${filePath}` };
+  }
+
+  return { ok: true };
+}
+
+export function addContextFile(
+  existingFiles: string[],
+  rawPath: string,
+  cwd: string = process.cwd(),
+  fileSystem: Pick<typeof fs, "existsSync" | "statSync" | "readFileSync"> = fs
+): {
+  ok: boolean;
+  added: boolean;
+  normalizedPath?: string;
+  error?: string;
+} {
+  let normalizedPath = "";
+  try {
+    normalizedPath = normalizeContextFilePath(rawPath, cwd);
+  } catch (error) {
+    const e = error as Error;
+    return {
+      ok: false,
+      added: false,
+      error: e.message
+    };
+  }
+
+  const validation = validateAddContextFile(normalizedPath, fileSystem);
+  if (!validation.ok) {
+    return {
+      ok: false,
+      added: false,
+      error: validation.error
+    };
+  }
+
+  const nextKey = normalizeContextPathForDedup(normalizedPath);
+  const duplicated = existingFiles.some(
+    (item) => normalizeContextPathForDedup(item) === nextKey
+  );
+  if (duplicated) {
+    return {
+      ok: true,
+      added: false,
+      normalizedPath
+    };
+  }
+
+  existingFiles.push(normalizedPath);
+  return {
+    ok: true,
+    added: true,
+    normalizedPath
+  };
+}
+
+export function formatContextFileList(
+  files: string[],
+  cwd: string = process.cwd()
+): string {
+  if (files.length === 0) {
+    return "No context files.\n";
+  }
+  const lines = files.map((filePath, index) => {
+    const relative = path.relative(cwd, filePath);
+    const displayPath =
+      relative.length === 0 || relative.startsWith("..") ? filePath : relative;
+    return `[${index + 1}] ${displayPath}`;
+  });
+  return `Context files:\n${lines.join("\n")}\n`;
 }
 
 export type SwitchCommandTarget =
@@ -1077,6 +1243,7 @@ export function createReplSession(
         cwd
       }));
   const conversation: ChatMessage[] = [];
+  const contextFiles: string[] = [];
   let currentSessionId: number | null = null;
   let pendingRunConfirmation: PendingRunConfirmation | undefined;
 
@@ -1344,6 +1511,10 @@ export function createReplSession(
     },
     run: async (args) => {
       const raw = args.join(" ").trim();
+      if (raw.length === 0) {
+        writers.stderr("[run:error] Usage: /run <command>\n");
+        return false;
+      }
       const risk = classifyRunCommandRisk(raw);
       if (risk.level === "medium" || risk.level === "high") {
         pendingRunConfirmation = {
@@ -1370,6 +1541,24 @@ export function createReplSession(
         stdout: result.stdout,
         stderr: result.ok ? result.stderr : result.error
       });
+      return false;
+    },
+    add: async (args) => {
+      const raw = args.join(" ").trim();
+      if (raw.length === 0) {
+        writers.stderr("Usage: /add <path>\n");
+        return false;
+      }
+
+      const result = addContextFile(contextFiles, raw, process.cwd());
+      if (!result.ok) {
+        writers.stderr(`[add:error] ${result.error}\n`);
+        return false;
+      }
+
+      const status = result.added ? "added" : "already added";
+      writers.stdout(`[add] ${status}: ${result.normalizedPath}\n`);
+      writers.stdout(formatContextFileList(contextFiles, process.cwd()));
       return false;
     }
   };
@@ -1489,6 +1678,7 @@ export function createReplSession(
           case "switch":
           case "history":
           case "run":
+          case "add":
             return commandHandlers[command.kind](args);
           default:
             return false;
