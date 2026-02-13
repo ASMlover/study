@@ -1569,20 +1569,73 @@ export function formatGrepMatches(
   return `Grep matches:\n${lines.join("\n")}\n`;
 }
 
+function normalizeContextContent(content: string): string {
+  return content.replace(/\r\n?/g, "\n");
+}
+
+function countContextContentLines(content: string): number {
+  if (content.length === 0) {
+    return 0;
+  }
+  return content.split("\n").length;
+}
+
 export function buildContextSystemMessage(
   files: string[],
-  cwd: string = process.cwd()
+  cwd: string = process.cwd(),
+  fileSystem: { readFileSync: (filePath: string) => Buffer | string } = fs
 ): ChatMessage | undefined {
   if (files.length === 0) {
     return undefined;
   }
-  const lines = files.map((filePath) => {
+
+  const uniqueFiles: string[] = [];
+  const seen = new Set<string>();
+  for (const filePath of files) {
+    const key = normalizeContextPathForDedup(filePath);
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    uniqueFiles.push(filePath);
+  }
+
+  if (uniqueFiles.length === 0) {
+    return undefined;
+  }
+
+  const lines: string[] = ["Context snippets:"];
+  for (let index = 0; index < uniqueFiles.length; index += 1) {
+    const filePath = uniqueFiles[index];
     const displayPath = resolveContextDisplayPath(filePath, cwd);
-    return `- ${displayPath}`;
-  });
+    let content = "";
+    try {
+      const raw = fileSystem.readFileSync(filePath);
+      const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+      content = new TextDecoder("utf-8", { fatal: true }).decode(rawBuffer);
+    } catch {
+      content = "[unavailable]";
+    }
+
+    const normalizedContent = normalizeContextContent(content);
+    const renderedContent = normalizedContent.endsWith("\n")
+      ? normalizedContent.slice(0, -1)
+      : normalizedContent;
+    const lineCount = countContextContentLines(normalizedContent);
+    const charCount = normalizedContent.length;
+
+    lines.push(`[${index + 1}] path: ${displayPath}`);
+    lines.push(
+      `[${index + 1}] meta: lines=${lineCount}, chars=${charCount}, encoding=utf-8`
+    );
+    lines.push("```text");
+    lines.push(renderedContent);
+    lines.push("```");
+  }
+
   return {
     role: "system",
-    content: `Context files:\n${lines.join("\n")}`
+    content: lines.join("\n")
   };
 }
 

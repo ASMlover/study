@@ -817,28 +817,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`217/217`). `npm run test:integration` passed with `14` pass and `15` skip; skip cases are expected sandbox subprocess/shell restrictions and unrelated to T30. New T30 integration test runs in-process and passed.
 ### T31 - 上下文组装器
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows (Node.js 22, TypeScript 5)
 - Scope: 将文件片段拼接到模型请求
 - Unit Cases:
-  - [ ] 拼接顺序
-  - [ ] 角色标签
-  - [ ] 去重
-  - [ ] 空上下文
-  - [ ] 元信息
-  - [ ] 编码统一
+  - [x] 拼接顺序
+  - [x] 角色标签
+  - [x] 去重
+  - [x] 空上下文
+  - [x] 元信息
+  - [x] 编码统一
 - Integration Cases:
-  - [ ] 请求含上下文字段
+  - [x] 请求含上下文字段
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 上下文能参与问答
-- Actual:
+- Actual: Added context assembler in `buildContextSystemMessage` to read context files, deduplicate by normalized path, preserve add order, normalize CRLF to LF, and attach per-file metadata (`lines/chars/encoding`) plus fenced snippet content into a `system` message that is prepended to chat requests. Added unit tests for order/role/dedup/empty/metadata/encoding normalization and integration test `context-request-includes-snippets` to verify request payload contains assembled context snippets.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T31)
+  - Overall: N/A (coverage tooling not added in T31)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`222/222`). `npm run test:integration` passed with `15` pass and `15` skip; skipped cases are expected due sandbox subprocess/shell restrictions and unrelated to T31.
 ### T32 - Token 预算裁剪
 - Date:
 - Env:

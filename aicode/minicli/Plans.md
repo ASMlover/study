@@ -57,7 +57,7 @@
 | T28 | /files | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/files` with sort/filter/limit/path abbreviation and integration-visible listing after `/add` |
 | T29 | /grep | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added project text search with regex validation, ignore rules, line-numbered output, and match-limit control |
 | T30 | /tree | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/tree` directory browsing with depth limit, ignore rules, symlink/error handling, and unit/integration coverage |
-| T31 | 上下文组装器 | M5 | TODO | - | - | - | - |
+| T31 | 上下文组装器 | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context snippet assembler with ordered deduped file blocks, metadata, UTF-8 decoding/newline normalization, and request integration tests |
 | T32 | Token 预算裁剪 | M5 | TODO | - | - | - | - |
 | T33 | JSON Schema 命令注册 | M6 | TODO | - | - | - | - |
 | T34 | 命令扩展到 18 条 | M6 | TODO | - | - | - | - |
@@ -113,3 +113,5 @@
 | 2026-02-13 | T29 | Completed `/grep` project search with regex pattern validation, ignore-directory rules, line-number formatting, empty-result handling, limit truncation warning, and integration coverage | Codex |
 | 2026-02-13 | ci T29 | Created task commit for `/grep` project regex search implementation and tests | Codex |
 | 2026-02-13 | T30 | Completed `/tree` directory tree browsing with depth limiting, ignored-directory filtering, symlink non-traversal, permission-error rendering, and unit/integration coverage | Codex |
+| 2026-02-13 | T31 | Completed context assembler to inject ordered deduplicated file snippets with path/line/char metadata and UTF-8 newline normalization into system request messages, plus T31 unit/integration coverage | Codex |
+| 2026-02-13 | ci T31 | Created task commit for context snippet assembler request integration and T31 tests | Codex |

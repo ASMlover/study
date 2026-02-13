@@ -2064,14 +2064,68 @@ test("dropContextFiles keeps remaining order stable after removals", () => {
   assert.deepEqual(files, [path.join(cwd, "a.txt"), path.join(cwd, "c.txt")]);
 });
 
-test("buildContextSystemMessage returns paths for current context", () => {
+test("buildContextSystemMessage returns undefined for empty context", () => {
+  assert.equal(buildContextSystemMessage([], process.cwd()), undefined);
+});
+
+test("buildContextSystemMessage uses system role", () => {
   const cwd = path.join("C:", "workspace", "minicli");
-  const files = [path.join(cwd, "src", "repl.ts"), path.join(cwd, "README.md")];
-  const message = buildContextSystemMessage(files, cwd);
-  assert.deepEqual(message, {
-    role: "system",
-    content: `Context files:\n- ${path.join("src", "repl.ts")}\n- README.md`
+  const filePath = path.join(cwd, "notes.txt");
+  const message = buildContextSystemMessage([filePath], cwd, {
+    readFileSync: () => Buffer.from("note", "utf8")
   });
+  assert.equal(message?.role, "system");
+});
+
+test("buildContextSystemMessage preserves file assembly order", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const first = path.join(cwd, "b.txt");
+  const second = path.join(cwd, "a.txt");
+  const message = buildContextSystemMessage([first, second], cwd, {
+    readFileSync: (filePath: string) =>
+      Buffer.from(path.basename(filePath, ".txt"), "utf8")
+  });
+  assert.equal(message?.role, "system");
+  const content = message?.content ?? "";
+  const firstPos = content.indexOf("[1] path: b.txt");
+  const secondPos = content.indexOf("[2] path: a.txt");
+  assert.equal(firstPos >= 0, true);
+  assert.equal(secondPos >= 0, true);
+  assert.equal(firstPos < secondPos, true);
+});
+
+test("buildContextSystemMessage deduplicates repeated context files", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const filePath = path.join(cwd, "dup.txt");
+  const message = buildContextSystemMessage([filePath, filePath], cwd, {
+    readFileSync: () => Buffer.from("duplicate", "utf8")
+  });
+  assert.equal(message?.role, "system");
+  const content = message?.content ?? "";
+  const hits = content.match(/\[\d+\] path: dup\.txt/g) ?? [];
+  assert.equal(hits.length, 1);
+});
+
+test("buildContextSystemMessage includes per-file metadata", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const filePath = path.join(cwd, "meta.txt");
+  const message = buildContextSystemMessage([filePath], cwd, {
+    readFileSync: () => Buffer.from("line1\nline2", "utf8")
+  });
+  assert.equal(message?.role, "system");
+  assert.match(message?.content ?? "", /\[1\] meta: lines=2, chars=11, encoding=utf-8/);
+});
+
+test("buildContextSystemMessage normalizes CRLF content to LF", () => {
+  const cwd = path.join("C:", "workspace", "minicli");
+  const filePath = path.join(cwd, "encoding.txt");
+  const message = buildContextSystemMessage([filePath], cwd, {
+    readFileSync: () => Buffer.from("a\r\nb\r\n", "utf8")
+  });
+  assert.equal(message?.role, "system");
+  const content = message?.content ?? "";
+  assert.doesNotMatch(content, /\r/);
+  assert.match(content, /```text\na\nb\n```/);
 });
 
 test("repl /add appends file into context list output", async () => {
