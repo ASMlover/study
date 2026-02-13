@@ -23,9 +23,10 @@ import {
 } from "./repository";
 import {
   DEFAULT_RUN_OUTPUT_LIMIT,
+  RunCommandResult,
   executeReadOnlyCommand
 } from "./run-executor";
-import { classifyRunCommandRisk } from "./run-risk";
+import { classifyRunCommandRisk, RunRiskAssessment } from "./run-risk";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
@@ -33,6 +34,9 @@ export const DEFAULT_MAX_REPLY_LENGTH = 2048;
 export const DEFAULT_MAX_HISTORY_PREVIEW_LENGTH = 120;
 export const EMPTY_REPLY_PLACEHOLDER = "[empty reply]";
 export const MAX_COMPLETION_USAGE_FREQUENCY = 2_147_483_647;
+export const DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS = 15_000;
+
+export type RunConfirmationDecision = "confirm" | "reject" | "invalid";
 
 export type KnownReplCommandKind =
   | "help"
@@ -545,6 +549,40 @@ export interface ReplSessionOptions {
   completionUsageFrequency?: Record<string, number>;
   commandRegistry?: CommandRegistry<KnownReplCommandKind>;
   now?: () => Date;
+  runConfirmationTimeoutMs?: number;
+  executeRunCommand?: (command: string, cwd: string) => RunCommandResult;
+}
+
+interface PendingRunConfirmation {
+  command: string;
+  risk: RunRiskAssessment;
+  requestedAtMs: number;
+}
+
+export function parseRunConfirmationDecision(
+  input: string
+): RunConfirmationDecision {
+  const normalized = input.trim().toLowerCase();
+  if (normalized === "y" || normalized === "yes") {
+    return "confirm";
+  }
+  if (normalized === "n" || normalized === "no") {
+    return "reject";
+  }
+  return "invalid";
+}
+
+export function formatRunConfirmationPrompt(
+  pending: PendingRunConfirmation,
+  timeoutMs: number
+): string {
+  const matched = pending.risk.matchedRules.join(", ");
+  const matchedSuffix = matched.length > 0 ? ` matched: ${matched}.` : "";
+  const timeoutSeconds = Math.max(1, Math.ceil(timeoutMs / 1000));
+  if (pending.risk.level === "high") {
+    return `[run:confirm] DANGER: high-risk command requires explicit approval.${matchedSuffix}\nCommand: ${pending.command}\nReply 'yes' to execute, or 'no' to cancel (timeout ${timeoutSeconds}s).\n`;
+  }
+  return `[run:confirm] medium-risk command requires confirmation.${matchedSuffix}\nCommand: ${pending.command}\nReply 'yes' to execute, or 'no' to cancel (timeout ${timeoutSeconds}s).\n`;
 }
 
 export type ReplCommandMatch =
@@ -938,8 +976,17 @@ export function createReplSession(
     {};
   const helpText = formatHelpText(commandRegistry);
   const now = options?.now ?? (() => new Date());
+  const runConfirmationTimeoutMs =
+    options?.runConfirmationTimeoutMs ?? DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS;
+  const executeRun =
+    options?.executeRunCommand ??
+    ((command: string, cwd: string) =>
+      executeReadOnlyCommand(command, {
+        cwd
+      }));
   const conversation: ChatMessage[] = [];
   let currentSessionId: number | null = null;
+  let pendingRunConfirmation: PendingRunConfirmation | undefined;
 
   const createAndSwitchSession = (requestedTitle?: string): {
     id?: number;
@@ -1134,24 +1181,22 @@ export function createReplSession(
     run: async (args) => {
       const raw = args.join(" ").trim();
       const risk = classifyRunCommandRisk(raw);
-      if (risk.level === "high") {
-        const matched = risk.matchedRules.join(", ");
+      if (risk.level === "medium" || risk.level === "high") {
+        pendingRunConfirmation = {
+          command: raw,
+          risk,
+          requestedAtMs: now().getTime()
+        };
         writers.stderr(
-          `[run:risk] high risk command blocked.${matched.length > 0 ? ` matched: ${matched}.` : ""}\n`
-        );
-        return false;
-      }
-      if (risk.level === "medium") {
-        const matched = risk.matchedRules.join(", ");
-        writers.stderr(
-          `[run:risk] medium risk command requires confirmation.${matched.length > 0 ? ` matched: ${matched}.` : ""}\n`
+          formatRunConfirmationPrompt(
+            pendingRunConfirmation,
+            runConfirmationTimeoutMs
+          )
         );
         return false;
       }
 
-      const result = executeReadOnlyCommand(raw, {
-        cwd: process.cwd()
-      });
+      const result = executeRun(raw, process.cwd());
       if (!result.ok) {
         writers.stderr(`[run:error] ${result.error}\n`);
         return false;
@@ -1186,6 +1231,59 @@ export function createReplSession(
 
   return {
     onLine: async (line: string) => {
+      if (pendingRunConfirmation) {
+        const elapsedMs = now().getTime() - pendingRunConfirmation.requestedAtMs;
+        if (elapsedMs > runConfirmationTimeoutMs) {
+          pendingRunConfirmation = undefined;
+          writers.stderr("[run:confirm] confirmation timed out; command cancelled.\n");
+          return false;
+        }
+
+        const decision = parseRunConfirmationDecision(line);
+        if (decision === "invalid") {
+          writers.stderr("[run:confirm] invalid input. Reply yes or no.\n");
+          return false;
+        }
+
+        if (decision === "reject") {
+          pendingRunConfirmation = undefined;
+          writers.stderr("[run:confirm] command cancelled.\n");
+          return false;
+        }
+
+        const approved = pendingRunConfirmation;
+        pendingRunConfirmation = undefined;
+        const result = executeRun(approved.command, process.cwd());
+        if (!result.ok) {
+          writers.stderr(`[run:error] ${result.error}\n`);
+          return false;
+        }
+        if (result.stdout.length > 0) {
+          writers.stdout(
+            result.stdout.endsWith("\n") ? result.stdout : `${result.stdout}\n`
+          );
+        }
+        if (result.stderr.length > 0) {
+          writers.stderr(
+            result.stderr.endsWith("\n") ? result.stderr : `${result.stderr}\n`
+          );
+        }
+        if (result.stdoutTruncated) {
+          writers.stderr(
+            `[run:warn] stdout exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
+          );
+        }
+        if (result.stderrTruncated) {
+          writers.stderr(
+            `[run:warn] stderr exceeded ${DEFAULT_RUN_OUTPUT_LIMIT} chars; truncated.\n`
+          );
+        }
+        if (result.exitCode !== 0) {
+          writers.stderr(`[run:error] command exited with code ${result.exitCode}.\n`);
+        }
+        return false;
+      }
+
       const resolvedLine = resolveInlineTabCompletions(
         line,
         commandRegistry,

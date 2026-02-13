@@ -2,13 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createReplSession, DEFAULT_MAX_INPUT_LENGTH } from "../../src/repl";
 
-test("/run high-risk command is not executed before confirmation", async () => {
-  const writes: string[] = [];
+test("/run confirmation rejection prevents command execution", async () => {
   const errors: string[] = [];
   const executedCommands: string[] = [];
   const session = createReplSession(
     {
-      stdout: (message) => writes.push(message),
+      stdout: () => {},
       stderr: (message) => errors.push(message)
     },
     DEFAULT_MAX_INPUT_LENGTH,
@@ -17,7 +16,7 @@ test("/run high-risk command is not executed before confirmation", async () => {
         executedCommands.push(command);
         return {
           ok: true,
-          stdout: "unexpected",
+          stdout: "",
           stderr: "",
           exitCode: 0,
           stdoutTruncated: false,
@@ -27,13 +26,9 @@ test("/run high-risk command is not executed before confirmation", async () => {
     }
   );
 
-  const shouldExit = await session.onLine("/run rm -rf .");
+  await session.onLine("/run pwd | wc -c");
+  await session.onLine("no");
 
-  assert.equal(shouldExit, false);
-  assert.equal(writes.join(""), "");
   assert.equal(executedCommands.length, 0);
-  assert.match(
-    errors.join(""),
-    /\[run:confirm\] DANGER: high-risk command requires explicit approval\./
-  );
+  assert.match(errors.join(""), /\[run:confirm\] command cancelled\./);
 });

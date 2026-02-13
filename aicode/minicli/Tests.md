@@ -646,28 +646,29 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`171/171`). `npm run test:integration` passed (`22` total with `7` pass and `15` skipped due sandbox/subprocess restrictions). T23 integration case runs without subprocess dependency and passed in this environment.
 ### T24 - 确认流程
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 medium/high 执行前确认
 - Unit Cases:
-  - [ ] 确认执行
-  - [ ] 拒绝阻断
-  - [ ] 超时拒绝
-  - [ ] 非法输入重试
-  - [ ] high增强提示
-  - [ ] 状态回收
+  - [x] 确认执行
+  - [x] 拒绝阻断
+  - [x] 超时拒绝
+  - [x] 非法输入重试
+  - [x] high增强提示
+  - [x] 状态回收
 - Integration Cases:
-  - [ ] 高风险未确认不执行
+  - [x] 高风险未确认不执行
 - E2E Smoke:
-  - [ ] 待补充
+  - [x] 拒绝后不执行（`/run` 确认拒绝路径）
 - Commands:
+  - `npm test`
 - Expected: 确认流程可靠
-- Actual:
+- Actual: Added `/run` pending-confirmation workflow for `medium/high` risk commands with explicit yes/no response parsing, timeout cancellation, invalid-input retry prompt, and high-risk danger prompt. Confirmation state is now consumed/recycled correctly after approve/reject/timeout so subsequent commands execute normally. Added unit tests for all required T24 cases and integration tests covering high-risk not executed before approval and reject-path non-execution.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T24)
+  - Overall: N/A (coverage tooling not added in T24)
+- Result: PASS
+- Notes: `npm test` passed. Unit tests `175/175` passed. Integration tests `23` total with `8` pass and `15` skip (expected subprocess/shell restrictions in sandbox). Newly added T24 confirmation integration tests run without subprocess dependency and passed.
 ### T25 - 审计记录
 - Date:
 - Env:

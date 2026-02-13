@@ -1175,7 +1175,139 @@ test("repl /history reports invalid limit value", async () => {
   assert.match(errors.join(""), /Usage: \/history \[--limit N\]/);
 });
 
-test("repl /run blocks high-risk commands", async () => {
+test("repl /run executes medium-risk command after confirmation", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const executedCommands: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      executeRunCommand: (command) => {
+        executedCommands.push(command);
+        return {
+          ok: true,
+          stdout: "ok",
+          stderr: "",
+          exitCode: 0,
+          stdoutTruncated: false,
+          stderrTruncated: false
+        };
+      }
+    }
+  );
+
+  await session.onLine("/run pwd | wc -c");
+  await session.onLine("yes");
+
+  assert.equal(executedCommands.length, 1);
+  assert.equal(executedCommands[0], "pwd | wc -c");
+  assert.equal(writes.join(""), "ok\n");
+  assert.match(errors.join(""), /\[run:confirm\] medium-risk command requires confirmation\./);
+});
+
+test("repl /run rejects medium-risk command when denied", async () => {
+  const errors: string[] = [];
+  const executedCommands: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      executeRunCommand: (command) => {
+        executedCommands.push(command);
+        return {
+          ok: true,
+          stdout: "",
+          stderr: "",
+          exitCode: 0,
+          stdoutTruncated: false,
+          stderrTruncated: false
+        };
+      }
+    }
+  );
+
+  await session.onLine("/run pwd | wc -c");
+  await session.onLine("no");
+
+  assert.equal(executedCommands.length, 0);
+  assert.match(errors.join(""), /\[run:confirm\] command cancelled\./);
+});
+
+test("repl /run confirmation times out and rejects late approval", async () => {
+  const errors: string[] = [];
+  const executedCommands: string[] = [];
+  let nowMs = 0;
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      now: () => new Date(nowMs),
+      runConfirmationTimeoutMs: 1000,
+      executeRunCommand: (command) => {
+        executedCommands.push(command);
+        return {
+          ok: true,
+          stdout: "",
+          stderr: "",
+          exitCode: 0,
+          stdoutTruncated: false,
+          stderrTruncated: false
+        };
+      }
+    }
+  );
+
+  await session.onLine("/run pwd | wc -c");
+  nowMs = 2001;
+  await session.onLine("yes");
+
+  assert.equal(executedCommands.length, 0);
+  assert.match(errors.join(""), /\[run:confirm\] confirmation timed out; command cancelled\./);
+});
+
+test("repl /run confirmation retries on invalid input", async () => {
+  const errors: string[] = [];
+  const executedCommands: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      executeRunCommand: (command) => {
+        executedCommands.push(command);
+        return {
+          ok: true,
+          stdout: "",
+          stderr: "",
+          exitCode: 0,
+          stdoutTruncated: false,
+          stderrTruncated: false
+        };
+      }
+    }
+  );
+
+  await session.onLine("/run pwd | wc -c");
+  await session.onLine("maybe");
+  await session.onLine("yes");
+
+  assert.equal(executedCommands.length, 1);
+  assert.match(errors.join(""), /\[run:confirm\] invalid input\. Reply yes or no\./);
+});
+
+test("repl /run high-risk confirmation includes enhanced danger prompt", async () => {
   const errors: string[] = [];
   const session = createReplSession(
     {
@@ -1187,25 +1319,39 @@ test("repl /run blocks high-risk commands", async () => {
 
   await session.onLine("/run rm -rf .");
 
-  assert.match(errors.join(""), /\[run:risk\] high risk command blocked\./);
+  assert.match(errors.join(""), /DANGER: high-risk command requires explicit approval\./);
 });
 
-test("repl /run blocks medium-risk commands", async () => {
+test("repl /run confirmation state is recycled after cancellation", async () => {
   const errors: string[] = [];
+  const executedCommands: string[] = [];
   const session = createReplSession(
     {
       stdout: () => {},
       stderr: (message) => errors.push(message)
     },
-    DEFAULT_MAX_INPUT_LENGTH
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      executeRunCommand: (command) => {
+        executedCommands.push(command);
+        return {
+          ok: true,
+          stdout: "",
+          stderr: "",
+          exitCode: 0,
+          stdoutTruncated: false,
+          stderrTruncated: false
+        };
+      }
+    }
   );
 
   await session.onLine("/run pwd | wc -c");
+  await session.onLine("no");
+  await session.onLine("/run pwd");
 
-  assert.match(
-    errors.join(""),
-    /\[run:risk\] medium risk command requires confirmation\./
-  );
+  assert.equal(executedCommands.length, 1);
+  assert.equal(executedCommands[0], "pwd");
 });
 
 test("repl /run validates missing command argument", async () => {
