@@ -621,28 +621,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`164/164`). `npm run test:integration` passed (`21` total with `6` pass and `15` skipped due sandbox/subprocess restrictions). T22 integration case is guarded to skip when shell execution is blocked (`EPERM`).
 ### T23 - 风险分级器
-- Date:
-- Env:
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 low/medium/high 分级与黑名单匹配
 - Unit Cases:
-  - [ ] low判定
-  - [ ] medium判定
-  - [ ] high判定
-  - [ ] 混合命令
-  - [ ] 空白大小写
-  - [ ] 绕过拦截
+  - [x] low判定
+  - [x] medium判定
+  - [x] high判定
+  - [x] 混合命令
+  - [x] 空白大小写
+  - [x] 绕过拦截
 - Integration Cases:
-  - [ ] /run 接入分级
+  - [x] /run 接入分级
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+- `npm run test:unit`
+- `npm run test:integration`
 - Expected: 风险分类准确
-- Actual:
+- Actual: Added `src/run-risk.ts` with `low/medium/high` risk classifier, high-risk blacklist matching, and bypass-style detection for separator-injected tokens (for example `r\`m`). Integrated classifier into `/run` route in `src/repl.ts` so high-risk commands are blocked and medium-risk commands are intercepted with confirmation-required messaging.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T23)
+  - Overall: N/A (coverage tooling not added in T23)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`171/171`). `npm run test:integration` passed (`22` total with `7` pass and `15` skipped due sandbox/subprocess restrictions). T23 integration case runs without subprocess dependency and passed in this environment.
 ### T24 - 确认流程
 - Date:
 - Env:

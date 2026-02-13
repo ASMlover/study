@@ -1175,7 +1175,7 @@ test("repl /history reports invalid limit value", async () => {
   assert.match(errors.join(""), /Usage: \/history \[--limit N\]/);
 });
 
-test("repl /run rejects non-read-only commands", async () => {
+test("repl /run blocks high-risk commands", async () => {
   const errors: string[] = [];
   const session = createReplSession(
     {
@@ -1187,7 +1187,25 @@ test("repl /run rejects non-read-only commands", async () => {
 
   await session.onLine("/run rm -rf .");
 
-  assert.match(errors.join(""), /\[run:error\] Command is not allowed in read-only mode\./);
+  assert.match(errors.join(""), /\[run:risk\] high risk command blocked\./);
+});
+
+test("repl /run blocks medium-risk commands", async () => {
+  const errors: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: () => {},
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH
+  );
+
+  await session.onLine("/run pwd | wc -c");
+
+  assert.match(
+    errors.join(""),
+    /\[run:risk\] medium risk command requires confirmation\./
+  );
 });
 
 test("repl /run validates missing command argument", async () => {

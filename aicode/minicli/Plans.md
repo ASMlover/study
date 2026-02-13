@@ -49,7 +49,7 @@
 | T20 | 候选导航与取消 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added arrow-key candidate navigation, Esc cancel, state reset semantics, and navigation+Tab acceptance tests |
 | T21 | 频次排序 | M3 | DONE | Codex | 2026-02-12 | 2026-02-12 | Added usage-frequency completion ranking with command-history persistence, stable tie order, and restart-retained prioritization tests |
 | T22 | /run 只读执行器 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/run` read-only executor with platform shell adapter, allowlist guard, output capture/truncation, exit-code mapping, and tests |
-| T23 | 风险分级器 | M4 | TODO | - | - | - | - |
+| T23 | 风险分级器 | M4 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added low/medium/high risk classifier with blacklist + bypass detection and `/run` risk-gated routing with tests |
 | T24 | 确认流程 | M4 | TODO | - | - | - | - |
 | T25 | 审计记录 | M4 | TODO | - | - | - | - |
 | T26 | /add | M5 | TODO | - | - | - | - |
@@ -103,3 +103,4 @@
 | 2026-02-12 | T21 | Completed usage-frequency-based completion sorting with command-history persistence, stable tie handling, overflow cap, and restart-retained ranking coverage | Codex |
 | 2026-02-12 | ci T21 | Created task commit for T21 usage-frequency completion sorting implementation and tests | Codex |
 | 2026-02-13 | T22 | Completed `/run` read-only executor with cross-platform shell invocation, whitelist validation, output capture/stderr handling, exit-code mapping, and truncation coverage | Codex |
+| 2026-02-13 | T23 | Completed `/run` risk classification with low/medium/high levels, blacklist + bypass matching, and integrated risk-block routing coverage | Codex |

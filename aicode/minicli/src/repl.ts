@@ -25,6 +25,7 @@ import {
   DEFAULT_RUN_OUTPUT_LIMIT,
   executeReadOnlyCommand
 } from "./run-executor";
+import { classifyRunCommandRisk } from "./run-risk";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
@@ -1132,6 +1133,22 @@ export function createReplSession(
     },
     run: async (args) => {
       const raw = args.join(" ").trim();
+      const risk = classifyRunCommandRisk(raw);
+      if (risk.level === "high") {
+        const matched = risk.matchedRules.join(", ");
+        writers.stderr(
+          `[run:risk] high risk command blocked.${matched.length > 0 ? ` matched: ${matched}.` : ""}\n`
+        );
+        return false;
+      }
+      if (risk.level === "medium") {
+        const matched = risk.matchedRules.join(", ");
+        writers.stderr(
+          `[run:risk] medium risk command requires confirmation.${matched.length > 0 ? ` matched: ${matched}.` : ""}\n`
+        );
+        return false;
+      }
+
       const result = executeReadOnlyCommand(raw, {
         cwd: process.cwd()
       });
