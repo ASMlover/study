@@ -8,6 +8,7 @@ export interface CommandRegistration<TKind extends string> {
   readonly kind: TKind;
   readonly metadata: CommandMetadata;
   readonly aliases?: readonly string[];
+  readonly permission?: string;
 }
 
 export type CommandParameterType = "string" | "number" | "boolean";
@@ -26,6 +27,7 @@ export interface CommandSchemaRegistration<
   readonly parameters: readonly CommandParameterSchema[];
   readonly examples: readonly string[];
   readonly handler: THandlerKey;
+  readonly permission: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -70,6 +72,21 @@ function readOptionalStringArray(
     throw new Error(`Invalid field type: ${field} must be string[]`);
   }
   return value;
+}
+
+function readOptionalString(
+  source: Record<string, unknown>,
+  field: string,
+  fallback: string
+): string {
+  const value = source[field];
+  if (value === undefined) {
+    return fallback;
+  }
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`Invalid field type: ${field} must be non-empty string`);
+  }
+  return value.trim();
 }
 
 function parseExamplesField(value: unknown): string[] {
@@ -120,6 +137,7 @@ export function parseCommandSchemaRegistration<
   const usage = readRequiredString(value, "usage");
   const description = readRequiredString(value, "description");
   const handler = readRequiredString(value, "handler") as THandlerKey;
+  const permission = readOptionalString(value, "permission", "public");
   const acceptsArgs = readOptionalBoolean(value, "acceptsArgs", false);
   const aliases = readOptionalStringArray(value, "aliases");
   const examples = parseExamplesField(value.examples);
@@ -142,7 +160,8 @@ export function parseCommandSchemaRegistration<
     aliases,
     parameters,
     examples,
-    handler
+    handler,
+    permission
   };
 }
 

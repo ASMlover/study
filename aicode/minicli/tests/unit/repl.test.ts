@@ -41,6 +41,7 @@ import {
   parseGrepPattern,
   parseTreeCommandArgs,
   parseNewSessionTitle,
+  parseClearCommandArgs,
   parseSwitchCommandArgs,
   parseSessionsCommandArgs,
   parseReplLine,
@@ -275,6 +276,12 @@ test("formatTokenBudgetTrimNotice renders warning text", () => {
   assert.match(warning, /trimmed 1 message\(s\)/);
 });
 
+test("help text includes permission markers and extended commands", () => {
+  assert.match(HELP_TEXT, /\[perm:/);
+  assert.match(HELP_TEXT, /\/status/);
+  assert.match(HELP_TEXT, /\/version/);
+});
+
 test("createRuntimeProvider selects mock when apiKey is absent", () => {
   const provider = createRuntimeProvider({
     model: "glm-4",
@@ -361,6 +368,26 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "model",
     args: []
   });
+  assert.deepEqual(matchReplCommand("/clear"), {
+    kind: "clear",
+    args: []
+  });
+  assert.deepEqual(matchReplCommand("/cls all"), {
+    kind: "clear",
+    args: ["all"]
+  });
+  assert.deepEqual(matchReplCommand("/status"), {
+    kind: "status"
+  });
+  assert.deepEqual(matchReplCommand("/approve"), {
+    kind: "approve"
+  });
+  assert.deepEqual(matchReplCommand("/version"), {
+    kind: "version"
+  });
+  assert.deepEqual(matchReplCommand("/ver"), {
+    kind: "version"
+  });
   assert.deepEqual(matchReplCommand("/new"), {
     kind: "new",
     args: []
@@ -417,6 +444,10 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/exit",
     "/login",
     "/model",
+    "/clear",
+    "/status",
+    "/approve",
+    "/version",
     "/new",
     "/sessions",
     "/switch",
@@ -444,6 +475,10 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/exit",
     "/login",
     "/model",
+    "/clear",
+    "/status",
+    "/approve",
+    "/version",
     "/new",
     "/sessions",
     "/switch",
@@ -463,7 +498,7 @@ test("completeReplCommandPrefix prioritizes higher frequency commands", () => {
       "/switch": 3,
       "/sessions": 1
     }),
-    ["/switch", "/sessions"]
+    ["/switch", "/sessions", "/status"]
   );
 });
 
@@ -521,7 +556,7 @@ test("acceptReplTabCompletion accepts single candidate and appends trailing spac
 test("acceptReplTabCompletion leaves line unchanged when multiple candidates exist", () => {
   const result = acceptReplTabCompletion("/s", 2);
   assert.equal(result.accepted, false);
-  assert.deepEqual(result.candidates, ["/sessions", "/switch"]);
+  assert.deepEqual(result.candidates, ["/status", "/sessions", "/switch"]);
   assert.equal(result.line, "/s");
   assert.equal(result.cursor, 2);
 });
@@ -553,8 +588,8 @@ test("resolveInlineTabCompletions handles consecutive tabs", () => {
 });
 
 test("resolveInlineTabCompletions cycles down through candidates", () => {
-  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\t"), "/switch ");
-  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\u001b[B\t"), "/sessions ");
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\t"), "/sessions ");
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\u001b[B\t"), "/switch ");
 });
 
 test("resolveInlineTabCompletions cycles up through candidates", () => {
@@ -574,7 +609,7 @@ test("resolveInlineTabCompletions resets completion focus after regular typing",
 });
 
 test("resolveInlineTabCompletions resets state after accepting a candidate", () => {
-  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\t\u001b[A\t"), "/switch ");
+  assert.equal(resolveInlineTabCompletions("/s\t\u001b[B\t\u001b[A\t"), "/sessions ");
 });
 
 test("createReplReadlineCompleter returns single hit for /mo", () => {
@@ -587,7 +622,7 @@ test("createReplReadlineCompleter returns single hit for /mo", () => {
 test("createReplReadlineCompleter returns multiple hits for /s", () => {
   const completer = createReplReadlineCompleter();
   const [hits, token] = completer("/s");
-  assert.deepEqual(hits, ["/sessions", "/switch"]);
+  assert.deepEqual(hits, ["/status", "/sessions", "/switch"]);
   assert.equal(token, "/s");
 });
 
@@ -625,6 +660,17 @@ test("parseNewSessionTitle joins args and trims spaces", () => {
   assert.equal(parseNewSessionTitle(["my", "chat"]), "my chat");
   assert.equal(parseNewSessionTitle([]), undefined);
   assert.equal(parseNewSessionTitle(["   "]), undefined);
+});
+
+test("parseClearCommandArgs supports default and explicit scopes", () => {
+  assert.deepEqual(parseClearCommandArgs([]), { scope: "session" });
+  assert.deepEqual(parseClearCommandArgs(["all"]), { scope: "all" });
+  assert.deepEqual(parseClearCommandArgs(["session"]), { scope: "session" });
+});
+
+test("parseClearCommandArgs reports invalid usage", () => {
+  assert.match(parseClearCommandArgs(["invalid"]).error ?? "", /Invalid scope/);
+  assert.match(parseClearCommandArgs(["all", "extra"]).error ?? "", /at most one/);
 });
 
 test("parseSessionsCommandArgs parses pagination and query", () => {
@@ -2412,7 +2458,7 @@ test("repl session preserves completion frequency ordering across restarts", asy
   await secondSession.onLine("/s");
 
   assert.equal(secondErrors.length, 0);
-  assert.equal(secondWrites.join(""), "Completions:\n/switch\n/sessions\n");
+  assert.equal(secondWrites.join(""), "Completions:\n/switch\n/status\n/sessions\n");
 });
 
 test("repl session renders multiline reply content", async () => {
@@ -2590,6 +2636,62 @@ test("repl /model rejects empty model name", async () => {
 
   assert.equal(shouldExit, false);
   assert.match(errors.join(""), /Usage: \/model \[name\]/);
+});
+
+test("repl /clear uses default scope and supports all scope", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: (message) => writes.push(message),
+    stderr: (message) => errors.push(message)
+  });
+
+  await session.onLine("/clear");
+  await session.onLine("/clear all");
+
+  assert.equal(errors.join(""), "");
+  assert.match(writes.join(""), /\[clear\] cleared session context/);
+  assert.match(writes.join(""), /\[clear\] cleared session\/context\/session-pointer/);
+});
+
+test("repl /clear rejects invalid scope with usage hint", async () => {
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: () => {},
+    stderr: (message) => errors.push(message)
+  });
+
+  await session.onLine("/clear wrong");
+
+  assert.match(errors.join(""), /Usage: \/clear \[session\|all\]/);
+});
+
+test("repl /approve reports missing pending confirmation", async () => {
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: () => {},
+    stderr: (message) => errors.push(message)
+  });
+
+  await session.onLine("/approve");
+
+  assert.match(errors.join(""), /no pending command to approve/);
+});
+
+test("repl /status and /version print runtime information", async () => {
+  const writes: string[] = [];
+  const session = createReplSession({
+    stdout: (message) => writes.push(message),
+    stderr: () => {}
+  });
+
+  await session.onLine("/status");
+  await session.onLine("/version");
+
+  const output = writes.join("");
+  assert.match(output, /Runtime status:/);
+  assert.match(output, /model: mock-mini/);
+  assert.match(output, /minicli 0\.1\.0/);
 });
 
 test("repl command handling trims surrounding whitespace", async () => {

@@ -53,7 +53,7 @@ test("navigation then Tab accepts selected candidate command", async (t) => {
     stderr += chunk.toString("utf8");
   });
 
-  child.stdin.write("/s\t\u001b[B\t\n");
+  child.stdin.write("/s\t\u001b[B\u001b[B\t\n");
   child.stdin.write("/exit\n");
   child.stdin.end();
 

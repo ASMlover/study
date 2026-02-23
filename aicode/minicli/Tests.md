@@ -891,28 +891,29 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed. Unit tests `236/236` passed. Integration tests `32` total with `17` pass and `15` skip; skipped cases are expected sandbox subprocess/shell restrictions and unrelated to T33. New T33 integration case runs in-process and passed.
 ### T34 - 命令扩展到 18 条
-- Date:
-- Env:
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 扩展中批命令并接入补全
 - Unit Cases:
-  - [ ] 参数解析
-  - [ ] 帮助文案
-  - [ ] 权限标记
-  - [ ] 默认参数
-  - [ ] 错误提示
-  - [ ] 别名行为
+  - [x] 参数解析
+  - [x] 帮助文案
+  - [x] 权限标记
+  - [x] 默认参数
+  - [x] 错误提示
+  - [x] 别名行为
 - Integration Cases:
-  - [ ] 18 条命令可枚举可执行
+  - [x] 18 条命令可枚举可执行
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm test`
 - Expected: 中规模命令集可用
-- Actual:
+- Actual: Expanded REPL command set to 18 by adding `/clear`, `/status`, `/approve`, `/version` and wiring them into schema registration, command matching, routing handlers, help output, and completion flow. Added command permission marker support in schema parsing/registration and exposed permission labels in `/help` text. Added parsing for `/clear [session|all]` with default scope behavior and usage validation, plus `/approve` pending-confirmation handling and `/version` output rendering. Updated completion behavior/tests for `/s` multi-candidate ordering and alias behavior (`/cls`, `/ver`). Added integration test `tests/integration/command-set-18.test.ts` validating 18 commands are enumerable and executable via REPL routing.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T34)
+  - Overall: N/A (coverage tooling not added in T34)
+- Result: PASS
+- Notes: `npm test` passed. Unit tests `244/244` passed. Integration tests `33` total with `18` pass and `15` skip; skips are expected sandbox subprocess/shell restrictions unrelated to T34. New T34 in-process integration case passed.
 ### T35 - 扩展到 27 条 + 参数补全
 - Date:
 - Env:

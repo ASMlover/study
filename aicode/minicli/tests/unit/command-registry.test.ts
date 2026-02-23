@@ -292,3 +292,26 @@ test("command schema registration parses examples from multiline string", () => 
 
   assert.deepEqual(parsed.examples, ["/help", "/help --verbose"]);
 });
+
+test("command schema registration parses permission marker with default", () => {
+  const withDefault = parseCommandSchemaRegistration({
+    kind: "help",
+    name: "/help",
+    usage: "/help",
+    description: "show help",
+    acceptsArgs: false,
+    handler: "help"
+  });
+  assert.equal(withDefault.permission, "public");
+
+  const withExplicit = parseCommandSchemaRegistration({
+    kind: "run",
+    name: "/run",
+    usage: "/run <cmd>",
+    description: "run command",
+    acceptsArgs: true,
+    handler: "run",
+    permission: "tool_execute"
+  });
+  assert.equal(withExplicit.permission, "tool_execute");
+});

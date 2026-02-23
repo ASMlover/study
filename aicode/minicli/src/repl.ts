@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import {
+  CommandParameterSchema,
   CommandRegistry,
   CommandSchemaRegistration,
   registerCommandSchemas
@@ -33,6 +34,7 @@ import {
   executeReadOnlyCommand
 } from "./run-executor";
 import { classifyRunCommandRisk, RunRiskAssessment } from "./run-risk";
+import { formatVersionOutput } from "./version";
 
 export const DEFAULT_MAX_INPUT_LENGTH = 1024;
 export const DEFAULT_OUTPUT_BUFFER_LIMIT = 4096;
@@ -60,6 +62,10 @@ export type KnownReplCommandKind =
   | "exit"
   | "login"
   | "model"
+  | "clear"
+  | "status"
+  | "approve"
+  | "version"
   | "new"
   | "sessions"
   | "switch"
@@ -82,7 +88,9 @@ function createReplCommandSchema(
   usage: string,
   description: string,
   acceptsArgs: boolean,
-  aliases: readonly string[] = []
+  permission: string,
+  aliases: readonly string[] = [],
+  parameters: readonly CommandParameterSchema[] = []
 ): unknown {
   return {
     kind,
@@ -90,20 +98,30 @@ function createReplCommandSchema(
     usage,
     description,
     acceptsArgs,
+    permission,
     aliases,
+    parameters,
     handler: kind,
     examples: [usage]
   };
 }
 
 const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
-  createReplCommandSchema("help", "/help", "/help", "Show this help message", false),
+  createReplCommandSchema(
+    "help",
+    "/help",
+    "/help",
+    "Show this help message",
+    false,
+    "public"
+  ),
   createReplCommandSchema(
     "exit",
     "/exit",
     "/exit",
     "Exit MiniCLI",
     false,
+    "public",
     ["/quit"]
   ),
   createReplCommandSchema(
@@ -111,84 +129,137 @@ const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
     "/login",
     "/login <apiKey>",
     "Save API key to global config",
-    true
+    true,
+    "config_write"
   ),
   createReplCommandSchema(
     "model",
     "/model",
     "/model [name]",
     "Show or set current model",
-    true
+    true,
+    "state_write"
+  ),
+  createReplCommandSchema(
+    "clear",
+    "/clear",
+    "/clear [session|all]",
+    "Clear current conversation context",
+    true,
+    "state_write",
+    ["/cls"],
+    [
+      {
+        name: "scope",
+        type: "string",
+        required: false
+      }
+    ]
+  ),
+  createReplCommandSchema(
+    "status",
+    "/status",
+    "/status",
+    "Show runtime status summary",
+    false,
+    "public"
+  ),
+  createReplCommandSchema(
+    "approve",
+    "/approve",
+    "/approve",
+    "Approve pending guarded execution",
+    false,
+    "tool_control"
+  ),
+  createReplCommandSchema(
+    "version",
+    "/version",
+    "/version",
+    "Show MiniCLI version",
+    false,
+    "public",
+    ["/ver"]
   ),
   createReplCommandSchema(
     "new",
     "/new",
     "/new [title]",
     "Create and switch to a new session",
-    true
+    true,
+    "session_write"
   ),
   createReplCommandSchema(
     "sessions",
     "/sessions",
     "/sessions [--limit N] [--offset N] [--q keyword]",
     "List sessions",
-    true
+    true,
+    "session_read"
   ),
   createReplCommandSchema(
     "switch",
     "/switch",
     "/switch <#id|index>",
     "Switch to a specific session",
-    true
+    true,
+    "session_write"
   ),
   createReplCommandSchema(
     "history",
     "/history",
     "/history [--limit N] [--offset N] [--audit] [--status <not_required|approved|rejected|timeout>]",
     "Show messages in current session",
-    true
+    true,
+    "session_read"
   ),
   createReplCommandSchema(
     "run",
     "/run",
     "/run <command>",
     "Execute a read-only shell command",
-    true
+    true,
+    "tool_execute"
   ),
   createReplCommandSchema(
     "add",
     "/add",
     "/add <path>",
     "Add a text file into context collection",
-    true
+    true,
+    "context_write"
   ),
   createReplCommandSchema(
     "drop",
     "/drop",
     "/drop <path|index> [more paths or indexes]",
     "Remove file(s) from context collection",
-    true
+    true,
+    "context_write"
   ),
   createReplCommandSchema(
     "files",
     "/files",
     "/files [--limit N] [--q keyword]",
     "List context files",
-    true
+    true,
+    "context_read"
   ),
   createReplCommandSchema(
     "grep",
     "/grep",
     "/grep <pattern> [--limit N]",
     "Search project text by regex pattern",
-    true
+    true,
+    "context_read"
   ),
   createReplCommandSchema(
     "tree",
     "/tree",
     "/tree [path] [--depth N]",
     "Show project directory tree",
-    true
+    true,
+    "context_read"
   )
 ] as const;
 
@@ -197,6 +268,10 @@ const REPL_COMMAND_HANDLER_KEYS: ReadonlySet<KnownReplCommandKind> = new Set([
   "exit",
   "login",
   "model",
+  "clear",
+  "status",
+  "approve",
+  "version",
   "new",
   "sessions",
   "switch",
@@ -223,7 +298,7 @@ function formatHelpText(
   registry: CommandRegistry<KnownReplCommandKind>
 ): string {
   const lines = registry.list().map((command) => {
-    return `${command.metadata.usage} ${command.metadata.description}`;
+    return `${command.metadata.usage} [perm:${command.permission ?? "public"}] ${command.metadata.description}`;
   });
   return `Available commands:\n${lines.join("\n")}\n`;
 }
@@ -689,6 +764,10 @@ export type ReplCommandMatch =
   | { kind: "exit" }
   | { kind: "login"; args: string[] }
   | { kind: "model"; args: string[] }
+  | { kind: "clear"; args: string[] }
+  | { kind: "status" }
+  | { kind: "approve" }
+  | { kind: "version" }
   | { kind: "new"; args: string[] }
   | { kind: "sessions"; args: string[] }
   | { kind: "switch"; args: string[] }
@@ -717,6 +796,18 @@ function matchResolvedReplCommand(
   }
   if (kind === "model") {
     return { kind: "model", args };
+  }
+  if (kind === "clear") {
+    return { kind: "clear", args };
+  }
+  if (kind === "status") {
+    return { kind: "status" };
+  }
+  if (kind === "approve") {
+    return { kind: "approve" };
+  }
+  if (kind === "version") {
+    return { kind: "version" };
   }
   if (kind === "new") {
     return { kind: "new", args };
@@ -1741,6 +1832,24 @@ export function parseNewSessionTitle(args: string[]): string | undefined {
   return title.length > 0 ? title : undefined;
 }
 
+export type ClearCommandScope = "session" | "all";
+
+export function parseClearCommandArgs(
+  args: string[]
+): { scope?: ClearCommandScope; error?: string } {
+  if (args.length === 0) {
+    return { scope: "session" };
+  }
+  if (args.length > 1) {
+    return { error: "Expected at most one scope argument: session|all" };
+  }
+  const normalized = args[0].trim().toLowerCase();
+  if (normalized === "session" || normalized === "all") {
+    return { scope: normalized };
+  }
+  return { error: "Invalid scope, expected session|all" };
+}
+
 export function resolveUniqueSessionTitle(
   baseTitle: string,
   existingTitles: string[]
@@ -2306,6 +2415,21 @@ export function createReplSession(
     return { id: created.id, title: created.title };
   };
 
+  const formatStatusOutput = (): string => {
+    const providerId = provider.id;
+    const sessionLabel =
+      currentSessionId === null ? "none" : `#${currentSessionId}`;
+    return [
+      "Runtime status:",
+      `model: ${config.model}`,
+      `provider: ${providerId}`,
+      `session: ${sessionLabel}`,
+      `contextFiles: ${contextFiles.length}`,
+      `pendingRunConfirmation: ${pendingRunConfirmation ? "yes" : "no"}`,
+      ""
+    ].join("\n");
+  };
+
   const commandHandlers: Record<
     KnownReplCommandKind,
     (args: string[]) => Promise<boolean>
@@ -2372,6 +2496,49 @@ export function createReplSession(
 
       config.model = nextModel;
       writers.stdout(`Model updated: ${config.model}\n`);
+      return false;
+    },
+    clear: async (args) => {
+      const parsed = parseClearCommandArgs(args);
+      if (!parsed.scope) {
+        writers.stderr(`${parsed.error}\nUsage: /clear [session|all]\n`);
+        return false;
+      }
+      conversation.length = 0;
+      if (parsed.scope === "all") {
+        contextFiles.length = 0;
+        currentSessionId = null;
+      }
+      writers.stdout(
+        `[clear] cleared ${parsed.scope === "all" ? "session/context/session-pointer" : "session context"}.\n`
+      );
+      return false;
+    },
+    status: async () => {
+      writers.stdout(formatStatusOutput());
+      return false;
+    },
+    approve: async () => {
+      if (!pendingRunConfirmation) {
+        writers.stderr("[run:confirm] no pending command to approve.\n");
+        return false;
+      }
+      const approved = pendingRunConfirmation;
+      pendingRunConfirmation = undefined;
+      const { result } = executeAndRenderRunCommand(approved.command);
+      recordRunAudit({
+        command: approved.command,
+        riskLevel: approved.risk.level,
+        approvalStatus: "approved",
+        executed: result.ok,
+        exitCode: result.ok ? result.exitCode : null,
+        stdout: result.stdout,
+        stderr: result.ok ? result.stderr : result.error
+      });
+      return false;
+    },
+    version: async () => {
+      writers.stdout(`${formatVersionOutput()}\n`);
       return false;
     },
     new: async (args) => {
@@ -2618,6 +2785,10 @@ export function createReplSession(
   return {
     onLine: async (line: string) => {
       if (pendingRunConfirmation) {
+        const normalizedLine = line.trim().toLowerCase();
+        if (normalizedLine === "/approve") {
+          return commandHandlers.approve([]);
+        }
         const elapsedMs = now().getTime() - pendingRunConfirmation.requestedAtMs;
         if (elapsedMs > runConfirmationTimeoutMs) {
           const timedOut = pendingRunConfirmation;
@@ -2725,6 +2896,10 @@ export function createReplSession(
           case "exit":
           case "login":
           case "model":
+          case "clear":
+          case "status":
+          case "approve":
+          case "version":
           case "new":
           case "sessions":
           case "switch":
