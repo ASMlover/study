@@ -994,28 +994,30 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`266/266`). `npm run test:integration` passed with `36` total, `19` pass, `17` skip (expected in this environment due subprocess/shell restrictions). Task commit created via `ci T37`.
 ### T38 - Shell 统一适配层
-- Date:
-- Env:
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 统一 Windows/Linux 执行抽象
 - Unit Cases:
-  - [ ] 平台检测
-  - [ ] 命令转义
-  - [ ] 环境变量
-  - [ ] 工作目录
-  - [ ] 超时终止
-  - [ ] 信号处理
+  - [x] 平台检测
+  - [x] 命令转义
+  - [x] 环境变量
+  - [x] 工作目录
+  - [x] 超时终止
+  - [x] 信号处理
 - Integration Cases:
-  - [ ] 双平台 mock 适配验证
+  - [x] 双平台 mock 适配验证
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm run test:unit`
+  - `npm run test:integration`
 - Expected: 跨平台执行一致
-- Actual:
+- Actual: Refactored `src/run-executor.ts` to a unified shell adapter abstraction with platform detection, platform-specific command escaping (`powershell -EncodedCommand` for Windows; NUL-safe command pass-through for POSIX), and consistent spawn option forwarding for `cwd`, `env`, `timeout`, and `killSignal`. Added signal-aware stderr annotation and exit-code mapping for signal-terminated processes. Extended unit tests in `tests/unit/run-executor.test.ts` for all required T38 unit cases and added integration test `tests/integration/shell-adapter-platform-mock.test.ts` validating dual-platform mock adapter wiring and option consistency.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T38)
+  - Overall: N/A (coverage tooling not added in T38)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`271/271`). `npm run test:integration` passed (`37` total, `20` pass, `17` skip due expected sandbox subprocess/shell restrictions); new T38 integration case runs in-process and passed.
 ### T39 - 打包发布产物
 - Date:
 - Env:

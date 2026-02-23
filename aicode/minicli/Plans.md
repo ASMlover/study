@@ -64,7 +64,7 @@
 | T35 | 扩展到 27 条 + 参数补全 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Expanded REPL schema to 27 commands and implemented argument-level completion with subcommand/context-aware candidates |
 | T36 | /config | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Implemented dynamic `/config` get/set/list/reset with type conversion, read-only key guard, project persistence, and restart-effective integration coverage |
 | T37 | /export | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Implemented `/export` json/md file output with arg parsing, default naming, overwrite guard, UTF-8 write, and unit/integration coverage |
-| T38 | Shell 统一适配层 | M7 | TODO | - | - | - | - |
+| T38 | Shell 统一适配层 | M7 | DONE | Codex | 2026-02-23 | 2026-02-23 | Added unified Windows/Linux shell adapter with escaped invocation, env/cwd/timeout/signal support, and unit+integration coverage |
 | T39 | 打包发布产物 | M7 | TODO | - | - | - | - |
 | T40 | CI 质量门禁 | M7 | TODO | - | - | - | - |
 
@@ -124,3 +124,4 @@
 | 2026-02-23 | T35 | Expanded REPL command set from 18 to 27, added cursor-aware argument completion (`/config set` chain, option filtering, context-aware candidates), and added unit/integration coverage for parameter completion flows | Codex |
 | 2026-02-23 | T36 | Completed `/config` runtime management with key read/set/reset/list, numeric conversion and validation, read-only key protection, project config persistence helpers, and restart-effective integration test | Codex |
 | 2026-02-23 | T37 | Completed `/export` with `--format json|md`, `--out`, and `--force`; added default filename normalization, UTF-8 file writing, overwrite/permission handling, and export readability integration coverage | Codex |
+| 2026-02-23 | T38 | Completed unified shell adapter for Windows/Linux execution with platform detection, command escaping (`-EncodedCommand` on Windows), env/cwd forwarding, timeout kill-signal support, signal-aware exit mapping, and dual-platform mock adapter integration coverage | Codex |

@@ -25,11 +25,20 @@ export interface ShellInvocation {
   args: string[];
 }
 
+export interface ShellAdapter {
+  command: string;
+  baseArgs: string[];
+  escapeCommand: (command: string) => string;
+  buildArgs: (command: string) => string[];
+}
+
 export interface RunExecutorOptions {
   cwd?: string;
   platform?: NodeJS.Platform;
   maxOutputLength?: number;
   timeoutMs?: number;
+  killSignal?: NodeJS.Signals | number;
+  env?: NodeJS.ProcessEnv;
   allowlist?: readonly string[];
   spawn?: (
     command: string,
@@ -48,20 +57,54 @@ export interface RunCommandResult {
   error?: string;
 }
 
-export function buildPlatformShellInvocation(
+export function detectShellPlatform(
   platform: NodeJS.Platform = process.platform
-): ShellInvocation {
-  if (platform === "win32") {
+): "windows" | "posix" {
+  return platform === "win32" ? "windows" : "posix";
+}
+
+export function escapeCommandForShell(
+  command: string,
+  platform: NodeJS.Platform = process.platform
+): string {
+  if (detectShellPlatform(platform) === "windows") {
+    // -EncodedCommand expects UTF-16LE bytes encoded in base64.
+    return Buffer.from(command, "utf16le").toString("base64");
+  }
+  // Drop NUL bytes to avoid shell argument truncation/injection edge cases.
+  return command.replace(/\0/g, "");
+}
+
+export function createShellAdapter(
+  platform: NodeJS.Platform = process.platform
+): ShellAdapter {
+  if (detectShellPlatform(platform) === "windows") {
     return {
       command: "powershell.exe",
-      args: ["-NoProfile", "-NonInteractive", "-Command"]
+      baseArgs: ["-NoProfile", "-NonInteractive", "-EncodedCommand"],
+      escapeCommand: (command: string) => escapeCommandForShell(command, "win32"),
+      buildArgs: (command: string) => [
+        "-NoProfile",
+        "-NonInteractive",
+        "-EncodedCommand",
+        escapeCommandForShell(command, "win32")
+      ]
     };
   }
 
   return {
     command: "/bin/sh",
-    args: ["-lc"]
+    baseArgs: ["-lc"],
+    escapeCommand: (command: string) => escapeCommandForShell(command, "linux"),
+    buildArgs: (command: string) => ["-lc", escapeCommandForShell(command, "linux")]
   };
+}
+
+export function buildPlatformShellInvocation(
+  platform: NodeJS.Platform = process.platform
+): ShellInvocation {
+  const adapter = createShellAdapter(platform);
+  return { command: adapter.command, args: [...adapter.baseArgs] };
 }
 
 function normalizeAllowedToken(token: string): string {
@@ -112,6 +155,9 @@ export function mapShellExitCode(result: SpawnSyncReturns<string>): number {
   if (typeof result.status === "number") {
     return result.status;
   }
+  if (result.signal) {
+    return 128;
+  }
   return result.error ? 1 : 0;
 }
 
@@ -160,15 +206,22 @@ export function executeReadOnlyCommand(
 
   const maxOutputLength = options?.maxOutputLength ?? DEFAULT_RUN_OUTPUT_LIMIT;
   const timeoutMs = options?.timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
+  const killSignal = options?.killSignal ?? "SIGTERM";
   const cwd = options?.cwd ?? process.cwd();
+  const env = options?.env
+    ? { ...process.env, ...options.env }
+    : process.env;
   const platform = options?.platform ?? process.platform;
   const invoke = options?.spawn ?? spawnSync;
-  const shell = buildPlatformShellInvocation(platform);
+  const shell = createShellAdapter(platform);
+  const shellArgs = shell.buildArgs(normalizedCommand);
 
-  const result = invoke(shell.command, [...shell.args, normalizedCommand], {
+  const result = invoke(shell.command, shellArgs, {
     cwd,
+    env,
     encoding: "utf8",
     timeout: timeoutMs,
+    killSignal,
     windowsHide: true,
     maxBuffer: Math.max(maxOutputLength * 2, 1024)
   });
@@ -176,7 +229,10 @@ export function executeReadOnlyCommand(
   const stdout = result.stdout ?? "";
   const stderrFromProcess = result.stderr ?? "";
   const spawnedError = result.error ? `${result.error.message}\n` : "";
-  const stderr = `${stderrFromProcess}${spawnedError}`;
+  const signalMessage = result.signal
+    ? `terminated by signal ${result.signal}\n`
+    : "";
+  const stderr = `${stderrFromProcess}${spawnedError}${signalMessage}`;
 
   const truncatedStdout = truncateOutput(stdout, maxOutputLength);
   const truncatedStderr = truncateOutput(stderr, maxOutputLength);
