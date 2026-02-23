@@ -287,6 +287,26 @@ test("help text includes permission markers and extended commands", () => {
   assert.match(HELP_TEXT, /\/version/);
 });
 
+test("help text sorts commands alphabetically and aligns detail columns", () => {
+  const lines = HELP_TEXT
+    .split("\n")
+    .filter((line) => line.trim().startsWith("/"));
+  assert.equal(lines.length > 0, true);
+
+  const commandTokens = lines.map((line) => line.trim().split(/\s+/)[0]);
+  const sortedTokens = [...commandTokens].sort((left, right) =>
+    left.localeCompare(right)
+  );
+  assert.deepEqual(commandTokens, sortedTokens);
+
+  const permissionStartColumns = lines.map((line) => line.indexOf("[perm:"));
+  assert.equal(permissionStartColumns.every((value) => value >= 0), true);
+  assert.equal(
+    permissionStartColumns.every((value) => value === permissionStartColumns[0]),
+    true
+  );
+});
+
 test("createRuntimeProvider selects mock when apiKey is absent", () => {
   const provider = createRuntimeProvider({
     model: "glm-4",

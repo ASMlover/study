@@ -399,8 +399,30 @@ export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCom
 function formatHelpText(
   registry: CommandRegistry<KnownReplCommandKind>
 ): string {
-  const lines = registry.list().map((command) => {
-    return `${command.metadata.usage} [perm:${command.permission ?? "public"}] ${command.metadata.description}`;
+  const commands = [...registry.list()].sort((left, right) => {
+    const byName = left.metadata.name.localeCompare(right.metadata.name);
+    if (byName !== 0) {
+      return byName;
+    }
+    return left.metadata.usage.localeCompare(right.metadata.usage);
+  });
+
+  const permissionLabels = commands.map(
+    (command) => `[perm:${command.permission ?? "public"}]`
+  );
+  const usageWidth = commands.reduce(
+    (width, command) => Math.max(width, command.metadata.usage.length),
+    0
+  );
+  const permissionWidth = permissionLabels.reduce(
+    (width, permission) => Math.max(width, permission.length),
+    0
+  );
+
+  const lines = commands.map((command, index) => {
+    const usage = command.metadata.usage.padEnd(usageWidth, " ");
+    const permission = permissionLabels[index].padEnd(permissionWidth, " ");
+    return `${usage}  ${permission}  ${command.metadata.description}`;
   });
   return `Available commands:\n${lines.join("\n")}\n`;
 }

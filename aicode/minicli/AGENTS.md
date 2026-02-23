@@ -54,3 +54,5 @@ Recent history in the parent repo uses conventional-style subjects with scope an
 - If the input is `ci TXX`, create a git commit for files implementing the feature and tests defined in `tasks/TXX.md`.
   Example: `ci T01` means commit the files that implement `tasks/T01.md` functionality and its corresponding test cases.
   Commit message must include the corresponding task's implemented functionality (not only task ID).
+- If the input is exactly `ci`, automatically create a git commit based on the current modified files from previous changes.
+  Commit message must summarize the implemented functionality reflected by the staged modifications.

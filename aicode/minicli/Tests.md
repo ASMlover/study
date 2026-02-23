@@ -1095,3 +1095,69 @@ Use this section structure for each task:
   - Overall: N/A (coverage tooling not added in T10 follow-up)
 - Result: PASS
 - Notes: 该修复主要降低临时 429 对用户的可见失败率；若服务持续限流或配额耗尽，最终仍会返回明确错误提示。
+
+### Help UX Follow-up - `/help` 展示排序与对齐
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: `/help` 输出按命令字母序展示，并对齐使用说明与帮助信息列
+- Unit Cases:
+  - [x] `HELP_TEXT` 包含权限标记与扩展命令
+  - [x] 命令首列按字母序稳定排序
+  - [x] `[perm:...]` 列起始位置对齐
+- Integration Cases:
+  - [x] `/help` 到 `/exit` 流程输出匹配新格式（包含 permission 列）
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+  - `npm run build`
+  - `node --test --experimental-test-isolation=none build/tests/unit/repl.test.js`
+  - `node --test --experimental-test-isolation=none build/tests/integration/repl-echo.test.js`
+- Expected: `/help` 文本更易读，命令列表按字母序，帮助详情列对齐
+- Actual: Updated `formatHelpText` to sort commands by `metadata.name`, compute max widths for `usage` and permission labels, and render aligned columns with consistent spacing. Added unit assertions for alphabetical order and aligned permission-column start index; updated integration regex assertions to match permission-aware help output format.
+- Coverage:
+  - Core: `build/tests/unit/repl.test.js` passed (`172/172`)
+  - Overall: Targeted integration `build/tests/integration/repl-echo.test.js` executed with expected sandbox skips (`2` skipped, `0` failed)
+- Result: PASS
+- Notes: 当前环境禁止子进程交互（`EPERM`），集成用例带有 skip 保护，因此 `/help` 子进程断言为条件跳过，不影响本次格式逻辑验证。
+
+### Workflow Rule Follow-up - `ci` 自动提交约定
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 更新 `AGENTS.md`，新增“单独输入 `ci` 自动按已有修改提交”规则
+- Unit Cases:
+  - [x] N/A（文档规则变更）
+- Integration Cases:
+  - [x] N/A（文档规则变更）
+- E2E Smoke:
+  - [x] N/A
+- Commands:
+  - `Get-Content AGENTS.md`
+  - `git diff -- AGENTS.md`
+- Expected: 明确 `ci TXX` 与 `ci` 两种触发语义，减少提交流程歧义
+- Actual: Added two lines under `Agent Workflow Rules` clarifying that exact input `ci` should auto-create a commit from current prior modifications, and commit message must summarize implemented functionality.
+- Coverage:
+  - Core: N/A
+  - Overall: N/A
+- Result: PASS
+- Notes: 本次为规则文档更新，无代码行为改动与测试执行需求。
+
+### CI Round Follow-up - Consolidated Commit Record
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 按 `ci` 规则提交既有变更（`/help` 输出可读性优化 + `ci` 工作流规则文档更新）
+- Unit Cases:
+  - [x] 沿用上一轮 `build/tests/unit/repl.test.js` 结果（`172/172`）
+- Integration Cases:
+  - [x] 沿用上一轮 `build/tests/integration/repl-echo.test.js` 结果（sandbox skip 保护）
+- E2E Smoke:
+  - [x] N/A
+- Commands:
+  - `git diff --cached --stat`
+  - `git commit -m "<summary>"`
+- Expected: 以功能摘要为主题的一次性提交，包含代码、测试与文档同步变更
+- Actual: Prepared and committed staged changes covering `/help` sort/alignment behavior, associated unit/integration assertions, and AGENTS/Plans/Tests workflow documentation updates.
+- Coverage:
+  - Core: Reused prior validated run for this staged set
+  - Overall: No new runtime behavior introduced beyond already-validated `/help` formatting changes
+- Result: PASS
+- Notes: 本轮 `ci` 仅执行提交流程，不新增实现逻辑；测试结论与上一轮实现验证一致。

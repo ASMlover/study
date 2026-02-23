@@ -127,3 +127,6 @@
 | 2026-02-23 | T38 | Completed unified shell adapter for Windows/Linux execution with platform detection, command escaping (`-EncodedCommand` on Windows), env/cwd forwarding, timeout kill-signal support, signal-aware exit mapping, and dual-platform mock adapter integration coverage | Codex |
 | 2026-02-23 | T39 | Completed release packaging pipeline with `esbuild` bundle + `pkg` binaries (win/linux), version injection via build define, release argument/dependency/entry validation, and integration coverage for packaged `--version` smoke | Codex |
 | 2026-02-23 | T40 | Completed CI quality gate with GitHub Actions ordered stages (`typecheck -> unit -> integration -> coverage -> e2e`), retry/caching/artifact strategy, enforced coverage thresholds, and CI workflow verification tests | Codex |
+| 2026-02-23 | Help UX Follow-up | Optimized `/help` output with alphabetical command ordering and column-aligned usage/permission/description display; updated unit/integration assertions | Codex |
+| 2026-02-23 | Workflow Rule Follow-up | Added AGENTS rule: exact input `ci` triggers automatic commit from current prior modifications with functionality-focused message | Codex |
+| 2026-02-23 | ci | Created consolidated commit for `/help` output UX formatting improvements and `ci` workflow rule documentation updates | Codex |
