@@ -742,7 +742,7 @@ test("inline completion chain resolves command and arguments consistently", asyn
   await session.onLine("/co\t s\t mo\t mock-\t");
 
   assert.equal(errors.join(""), "");
-  assert.match(writes.join(""), /\[config\] set is acknowledged/);
+  assert.match(writes.join(""), /\[config\] updated model=mock-mini/);
 });
 
 test("shouldUseTerminalMode returns true when either input or output is TTY", () => {
@@ -2755,6 +2755,90 @@ test("repl /model rejects empty model name", async () => {
 
   assert.equal(shouldExit, false);
   assert.match(errors.join(""), /Usage: \/model \[name\]/);
+});
+
+test("repl /config get reads known key and reports unknown key", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: (message) => errors.push(message)
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      config: {
+        model: "glm-4-air",
+        timeoutMs: 30000
+      }
+    }
+  );
+
+  await session.onLine("/config get model");
+  await session.onLine("/config get noSuchKey");
+
+  assert.match(writes.join(""), /model=glm-4-air/);
+  assert.match(errors.join(""), /unknown key "noSuchKey"/);
+});
+
+test("repl /config set converts numeric values and persists via callback", async () => {
+  const writes: string[] = [];
+  const saved: Array<{ key: string; value: string | number }> = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      saveConfigValue: (key, value) => {
+        saved.push({ key, value });
+      }
+    }
+  );
+
+  await session.onLine("/config set timeoutMs 45000");
+  await session.onLine("/config get timeoutMs");
+
+  assert.deepEqual(saved, [{ key: "timeoutMs", value: 45000 }]);
+  assert.match(writes.join(""), /\[config\] updated timeoutMs=45000/);
+  assert.match(writes.join(""), /timeoutMs=45000/);
+});
+
+test("repl /config protects read-only key", async () => {
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: () => {},
+    stderr: (message) => errors.push(message)
+  });
+
+  await session.onLine("/config set apiKey sk-123");
+
+  assert.match(errors.join(""), /read-only/);
+});
+
+test("repl /config reset calls persistence callback", async () => {
+  const writes: string[] = [];
+  const resets: string[] = [];
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      saveConfigValue: () => {},
+      resetConfigValue: (key) => {
+        resets.push(key);
+      }
+    }
+  );
+
+  await session.onLine("/config set requestTokenBudget 6000");
+  await session.onLine("/config reset requestTokenBudget");
+
+  assert.deepEqual(resets, ["requestTokenBudget"]);
+  assert.match(writes.join(""), /\[config\] reset requestTokenBudget=4000/);
 });
 
 test("repl /clear uses default scope and supports all scope", async () => {

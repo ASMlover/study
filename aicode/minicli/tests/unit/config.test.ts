@@ -8,9 +8,11 @@ import {
   loadRuntimeConfig,
   maskSecret,
   parseConfig,
+  resetManagedValueInProjectConfig,
   resolveGlobalConfigPath,
   resolveProjectConfigPath,
   saveApiKeyToGlobalConfig,
+  saveManagedValueToProjectConfig,
   saveModelToProjectConfig,
   validateAndNormalizeConfig
 } from "../../src/config";
@@ -279,4 +281,57 @@ test("saveModelToProjectConfig rejects empty model name", () => {
     () => saveModelToProjectConfig("C:/x/.minicli/config.json", "   "),
     /Model name cannot be empty/
   );
+});
+
+test("validateAndNormalizeConfig reads extended numeric runtime config keys", () => {
+  const validated = validateAndNormalizeConfig({
+    model: "glm-4",
+    runConfirmationTimeoutMs: 12000,
+    requestTokenBudget: 6000
+  });
+
+  assert.equal(validated.issues.length, 0);
+  assert.equal(validated.config.runConfirmationTimeoutMs, 12000);
+  assert.equal(validated.config.requestTokenBudget, 6000);
+});
+
+test("saveManagedValueToProjectConfig persists value and reset removes it", () => {
+  const files = new Map<string, string>();
+  const projectPath = path.join("CWD", ".minicli", "config.json");
+
+  const readFileSync = ((filePath: string) => {
+    const value = files.get(filePath);
+    if (value === undefined) {
+      const error = new Error("missing") as NodeJS.ErrnoException;
+      error.code = "ENOENT";
+      throw error;
+    }
+    return value;
+  }) as typeof import("node:fs").readFileSync;
+
+  const writeFileSync = ((filePath: string, content: string) => {
+    files.set(filePath, content);
+  }) as typeof import("node:fs").writeFileSync;
+
+  const mkdirSync = (() => {}) as typeof import("node:fs").mkdirSync;
+
+  saveManagedValueToProjectConfig(projectPath, "requestTokenBudget", 8000, {
+    readFileSync,
+    writeFileSync,
+    mkdirSync
+  });
+  const saved = JSON.parse(String(files.get(projectPath))) as {
+    requestTokenBudget?: number;
+  };
+  assert.equal(saved.requestTokenBudget, 8000);
+
+  resetManagedValueInProjectConfig(projectPath, "requestTokenBudget", {
+    readFileSync,
+    writeFileSync,
+    mkdirSync
+  });
+  const reset = JSON.parse(String(files.get(projectPath))) as {
+    requestTokenBudget?: number;
+  };
+  assert.equal(reset.requestTokenBudget, undefined);
 });

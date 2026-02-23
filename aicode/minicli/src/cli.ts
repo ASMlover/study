@@ -4,6 +4,8 @@ import {
   formatConfigIssue,
   loadRuntimeConfig,
   LoadedRuntimeConfig,
+  resetManagedValueInProjectConfig,
+  saveManagedValueToProjectConfig,
   saveApiKeyToGlobalConfig,
   saveModelToProjectConfig
 } from "./config";
@@ -102,6 +104,10 @@ export function runCli(
             saveApiKeyToGlobalConfig(loadedConfig.globalPath, apiKey),
           saveModel: (model: string) =>
             saveModelToProjectConfig(loadedConfig.projectPath, model),
+          saveConfigValue: (key, value) =>
+            saveManagedValueToProjectConfig(loadedConfig.projectPath, key, value),
+          resetConfigValue: (key) =>
+            resetManagedValueInProjectConfig(loadedConfig.projectPath, key),
           sessionRepository: repositories?.sessions,
           messageRepository: repositories?.messages,
           commandHistoryRepository: repositories?.commandHistory,

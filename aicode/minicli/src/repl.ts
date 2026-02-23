@@ -9,7 +9,9 @@ import {
 } from "./command-registry";
 import {
   isSupportedModelName,
+  MutableManagedConfigKey,
   maskSecret,
+  ManagedConfigKey,
   RuntimeConfig
 } from "./config";
 import {
@@ -54,6 +56,16 @@ export const DEFAULT_GREP_IGNORED_DIRECTORY_NAMES = [
 export const DEFAULT_TREE_DEPTH_LIMIT = 3;
 export const DEFAULT_TREE_IGNORED_DIRECTORY_NAMES =
   DEFAULT_GREP_IGNORED_DIRECTORY_NAMES;
+
+const MANAGED_CONFIG_KEYS: readonly ManagedConfigKey[] = [
+  "model",
+  "timeoutMs",
+  "apiKey",
+  "runConfirmationTimeoutMs",
+  "requestTokenBudget"
+] as const;
+
+const READ_ONLY_CONFIG_KEYS = new Set<ManagedConfigKey>(["apiKey"]);
 
 export type RunConfirmationDecision = "confirm" | "reject" | "invalid";
 
@@ -1089,6 +1101,8 @@ export interface ReplSessionOptions {
   config?: RuntimeConfig;
   saveApiKey?: (apiKey: string) => void;
   saveModel?: (model: string) => void;
+  saveConfigValue?: (key: MutableManagedConfigKey, value: string | number) => void;
+  resetConfigValue?: (key: MutableManagedConfigKey) => void;
   maxReplyLength?: number;
   requestTokenBudget?: number;
   sessionRepository?: Pick<SessionRepository, "createSession" | "listSessions">;
@@ -2640,6 +2654,21 @@ function normalizeTokenBudget(tokenBudget: number): number {
   return Math.floor(tokenBudget);
 }
 
+function normalizeRunConfirmationTimeout(timeoutMs: number): number {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS;
+  }
+  return Math.floor(timeoutMs);
+}
+
+function isManagedConfigKey(value: string): value is ManagedConfigKey {
+  return MANAGED_CONFIG_KEYS.includes(value as ManagedConfigKey);
+}
+
+function isReadOnlyConfigKey(key: ManagedConfigKey): boolean {
+  return READ_ONLY_CONFIG_KEYS.has(key);
+}
+
 export function trimMessagesToTokenBudget(
   messages: ChatMessage[],
   tokenBudget: number = DEFAULT_REQUEST_TOKEN_BUDGET
@@ -2750,8 +2779,10 @@ export function createReplSession(
   };
   let provider = options?.provider ?? createRuntimeProvider(config);
   const maxReplyLength = options?.maxReplyLength ?? DEFAULT_MAX_REPLY_LENGTH;
-  const requestTokenBudget = normalizeTokenBudget(
-    options?.requestTokenBudget ?? DEFAULT_REQUEST_TOKEN_BUDGET
+  let requestTokenBudget = normalizeTokenBudget(
+    options?.requestTokenBudget ??
+      config.requestTokenBudget ??
+      DEFAULT_REQUEST_TOKEN_BUDGET
   );
   const sessionRepository = options?.sessionRepository;
   const messageRepository = options?.messageRepository;
@@ -2764,8 +2795,17 @@ export function createReplSession(
     {};
   const helpText = formatHelpText(commandRegistry);
   const now = options?.now ?? (() => new Date());
-  const runConfirmationTimeoutMs =
-    options?.runConfirmationTimeoutMs ?? DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS;
+  let runConfirmationTimeoutMs = normalizeRunConfirmationTimeout(
+    options?.runConfirmationTimeoutMs ??
+      config.runConfirmationTimeoutMs ??
+      DEFAULT_RUN_CONFIRMATION_TIMEOUT_MS
+  );
+  const initialManagedConfigValues: Record<MutableManagedConfigKey, string | number> = {
+    model: config.model,
+    timeoutMs: config.timeoutMs,
+    runConfirmationTimeoutMs,
+    requestTokenBudget
+  };
   const executeRun =
     options?.executeRunCommand ??
     ((command: string, cwd: string) =>
@@ -2856,8 +2896,11 @@ export function createReplSession(
     return [
       "Runtime status:",
       `model: ${config.model}`,
+      `timeoutMs: ${config.timeoutMs}`,
       `provider: ${providerId}`,
       `session: ${sessionLabel}`,
+      `runConfirmationTimeoutMs: ${runConfirmationTimeoutMs}`,
+      `requestTokenBudget: ${requestTokenBudget}`,
       `contextFiles: ${contextFiles.length}`,
       `pendingRunConfirmation: ${pendingRunConfirmation ? "yes" : "no"}`,
       ""
@@ -2966,7 +3009,7 @@ export function createReplSession(
             "Config keys:",
             "- model",
             "- timeoutMs",
-            "- apiKey",
+            "- apiKey (read-only: use /login)",
             "- runConfirmationTimeoutMs",
             "- requestTokenBudget",
             ""
@@ -2975,9 +3018,142 @@ export function createReplSession(
         return false;
       }
 
-      writers.stdout(
-        `[config] ${subcommand} is acknowledged (full persistence is implemented in T36).\n`
-      );
+      if (args.length < 2) {
+        writers.stderr(`[config:error] ${subcommand} requires a key.\n`);
+        return false;
+      }
+
+      const keyToken = args[1];
+      if (!isManagedConfigKey(keyToken)) {
+        writers.stderr(`[config:error] unknown key "${keyToken}".\n`);
+        return false;
+      }
+
+      const readValue = (key: ManagedConfigKey): string | number => {
+        if (key === "model") {
+          return config.model;
+        }
+        if (key === "timeoutMs") {
+          return config.timeoutMs;
+        }
+        if (key === "runConfirmationTimeoutMs") {
+          return runConfirmationTimeoutMs;
+        }
+        if (key === "requestTokenBudget") {
+          return requestTokenBudget;
+        }
+        return config.apiKey ? maskSecret(config.apiKey) : "(empty)";
+      };
+
+      if (subcommand === "get") {
+        if (args.length !== 2) {
+          writers.stderr("Usage: /config get <key>\n");
+          return false;
+        }
+        writers.stdout(`${keyToken}=${readValue(keyToken)}\n`);
+        return false;
+      }
+
+      if (isReadOnlyConfigKey(keyToken)) {
+        writers.stderr(
+          `[config:error] key "${keyToken}" is read-only. Use /login or /logout.\n`
+        );
+        return false;
+      }
+
+      if (subcommand === "set") {
+        if (args.length < 3) {
+          writers.stderr("Usage: /config set <key> <value>\n");
+          return false;
+        }
+
+        const valueToken = args.slice(2).join(" ").trim();
+        let parsedValue: string | number;
+        if (keyToken === "model") {
+          if (!isSupportedModelName(valueToken)) {
+            writers.stderr("[config:error] model cannot be empty.\n");
+            return false;
+          }
+          parsedValue = valueToken;
+        } else {
+          const numeric = Number(valueToken);
+          if (!Number.isFinite(numeric) || numeric <= 0) {
+            writers.stderr(
+              `[config:error] ${keyToken} must be a positive number.\n`
+            );
+            return false;
+          }
+          parsedValue = Math.floor(numeric);
+        }
+
+        try {
+          options?.saveConfigValue?.(keyToken as MutableManagedConfigKey, parsedValue);
+        } catch (error) {
+          const e = error as Error;
+          writers.stderr(`[config:error] ${e.message}\n`);
+          return false;
+        }
+
+        if (keyToken === "model") {
+          config.model = parsedValue as string;
+          if (!hasFixedProvider) {
+            provider = createRuntimeProvider(config);
+          }
+        } else if (keyToken === "timeoutMs") {
+          config.timeoutMs = parsedValue as number;
+          if (!hasFixedProvider) {
+            provider = createRuntimeProvider(config);
+          }
+        } else if (keyToken === "runConfirmationTimeoutMs") {
+          runConfirmationTimeoutMs = normalizeRunConfirmationTimeout(
+            parsedValue as number
+          );
+          config.runConfirmationTimeoutMs = runConfirmationTimeoutMs;
+        } else if (keyToken === "requestTokenBudget") {
+          requestTokenBudget = normalizeTokenBudget(parsedValue as number);
+          config.requestTokenBudget = requestTokenBudget;
+        }
+
+        writers.stdout(`[config] updated ${keyToken}=${readValue(keyToken)}\n`);
+        return false;
+      }
+
+      if (args.length !== 2) {
+        writers.stderr("Usage: /config reset <key>\n");
+        return false;
+      }
+
+      try {
+        options?.resetConfigValue?.(keyToken as MutableManagedConfigKey);
+      } catch (error) {
+        const e = error as Error;
+        writers.stderr(`[config:error] ${e.message}\n`);
+        return false;
+      }
+
+      if (keyToken === "model") {
+        config.model = String(initialManagedConfigValues.model);
+        if (!hasFixedProvider) {
+          provider = createRuntimeProvider(config);
+        }
+      } else if (keyToken === "timeoutMs") {
+        config.timeoutMs = Number(initialManagedConfigValues.timeoutMs);
+        if (!hasFixedProvider) {
+          provider = createRuntimeProvider(config);
+        }
+      } else if (keyToken === "runConfirmationTimeoutMs") {
+        runConfirmationTimeoutMs = normalizeRunConfirmationTimeout(
+          Number(initialManagedConfigValues.runConfirmationTimeoutMs)
+        );
+        config.runConfirmationTimeoutMs = runConfirmationTimeoutMs;
+      } else if (keyToken === "requestTokenBudget") {
+        requestTokenBudget = normalizeTokenBudget(
+          Number(initialManagedConfigValues.requestTokenBudget)
+        );
+        config.requestTokenBudget = requestTokenBudget;
+      }
+
+      writers.stdout(`[config] reset ${keyToken}=${readValue(keyToken)}\n`);
       return false;
     },
     clear: async (args) => {

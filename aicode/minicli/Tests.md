@@ -941,28 +941,32 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed. Unit tests `251/251` passed. Integration tests `34` total with `18` pass and `16` skip (expected due sandbox subprocess/shell restrictions). New T35 integration case `tests/integration/config-arg-completion.test.ts` passed under current environment policy (or is skipped when subprocess is blocked).
 ### T36 - /config
-- Date:
-- Env:
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 查看与设置常用配置
 - Unit Cases:
-  - [ ] 读取键
-  - [ ] 设置键
-  - [ ] 类型转换
-  - [ ] 只读键保护
-  - [ ] 未知键报错
-  - [ ] 持久化
+  - [x] 读取键
+  - [x] 设置键
+  - [x] 类型转换
+  - [x] 只读键保护
+  - [x] 未知键报错
+  - [x] 持久化
 - Integration Cases:
-  - [ ] 设置后重启生效
+  - [x] 设置后重启生效
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm run typecheck`
+  - `npm run test:unit`
+  - `npm run test:integration`
+  - `npm test`
 - Expected: 配置可动态管理
-- Actual:
+- Actual: Implemented `/config get|set|list|reset` with managed keys (`model`, `timeoutMs`, `apiKey`, `runConfirmationTimeoutMs`, `requestTokenBudget`), unknown-key errors, read-only protection for `apiKey`, numeric conversion/validation for numeric keys, and project-level persistence (`saveManagedValueToProjectConfig` / `resetManagedValueInProjectConfig`). REPL runtime now applies updated values immediately and restart loads persisted values via runtime config normalization.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T36)
+  - Overall: N/A (coverage tooling not added in T36)
+- Result: PASS
+- Notes: `npm test` passed. Unit tests `257/257` passed. Integration tests `35` total with `18` pass and `17` skip (expected under sandbox subprocess/shell restrictions). New integration `tests/integration/config-restart-effective.test.ts` is guarded for restricted environments and validates restart persistence when subprocess execution is available.
 ### T37 - /export
 - Date:
 - Env:

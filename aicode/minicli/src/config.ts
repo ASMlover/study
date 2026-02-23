@@ -9,6 +9,8 @@ export interface RuntimeConfig {
   model: ModelName;
   timeoutMs: number;
   apiKey?: string;
+  runConfirmationTimeoutMs?: number;
+  requestTokenBudget?: number;
 }
 
 export type ConfigIssueCode =
@@ -178,7 +180,22 @@ export function loadMergedConfig(params?: {
   };
 }
 
-const ALLOWED_KEYS = new Set(["model", "timeoutMs", "apiKey"]);
+export type ManagedConfigKey =
+  | "model"
+  | "timeoutMs"
+  | "apiKey"
+  | "runConfirmationTimeoutMs"
+  | "requestTokenBudget";
+
+export type MutableManagedConfigKey = Exclude<ManagedConfigKey, "apiKey">;
+
+const ALLOWED_KEYS = new Set<ManagedConfigKey>([
+  "model",
+  "timeoutMs",
+  "apiKey",
+  "runConfirmationTimeoutMs",
+  "requestTokenBudget"
+]);
 const DEFAULT_RUNTIME_CONFIG: RuntimeConfig = {
   model: "glm-4",
   timeoutMs: 30000
@@ -207,7 +224,7 @@ export function validateAndNormalizeConfig(
   const requireModel = options?.requireModel ?? true;
 
   for (const key of Object.keys(config)) {
-    if (!ALLOWED_KEYS.has(key)) {
+    if (!ALLOWED_KEYS.has(key as ManagedConfigKey)) {
       issues.push({
         code: "unknown_field",
         path: key,
@@ -270,6 +287,41 @@ export function validateAndNormalizeConfig(
       });
     } else {
       normalized.apiKey = rawApiKey;
+    }
+  }
+
+  const rawRunConfirmationTimeout = config.runConfirmationTimeoutMs;
+  if (rawRunConfirmationTimeout !== undefined) {
+    if (
+      typeof rawRunConfirmationTimeout !== "number" ||
+      Number.isNaN(rawRunConfirmationTimeout) ||
+      rawRunConfirmationTimeout <= 0
+    ) {
+      issues.push({
+        code: "type_mismatch",
+        path: "runConfirmationTimeoutMs",
+        message:
+          'Field "runConfirmationTimeoutMs" must be a positive number.'
+      });
+    } else {
+      normalized.runConfirmationTimeoutMs = rawRunConfirmationTimeout;
+    }
+  }
+
+  const rawRequestTokenBudget = config.requestTokenBudget;
+  if (rawRequestTokenBudget !== undefined) {
+    if (
+      typeof rawRequestTokenBudget !== "number" ||
+      Number.isNaN(rawRequestTokenBudget) ||
+      rawRequestTokenBudget <= 0
+    ) {
+      issues.push({
+        code: "type_mismatch",
+        path: "requestTokenBudget",
+        message: 'Field "requestTokenBudget" must be a positive number.'
+      });
+    } else {
+      normalized.requestTokenBudget = rawRequestTokenBudget;
     }
   }
 
@@ -386,4 +438,37 @@ export function saveModelToProjectConfig(
   );
 
   return normalized;
+}
+
+export function saveManagedValueToProjectConfig(
+  projectConfigPath: string,
+  key: MutableManagedConfigKey,
+  value: string | number,
+  options?: WriteConfigOptions
+): void {
+  const readFileSync = options?.readFileSync ?? fs.readFileSync;
+  const current = loadConfigFile(projectConfigPath, readFileSync);
+  writeConfigFile(
+    projectConfigPath,
+    {
+      ...current,
+      [key]: value
+    },
+    options
+  );
+}
+
+export function resetManagedValueInProjectConfig(
+  projectConfigPath: string,
+  key: MutableManagedConfigKey,
+  options?: WriteConfigOptions
+): void {
+  const readFileSync = options?.readFileSync ?? fs.readFileSync;
+  const current = loadConfigFile(projectConfigPath, readFileSync);
+  if (!(key in current)) {
+    return;
+  }
+  const next: MiniCliConfig = { ...current };
+  delete next[key];
+  writeConfigFile(projectConfigPath, next, options);
 }

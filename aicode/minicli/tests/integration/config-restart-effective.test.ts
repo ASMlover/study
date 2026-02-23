@@ -31,17 +31,15 @@ async function spawnRepl(
   }
 }
 
-test("/config set supports argument completion chain with Tab", async (t) => {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-config-complete-"));
-  const homeDir = path.join(tmpRoot, "home");
-  const cwd = path.join(tmpRoot, "project");
-  fs.mkdirSync(homeDir, { recursive: true });
-  fs.mkdirSync(cwd, { recursive: true });
-
+async function runReplScript(
+  t: TestContext,
+  cwd: string,
+  homeDir: string,
+  scriptLines: readonly string[]
+): Promise<{ stdout: string; stderr: string; code: number; blocked: boolean }> {
   const child = await spawnRepl(t, cwd, homeDir);
   if (child === null) {
-    fs.rmSync(tmpRoot, { recursive: true, force: true });
-    return;
+    return { stdout: "", stderr: "", code: 0, blocked: true };
   }
 
   let stdout = "";
@@ -53,12 +51,13 @@ test("/config set supports argument completion chain with Tab", async (t) => {
     stderr += chunk.toString("utf8");
   });
 
-  child.stdin.write("/co\t s\t mo\t mock-\t\n");
-  child.stdin.write("/exit\n");
+  for (const line of scriptLines) {
+    child.stdin.write(`${line}\n`);
+  }
   child.stdin.end();
 
   let blocked = false;
-  const exitCode = await new Promise<number>((resolve, reject) => {
+  const code = await new Promise<number>((resolve, reject) => {
     child.on("error", (error: NodeJS.ErrnoException) => {
       if (error.code === "EPERM") {
         t.skip("subprocess spawning is blocked in this environment");
@@ -68,15 +67,38 @@ test("/config set supports argument completion chain with Tab", async (t) => {
       }
       reject(error);
     });
-    child.on("close", (code) => resolve(code ?? -1));
+    child.on("close", (exitCode) => resolve(exitCode ?? -1));
   });
 
+  return { stdout, stderr, code, blocked };
+}
+
+test("/config set persists and is effective after restart", async (t) => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-config-restart-"));
+  const homeDir = path.join(tmpRoot, "home");
+  const cwd = path.join(tmpRoot, "project");
+  fs.mkdirSync(homeDir, { recursive: true });
+  fs.mkdirSync(cwd, { recursive: true });
+
   try {
-    if (!blocked) {
-      assert.equal(exitCode, 0);
-      assert.equal(stderr, "");
-      assert.match(stdout, /\[config\] updated model=mock-mini/);
+    const first = await runReplScript(t, cwd, homeDir, [
+      "/config set timeoutMs 45000",
+      "/exit"
+    ]);
+    if (first.blocked) {
+      return;
     }
+    assert.equal(first.code, 0);
+    assert.equal(first.stderr, "");
+    assert.match(first.stdout, /\[config\] updated timeoutMs=45000/);
+
+    const second = await runReplScript(t, cwd, homeDir, [
+      "/config get timeoutMs",
+      "/exit"
+    ]);
+    assert.equal(second.code, 0);
+    assert.equal(second.stderr, "");
+    assert.match(second.stdout, /timeoutMs=45000/);
   } finally {
     fs.rmSync(tmpRoot, { recursive: true, force: true });
   }
