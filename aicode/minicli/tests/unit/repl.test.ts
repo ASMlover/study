@@ -8,6 +8,8 @@ import {
   addContextFile,
   buildContextSystemMessage,
   buildDefaultSessionTitle,
+  buildExportFileName,
+  buildSessionExportPayload,
   classifyReplInput,
   completeReplCommandPrefix,
   createReplReadlineCompleter,
@@ -37,6 +39,7 @@ import {
   OutputBuffer,
   parseHistoryCommandArgs,
   parseFilesCommandArgs,
+  parseExportCommandArgs,
   parseGrepCommandArgs,
   parseGrepPattern,
   parseTreeCommandArgs,
@@ -47,11 +50,13 @@ import {
   parseReplLine,
   resolveInlineTabCompletions,
   renderAssistantReply,
+  resolveExportOutputPath,
   resolveUniqueSessionTitle,
   shouldUseTerminalMode,
   sortCompletionCandidatesByUsageFrequency,
   sortSessionsByRecent,
   trimMessagesToTokenBudget,
+  writeSessionExportFile,
   validateAddContextFile,
   grepProjectText,
   buildProjectTree
@@ -871,6 +876,196 @@ test("parseFilesCommandArgs validates malformed values", () => {
     /cannot be empty/
   );
   assert.match(parseFilesCommandArgs(["--x"]).error ?? "", /Unknown argument/);
+});
+
+test("parseExportCommandArgs parses format, out path, and force flag", () => {
+  assert.deepEqual(
+    parseExportCommandArgs([
+      "--format",
+      "md",
+      "--out",
+      "exports/chat",
+      "--force"
+    ]),
+    {
+      options: {
+        format: "md",
+        outPath: "exports/chat",
+        force: true
+      }
+    }
+  );
+  assert.deepEqual(parseExportCommandArgs([]), {
+    options: {
+      format: "json",
+      force: false
+    }
+  });
+});
+
+test("parseExportCommandArgs validates malformed values", () => {
+  assert.match(parseExportCommandArgs(["--format"]).error ?? "", /Missing value/);
+  assert.match(
+    parseExportCommandArgs(["--format", "txt"]).error ?? "",
+    /must be json or md/
+  );
+  assert.match(parseExportCommandArgs(["--out"]).error ?? "", /Missing value/);
+  assert.match(
+    parseExportCommandArgs(["--out", "   "]).error ?? "",
+    /cannot be empty/
+  );
+  assert.match(parseExportCommandArgs(["--x"]).error ?? "", /Unknown argument/);
+});
+
+test("buildExportFileName generates normalized name with id and title", () => {
+  const name = buildExportFileName(
+    "json",
+    new Date(2026, 1, 23, 1, 2, 3),
+    12,
+    "Sprint / Review"
+  );
+  assert.equal(name, "s12-sprint-review-20260223-010203.json");
+});
+
+test("resolveExportOutputPath appends extension when omitted", () => {
+  const outputPath = resolveExportOutputPath(
+    {
+      format: "md",
+      outPath: "exports/chat",
+      force: false
+    },
+    path.join("C:", "workspace", "minicli"),
+    new Date("2026-02-23T01:02:03.000Z"),
+    3,
+    "alpha"
+  );
+  assert.equal(
+    outputPath,
+    path.join("C:", "workspace", "minicli", "exports", "chat.md")
+  );
+});
+
+test("writeSessionExportFile supports empty session export", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-export-empty-"));
+  try {
+    const payload = buildSessionExportPayload([], {
+      exportedAt: "2026-02-23T01:02:03.000Z",
+      sessionId: 1,
+      sessionTitle: "empty"
+    });
+    const result = writeSessionExportFile(payload, {
+      format: "json",
+      outPath: "exports/empty-session",
+      force: false
+    }, { cwd: tmpRoot, now: new Date("2026-02-23T01:02:03.000Z") });
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      const content = fs.readFileSync(result.outputPath, "utf8");
+      const parsed = JSON.parse(content) as { messageCount: number };
+      assert.equal(parsed.messageCount, 0);
+    }
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("writeSessionExportFile reports permission errors", () => {
+  const payload = buildSessionExportPayload(
+    [{ role: "user", content: "hello" }],
+    {
+      exportedAt: "2026-02-23T01:02:03.000Z",
+      sessionId: 2,
+      sessionTitle: "perm"
+    }
+  );
+  const result = writeSessionExportFile(
+    payload,
+    {
+      format: "md",
+      outPath: "exports/blocked.md",
+      force: false
+    },
+    {
+      cwd: path.join("C:", "workspace", "minicli"),
+      now: new Date("2026-02-23T01:02:03.000Z"),
+      fileSystem: {
+        existsSync: () => false,
+        mkdirSync: () => {},
+        writeFileSync: () => {
+          const err = new Error("denied") as NodeJS.ErrnoException;
+          err.code = "EACCES";
+          throw err;
+        }
+      }
+    }
+  );
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.match(result.error, /permission denied/);
+  }
+});
+
+test("writeSessionExportFile enforces overwrite strategy", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-export-overwrite-"));
+  try {
+    const outputPath = path.join(tmpRoot, "session.json");
+    fs.writeFileSync(outputPath, "old\n", "utf8");
+    const payload = buildSessionExportPayload(
+      [{ role: "assistant", content: "new" }],
+      {
+        exportedAt: "2026-02-23T01:02:03.000Z",
+        sessionId: 4,
+        sessionTitle: "overwrite"
+      }
+    );
+
+    const noForce = writeSessionExportFile(payload, {
+      format: "json",
+      outPath: outputPath,
+      force: false
+    }, { cwd: tmpRoot, now: new Date("2026-02-23T01:02:03.000Z") });
+    assert.equal(noForce.ok, false);
+    if (!noForce.ok) {
+      assert.match(noForce.error, /already exists/);
+    }
+
+    const forced = writeSessionExportFile(payload, {
+      format: "json",
+      outPath: outputPath,
+      force: true
+    }, { cwd: tmpRoot, now: new Date("2026-02-23T01:02:03.000Z") });
+    assert.equal(forced.ok, true);
+    const written = fs.readFileSync(outputPath, "utf8");
+    assert.match(written, /"new"/);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("writeSessionExportFile keeps utf8 encoding consistency", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-export-encoding-"));
+  try {
+    const payload = buildSessionExportPayload(
+      [{ role: "assistant", content: "你好，世界" }],
+      {
+        exportedAt: "2026-02-23T01:02:03.000Z",
+        sessionId: 5,
+        sessionTitle: "encoding"
+      }
+    );
+    const result = writeSessionExportFile(payload, {
+      format: "md",
+      outPath: "encoding",
+      force: false
+    }, { cwd: tmpRoot, now: new Date("2026-02-23T01:02:03.000Z") });
+    assert.equal(result.ok, true);
+    if (result.ok) {
+      const content = fs.readFileSync(result.outputPath, "utf8");
+      assert.match(content, /你好，世界/);
+    }
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
 });
 
 test("parseGrepCommandArgs validates required pattern and optional limit", () => {
@@ -2484,6 +2679,54 @@ test("repl /files shows sorted, filtered context list", async () => {
     const output = writes.join("");
     assert.equal(errors.join(""), "");
     assert.equal(output, `Context files:\n[1] ${path.join("docs", "a.md")}\n`);
+  } finally {
+    process.chdir(prevCwd);
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("repl /export writes current session file", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const sessions = createInMemorySessionRepository();
+  const messages = createInMemoryMessageRepository(sessions);
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-repl-export-"));
+  const prevCwd = process.cwd();
+  try {
+    process.chdir(tmpRoot);
+    const session = createReplSession(
+      {
+        stdout: (message) => writes.push(message),
+        stderr: (message) => errors.push(message)
+      },
+      DEFAULT_MAX_INPUT_LENGTH,
+      {
+        sessionRepository: {
+          createSession: sessions.createSession,
+          listSessions: sessions.listSessions
+        },
+        messageRepository: {
+          createMessage: messages.createMessage,
+          listMessagesBySession: messages.listMessagesBySession
+        }
+      }
+    );
+
+    await session.onLine("/new export-case");
+    await session.onLine("hello export");
+    await session.onLine("/export --format json --out out/session");
+
+    assert.equal(errors.join(""), "");
+    const output = writes.join("");
+    assert.match(output, /\[export\] wrote 2 message\(s\) to/);
+    const exportPath = path.join(tmpRoot, "out", "session.json");
+    assert.equal(fs.existsSync(exportPath), true);
+    const exported = JSON.parse(fs.readFileSync(exportPath, "utf8")) as {
+      messageCount: number;
+      sessionTitle: string;
+    };
+    assert.equal(exported.messageCount, 2);
+    assert.equal(exported.sessionTitle, "export-case");
   } finally {
     process.chdir(prevCwd);
     fs.rmSync(tmpRoot, { recursive: true, force: true });

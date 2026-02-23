@@ -261,8 +261,8 @@ const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
   createReplCommandSchema(
     "export",
     "/export",
-    "/export [--format json|md] [--out path]",
-    "Export current session output (placeholder)",
+    "/export [--format json|md] [--out path] [--force]",
+    "Export current session to JSON or Markdown file",
     true,
     "session_read"
   ),
@@ -752,7 +752,11 @@ function completeReplArgumentCandidates(
       if (argumentIndex > 0 && args[argumentIndex - 1] === "--out") {
         return listFilePathCandidates(context.prefix, process.cwd(), false);
       }
-      return filterOptionCandidates(args, argumentIndex, ["--format", "--out"]);
+      return filterOptionCandidates(args, argumentIndex, [
+        "--format",
+        "--out",
+        "--force"
+      ]);
     default:
       return [];
   }
@@ -1333,6 +1337,27 @@ export interface TreeCommandOptions {
   rootPath?: string;
 }
 
+export type ExportFormat = "json" | "md";
+
+export interface ExportCommandOptions {
+  format: ExportFormat;
+  outPath?: string;
+  force: boolean;
+}
+
+export interface SessionExportPayload {
+  exportedAt: string;
+  sessionId: number | null;
+  sessionTitle: string;
+  messageCount: number;
+  messages: Array<{
+    index: number;
+    role: string;
+    content: string;
+    createdAt?: string;
+  }>;
+}
+
 export interface GrepMatchRecord {
   filePath: string;
   lineNumber: number;
@@ -1651,6 +1676,54 @@ export function parseFilesCommandArgs(
         return { error: "--q cannot be empty." };
       }
       options.query = query;
+      index += 1;
+      continue;
+    }
+
+    return { error: `Unknown argument: ${token}` };
+  }
+
+  return { options };
+}
+
+export function parseExportCommandArgs(
+  args: string[]
+): { options?: ExportCommandOptions; error?: string } {
+  const options: ExportCommandOptions = {
+    format: "json",
+    force: false
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (token === "--force") {
+      options.force = true;
+      continue;
+    }
+
+    if (token === "--format") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --format." };
+      }
+      if (raw !== "json" && raw !== "md") {
+        return { error: "--format must be json or md." };
+      }
+      options.format = raw;
+      index += 1;
+      continue;
+    }
+
+    if (token === "--out") {
+      const raw = args[index + 1];
+      if (raw === undefined) {
+        return { error: "Missing value for --out." };
+      }
+      const outPath = raw.trim();
+      if (outPath.length === 0) {
+        return { error: "--out cannot be empty." };
+      }
+      options.outPath = outPath;
       index += 1;
       continue;
     }
@@ -2541,6 +2614,7 @@ export function formatHistoryList(
   messages: Array<{
     role: string;
     content: string;
+    createdAt?: string;
   }>,
   maxContentLength: number = DEFAULT_MAX_HISTORY_PREVIEW_LENGTH
 ): string {
@@ -2553,6 +2627,200 @@ export function formatHistoryList(
     return `[${index + 1}] ${message.role}: ${content}`;
   });
   return `${lines.join("\n")}\n`;
+}
+
+export interface ExportFileSystem {
+  existsSync: (filePath: string) => boolean;
+  mkdirSync: (targetPath: string, options: { recursive?: boolean }) => void;
+  writeFileSync: (
+    filePath: string,
+    data: string,
+    options: {
+      encoding: BufferEncoding;
+      flag: "w" | "wx";
+    }
+  ) => void;
+}
+
+const DEFAULT_EXPORT_FILE_SYSTEM: ExportFileSystem = {
+  existsSync: fs.existsSync,
+  mkdirSync: fs.mkdirSync,
+  writeFileSync: fs.writeFileSync
+};
+
+function formatExportTimestamp(now: Date): string {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
+  const second = String(now.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}-${hour}${minute}${second}`;
+}
+
+function slugifyExportFileSegment(value: string): string {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized.length === 0 ? "session" : normalized;
+}
+
+export function buildExportFileName(
+  format: ExportFormat,
+  now: Date,
+  sessionId?: number | null,
+  sessionTitle?: string
+): string {
+  const timestamp = formatExportTimestamp(now);
+  const idSegment =
+    typeof sessionId === "number" && sessionId > 0 ? `s${sessionId}` : "session";
+  const titleSegment =
+    sessionTitle && sessionTitle.trim().length > 0
+      ? slugifyExportFileSegment(sessionTitle)
+      : "session";
+  return `${idSegment}-${titleSegment}-${timestamp}.${format}`;
+}
+
+export function resolveExportOutputPath(
+  options: ExportCommandOptions,
+  cwd: string,
+  now: Date,
+  sessionId?: number | null,
+  sessionTitle?: string
+): string {
+  const basePath =
+    options.outPath === undefined
+      ? path.join(
+          cwd,
+          buildExportFileName(options.format, now, sessionId, sessionTitle)
+        )
+      : path.isAbsolute(options.outPath)
+        ? options.outPath
+        : path.resolve(cwd, options.outPath);
+  if (path.extname(basePath).length > 0) {
+    return basePath;
+  }
+  return `${basePath}.${options.format}`;
+}
+
+export function buildSessionExportPayload(
+  messages: Array<{
+    role: string;
+    content: string;
+    createdAt?: string;
+  }>,
+  options: {
+    exportedAt: string;
+    sessionId: number | null;
+    sessionTitle: string;
+  }
+): SessionExportPayload {
+  return {
+    exportedAt: options.exportedAt,
+    sessionId: options.sessionId,
+    sessionTitle: options.sessionTitle,
+    messageCount: messages.length,
+    messages: messages.map((message, index) => ({
+      index: index + 1,
+      role: message.role,
+      content: message.content,
+      createdAt: message.createdAt
+    }))
+  };
+}
+
+export function formatSessionExport(
+  payload: SessionExportPayload,
+  format: ExportFormat
+): string {
+  if (format === "json") {
+    return `${JSON.stringify(payload, null, 2)}\n`;
+  }
+
+  const lines: string[] = [
+    "# MiniCLI Session Export",
+    "",
+    `- exportedAt: ${payload.exportedAt}`,
+    `- sessionId: ${payload.sessionId === null ? "none" : payload.sessionId}`,
+    `- sessionTitle: ${payload.sessionTitle}`,
+    `- messageCount: ${payload.messageCount}`,
+    ""
+  ];
+
+  if (payload.messages.length === 0) {
+    lines.push("_No messages._", "");
+    return lines.join("\n");
+  }
+
+  for (const message of payload.messages) {
+    lines.push(`## [${message.index}] ${message.role}`);
+    if (message.createdAt) {
+      lines.push(`- createdAt: ${message.createdAt}`);
+    }
+    lines.push("", "```text");
+    lines.push(message.content);
+    lines.push("```", "");
+  }
+  return lines.join("\n");
+}
+
+export function writeSessionExportFile(
+  payload: SessionExportPayload,
+  options: ExportCommandOptions,
+  writeOptions?: {
+    cwd?: string;
+    now?: Date;
+    fileSystem?: ExportFileSystem;
+  }
+): { ok: true; outputPath: string } | { ok: false; error: string } {
+  const cwd = writeOptions?.cwd ?? process.cwd();
+  const now = writeOptions?.now ?? new Date();
+  const fileSystem = writeOptions?.fileSystem ?? DEFAULT_EXPORT_FILE_SYSTEM;
+  const outputPath = resolveExportOutputPath(
+    options,
+    cwd,
+    now,
+    payload.sessionId,
+    payload.sessionTitle
+  );
+
+  if (!options.force && fileSystem.existsSync(outputPath)) {
+    return {
+      ok: false,
+      error: "output file already exists. Use --force to overwrite."
+    };
+  }
+
+  const content = formatSessionExport(payload, options.format);
+  try {
+    fileSystem.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fileSystem.writeFileSync(outputPath, content, {
+      encoding: "utf8",
+      flag: options.force ? "w" : "wx"
+    });
+  } catch (error) {
+    const e = error as NodeJS.ErrnoException;
+    if (e.code === "EEXIST") {
+      return {
+        ok: false,
+        error: "output file already exists. Use --force to overwrite."
+      };
+    }
+    if (e.code === "EACCES" || e.code === "EPERM") {
+      return {
+        ok: false,
+        error: `permission denied for output path: ${outputPath}`
+      };
+    }
+    return {
+      ok: false,
+      error: e.message
+    };
+  }
+
+  return { ok: true, outputPath };
 }
 
 export function classifyReplInput(
@@ -3341,8 +3609,43 @@ export function createReplSession(
       return false;
     },
     export: async (args) => {
+      const parsed = parseExportCommandArgs(args);
+      if (!parsed.options) {
+        writers.stderr(
+          `${parsed.error}\nUsage: /export [--format json|md] [--out path] [--force]\n`
+        );
+        return false;
+      }
+      if (!messageRepository) {
+        writers.stderr("Session storage is unavailable.\n");
+        return false;
+      }
+      if (currentSessionId === null) {
+        writers.stderr("[export:error] no active session.\n");
+        return false;
+      }
+
+      const currentSessionTitle =
+        sessionRepository
+          ?.listSessions()
+          .find((session) => session.id === currentSessionId)?.title ??
+        `Session ${currentSessionId}`;
+      const messages = messageRepository.listMessagesBySession(currentSessionId);
+      const payload = buildSessionExportPayload(messages, {
+        exportedAt: now().toISOString(),
+        sessionId: currentSessionId,
+        sessionTitle: currentSessionTitle
+      });
+      const output = writeSessionExportFile(payload, parsed.options, {
+        cwd: process.cwd(),
+        now: now()
+      });
+      if (!output.ok) {
+        writers.stderr(`[export:error] ${output.error}\n`);
+        return false;
+      }
       writers.stdout(
-        `[export] request accepted (${args.join(" ").trim() || "default options"}). Full file export is implemented in T37.\n`
+        `[export] wrote ${payload.messageCount} message(s) to ${output.outputPath}\n`
       );
       return false;
     },

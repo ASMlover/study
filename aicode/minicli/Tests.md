@@ -968,28 +968,31 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm test` passed. Unit tests `257/257` passed. Integration tests `35` total with `18` pass and `17` skip (expected under sandbox subprocess/shell restrictions). New integration `tests/integration/config-restart-effective.test.ts` is guarded for restricted environments and validates restart persistence when subprocess execution is available.
 ### T37 - /export
-- Date:
-- Env:
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 导出会话为 json/md
 - Unit Cases:
-  - [ ] 格式生成
-  - [ ] 文件名规范
-  - [ ] 空会话
-  - [ ] 权限错误
-  - [ ] 覆盖策略
-  - [ ] 编码一致
+  - [x] 格式生成
+  - [x] 文件名规范
+  - [x] 空会话
+  - [x] 权限错误
+  - [x] 覆盖策略
+  - [x] 编码一致
 - Integration Cases:
-  - [ ] 导出文件可读取
+  - [x] 导出文件可读取
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm run typecheck`
+  - `npm run test:unit`
+  - `npm run test:integration`
 - Expected: 会话可导出
-- Actual:
+- Actual: Implemented `/export` end-to-end with argument parser (`--format json|md`, `--out`, `--force`), default normalized filename generation, session payload assembly, JSON/Markdown renderers, UTF-8 file write, existing-file protection, and permission error mapping. Added unit tests for format generation, filename规范, empty-session export, permission-denied, overwrite strategy, and encoding consistency. Added integration test `tests/integration/export-readable.test.ts` to verify exported markdown files are readable and contain expected session/message content.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T37)
+  - Overall: N/A (coverage tooling not added in T37)
+- Result: PASS
+- Notes: `npm run test:unit` passed (`266/266`). `npm run test:integration` passed with `36` total, `19` pass, `17` skip (expected in this environment due subprocess/shell restrictions). Task commit created via `ci T37`.
 ### T38 - Shell 统一适配层
 - Date:
 - Env:

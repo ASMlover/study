@@ -63,7 +63,7 @@
 | T34 | 命令扩展到 18 条 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Expanded command set to 18 with schema permissions, aliases, routing handlers, and completion integration |
 | T35 | 扩展到 27 条 + 参数补全 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Expanded REPL schema to 27 commands and implemented argument-level completion with subcommand/context-aware candidates |
 | T36 | /config | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Implemented dynamic `/config` get/set/list/reset with type conversion, read-only key guard, project persistence, and restart-effective integration coverage |
-| T37 | /export | M6 | TODO | - | - | - | - |
+| T37 | /export | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Implemented `/export` json/md file output with arg parsing, default naming, overwrite guard, UTF-8 write, and unit/integration coverage |
 | T38 | Shell 统一适配层 | M7 | TODO | - | - | - | - |
 | T39 | 打包发布产物 | M7 | TODO | - | - | - | - |
 | T40 | CI 质量门禁 | M7 | TODO | - | - | - | - |
@@ -118,7 +118,9 @@
 | 2026-02-13 | T32 | Completed token budget clipping with message-token estimator, budget-bound request trimming, latest-user/system priority retention, tiny-budget fallback trimming, and warning notice + integration coverage | Codex |
 | 2026-02-13 | ci T32 | Created task commit for token budget clipping and long-context limit tests | Codex |
 | 2026-02-13 | T10 Follow-up | Improved provider rate-limit resilience with higher default retries, Retry-After-aware backoff, exponential delay with jitter, and non-network error no-retry guard | Codex |
+| 2026-02-23 | ci T37 | Created task commit for `/export` json/md session export implementation and tests | Codex |
 | 2026-02-23 | T33 | Completed JSON schema-driven command registration with required-field/type validation, command-handler existence checks, alias-conflict guard via registry, examples parsing, and schema-based REPL execution integration test | Codex |
 | 2026-02-23 | T34 | Expanded REPL command set from 14 to 18 (`/clear`, `/status`, `/approve`, `/version`), added schema permission markers, updated completion ordering/alias behavior, and added 18-command integration execution coverage | Codex |
 | 2026-02-23 | T35 | Expanded REPL command set from 18 to 27, added cursor-aware argument completion (`/config set` chain, option filtering, context-aware candidates), and added unit/integration coverage for parameter completion flows | Codex |
 | 2026-02-23 | T36 | Completed `/config` runtime management with key read/set/reset/list, numeric conversion and validation, read-only key protection, project config persistence helpers, and restart-effective integration test | Codex |
+| 2026-02-23 | T37 | Completed `/export` with `--format json|md`, `--out`, and `--force`; added default filename normalization, UTF-8 file writing, overwrite/permission handling, and export readability integration coverage | Codex |
