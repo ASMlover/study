@@ -1050,3 +1050,30 @@ Use this section structure for each task:
   - Overall:
 - Result:
 - Notes:
+
+### T10 Follow-up - Provider 429 限流重试增强
+- Date: 2026-02-13
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 优化 provider 在 429/5xx 下的重试稳定性与延迟策略
+- Unit Cases:
+  - [x] 429 `Retry-After` 秒值被遵守
+  - [x] 指数退避 + jitter 延迟计算
+  - [x] 401 非重试
+  - [x] 429 重试后成功
+  - [x] 5xx 重试后成功
+  - [x] 非网络错误（如空 choices）不走网络重试
+- Integration Cases:
+  - [x] mock OpenAI-compatible API 下 429 -> 200 成功恢复
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+  - `npm run build; node --test --experimental-test-isolation=none build/tests/unit/provider.test.js`
+  - `npm run test:unit`
+  - `npm run build; node --test --experimental-test-isolation=none build/tests/integration/glm-provider-mock-api.test.js`
+- Expected: 短时限流时自动退避重试，恢复概率提升；非网络类错误快速失败
+- Actual: Added Retry-After parsing and retry delay override, exponential backoff with jitter, default retry count uplift (`2 -> 4`), and guard to avoid retrying non-network errors. Provider unit suite passed (`20/20`), full unit suite passed (`230/230`), and provider integration suite passed (`2/2`).
+- Coverage:
+  - Core: N/A (coverage tooling not added in T10 follow-up)
+  - Overall: N/A (coverage tooling not added in T10 follow-up)
+- Result: PASS
+- Notes: 该修复主要降低临时 429 对用户的可见失败率；若服务持续限流或配额耗尽，最终仍会返回明确错误提示。

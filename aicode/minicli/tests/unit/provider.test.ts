@@ -316,6 +316,88 @@ test("GLM provider retries retryable status until success", async () => {
   assert.equal(attempts, 3);
 });
 
+test("GLM provider honors Retry-After header for 429 backoff", async () => {
+  let attempts = 0;
+  const observedDelays: number[] = [];
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 1,
+    retryDelayMs: 10,
+    sleepImpl: async (delayMs: number) => {
+      observedDelays.push(delayMs);
+    },
+    fetchImpl: (async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        return new Response("too many requests", {
+          status: 429,
+          headers: { "Retry-After": "2" }
+        });
+      }
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "ok after wait" } }]
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }) as typeof fetch
+  });
+
+  const response = await provider.complete({
+    model: "glm-4",
+    timeoutMs: 100,
+    messages: [{ role: "user", content: "hello" }]
+  });
+
+  assert.equal(response.message.content, "ok after wait");
+  assert.equal(attempts, 2);
+  assert.deepEqual(observedDelays, [2000]);
+});
+
+test("GLM provider uses exponential backoff with jitter for retryable errors", async () => {
+  let attempts = 0;
+  const observedDelays: number[] = [];
+  const jitterSequence = [0, 0.5];
+  let jitterIndex = 0;
+
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 2,
+    retryDelayMs: 100,
+    maxRetryDelayMs: 1000,
+    randomFn: () => {
+      const value = jitterSequence[jitterIndex] ?? 0;
+      jitterIndex += 1;
+      return value;
+    },
+    sleepImpl: async (delayMs: number) => {
+      observedDelays.push(delayMs);
+    },
+    fetchImpl: (async () => {
+      attempts += 1;
+      if (attempts < 3) {
+        return new Response("server error", { status: 503 });
+      }
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { role: "assistant", content: "ok after backoff" } }]
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }) as typeof fetch
+  });
+
+  const response = await provider.complete({
+    model: "glm-4",
+    timeoutMs: 100,
+    messages: [{ role: "user", content: "hello" }]
+  });
+
+  assert.equal(response.message.content, "ok after backoff");
+  assert.equal(attempts, 3);
+  assert.deepEqual(observedDelays, [100, 212]);
+});
+
 test("GLM provider does not retry non-retryable status", async () => {
   let attempts = 0;
   const provider = new GLMOpenAIProvider({

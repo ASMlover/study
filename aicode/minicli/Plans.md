@@ -117,3 +117,4 @@
 | 2026-02-13 | ci T31 | Created task commit for context snippet assembler request integration and T31 tests | Codex |
 | 2026-02-13 | T32 | Completed token budget clipping with message-token estimator, budget-bound request trimming, latest-user/system priority retention, tiny-budget fallback trimming, and warning notice + integration coverage | Codex |
 | 2026-02-13 | ci T32 | Created task commit for token budget clipping and long-context limit tests | Codex |
+| 2026-02-13 | T10 Follow-up | Improved provider rate-limit resilience with higher default retries, Retry-After-aware backoff, exponential delay with jitter, and non-network error no-retry guard | Codex |

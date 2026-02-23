@@ -26,6 +26,7 @@ export class ProviderNetworkError extends Error {
   readonly code: "http_401" | "http_429" | "http_5xx" | "http_other" | "timeout" | "network";
   readonly statusCode?: number;
   readonly retryable: boolean;
+  readonly retryAfterMs?: number;
 
   constructor(
     message: string,
@@ -33,6 +34,7 @@ export class ProviderNetworkError extends Error {
       code?: "http_401" | "http_429" | "http_5xx" | "http_other" | "timeout" | "network";
       statusCode?: number;
       retryable?: boolean;
+      retryAfterMs?: number;
     }
   ) {
     super(message);
@@ -40,6 +42,7 @@ export class ProviderNetworkError extends Error {
     this.code = options?.code ?? "network";
     this.statusCode = options?.statusCode;
     this.retryable = options?.retryable ?? false;
+    this.retryAfterMs = options?.retryAfterMs;
   }
 }
 
@@ -49,7 +52,10 @@ export interface GLMProviderOptions {
   defaultModel?: string;
   maxRetries?: number;
   retryDelayMs?: number;
+  maxRetryDelayMs?: number;
   fetchImpl?: typeof fetch;
+  sleepImpl?: (delayMs: number) => Promise<void>;
+  randomFn?: () => number;
 }
 
 interface OpenAICompatibleChoice {
@@ -118,16 +124,30 @@ export class GLMOpenAIProvider implements LLMProvider {
   private readonly defaultModel: string;
   private readonly maxRetries: number;
   private readonly retryDelayMs: number;
+  private readonly maxRetryDelayMs: number;
   private readonly fetchImpl: typeof fetch;
+  private readonly sleepImpl: (delayMs: number) => Promise<void>;
+  private readonly randomFn: () => number;
 
   constructor(options: GLMProviderOptions) {
     this.apiKey = options.apiKey;
     this.baseUrl =
       options.baseUrl ?? "https://open.bigmodel.cn/api/paas/v4";
     this.defaultModel = options.defaultModel ?? "glm-4";
-    this.maxRetries = Math.max(0, options.maxRetries ?? 2);
+    this.maxRetries = Math.max(0, options.maxRetries ?? 4);
     this.retryDelayMs = Math.max(0, options.retryDelayMs ?? 200);
+    this.maxRetryDelayMs = Math.max(
+      this.retryDelayMs,
+      options.maxRetryDelayMs ?? 5000
+    );
     this.fetchImpl = options.fetchImpl ?? fetch;
+    this.sleepImpl =
+      options.sleepImpl ??
+      ((delayMs: number) =>
+        new Promise<void>((resolve) => {
+          setTimeout(resolve, delayMs);
+        }));
+    this.randomFn = options.randomFn ?? Math.random;
   }
 
   async complete(request: ChatRequest): Promise<ChatResponse> {
@@ -151,9 +171,9 @@ export class GLMOpenAIProvider implements LLMProvider {
         });
 
         if (!response.ok) {
-          const mappedError = mapHttpStatusError(response.status);
+          const mappedError = mapHttpResponseError(response);
           if (mappedError.retryable && attempt < this.maxRetries) {
-            await this.sleepBeforeRetry(attempt);
+            await this.sleepBeforeRetry(attempt, mappedError.retryAfterMs);
             continue;
           }
           throw mappedError;
@@ -164,7 +184,7 @@ export class GLMOpenAIProvider implements LLMProvider {
       } catch (error) {
         if (error instanceof ProviderNetworkError) {
           if (error.retryable && attempt < this.maxRetries) {
-            await this.sleepBeforeRetry(attempt);
+            await this.sleepBeforeRetry(attempt, error.retryAfterMs);
             continue;
           }
           throw error;
@@ -178,6 +198,10 @@ export class GLMOpenAIProvider implements LLMProvider {
               retryable: false
             }
           );
+        }
+
+        if (!isLikelyNetworkError(error)) {
+          throw error;
         }
 
         const message = error instanceof Error ? error.message : String(error);
@@ -206,14 +230,23 @@ export class GLMOpenAIProvider implements LLMProvider {
     });
   }
 
-  private async sleepBeforeRetry(attempt: number): Promise<void> {
-    const delay = this.retryDelayMs * (attempt + 1);
+  private async sleepBeforeRetry(
+    attempt: number,
+    retryAfterMs?: number
+  ): Promise<void> {
+    const exponentialDelay = this.retryDelayMs * Math.pow(2, attempt);
+    const jitter = Math.floor(
+      this.randomFn() * Math.max(1, Math.floor(this.retryDelayMs * 0.25))
+    );
+    const calculatedDelay = Math.min(
+      this.maxRetryDelayMs,
+      exponentialDelay + jitter
+    );
+    const delay = Math.max(calculatedDelay, retryAfterMs ?? 0);
     if (delay <= 0) {
       return;
     }
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, delay);
-    });
+    await this.sleepImpl(delay);
   }
 }
 
@@ -224,7 +257,45 @@ function isAbortError(error: unknown): boolean {
   return error.name === "AbortError";
 }
 
-function mapHttpStatusError(status: number): ProviderNetworkError {
+function isLikelyNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  return /ECONN|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|socket|network/i.test(
+    error.message
+  );
+}
+
+function parseRetryAfterMs(rawValue: string | null): number | undefined {
+  if (!rawValue) {
+    return undefined;
+  }
+  const trimmed = rawValue.trim();
+  if (trimmed.length === 0) {
+    return undefined;
+  }
+
+  const seconds = Number(trimmed);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000);
+  }
+
+  const timestampMs = Date.parse(trimmed);
+  if (!Number.isNaN(timestampMs)) {
+    const ms = timestampMs - Date.now();
+    return ms > 0 ? ms : 0;
+  }
+
+  return undefined;
+}
+
+function mapHttpResponseError(response: Response): ProviderNetworkError {
+  const { status } = response;
   if (status === 401) {
     return new ProviderNetworkError(
       "Authentication failed (401). Check your API key and login again.",
@@ -237,12 +308,14 @@ function mapHttpStatusError(status: number): ProviderNetworkError {
   }
 
   if (status === 429) {
+    const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
     return new ProviderNetworkError(
       "Rate limited by provider (429). Retrying may help shortly.",
       {
         code: "http_429",
         statusCode: status,
-        retryable: true
+        retryable: true,
+        retryAfterMs
       }
     );
   }
