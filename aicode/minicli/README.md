@@ -51,6 +51,7 @@ Then proceed sequentially while keeping `Plans.md` and `Tests.md` updated.
 ## Development Commands
 - `npm install`: install local dependencies
 - `npm run build`: compile TypeScript to `build/`
+- `npm run release:build`: bundle with `esbuild` and package win/linux binaries with `pkg` into `dist/`
 - `npm run typecheck`: run TypeScript type checks without emitting files
 - `npm run test:unit`: run unit tests
 - `npm run test:integration`: run integration tests
