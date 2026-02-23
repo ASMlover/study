@@ -407,24 +407,92 @@ function formatHelpText(
     return left.metadata.usage.localeCompare(right.metadata.usage);
   });
 
-  const permissionLabels = commands.map(
-    (command) => `[perm:${command.permission ?? "public"}]`
-  );
-  const usageWidth = commands.reduce(
-    (width, command) => Math.max(width, command.metadata.usage.length),
+  const nameWidth = commands.reduce(
+    (width, command) => Math.max(width, command.metadata.name.length),
     0
   );
-  const permissionWidth = permissionLabels.reduce(
-    (width, permission) => Math.max(width, permission.length),
-    0
-  );
-
-  const lines = commands.map((command, index) => {
-    const usage = command.metadata.usage.padEnd(usageWidth, " ");
-    const permission = permissionLabels[index].padEnd(permissionWidth, " ");
-    return `${usage}  ${permission}  ${command.metadata.description}`;
+  const lines = commands.map((command) => {
+    const name = command.metadata.name.padEnd(nameWidth, " ");
+    return `${name}  ${command.metadata.description}`;
   });
-  return `Available commands:\n${lines.join("\n")}\n`;
+  return [
+    "Available commands:",
+    ...lines,
+    "",
+    "Use /<command> help for detailed usage and parameters.",
+    ""
+  ].join("\n");
+}
+
+function extractUsageParameterTokens(usage: string): string[] {
+  const withoutCommand = usage.trim().replace(/^\/\S+/, "").trim();
+  if (withoutCommand.length === 0) {
+    return [];
+  }
+  const matched = withoutCommand.match(/<[^>]+>|\[[^\]]+\]/g);
+  if (!matched) {
+    return [withoutCommand];
+  }
+  return matched;
+}
+
+function isParameterTokenRequired(token: string): boolean {
+  return token.startsWith("<") && token.endsWith(">");
+}
+
+function isHelpKeyword(token: string): boolean {
+  const normalized = token.trim().toLowerCase();
+  return normalized === "help" || normalized === "-h" || normalized === "--help";
+}
+
+function formatSingleCommandHelp(
+  command: ReplCommandRegistration
+): string {
+  const parameters = extractUsageParameterTokens(command.metadata.usage);
+  const aliases =
+    command.aliases && command.aliases.length > 0
+      ? command.aliases.join(", ")
+      : "(none)";
+  const permission = command.permission ?? "public";
+  const parameterLines =
+    parameters.length === 0
+      ? ["- (none)"]
+      : parameters.map((parameter) => {
+          const required = isParameterTokenRequired(parameter)
+            ? "required"
+            : "optional";
+          return `- ${parameter} (${required})`;
+        });
+
+  return [
+    `Command: ${command.metadata.name}`,
+    `Description: ${command.metadata.description}`,
+    `Usage: ${command.metadata.usage}`,
+    `Aliases: ${aliases}`,
+    `Permission: ${permission}`,
+    "Parameters:",
+    ...parameterLines,
+    ""
+  ].join("\n");
+}
+
+function resolveCommandHelpRequest(
+  text: string,
+  registry: CommandRegistry<KnownReplCommandKind>
+): ReplCommandRegistration | undefined {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("/")) {
+    return undefined;
+  }
+  const [token, ...args] = trimmed.split(/\s+/);
+  if (args.length !== 1 || !isHelpKeyword(args[0])) {
+    return undefined;
+  }
+  const resolved = registry.resolve(token);
+  if (!resolved) {
+    return undefined;
+  }
+  return resolved as ReplCommandRegistration;
 }
 
 const DEFAULT_COMMAND_REGISTRY = createDefaultReplCommandRegistry();
@@ -3898,6 +3966,22 @@ export function createReplSession(
         writers.stderr(
           `[warn] input exceeded ${maxInputLength} chars; truncated.\n`
         );
+      }
+
+      if (input.kind === "command") {
+        const commandHelp = resolveCommandHelpRequest(resolvedLine, commandRegistry);
+        if (commandHelp) {
+          incrementCompletionUsageFrequency(
+            completionUsageFrequency,
+            commandHelp.metadata.name
+          );
+          commandHistoryRepository?.recordCommand({
+            command: commandHelp.metadata.name,
+            cwd: process.cwd()
+          });
+          writers.stdout(formatSingleCommandHelp(commandHelp));
+          return false;
+        }
       }
 
       if (input.kind === "command" && input.command.kind === "unknown") {

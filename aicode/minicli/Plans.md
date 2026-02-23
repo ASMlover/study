@@ -129,4 +129,8 @@
 | 2026-02-23 | T40 | Completed CI quality gate with GitHub Actions ordered stages (`typecheck -> unit -> integration -> coverage -> e2e`), retry/caching/artifact strategy, enforced coverage thresholds, and CI workflow verification tests | Codex |
 | 2026-02-23 | Help UX Follow-up | Optimized `/help` output with alphabetical command ordering and column-aligned usage/permission/description display; updated unit/integration assertions | Codex |
 | 2026-02-23 | Workflow Rule Follow-up | Added AGENTS rule: exact input `ci` triggers automatic commit from current prior modifications with functionality-focused message | Codex |
+| 2026-02-23 | GLM 429 Message Follow-up | Updated provider 429 rate-limit error text to actionable guidance (wait/retry or check quota/model) and removed misleading phrasing | Codex |
+| 2026-02-23 | GLM Timeout Follow-up | Fixed GLM timeout handling to retry on abort timeouts and only fail after retries, with actionable timeout configuration hint in final error message | Codex |
+| 2026-02-23 | Help Mode Follow-up | Switched `/help` to concise command summary only, added per-command detail help via `/xxx help`, and formatted parameters as one-per-line entries | Codex |
+| 2026-02-23 | Help Length Follow-up | Added `/help` max-line formatter with automatic multi-line wrapping for long slash-command usages and descriptions to improve readability on narrow terminals | Codex |
 | 2026-02-23 | ci | Created consolidated commit for `/help` output UX formatting improvements and `ci` workflow rule documentation updates | Codex |

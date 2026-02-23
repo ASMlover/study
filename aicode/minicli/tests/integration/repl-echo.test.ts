@@ -103,7 +103,8 @@ test("repl supports /help to /exit flow", async (t) => {
   assert.equal(exitCode, 0);
   assert.equal(stderr, "");
   assert.match(stdout, /Available commands:/);
-  assert.match(stdout, /\/help\s+\[perm:public\]\s+Show this help message/);
-  assert.match(stdout, /\/exit\s+\[perm:public\]\s+Exit MiniCLI/);
+  assert.match(stdout, /\/help\s+Show this help message/);
+  assert.match(stdout, /\/exit\s+Exit MiniCLI/);
+  assert.match(stdout, /Use \/\<command\> help for detailed usage and parameters\./);
   assert.match(stdout, /Bye\./);
 });

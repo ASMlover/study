@@ -281,13 +281,17 @@ test("formatTokenBudgetTrimNotice renders warning text", () => {
   assert.match(warning, /trimmed 1 message\(s\)/);
 });
 
-test("help text includes permission markers and extended commands", () => {
-  assert.match(HELP_TEXT, /\[perm:/);
-  assert.match(HELP_TEXT, /\/status/);
-  assert.match(HELP_TEXT, /\/version/);
+test("help text includes basic command list and detail hint", () => {
+  assert.match(HELP_TEXT, /Available commands:/);
+  assert.match(HELP_TEXT, /\/status\s+Show runtime status summary/);
+  assert.match(HELP_TEXT, /\/version\s+Show MiniCLI version/);
+  assert.match(
+    HELP_TEXT,
+    /Use \/\<command\> help for detailed usage and parameters\./
+  );
 });
 
-test("help text sorts commands alphabetically and aligns detail columns", () => {
+test("help text sorts commands alphabetically with one line per command", () => {
   const lines = HELP_TEXT
     .split("\n")
     .filter((line) => line.trim().startsWith("/"));
@@ -298,13 +302,7 @@ test("help text sorts commands alphabetically and aligns detail columns", () => 
     left.localeCompare(right)
   );
   assert.deepEqual(commandTokens, sortedTokens);
-
-  const permissionStartColumns = lines.map((line) => line.indexOf("[perm:"));
-  assert.equal(permissionStartColumns.every((value) => value >= 0), true);
-  assert.equal(
-    permissionStartColumns.every((value) => value === permissionStartColumns[0]),
-    true
-  );
+  assert.equal(lines.every((line) => !line.includes("[perm:")), true);
 });
 
 test("createRuntimeProvider selects mock when apiKey is absent", () => {
@@ -1557,6 +1555,44 @@ test("repl session prints help content", async () => {
 
   assert.equal(shouldExit, false);
   assert.equal(writes.join(""), HELP_TEXT);
+});
+
+test("repl command help prints detailed parameter list for argument-heavy command", async () => {
+  const writes: string[] = [];
+  const session = createReplSession({
+    stdout: (message) => writes.push(message),
+    stderr: () => {}
+  });
+
+  const shouldExit = await session.onLine("/history help");
+  const output = writes.join("");
+
+  assert.equal(shouldExit, false);
+  assert.match(output, /^Command: \/history/m);
+  assert.match(output, /^Usage: \/history \[--limit N\] \[--offset N\] \[--audit\] \[--status <not_required\|approved\|rejected\|timeout>\]/m);
+  assert.match(output, /^Parameters:/m);
+  assert.match(output, /^\- \[--limit N\] \(optional\)$/m);
+  assert.match(output, /^\- \[--offset N\] \(optional\)$/m);
+  assert.match(output, /^\- \[--audit\] \(optional\)$/m);
+  assert.match(
+    output,
+    /^\- \[--status <not_required\|approved\|rejected\|timeout>\] \(optional\)$/m
+  );
+});
+
+test("repl command help works for command without runtime arguments", async () => {
+  const writes: string[] = [];
+  const session = createReplSession({
+    stdout: (message) => writes.push(message),
+    stderr: () => {}
+  });
+
+  const shouldExit = await session.onLine("/exit help");
+  const output = writes.join("");
+
+  assert.equal(shouldExit, false);
+  assert.match(output, /^Command: \/exit/m);
+  assert.match(output, /^Parameters:\n- \(none\)\n$/m);
 });
 
 test("repl /new uses default timestamp title for empty input", async () => {

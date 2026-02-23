@@ -191,13 +191,18 @@ export class GLMOpenAIProvider implements LLMProvider {
         }
 
         if (isAbortError(error)) {
-          throw new ProviderNetworkError(
-            `GLM request timed out after ${request.timeoutMs}ms.`,
+          const timeoutError = new ProviderNetworkError(
+            `GLM request timed out after ${request.timeoutMs}ms. Consider increasing timeout via /config set timeoutMs <ms>.`,
             {
               code: "timeout",
-              retryable: false
+              retryable: true
             }
           );
+          if (attempt < this.maxRetries) {
+            await this.sleepBeforeRetry(attempt);
+            continue;
+          }
+          throw timeoutError;
         }
 
         if (!isLikelyNetworkError(error)) {
@@ -310,7 +315,7 @@ function mapHttpResponseError(response: Response): ProviderNetworkError {
   if (status === 429) {
     const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
     return new ProviderNetworkError(
-      "Rate limited by provider (429). Retrying may help shortly.",
+      "Rate limited by provider (429). Please wait before retrying, or check your quota and model settings.",
       {
         code: "http_429",
         statusCode: status,

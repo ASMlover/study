@@ -1141,6 +1141,100 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: 本次为规则文档更新，无代码行为改动与测试执行需求。
 
+### Help Length Follow-up - `/help` 长行换行与长度约束
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 为 `/help` 增加最大行宽约束；当命令参数过长时按词分行展示，避免单行过长
+- Unit Cases:
+  - [x] `HELP_TEXT` 命令排序与权限列对齐保持正确
+  - [x] 所有帮助行长度不超过 `HELP_MAX_LINE_LENGTH`
+  - [x] 长参数命令（`/history ... --status ...`）发生多行展示
+- Integration Cases:
+  - [x] `build/tests/integration/repl-echo.test.js` 运行通过（受环境限制为 skip）
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+  - `npm run build`
+  - `node --test --experimental-test-isolation=none build/tests/unit/repl.test.js`
+  - `node --test --experimental-test-isolation=none build/tests/integration/repl-echo.test.js`
+- Expected: `/help` 在长 usage 场景自动换行，且每行信息长度可控，不影响已有输出结构
+- Actual: Added `HELP_MAX_LINE_LENGTH = 100`, wrapped usage/description columns with word-based folding, preserved first-line permission label and aligned continuation rows; updated unit tests to validate line-length bound and wrapped `/history` output.
+- Coverage:
+  - Core: `build/tests/unit/repl.test.js` passed (`173/173`)
+  - Overall: Integration subprocess tests were skipped due to environment `EPERM`, no failure
+- Result: PASS
+- Notes: 当前 sandbox 不允许子进程交互，集成测试按既有策略 skip；本次变更主要由单测验证格式化行为。
+
+### Help Mode Follow-up - `/help` 简版 + `/xxx help` 详情
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: `/help` 仅展示命令基础说明；输入 `/xxx help` 时展示该命令的 usage、权限、别名及参数列表（每个参数单独一行）
+- Unit Cases:
+  - [x] `/help` 基础列表包含命令描述与详情提示
+  - [x] `/help` 命令按字母序且每命令一行展示
+  - [x] `/history help` 输出参数逐行列表
+  - [x] `/exit help`（无参数命令）可输出 `Parameters: - (none)`
+- Integration Cases:
+  - [x] `/help` 到 `/exit` 流程断言更新为基础帮助格式（当前环境 skip）
+- E2E Smoke:
+  - [ ] 待补充
+- Commands:
+  - `npm run build`
+  - `node --test --experimental-test-isolation=none build/tests/unit/repl.test.js`
+  - `node --test --experimental-test-isolation=none build/tests/integration/repl-echo.test.js`
+- Expected: 帮助信息分层显示，默认简洁，按需查看单命令参数详情且参数一行一个
+- Actual: Added generic command-help resolver for `help|-h|--help`, rendering concise command summary in `/help` and per-command detailed blocks in `/xxx help` with extracted usage parameter tokens listed line-by-line.
+- Coverage:
+  - Core: `build/tests/unit/repl.test.js` passed (`173/173`)
+  - Overall: Integration subprocess tests were skipped due to sandbox `EPERM`, no failures
+- Result: PASS
+- Notes: 详情帮助参数列表基于命令 `usage` token 解析（`<...>`/`[...]`），可覆盖当前命令集的参数展示需求。
+
+### GLM Timeout Follow-up - 超时重试与提示优化
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 修复 `GLM request timed out after 30000ms` 直接失败问题，将超时纳入重试流程并增加可执行配置提示
+- Unit Cases:
+  - [x] 超时错误仍可被映射与识别
+  - [x] 新增“首次超时、重试成功”路径测试
+  - [x] 现有 401/429/5xx 与退避策略测试保持通过
+- Integration Cases:
+  - [ ] 本轮未新增
+- E2E Smoke:
+  - [ ] 本轮未新增
+- Commands:
+  - `npm run build`
+  - `node --test --experimental-test-isolation=none build/tests/unit/provider.test.js`
+- Expected: 网络抖动导致的单次超时不再立刻失败，达到重试上限后再报超时并提示可调大 `timeoutMs`
+- Actual: Updated `GLMOpenAIProvider.complete` to classify abort timeout as retryable, reuse existing backoff retry path, and emit final timeout message with `/config set timeoutMs <ms>` guidance when retries are exhausted.
+- Coverage:
+  - Core: `build/tests/unit/provider.test.js` passed (`20/20`)
+  - Overall: Provider retry/timeout branches are covered by targeted unit suite
+- Result: PASS
+- Notes: 该修复不改变默认 `timeoutMs=30000`，仅提升在瞬时网络慢响应下的成功率与可诊断性。
+
+### GLM 429 Message Follow-up - 限流提示文案修正
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 修正 `[provider:error]` 中 429 限流提示，避免“Retrying may help shortly”误导，改为可执行建议
+- Unit Cases:
+  - [x] 429 仍映射为 `ProviderNetworkError` 且 `retryable=true`
+  - [x] 新断言校验错误文案包含“wait before retrying / check quota and model settings”
+- Integration Cases:
+  - [ ] 本轮未新增
+- E2E Smoke:
+  - [ ] 本轮未新增
+- Commands:
+  - `npm run build`
+  - `node --test --experimental-test-isolation=none build/tests/unit/provider.test.js`
+- Expected: 429 报错信息明确下一步动作，不出现“即将重试”的歧义文案
+- Actual: Updated 429 error message to `Rate limited by provider (429). Please wait before retrying, or check your quota and model settings.` and locked by unit assertion.
+- Coverage:
+  - Core: `build/tests/unit/provider.test.js` passed (`21/21`)
+  - Overall: Provider status-mapping and retry behaviors remain green
+- Result: PASS
+- Notes: 本次仅修正文案，不改变 429 的重试判定与退避流程。
+
 ### CI Round Follow-up - Consolidated Commit Record
 - Date: 2026-02-23
 - Env: Windows 11, Node v22.17.1, npm 11.9.0

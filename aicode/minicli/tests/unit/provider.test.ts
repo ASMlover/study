@@ -215,6 +215,47 @@ test("GLM provider maps timeout error", async () => {
   );
 });
 
+test("GLM provider retries timeout errors and can recover", async () => {
+  let attempts = 0;
+  const provider = new GLMOpenAIProvider({
+    apiKey: "k",
+    maxRetries: 1,
+    retryDelayMs: 0,
+    fetchImpl: ((_input: string | URL | Request, init?: RequestInit) => {
+      attempts += 1;
+      if (attempts === 1) {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const abortError = new Error("The operation was aborted.");
+            abortError.name = "AbortError";
+            reject(abortError);
+          });
+        });
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { role: "assistant", content: "ok after timeout retry" } }]
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          }
+        )
+      );
+    }) as typeof fetch
+  });
+
+  const response = await provider.complete({
+    model: "glm-4",
+    timeoutMs: 20,
+    messages: [{ role: "user", content: "hello" }]
+  });
+
+  assert.equal(response.message.content, "ok after timeout retry");
+  assert.equal(attempts, 2);
+});
+
 test("GLM provider maps 401 without retry", async () => {
   let attempts = 0;
   const provider = new GLMOpenAIProvider({
@@ -259,6 +300,10 @@ test("GLM provider maps 429 to retryable error", async () => {
       assert.ok(error instanceof ProviderNetworkError);
       assert.equal(error.code, "http_429");
       assert.equal(error.retryable, true);
+      assert.match(
+        error.message,
+        /Please wait before retrying, or check your quota and model settings\./
+      );
       return true;
     }
   );
