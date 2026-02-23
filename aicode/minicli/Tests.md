@@ -1255,3 +1255,25 @@ Use this section structure for each task:
   - Overall: No new runtime behavior introduced beyond already-validated `/help` formatting changes
 - Result: PASS
 - Notes: 本轮 `ci` 仅执行提交流程，不新增实现逻辑；测试结论与上一轮实现验证一致。
+
+### Session Switch Banner Follow-up - 首次普通输入静默建会话
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
+- Scope: 修复首次输入非 slash 文本（例如“问题”）时错误输出 `Switched to session ...` 的交互噪音；保留自动建会话与消息持久化行为
+- Unit Cases:
+  - [x] 首次普通消息触发自动建会话时不输出 `Switched to session`
+  - [x] 首次普通消息仍输出 assistant 回复
+  - [x] 首次普通消息后会话仓储中确实创建了 1 条会话
+- Integration Cases:
+  - [ ] 本轮未新增（行为由单测覆盖并与现有集成流程兼容）
+- E2E Smoke:
+  - [ ] 本轮未新增
+- Commands:
+  - `npm run -s test:unit -- repl`
+- Expected: 首次普通输入仅看到问答输出，不再出现会话切换横幅；底层 session/message 持久化继续正常
+- Actual: Removed implicit-message-path switch banner emission in `createReplSession` and added regression test `repl first plain message creates session silently without switch banner`; unit suite passed.
+- Coverage:
+  - Core: REPL unit suite passed (`287/287`)
+  - Overall: No regression observed in existing REPL/session command tests
+- Result: PASS
+- Notes: 显式会话操作（`/new`、`/switch`）仍保留 `Switched to session ...` 输出，只有隐式自动建会话路径改为静默。

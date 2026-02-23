@@ -134,3 +134,4 @@
 | 2026-02-23 | Help Mode Follow-up | Switched `/help` to concise command summary only, added per-command detail help via `/xxx help`, and formatted parameters as one-per-line entries | Codex |
 | 2026-02-23 | Help Length Follow-up | Added `/help` max-line formatter with automatic multi-line wrapping for long slash-command usages and descriptions to improve readability on narrow terminals | Codex |
 | 2026-02-23 | ci | Created consolidated commit for `/help` output UX formatting improvements and `ci` workflow rule documentation updates | Codex |
+| 2026-02-23 | Session Switch Banner Follow-up | Fixed first plain-message path to create session silently (no unexpected `Switched to session ...` output), and added unit regression coverage for silent auto-session creation | Codex |

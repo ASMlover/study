@@ -4057,10 +4057,7 @@ export function createReplSession(
       if (sessionRepository && messageRepository) {
         try {
           if (currentSessionId === null) {
-            const next = createAndSwitchSession();
-            if (next.id !== undefined) {
-              writers.stdout(`Switched to session #${next.id}: ${next.title}\n`);
-            }
+            createAndSwitchSession();
           }
           if (currentSessionId !== null) {
             messageRepository.createMessage({

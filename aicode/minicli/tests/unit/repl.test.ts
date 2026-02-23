@@ -1700,6 +1700,36 @@ test("repl /new updates current session pointer for subsequent writes", async ()
   );
 });
 
+test("repl first plain message creates session silently without switch banner", async () => {
+  const writes: string[] = [];
+  const sessionRepo = createInMemorySessionRepository();
+  const messageRepo = createInMemoryMessageRepository(sessionRepo);
+  const session = createReplSession(
+    {
+      stdout: (message) => writes.push(message),
+      stderr: () => {}
+    },
+    DEFAULT_MAX_INPUT_LENGTH,
+    {
+      sessionRepository: {
+        listSessions: sessionRepo.listSessions,
+        createSession: sessionRepo.createSession
+      },
+      messageRepository: {
+        createMessage: messageRepo.createMessage,
+        listMessagesBySession: messageRepo.listMessagesBySession
+      }
+    }
+  );
+
+  await session.onLine("问题");
+
+  const output = writes.join("");
+  assert.doesNotMatch(output, /Switched to session #\d+:/);
+  assert.equal(output, "mock(mock-mini): 问题\n");
+  assert.equal(sessionRepo.listSessions().length, 1);
+});
+
 test("repl /sessions prints empty state when no sessions exist", async () => {
   const writes: string[] = [];
   const sessionRepo = createInMemorySessionRepository();
