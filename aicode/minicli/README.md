@@ -55,6 +55,9 @@ Then proceed sequentially while keeping `Plans.md` and `Tests.md` updated.
 - `npm run typecheck`: run TypeScript type checks without emitting files
 - `npm run test:unit`: run unit tests
 - `npm run test:integration`: run integration tests
+- `npm run test:coverage`: run unit+integration with coverage thresholds
+- `npm run test:e2e:smoke`: run e2e smoke tests
+- `npm run ci:simulate-pr`: run local CI quality gate sequence
 - `npm test`: run all tests
 
 ## Windows UTF-8 Notes

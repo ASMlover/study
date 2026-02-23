@@ -66,7 +66,7 @@
 | T37 | /export | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Implemented `/export` json/md file output with arg parsing, default naming, overwrite guard, UTF-8 write, and unit/integration coverage |
 | T38 | Shell 统一适配层 | M7 | DONE | Codex | 2026-02-23 | 2026-02-23 | Added unified Windows/Linux shell adapter with escaped invocation, env/cwd/timeout/signal support, and unit+integration coverage |
 | T39 | 打包发布产物 | M7 | DONE | Codex | 2026-02-23 | 2026-02-23 | Added esbuild+pkg release pipeline, release CLI, artifact naming, and T39 unit/integration coverage |
-| T40 | CI 质量门禁 | M7 | TODO | - | - | - | - |
+| T40 | CI 质量门禁 | M7 | DONE | Codex | 2026-02-23 | 2026-02-23 | Added GitHub Actions quality gate pipeline with ordered jobs, retry+cache, coverage thresholds, artifacts, and CI workflow tests |
 
 ## Change Log
 | Date | Task | Update | By |
@@ -126,3 +126,4 @@
 | 2026-02-23 | T37 | Completed `/export` with `--format json|md`, `--out`, and `--force`; added default filename normalization, UTF-8 file writing, overwrite/permission handling, and export readability integration coverage | Codex |
 | 2026-02-23 | T38 | Completed unified shell adapter for Windows/Linux execution with platform detection, command escaping (`-EncodedCommand` on Windows), env/cwd forwarding, timeout kill-signal support, signal-aware exit mapping, and dual-platform mock adapter integration coverage | Codex |
 | 2026-02-23 | T39 | Completed release packaging pipeline with `esbuild` bundle + `pkg` binaries (win/linux), version injection via build define, release argument/dependency/entry validation, and integration coverage for packaged `--version` smoke | Codex |
+| 2026-02-23 | T40 | Completed CI quality gate with GitHub Actions ordered stages (`typecheck -> unit -> integration -> coverage -> e2e`), retry/caching/artifact strategy, enforced coverage thresholds, and CI workflow verification tests | Codex |

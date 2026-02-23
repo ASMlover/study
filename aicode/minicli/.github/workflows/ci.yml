@@ -1,0 +1,167 @@
+name: CI Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies (retry once)
+        run: |
+          npm ci || (echo "Retry npm ci once..." && npm ci)
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Upload typecheck logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typecheck-logs
+          path: |
+            npm-debug.log*
+            .npm/_logs/*
+          if-no-files-found: ignore
+
+  unit:
+    needs: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests (retry once)
+        run: |
+          npm run test:unit || (echo "Retry unit tests once..." && npm run test:unit)
+
+      - name: Upload unit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-artifacts
+          path: |
+            build/
+            npm-debug.log*
+            .npm/_logs/*
+          if-no-files-found: ignore
+
+  integration:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests (retry once)
+        run: |
+          npm run test:integration || (echo "Retry integration tests once..." && npm run test:integration)
+
+      - name: Upload integration artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-artifacts
+          path: |
+            build/
+            npm-debug.log*
+            .npm/_logs/*
+          if-no-files-found: ignore
+
+  coverage:
+    needs: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run coverage gate
+        run: npm run test:coverage
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-artifacts
+          path: |
+            coverage/
+            build/
+          if-no-files-found: ignore
+
+  e2e:
+    needs: coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run e2e smoke
+        run: npm run test:e2e:smoke
+
+      - name: Upload e2e artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            build/
+            npm-debug.log*
+            .npm/_logs/*
+          if-no-files-found: ignore

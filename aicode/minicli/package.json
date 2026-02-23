@@ -16,6 +16,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "npm run build && node --test --experimental-test-isolation=none build/tests/unit/**/*.test.js",
     "test:integration": "npm run build && node --test --experimental-test-isolation=none build/tests/integration/**/*.test.js",
+    "test:e2e:smoke": "npm run build && node --test --experimental-test-isolation=none build/tests/e2e/**/*.test.js",
+    "test:coverage": "npm run build && node --test --experimental-test-isolation=none --experimental-test-coverage --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=70 build/tests/unit/**/*.test.js build/tests/integration/**/*.test.js",
+    "ci:simulate-pr": "npm run typecheck && npm run test:unit && npm run test:integration && npm run test:coverage && npm run test:e2e:smoke",
     "test": "npm run test:unit && npm run test:integration"
   },
   "devDependencies": {
