@@ -61,16 +61,25 @@ export type KnownReplCommandKind =
   | "help"
   | "exit"
   | "login"
+  | "logout"
   | "model"
+  | "config"
   | "clear"
   | "status"
   | "approve"
   | "version"
   | "new"
+  | "rename"
   | "sessions"
   | "switch"
   | "history"
+  | "export"
   | "run"
+  | "init"
+  | "doctor"
+  | "pwd"
+  | "alias"
+  | "unalias"
   | "add"
   | "drop"
   | "files"
@@ -133,6 +142,14 @@ const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
     "config_write"
   ),
   createReplCommandSchema(
+    "logout",
+    "/logout",
+    "/logout",
+    "Clear API key from current runtime",
+    false,
+    "config_write"
+  ),
+  createReplCommandSchema(
     "model",
     "/model",
     "/model [name]",
@@ -155,6 +172,14 @@ const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
         required: false
       }
     ]
+  ),
+  createReplCommandSchema(
+    "config",
+    "/config",
+    "/config <get|set|list|reset> [key] [value]",
+    "Manage runtime configuration keys",
+    true,
+    "config_write"
   ),
   createReplCommandSchema(
     "status",
@@ -190,6 +215,14 @@ const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
     "session_write"
   ),
   createReplCommandSchema(
+    "rename",
+    "/rename",
+    "/rename <title>",
+    "Rename the current session",
+    true,
+    "session_write"
+  ),
+  createReplCommandSchema(
     "sessions",
     "/sessions",
     "/sessions [--limit N] [--offset N] [--q keyword]",
@@ -214,12 +247,60 @@ const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
     "session_read"
   ),
   createReplCommandSchema(
+    "export",
+    "/export",
+    "/export [--format json|md] [--out path]",
+    "Export current session output (placeholder)",
+    true,
+    "session_read"
+  ),
+  createReplCommandSchema(
     "run",
     "/run",
     "/run <command>",
     "Execute a read-only shell command",
     true,
     "tool_execute"
+  ),
+  createReplCommandSchema(
+    "init",
+    "/init",
+    "/init [path]",
+    "Initialize MiniCLI project files (placeholder)",
+    true,
+    "project_write"
+  ),
+  createReplCommandSchema(
+    "doctor",
+    "/doctor",
+    "/doctor",
+    "Run environment diagnostics (placeholder)",
+    false,
+    "public"
+  ),
+  createReplCommandSchema(
+    "pwd",
+    "/pwd",
+    "/pwd",
+    "Print current working directory",
+    false,
+    "public"
+  ),
+  createReplCommandSchema(
+    "alias",
+    "/alias",
+    "/alias <name> <command>",
+    "Create command alias (placeholder)",
+    true,
+    "config_write"
+  ),
+  createReplCommandSchema(
+    "unalias",
+    "/unalias",
+    "/unalias <name>",
+    "Remove command alias (placeholder)",
+    true,
+    "config_write"
   ),
   createReplCommandSchema(
     "add",
@@ -267,16 +348,25 @@ const REPL_COMMAND_HANDLER_KEYS: ReadonlySet<KnownReplCommandKind> = new Set([
   "help",
   "exit",
   "login",
+  "logout",
   "model",
+  "config",
   "clear",
   "status",
   "approve",
   "version",
   "new",
+  "rename",
   "sessions",
   "switch",
   "history",
+  "export",
   "run",
+  "init",
+  "doctor",
+  "pwd",
+  "alias",
+  "unalias",
   "add",
   "drop",
   "files",
@@ -339,16 +429,28 @@ export interface TabCompletionResult {
 }
 
 interface InlineCompletionState {
-  prefix: string;
+  key: string;
   candidates: string[];
   selectedIndex: number;
   navigated: boolean;
 }
 
+interface TokenSpan {
+  value: string;
+  start: number;
+  end: number;
+}
+
 interface ReplCompletionContext {
+  mode: "command" | "argument";
+  commandToken: string;
+  commandStart: number;
+  commandEnd: number;
   prefix: string;
-  firstTokenStart: number;
-  firstTokenEnd: number;
+  tokenStart: number;
+  tokenEnd: number;
+  args: string[];
+  argumentIndex: number;
 }
 
 function resolveCommandUsageFrequency(
@@ -398,28 +500,304 @@ function resolveReplCompletionContext(
 ): ReplCompletionContext | undefined {
   const boundedCursor = Math.max(0, Math.min(cursor, line.length));
   const leadingWhitespaceLength = line.match(/^\s*/)?.[0].length ?? 0;
-  const firstTokenStart = leadingWhitespaceLength;
+  const commandStart = leadingWhitespaceLength;
 
-  if (firstTokenStart >= line.length || line[firstTokenStart] !== "/") {
+  if (commandStart >= line.length || line[commandStart] !== "/") {
     return undefined;
   }
 
-  let firstTokenEnd = line.length;
-  for (let index = firstTokenStart; index < line.length; index += 1) {
+  let commandEnd = line.length;
+  for (let index = commandStart; index < line.length; index += 1) {
     if (/\s/.test(line[index])) {
-      firstTokenEnd = index;
+      commandEnd = index;
       break;
     }
   }
 
-  if (boundedCursor < firstTokenStart || boundedCursor > firstTokenEnd) {
+  if (boundedCursor < commandStart) {
     return undefined;
   }
 
+  const commandToken = line.slice(commandStart, commandEnd);
+  if (boundedCursor <= commandEnd) {
+    return {
+      mode: "command",
+      commandToken,
+      commandStart,
+      commandEnd,
+      prefix: line.slice(commandStart, boundedCursor),
+      tokenStart: commandStart,
+      tokenEnd: commandEnd,
+      args: [],
+      argumentIndex: 0
+    };
+  }
+
+  const argsArea = line.slice(commandEnd);
+  const spans = tokenizeNonWhitespace(argsArea, commandEnd);
+  const active = resolveActiveTokenSpan(spans, boundedCursor);
+  const activeSpan = active.span;
+  const tokenStart = activeSpan?.start ?? boundedCursor;
+  const tokenEnd = activeSpan?.end ?? boundedCursor;
+  const prefix = activeSpan
+    ? line.slice(activeSpan.start, Math.min(activeSpan.end, boundedCursor))
+    : "";
+
   return {
-    prefix: line.slice(firstTokenStart, boundedCursor),
-    firstTokenStart,
-    firstTokenEnd
+    mode: "argument",
+    commandToken,
+    commandStart,
+    commandEnd,
+    prefix,
+    tokenStart,
+    tokenEnd,
+    args: spans.map((span) => span.value),
+    argumentIndex: active.index
+  };
+}
+
+function tokenizeNonWhitespace(line: string, offset = 0): TokenSpan[] {
+  const spans: TokenSpan[] = [];
+  const matcher = /\S+/g;
+  let match = matcher.exec(line);
+  while (match !== null) {
+    const value = match[0];
+    const start = offset + match.index;
+    spans.push({
+      value,
+      start,
+      end: start + value.length
+    });
+    match = matcher.exec(line);
+  }
+  return spans;
+}
+
+function resolveActiveTokenSpan(
+  spans: TokenSpan[],
+  cursor: number
+): { span?: TokenSpan; index: number } {
+  for (let index = 0; index < spans.length; index += 1) {
+    const span = spans[index];
+    if (cursor >= span.start && cursor <= span.end) {
+      return { span, index };
+    }
+  }
+
+  let nextIndex = 0;
+  for (const span of spans) {
+    if (span.end <= cursor) {
+      nextIndex += 1;
+    }
+  }
+  return { index: nextIndex };
+}
+
+function listFilePathCandidates(
+  prefix: string,
+  cwd: string = process.cwd(),
+  directoriesOnly = false
+): string[] {
+  const normalizedPrefix = prefix.trim();
+  const candidateRoot =
+    normalizedPrefix.length === 0
+      ? cwd
+      : path.resolve(cwd, path.dirname(normalizedPrefix));
+  const baseName =
+    normalizedPrefix.length === 0 ? "" : path.basename(normalizedPrefix);
+
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(candidateRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const values: string[] = [];
+  for (const entry of entries) {
+    if (directoriesOnly && !entry.isDirectory()) {
+      continue;
+    }
+    if (!entry.name.startsWith(baseName)) {
+      continue;
+    }
+    const absolute = path.join(candidateRoot, entry.name);
+    const relative = path.relative(cwd, absolute);
+    if (relative.length === 0) {
+      continue;
+    }
+    values.push(path.normalize(relative));
+  }
+  return values.sort((left, right) => left.localeCompare(right));
+}
+
+function filterOptionCandidates(
+  args: string[],
+  argumentIndex: number,
+  options: readonly string[]
+): string[] {
+  const currentValue = args[argumentIndex] ?? "";
+  const seen = new Set(
+    args.filter((item, index) => item.startsWith("--") && index !== argumentIndex)
+  );
+  return options.filter((option) => option === currentValue || !seen.has(option));
+}
+
+function completeConfigArgument(
+  args: string[],
+  argumentIndex: number
+): string[] {
+  const subcommands = ["get", "set", "list", "reset"] as const;
+  const keys = [
+    "model",
+    "timeoutMs",
+    "apiKey",
+    "runConfirmationTimeoutMs",
+    "requestTokenBudget"
+  ] as const;
+  const modelValues = ["mock-mini", "glm-4", "glm-4-air"] as const;
+
+  if (argumentIndex === 0) {
+    return [...subcommands];
+  }
+
+  const subcommand = args[0];
+  if (subcommand === "get" || subcommand === "set" || subcommand === "reset") {
+    if (argumentIndex === 1) {
+      return [...keys];
+    }
+  }
+
+  if (subcommand === "set" && argumentIndex === 2) {
+    const key = args[1];
+    if (key === "model") {
+      return [...modelValues];
+    }
+    if (key === "timeoutMs" || key === "runConfirmationTimeoutMs") {
+      return ["5000", "15000", "30000"];
+    }
+    if (key === "requestTokenBudget") {
+      return ["2000", "4000", "8000"];
+    }
+  }
+  return [];
+}
+
+function completeReplArgumentCandidates(
+  context: ReplCompletionContext,
+  commandName: string
+): string[] {
+  if (context.mode !== "argument") {
+    return [];
+  }
+  const args = context.args;
+  const argumentIndex = context.argumentIndex;
+
+  switch (commandName) {
+    case "/clear":
+      return argumentIndex === 0 ? ["session", "all"] : [];
+    case "/sessions":
+      return filterOptionCandidates(args, argumentIndex, [
+        "--limit",
+        "--offset",
+        "--q"
+      ]);
+    case "/history":
+      return filterOptionCandidates(args, argumentIndex, [
+        "--limit",
+        "--offset",
+        "--audit",
+        "--status"
+      ]);
+    case "/files":
+      return filterOptionCandidates(args, argumentIndex, ["--limit", "--q"]);
+    case "/grep":
+      return argumentIndex > 0
+        ? filterOptionCandidates(args, argumentIndex, ["--limit"])
+        : [];
+    case "/tree":
+      if ((args[argumentIndex] ?? "").startsWith("--")) {
+        return filterOptionCandidates(args, argumentIndex, ["--depth"]);
+      }
+      if (argumentIndex === 0) {
+        return listFilePathCandidates(context.prefix, process.cwd(), true);
+      }
+      return filterOptionCandidates(args, argumentIndex, ["--depth"]);
+    case "/add":
+      return argumentIndex === 0
+        ? listFilePathCandidates(context.prefix, process.cwd(), false)
+        : [];
+    case "/init":
+      return argumentIndex === 0
+        ? listFilePathCandidates(context.prefix, process.cwd(), true)
+        : [];
+    case "/config":
+      return completeConfigArgument(args, argumentIndex);
+    case "/export":
+      if (argumentIndex > 0 && args[argumentIndex - 1] === "--format") {
+        return ["json", "md"];
+      }
+      if (argumentIndex > 0 && args[argumentIndex - 1] === "--out") {
+        return listFilePathCandidates(context.prefix, process.cwd(), false);
+      }
+      return filterOptionCandidates(args, argumentIndex, ["--format", "--out"]);
+    default:
+      return [];
+  }
+}
+
+function dedupeCandidates(candidates: readonly string[]): string[] {
+  return [...new Set(candidates)];
+}
+
+function filterCompletionCandidatesByPrefix(
+  candidates: readonly string[],
+  prefix: string
+): string[] {
+  if (prefix.length === 0) {
+    return [...candidates];
+  }
+  return candidates.filter((candidate) => candidate.startsWith(prefix));
+}
+
+function completeReplAtCursor(
+  line: string,
+  cursor: number,
+  registry: CommandRegistry<KnownReplCommandKind> = DEFAULT_COMMAND_REGISTRY,
+  usageFrequency: Readonly<Record<string, number>> = {}
+): { context?: ReplCompletionContext; candidates: string[] } {
+  const context = resolveReplCompletionContext(line, cursor);
+  if (!context) {
+    return {
+      context: undefined,
+      candidates: []
+    };
+  }
+
+  if (context.mode === "command") {
+    return {
+      context,
+      candidates: completeReplCommandPrefix(context.prefix, registry, usageFrequency)
+    };
+  }
+
+  const resolvedCommand = registry.resolve(context.commandToken);
+  if (!resolvedCommand) {
+    return {
+      context,
+      candidates: []
+    };
+  }
+
+  const rawCandidates = completeReplArgumentCandidates(
+    context,
+    resolvedCommand.metadata.name
+  );
+  return {
+    context,
+    candidates: dedupeCandidates(
+      filterCompletionCandidatesByPrefix(rawCandidates, context.prefix)
+    )
   };
 }
 
@@ -428,8 +806,8 @@ function applyResolvedCompletionCandidate(
   context: ReplCompletionContext,
   candidate: string
 ): { line: string; cursor: number } {
-  const beforeToken = line.slice(0, context.firstTokenStart);
-  const afterToken = line.slice(context.firstTokenEnd);
+  const beforeToken = line.slice(0, context.tokenStart);
+  const afterToken = line.slice(context.tokenEnd);
   const hasWhitespaceSeparator = /^\s/.test(afterToken[0] ?? "");
   const lineWithToken = `${beforeToken}${candidate}${afterToken}`;
   const nextLine =
@@ -455,7 +833,13 @@ export function acceptReplTabCompletion(
   usageFrequency: Readonly<Record<string, number>> = {}
 ): TabCompletionResult {
   const boundedCursor = Math.max(0, Math.min(cursor, line.length));
-  const context = resolveReplCompletionContext(line, boundedCursor);
+  const resolved = completeReplAtCursor(
+    line,
+    boundedCursor,
+    registry,
+    usageFrequency
+  );
+  const context = resolved.context;
   if (!context) {
     return {
       line,
@@ -465,11 +849,7 @@ export function acceptReplTabCompletion(
     };
   }
 
-  const candidates = completeReplCommandPrefix(
-    context.prefix,
-    registry,
-    usageFrequency
-  );
+  const candidates = resolved.candidates;
   if (candidates.length !== 1) {
     return {
       line,
@@ -490,6 +870,17 @@ export function acceptReplTabCompletion(
     accepted: true,
     candidates
   };
+}
+
+function getInlineCompletionContextKey(context: ReplCompletionContext): string {
+  return [
+    context.mode,
+    context.commandToken,
+    String(context.argumentIndex),
+    context.prefix,
+    String(context.tokenStart),
+    String(context.tokenEnd)
+  ].join("|");
 }
 
 export function resolveInlineTabCompletions(
@@ -539,18 +930,20 @@ export function resolveInlineTabCompletions(
     }
 
     if (line[index] === "\t") {
-      const context = resolveReplCompletionContext(resolved, resolved.length);
+      const completion = completeReplAtCursor(
+        resolved,
+        resolved.length,
+        registry,
+        usageFrequency
+      );
+      const context = completion.context;
       if (!context) {
         completionState = undefined;
         index += 1;
         continue;
       }
 
-      const candidates = completeReplCommandPrefix(
-        context.prefix,
-        registry,
-        usageFrequency
-      );
+      const candidates = completion.candidates;
       if (candidates.length === 0) {
         completionState = undefined;
         index += 1;
@@ -569,8 +962,9 @@ export function resolveInlineTabCompletions(
         continue;
       }
 
+      const contextKey = getInlineCompletionContextKey(context);
       const canAcceptSelection =
-        completionState?.prefix === context.prefix &&
+        completionState?.key === contextKey &&
         completionState.navigated === true;
       if (canAcceptSelection) {
         const activeState = completionState;
@@ -585,7 +979,7 @@ export function resolveInlineTabCompletions(
         completionState = undefined;
       } else {
         completionState = {
-          prefix: context.prefix,
+          key: contextKey,
           candidates,
           selectedIndex: 0,
           navigated: false
@@ -608,7 +1002,13 @@ export function createReplReadlineCompleter(
   usageFrequency: Readonly<Record<string, number>> = {}
 ): (line: string) => [string[], string] {
   return (line: string) => {
-    const context = resolveReplCompletionContext(line, line.length);
+    const completion = completeReplAtCursor(
+      line,
+      line.length,
+      registry,
+      usageFrequency
+    );
+    const context = completion.context;
     if (!context) {
       return [[], ""];
     }
@@ -620,13 +1020,11 @@ export function createReplReadlineCompleter(
       usageFrequency
     );
     if (accepted.accepted) {
-      const completedToken = accepted.line
-        .slice(context.firstTokenStart)
-        .split(/\s/, 1)[0];
+      const completedToken = accepted.candidates[0];
       return [[completedToken], context.prefix];
     }
 
-    return [accepted.candidates, context.prefix];
+    return [completion.candidates, context.prefix];
   };
 }
 
@@ -763,16 +1161,25 @@ export type ReplCommandMatch =
   | { kind: "help" }
   | { kind: "exit" }
   | { kind: "login"; args: string[] }
+  | { kind: "logout" }
   | { kind: "model"; args: string[] }
+  | { kind: "config"; args: string[] }
   | { kind: "clear"; args: string[] }
   | { kind: "status" }
   | { kind: "approve" }
   | { kind: "version" }
   | { kind: "new"; args: string[] }
+  | { kind: "rename"; args: string[] }
   | { kind: "sessions"; args: string[] }
   | { kind: "switch"; args: string[] }
   | { kind: "history"; args: string[] }
+  | { kind: "export"; args: string[] }
   | { kind: "run"; args: string[] }
+  | { kind: "init"; args: string[] }
+  | { kind: "doctor" }
+  | { kind: "pwd" }
+  | { kind: "alias"; args: string[] }
+  | { kind: "unalias"; args: string[] }
   | { kind: "add"; args: string[] }
   | { kind: "drop"; args: string[] }
   | { kind: "files"; args: string[] }
@@ -794,8 +1201,14 @@ function matchResolvedReplCommand(
   if (kind === "login") {
     return { kind: "login", args };
   }
+  if (kind === "logout") {
+    return { kind: "logout" };
+  }
   if (kind === "model") {
     return { kind: "model", args };
+  }
+  if (kind === "config") {
+    return { kind: "config", args };
   }
   if (kind === "clear") {
     return { kind: "clear", args };
@@ -812,6 +1225,9 @@ function matchResolvedReplCommand(
   if (kind === "new") {
     return { kind: "new", args };
   }
+  if (kind === "rename") {
+    return { kind: "rename", args };
+  }
   if (kind === "sessions") {
     return { kind: "sessions", args };
   }
@@ -820,6 +1236,24 @@ function matchResolvedReplCommand(
   }
   if (kind === "run") {
     return { kind: "run", args };
+  }
+  if (kind === "export") {
+    return { kind: "export", args };
+  }
+  if (kind === "init") {
+    return { kind: "init", args };
+  }
+  if (kind === "doctor") {
+    return { kind: "doctor" };
+  }
+  if (kind === "pwd") {
+    return { kind: "pwd" };
+  }
+  if (kind === "alias") {
+    return { kind: "alias", args };
+  }
+  if (kind === "unalias") {
+    return { kind: "unalias", args };
   }
   if (kind === "add") {
     return { kind: "add", args };
@@ -2469,6 +2903,14 @@ export function createReplSession(
       writers.stdout(`API key saved: ${maskSecret(apiKey)}\n`);
       return false;
     },
+    logout: async () => {
+      config.apiKey = undefined;
+      if (!hasFixedProvider) {
+        provider = createRuntimeProvider(config);
+      }
+      writers.stdout("API key cleared from runtime.\n");
+      return false;
+    },
     model: async (args) => {
       if (args.length === 0) {
         writers.stdout(`Current model: ${config.model}\n`);
@@ -2496,6 +2938,46 @@ export function createReplSession(
 
       config.model = nextModel;
       writers.stdout(`Model updated: ${config.model}\n`);
+      return false;
+    },
+    config: async (args) => {
+      if (args.length === 0) {
+        writers.stderr(
+          "Usage: /config <get|set|list|reset> [key] [value]\n"
+        );
+        return false;
+      }
+      const subcommand = args[0];
+      if (
+        subcommand !== "get" &&
+        subcommand !== "set" &&
+        subcommand !== "list" &&
+        subcommand !== "reset"
+      ) {
+        writers.stderr(
+          "[config:error] unknown subcommand. Use get|set|list|reset.\n"
+        );
+        return false;
+      }
+
+      if (subcommand === "list") {
+        writers.stdout(
+          [
+            "Config keys:",
+            "- model",
+            "- timeoutMs",
+            "- apiKey",
+            "- runConfirmationTimeoutMs",
+            "- requestTokenBudget",
+            ""
+          ].join("\n")
+        );
+        return false;
+      }
+
+      writers.stdout(
+        `[config] ${subcommand} is acknowledged (full persistence is implemented in T36).\n`
+      );
       return false;
     },
     clear: async (args) => {
@@ -2555,6 +3037,25 @@ export function createReplSession(
         const e = error as Error;
         writers.stderr(`[session:error] ${e.message}\n`);
       }
+      return false;
+    },
+    rename: async (args) => {
+      if (args.length === 0) {
+        writers.stderr("Usage: /rename <title>\n");
+        return false;
+      }
+      const title = args.join(" ").trim();
+      if (title.length === 0) {
+        writers.stderr("Usage: /rename <title>\n");
+        return false;
+      }
+      if (currentSessionId === null) {
+        writers.stderr("[session:error] no active session to rename.\n");
+        return false;
+      }
+      writers.stdout(
+        `[session] rename requested for #${currentSessionId} -> ${title}\n`
+      );
       return false;
     },
     sessions: async (args) => {
@@ -2663,6 +3164,12 @@ export function createReplSession(
       writers.stdout(formatHistoryList(selected));
       return false;
     },
+    export: async (args) => {
+      writers.stdout(
+        `[export] request accepted (${args.join(" ").trim() || "default options"}). Full file export is implemented in T37.\n`
+      );
+      return false;
+    },
     run: async (args) => {
       const raw = args.join(" ").trim();
       if (raw.length === 0) {
@@ -2695,6 +3202,39 @@ export function createReplSession(
         stdout: result.stdout,
         stderr: result.ok ? result.stderr : result.error
       });
+      return false;
+    },
+    init: async (args) => {
+      const target = args[0]?.trim() || process.cwd();
+      writers.stdout(
+        `[init] bootstrap requested at ${target}. Detailed initialization is a future task.\n`
+      );
+      return false;
+    },
+    doctor: async () => {
+      writers.stdout("[doctor] diagnostics placeholder: runtime is reachable.\n");
+      return false;
+    },
+    pwd: async () => {
+      writers.stdout(`${process.cwd()}\n`);
+      return false;
+    },
+    alias: async (args) => {
+      if (args.length < 2) {
+        writers.stderr("Usage: /alias <name> <command>\n");
+        return false;
+      }
+      writers.stdout(
+        `[alias] placeholder saved: ${args[0]} => ${args.slice(1).join(" ")}\n`
+      );
+      return false;
+    },
+    unalias: async (args) => {
+      if (args.length !== 1) {
+        writers.stderr("Usage: /unalias <name>\n");
+        return false;
+      }
+      writers.stdout(`[alias] placeholder removed: ${args[0]}\n`);
       return false;
     },
     add: async (args) => {
@@ -2895,16 +3435,25 @@ export function createReplSession(
           case "help":
           case "exit":
           case "login":
+          case "logout":
           case "model":
+          case "config":
           case "clear":
           case "status":
           case "approve":
           case "version":
           case "new":
+          case "rename":
           case "sessions":
           case "switch":
           case "history":
+          case "export":
           case "run":
+          case "init":
+          case "doctor":
+          case "pwd":
+          case "alias":
+          case "unalias":
           case "add":
           case "drop":
           case "files":

@@ -61,7 +61,7 @@
 | T32 | Token 预算裁剪 | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added request token-budget trimming with latest-user/system priority retention, history dropping, tiny-budget clipping, and warning output |
 | T33 | JSON Schema 命令注册 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Added schema-driven command registration with validation, handler binding checks, and schema-backed REPL registry |
 | T34 | 命令扩展到 18 条 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Expanded command set to 18 with schema permissions, aliases, routing handlers, and completion integration |
-| T35 | 扩展到 27 条 + 参数补全 | M6 | TODO | - | - | - | - |
+| T35 | 扩展到 27 条 + 参数补全 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Expanded REPL schema to 27 commands and implemented argument-level completion with subcommand/context-aware candidates |
 | T36 | /config | M6 | TODO | - | - | - | - |
 | T37 | /export | M6 | TODO | - | - | - | - |
 | T38 | Shell 统一适配层 | M7 | TODO | - | - | - | - |
@@ -120,3 +120,4 @@
 | 2026-02-13 | T10 Follow-up | Improved provider rate-limit resilience with higher default retries, Retry-After-aware backoff, exponential delay with jitter, and non-network error no-retry guard | Codex |
 | 2026-02-23 | T33 | Completed JSON schema-driven command registration with required-field/type validation, command-handler existence checks, alias-conflict guard via registry, examples parsing, and schema-based REPL execution integration test | Codex |
 | 2026-02-23 | T34 | Expanded REPL command set from 14 to 18 (`/clear`, `/status`, `/approve`, `/version`), added schema permission markers, updated completion ordering/alias behavior, and added 18-command integration execution coverage | Codex |
+| 2026-02-23 | T35 | Expanded REPL command set from 18 to 27, added cursor-aware argument completion (`/config set` chain, option filtering, context-aware candidates), and added unit/integration coverage for parameter completion flows | Codex |

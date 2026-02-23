@@ -6,10 +6,10 @@ import {
   DEFAULT_MAX_INPUT_LENGTH
 } from "../../src/repl";
 
-test("18 commands are enumerable and executable via repl routing", async () => {
+test("27 commands are enumerable and executable via repl routing", async () => {
   const registry = createDefaultReplCommandRegistry();
   const commands = registry.list();
-  assert.equal(commands.length, 18);
+  assert.equal(commands.length, 27);
 
   const writes: string[] = [];
   const errors: string[] = [];
@@ -35,16 +35,25 @@ test("18 commands are enumerable and executable via repl routing", async () => {
   const samples: Record<string, string> = {
     "/help": "/help",
     "/login": "/login sk-test",
+    "/logout": "/logout",
     "/model": "/model",
+    "/config": "/config list",
     "/clear": "/clear all",
     "/status": "/status",
     "/approve": "/approve",
     "/version": "/version",
     "/new": "/new sprint",
+    "/rename": "/rename sprint-updated",
     "/sessions": "/sessions",
     "/switch": "/switch #1",
     "/history": "/history",
+    "/export": "/export --format json",
     "/run": "/run pwd",
+    "/init": "/init",
+    "/doctor": "/doctor",
+    "/pwd": "/pwd",
+    "/alias": "/alias ll /files",
+    "/unalias": "/unalias ll",
     "/add": "/add missing.txt",
     "/drop": "/drop 1",
     "/files": "/files",

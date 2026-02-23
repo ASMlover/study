@@ -364,9 +364,16 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "login",
     args: ["token"]
   });
+  assert.deepEqual(matchReplCommand("/logout"), {
+    kind: "logout"
+  });
   assert.deepEqual(matchReplCommand("/model"), {
     kind: "model",
     args: []
+  });
+  assert.deepEqual(matchReplCommand("/config set model glm-4"), {
+    kind: "config",
+    args: ["set", "model", "glm-4"]
   });
   assert.deepEqual(matchReplCommand("/clear"), {
     kind: "clear",
@@ -396,6 +403,10 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "new",
     args: ["sprint", "planning"]
   });
+  assert.deepEqual(matchReplCommand("/rename sprint"), {
+    kind: "rename",
+    args: ["sprint"]
+  });
   assert.deepEqual(matchReplCommand("/sessions --limit 2"), {
     kind: "sessions",
     args: ["--limit", "2"]
@@ -408,9 +419,31 @@ test("matchReplCommand matches help and exit commands", () => {
     kind: "history",
     args: ["--limit", "3"]
   });
+  assert.deepEqual(matchReplCommand("/export --format md"), {
+    kind: "export",
+    args: ["--format", "md"]
+  });
   assert.deepEqual(matchReplCommand("/run pwd"), {
     kind: "run",
     args: ["pwd"]
+  });
+  assert.deepEqual(matchReplCommand("/init src"), {
+    kind: "init",
+    args: ["src"]
+  });
+  assert.deepEqual(matchReplCommand("/doctor"), {
+    kind: "doctor"
+  });
+  assert.deepEqual(matchReplCommand("/pwd"), {
+    kind: "pwd"
+  });
+  assert.deepEqual(matchReplCommand("/alias ll /files"), {
+    kind: "alias",
+    args: ["ll", "/files"]
+  });
+  assert.deepEqual(matchReplCommand("/unalias ll"), {
+    kind: "unalias",
+    args: ["ll"]
   });
   assert.deepEqual(matchReplCommand("/add src/repl.ts"), {
     kind: "add",
@@ -443,16 +476,25 @@ test("completeReplCommandPrefix returns all commands for empty slash prefix", ()
     "/help",
     "/exit",
     "/login",
+    "/logout",
     "/model",
     "/clear",
+    "/config",
     "/status",
     "/approve",
     "/version",
     "/new",
+    "/rename",
     "/sessions",
     "/switch",
     "/history",
+    "/export",
     "/run",
+    "/init",
+    "/doctor",
+    "/pwd",
+    "/alias",
+    "/unalias",
     "/add",
     "/drop",
     "/files",
@@ -474,16 +516,25 @@ test("completeReplCommandPrefix keeps registry order stable", () => {
     "/help",
     "/exit",
     "/login",
+    "/logout",
     "/model",
     "/clear",
+    "/config",
     "/status",
     "/approve",
     "/version",
     "/new",
+    "/rename",
     "/sessions",
     "/switch",
     "/history",
+    "/export",
     "/run",
+    "/init",
+    "/doctor",
+    "/pwd",
+    "/alias",
+    "/unalias",
     "/add",
     "/drop",
     "/files",
@@ -624,6 +675,74 @@ test("createReplReadlineCompleter returns multiple hits for /s", () => {
   const [hits, token] = completer("/s");
   assert.deepEqual(hits, ["/status", "/sessions", "/switch"]);
   assert.equal(token, "/s");
+});
+
+test("argument completion supports /config subcommand completion", () => {
+  const result = acceptReplTabCompletion("/config s", "/config s".length);
+  assert.equal(result.accepted, true);
+  assert.deepEqual(result.candidates, ["set"]);
+  assert.equal(result.line, "/config set ");
+  assert.equal(result.cursor, "/config set ".length);
+});
+
+test("argument completion supports /config set key completion", () => {
+  const result = acceptReplTabCompletion("/config set mo", "/config set mo".length);
+  assert.equal(result.accepted, true);
+  assert.deepEqual(result.candidates, ["model"]);
+  assert.equal(result.line, "/config set model ");
+  assert.equal(result.cursor, "/config set model ".length);
+});
+
+test("argument completion provides context-aware value candidates for /config set model", () => {
+  const completer = createReplReadlineCompleter();
+  const [hits, token] = completer("/config set model glm-");
+  assert.deepEqual(hits, ["glm-4", "glm-4-air"]);
+  assert.equal(token, "glm-");
+});
+
+test("argument completion filters invalid duplicate options", () => {
+  const completer = createReplReadlineCompleter();
+  const [hits, token] = completer("/files --limit --");
+  assert.deepEqual(hits, ["--q"]);
+  assert.equal(token, "--");
+});
+
+test("argument completion keeps cursor-based replacement stable", () => {
+  const result = acceptReplTabCompletion("/config se model", 10);
+  assert.equal(result.accepted, true);
+  assert.equal(result.line, "/config set model");
+  assert.equal(result.cursor, "/config set".length);
+});
+
+test("argument completion offers filesystem context candidates", () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "minicli-arg-complete-add-"));
+  const prevCwd = process.cwd();
+  try {
+    fs.writeFileSync(path.join(tmpRoot, "notes.md"), "n", "utf8");
+    process.chdir(tmpRoot);
+
+    const completer = createReplReadlineCompleter();
+    const [hits, token] = completer("/add no");
+    assert.deepEqual(hits, ["notes.md"]);
+    assert.equal(token, "no");
+  } finally {
+    process.chdir(prevCwd);
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test("inline completion chain resolves command and arguments consistently", async () => {
+  const writes: string[] = [];
+  const errors: string[] = [];
+  const session = createReplSession({
+    stdout: (message) => writes.push(message),
+    stderr: (message) => errors.push(message)
+  });
+
+  await session.onLine("/co\t s\t mo\t mock-\t");
+
+  assert.equal(errors.join(""), "");
+  assert.match(writes.join(""), /\[config\] set is acknowledged/);
 });
 
 test("shouldUseTerminalMode returns true when either input or output is TTY", () => {
