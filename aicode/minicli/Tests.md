@@ -867,28 +867,29 @@ Use this section structure for each task:
 - Result: PASS
 - Notes: `npm run test:unit` passed (`228/228`). `npm run test:integration` passed with `16` pass and `15` skip; skipped cases are expected sandbox subprocess/shell restrictions and unrelated to T32.
 ### T33 - JSON Schema 命令注册
-- Date:
-- Env:
+- Date: 2026-02-23
+- Env: Windows 11, Node v22.17.1, npm 11.9.0
 - Scope: 实现 schema 驱动命令注册
 - Unit Cases:
-  - [ ] schema通过
-  - [ ] 缺字段报错
-  - [ ] 参数类型
-  - [ ] handler缺失
-  - [ ] alias冲突
-  - [ ] examples解析
+  - [x] schema通过
+  - [x] 缺字段报错
+  - [x] 参数类型
+  - [x] handler缺失
+  - [x] alias冲突
+  - [x] examples解析
 - Integration Cases:
-  - [ ] 通过 schema 注册并执行
+  - [x] 通过 schema 注册并执行
 - E2E Smoke:
   - [ ] 待补充
 - Commands:
+  - `npm test`
 - Expected: 命令声明式注册可用
-- Actual:
+- Actual: Added JSON schema-driven command registration in `src/command-registry.ts` with schema parse/validation helpers (`parseCommandSchemaRegistration`, `parseCommandSchemaRegistrations`), parameter type constraints (`string|number|boolean`), required-field checks, examples normalization (array or multiline string), and handler existence validation through `registerCommandSchemas`. Refactored REPL default command registry creation in `src/repl.ts` to use declarative schema definitions instead of hardcoded imperative registration. Added unit tests in `tests/unit/command-registry.test.ts` for all required T33 cases and integration test `tests/integration/schema-command-registration.test.ts` verifying schema-registered alias command executes in REPL.
 - Coverage:
-  - Core:
-  - Overall:
-- Result:
-- Notes:
+  - Core: N/A (coverage tooling not added in T33)
+  - Overall: N/A (coverage tooling not added in T33)
+- Result: PASS
+- Notes: `npm test` passed. Unit tests `236/236` passed. Integration tests `32` total with `17` pass and `15` skip; skipped cases are expected sandbox subprocess/shell restrictions and unrelated to T33. New T33 integration case runs in-process and passed.
 ### T34 - 命令扩展到 18 条
 - Date:
 - Env:

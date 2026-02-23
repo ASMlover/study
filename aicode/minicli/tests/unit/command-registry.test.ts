@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CommandRegistry } from "../../src/command-registry";
+import {
+  CommandRegistry,
+  parseCommandSchemaRegistration,
+  registerCommandSchemas
+} from "../../src/command-registry";
 
 type TestCommandKind = "help" | "exit" | "model";
 
@@ -134,4 +138,157 @@ test("command registry keeps registration order stable", () => {
     registry.list().map((item) => item.metadata.name),
     ["/help", "/exit", "/model"]
   );
+});
+
+test("command schema registration passes and registers command", () => {
+  const registry = new CommandRegistry<TestCommandKind>();
+  const parsed = registerCommandSchemas<TestCommandKind, "help">(
+    registry,
+    [
+      {
+        kind: "help",
+        name: "/help",
+        usage: "/help",
+        description: "show help",
+        acceptsArgs: false,
+        handler: "help",
+        aliases: ["/h"],
+        parameters: [],
+        examples: ["/help"]
+      }
+    ],
+    new Set<"help">(["help"])
+  );
+
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].kind, "help");
+  assert.equal(parsed[0].handler, "help");
+  assert.deepEqual(parsed[0].examples, ["/help"]);
+  assert.equal(registry.resolve("/h")?.kind, "help");
+});
+
+test("command schema registration throws when required field is missing", () => {
+  assert.throws(
+    () =>
+      parseCommandSchemaRegistration({
+        kind: "help",
+        name: "/help",
+        usage: "/help",
+        acceptsArgs: false,
+        handler: "help"
+      }),
+    /Missing required field: description/
+  );
+});
+
+test("command schema registration validates parameter types", () => {
+  const parsed = parseCommandSchemaRegistration({
+    kind: "model",
+    name: "/model",
+    usage: "/model [name]",
+    description: "show model",
+    acceptsArgs: true,
+    handler: "model",
+    parameters: [
+      {
+        name: "name",
+        type: "string",
+        required: false
+      }
+    ]
+  });
+  assert.deepEqual(parsed.parameters, [
+    {
+      name: "name",
+      type: "string",
+      required: false
+    }
+  ]);
+
+  assert.throws(
+    () =>
+      parseCommandSchemaRegistration({
+        kind: "model",
+        name: "/model",
+        usage: "/model [name]",
+        description: "show model",
+        acceptsArgs: true,
+        handler: "model",
+        parameters: [
+          {
+            name: "name",
+            type: "integer"
+          }
+        ]
+      }),
+    /Invalid parameter type/
+  );
+});
+
+test("command schema registration rejects missing handler mapping", () => {
+  const registry = new CommandRegistry<TestCommandKind>();
+  assert.throws(
+    () =>
+      registerCommandSchemas<TestCommandKind, "help" | "model">(
+        registry,
+        [
+          {
+            kind: "model",
+            name: "/model",
+            usage: "/model [name]",
+            description: "show model",
+            acceptsArgs: true,
+            handler: "model"
+          }
+        ],
+        new Set<"help" | "model">(["help"])
+      ),
+    /Missing command handler: model/
+  );
+});
+
+test("command schema registration rejects alias conflicts", () => {
+  const registry = new CommandRegistry<TestCommandKind>();
+  assert.throws(
+    () =>
+      registerCommandSchemas<TestCommandKind, TestCommandKind>(
+        registry,
+        [
+          {
+            kind: "help",
+            name: "/help",
+            usage: "/help",
+            description: "show help",
+            acceptsArgs: false,
+            handler: "help",
+            aliases: ["/shared"]
+          },
+          {
+            kind: "exit",
+            name: "/exit",
+            usage: "/exit",
+            description: "exit",
+            acceptsArgs: false,
+            handler: "exit",
+            aliases: ["/shared"]
+          }
+        ],
+        new Set<TestCommandKind>(["help", "exit", "model"])
+      ),
+    /Duplicate command token: \/shared/
+  );
+});
+
+test("command schema registration parses examples from multiline string", () => {
+  const parsed = parseCommandSchemaRegistration({
+    kind: "help",
+    name: "/help",
+    usage: "/help",
+    description: "show help",
+    acceptsArgs: false,
+    handler: "help",
+    examples: "/help\n/help --verbose\n\n"
+  });
+
+  assert.deepEqual(parsed.examples, ["/help", "/help --verbose"]);
 });

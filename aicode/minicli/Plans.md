@@ -59,7 +59,7 @@
 | T30 | /tree | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added `/tree` directory browsing with depth limit, ignore rules, symlink/error handling, and unit/integration coverage |
 | T31 | 上下文组装器 | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added context snippet assembler with ordered deduped file blocks, metadata, UTF-8 decoding/newline normalization, and request integration tests |
 | T32 | Token 预算裁剪 | M5 | DONE | Codex | 2026-02-13 | 2026-02-13 | Added request token-budget trimming with latest-user/system priority retention, history dropping, tiny-budget clipping, and warning output |
-| T33 | JSON Schema 命令注册 | M6 | TODO | - | - | - | - |
+| T33 | JSON Schema 命令注册 | M6 | DONE | Codex | 2026-02-23 | 2026-02-23 | Added schema-driven command registration with validation, handler binding checks, and schema-backed REPL registry |
 | T34 | 命令扩展到 18 条 | M6 | TODO | - | - | - | - |
 | T35 | 扩展到 27 条 + 参数补全 | M6 | TODO | - | - | - | - |
 | T36 | /config | M6 | TODO | - | - | - | - |
@@ -118,3 +118,4 @@
 | 2026-02-13 | T32 | Completed token budget clipping with message-token estimator, budget-bound request trimming, latest-user/system priority retention, tiny-budget fallback trimming, and warning notice + integration coverage | Codex |
 | 2026-02-13 | ci T32 | Created task commit for token budget clipping and long-context limit tests | Codex |
 | 2026-02-13 | T10 Follow-up | Improved provider rate-limit resilience with higher default retries, Retry-After-aware backoff, exponential delay with jitter, and non-network error no-retry guard | Codex |
+| 2026-02-23 | T33 | Completed JSON schema-driven command registration with required-field/type validation, command-handler existence checks, alias-conflict guard via registry, examples parsing, and schema-based REPL execution integration test | Codex |

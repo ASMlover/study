@@ -2,8 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import {
-  CommandRegistration,
-  CommandRegistry
+  CommandRegistry,
+  CommandSchemaRegistration,
+  registerCommandSchemas
 } from "./command-registry";
 import {
   isSupportedModelName,
@@ -70,128 +71,151 @@ export type KnownReplCommandKind =
   | "grep"
   | "tree";
 
-interface ReplCommandRegistration
-  extends CommandRegistration<KnownReplCommandKind> {
-  readonly acceptsArgs: boolean;
-}
+type ReplCommandRegistration = CommandSchemaRegistration<
+  KnownReplCommandKind,
+  KnownReplCommandKind
+>;
 
-function createReplCommand(
+function createReplCommandSchema(
   kind: KnownReplCommandKind,
   name: string,
   usage: string,
   description: string,
   acceptsArgs: boolean,
   aliases: readonly string[] = []
-): ReplCommandRegistration {
+): unknown {
   return {
     kind,
-    metadata: {
-      name,
-      usage,
-      description
-    },
+    name,
+    usage,
+    description,
     acceptsArgs,
-    aliases
+    aliases,
+    handler: kind,
+    examples: [usage]
   };
 }
 
+const DEFAULT_REPL_COMMAND_SCHEMAS: readonly unknown[] = [
+  createReplCommandSchema("help", "/help", "/help", "Show this help message", false),
+  createReplCommandSchema(
+    "exit",
+    "/exit",
+    "/exit",
+    "Exit MiniCLI",
+    false,
+    ["/quit"]
+  ),
+  createReplCommandSchema(
+    "login",
+    "/login",
+    "/login <apiKey>",
+    "Save API key to global config",
+    true
+  ),
+  createReplCommandSchema(
+    "model",
+    "/model",
+    "/model [name]",
+    "Show or set current model",
+    true
+  ),
+  createReplCommandSchema(
+    "new",
+    "/new",
+    "/new [title]",
+    "Create and switch to a new session",
+    true
+  ),
+  createReplCommandSchema(
+    "sessions",
+    "/sessions",
+    "/sessions [--limit N] [--offset N] [--q keyword]",
+    "List sessions",
+    true
+  ),
+  createReplCommandSchema(
+    "switch",
+    "/switch",
+    "/switch <#id|index>",
+    "Switch to a specific session",
+    true
+  ),
+  createReplCommandSchema(
+    "history",
+    "/history",
+    "/history [--limit N] [--offset N] [--audit] [--status <not_required|approved|rejected|timeout>]",
+    "Show messages in current session",
+    true
+  ),
+  createReplCommandSchema(
+    "run",
+    "/run",
+    "/run <command>",
+    "Execute a read-only shell command",
+    true
+  ),
+  createReplCommandSchema(
+    "add",
+    "/add",
+    "/add <path>",
+    "Add a text file into context collection",
+    true
+  ),
+  createReplCommandSchema(
+    "drop",
+    "/drop",
+    "/drop <path|index> [more paths or indexes]",
+    "Remove file(s) from context collection",
+    true
+  ),
+  createReplCommandSchema(
+    "files",
+    "/files",
+    "/files [--limit N] [--q keyword]",
+    "List context files",
+    true
+  ),
+  createReplCommandSchema(
+    "grep",
+    "/grep",
+    "/grep <pattern> [--limit N]",
+    "Search project text by regex pattern",
+    true
+  ),
+  createReplCommandSchema(
+    "tree",
+    "/tree",
+    "/tree [path] [--depth N]",
+    "Show project directory tree",
+    true
+  )
+] as const;
+
+const REPL_COMMAND_HANDLER_KEYS: ReadonlySet<KnownReplCommandKind> = new Set([
+  "help",
+  "exit",
+  "login",
+  "model",
+  "new",
+  "sessions",
+  "switch",
+  "history",
+  "run",
+  "add",
+  "drop",
+  "files",
+  "grep",
+  "tree"
+]);
+
 export function createDefaultReplCommandRegistry(): CommandRegistry<KnownReplCommandKind> {
   const registry = new CommandRegistry<KnownReplCommandKind>();
-  registry.registerMany([
-    createReplCommand("help", "/help", "/help", "Show this help message", false),
-    createReplCommand(
-      "exit",
-      "/exit",
-      "/exit",
-      "Exit MiniCLI",
-      false,
-      ["/quit"]
-    ),
-    createReplCommand(
-      "login",
-      "/login",
-      "/login <apiKey>",
-      "Save API key to global config",
-      true
-    ),
-    createReplCommand(
-      "model",
-      "/model",
-      "/model [name]",
-      "Show or set current model",
-      true
-    ),
-    createReplCommand(
-      "new",
-      "/new",
-      "/new [title]",
-      "Create and switch to a new session",
-      true
-    ),
-    createReplCommand(
-      "sessions",
-      "/sessions",
-      "/sessions [--limit N] [--offset N] [--q keyword]",
-      "List sessions",
-      true
-    ),
-    createReplCommand(
-      "switch",
-      "/switch",
-      "/switch <#id|index>",
-      "Switch to a specific session",
-      true
-    ),
-    createReplCommand(
-      "history",
-      "/history",
-      "/history [--limit N] [--offset N] [--audit] [--status <not_required|approved|rejected|timeout>]",
-      "Show messages in current session",
-      true
-    ),
-    createReplCommand(
-      "run",
-      "/run",
-      "/run <command>",
-      "Execute a read-only shell command",
-      true
-    ),
-    createReplCommand(
-      "add",
-      "/add",
-      "/add <path>",
-      "Add a text file into context collection",
-      true
-    ),
-    createReplCommand(
-      "drop",
-      "/drop",
-      "/drop <path|index> [more paths or indexes]",
-      "Remove file(s) from context collection",
-      true
-    ),
-    createReplCommand(
-      "files",
-      "/files",
-      "/files [--limit N] [--q keyword]",
-      "List context files",
-      true
-    ),
-    createReplCommand(
-      "grep",
-      "/grep",
-      "/grep <pattern> [--limit N]",
-      "Search project text by regex pattern",
-      true
-    ),
-    createReplCommand(
-      "tree",
-      "/tree",
-      "/tree [path] [--depth N]",
-      "Show project directory tree",
-      true
-    )
-  ]);
+  registerCommandSchemas<KnownReplCommandKind, KnownReplCommandKind>(
+    registry,
+    DEFAULT_REPL_COMMAND_SCHEMAS,
+    REPL_COMMAND_HANDLER_KEYS
+  );
   return registry;
 }
 
