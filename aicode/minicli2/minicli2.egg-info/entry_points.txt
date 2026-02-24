@@ -1,0 +1,2 @@
+[console_scripts]
+minicli2 = src.cli:app

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && pytest -v 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && minicli2 --help 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && minicli2 config --help 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && minicli2 config list 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && python -c \"\nfrom src.provider import GLMProvider\np = GLMProvider\\(\\)\ntry:\n    resp = p.chat\\([{'role': 'user', 'content': 'hi'}], stream=True\\)\n    print\\('Response type:', type\\(resp\\)\\)\n    print\\('Has __anext__:', hasattr\\(resp, '__anext__'\\)\\)\n    for i, chunk in enumerate\\(resp\\):\n        print\\(f'Chunk {i}:', chunk\\)\n        if i > 3:\n            break\nexcept Exception as e:\n    print\\('Error:', e\\)\n\" 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && python -c \"\nfrom src.provider import GLMProvider\np = GLMProvider\\(\\)\nresp = p.chat\\([{'role': 'user', 'content': 'hi'}], stream=True\\)\nprint\\('Is Generator:', isinstance\\(resp, __import__\\('typing'\\).Generator\\)\\)\nfor i, chunk in enumerate\\(resp\\):\n    print\\(f'Chunk {i}:', chunk\\)\n    if i > 2:\n        break\n\" 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && python -c \"from src.commands import chat\" 2>&1)",
+      "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && python -c \"from src.repl import REPL\" 2>&1)",
+      "Bash(python:*)",
+      "WebSearch",
+      "Bash(python3:*)"
+    ]
+  }
+}
