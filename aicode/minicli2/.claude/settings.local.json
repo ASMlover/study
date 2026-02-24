@@ -14,7 +14,8 @@
       "Bash(cd C:/Workspace/Repositories/study/aicode/minicli2 && python -c \"from src.repl import REPL\" 2>&1)",
       "Bash(python:*)",
       "WebSearch",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
