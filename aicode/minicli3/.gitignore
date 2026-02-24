@@ -1,0 +1,17 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Build/packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# Test/runtime temp artifacts
+.pytest_cache/
+pytest-cache-files-*/
+tests/.sandbox/
+
+# Virtual environments
+.venv/
+venv/

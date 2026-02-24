@@ -1,7 +1,0 @@
-typer>=0.16.0
-rich>=14.0.0
-httpx>=0.28.0
-prompt_toolkit>=3.0.0
-
-[dev]
-pytest>=8.0.0
