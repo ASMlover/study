@@ -39,3 +39,4 @@ htmlcov/
 
 # Local config
 .minicli2/
+.claude/
