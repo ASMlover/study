@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minicli3"
+version = "0.1.0"
+description = "Standalone AI agent CLI for GLM-5"
+readme = "README.md"
+requires-python = ">=3.14"
+license = {text = "MIT"}
+authors = [
+  {name = "MiniCLI3 Contributors"}
+]
+dependencies = [
+  "typer>=0.16.0",
+  "rich>=14.0.0",
+  "httpx>=0.28.0",
+  "prompt_toolkit>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+]
+
+[project.scripts]
+minicli3 = "minicli3.cli:app"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["minicli3*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

@@ -1,0 +1,2 @@
+[console_scripts]
+minicli3 = minicli3.cli:app
