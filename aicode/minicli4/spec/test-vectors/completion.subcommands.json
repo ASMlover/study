@@ -1,0 +1,35 @@
+﻿{
+  "kind": "completion_vectors",
+  "version": "v1",
+  "category": "subcommands",
+  "cases": [
+    {
+      "id": "sub-config-root",
+      "input": "/config ",
+      "cursor": 8,
+      "context": {},
+      "expected": ["get", "set", "list", "reset"]
+    },
+    {
+      "id": "sub-session-root",
+      "input": "/session ",
+      "cursor": 9,
+      "context": {},
+      "expected": ["list", "new", "switch", "delete", "rename", "current"]
+    },
+    {
+      "id": "sub-tools-root",
+      "input": "/tools ",
+      "cursor": 7,
+      "context": {},
+      "expected": ["enable", "disable"]
+    },
+    {
+      "id": "sub-agents-root",
+      "input": "/agents ",
+      "cursor": 8,
+      "context": {},
+      "expected": ["list", "set"]
+    }
+  ]
+}

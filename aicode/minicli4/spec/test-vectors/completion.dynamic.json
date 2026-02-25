@@ -1,0 +1,34 @@
+﻿{
+  "kind": "completion_vectors",
+  "version": "v1",
+  "category": "dynamic_arguments",
+  "cases": [
+    {
+      "id": "dyn-session-switch",
+      "input": "/session switch d",
+      "cursor": 17,
+      "context": {
+        "session_ids": ["default", "demo", "feature-x"]
+      },
+      "expected": ["default", "demo"]
+    },
+    {
+      "id": "dyn-config-set-key",
+      "input": "/config set ",
+      "cursor": 12,
+      "context": {
+        "config_keys": ["api_key", "timeout_ms", "max_tokens", "safe_mode"]
+      },
+      "expected": ["api_key", "timeout_ms", "max_tokens", "safe_mode"]
+    },
+    {
+      "id": "dyn-tools-enable",
+      "input": "/tools enable r",
+      "cursor": 15,
+      "context": {
+        "tool_names": ["read_file", "write_file", "run_shell", "grep_text"]
+      },
+      "expected": ["read_file", "run_shell"]
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minicli4.local/spec/events.schema.json",
+  "title": "MiniCLI4 Event Stream Contract",
+  "description": "Normalized runtime and streaming events emitted by CLI/TUI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event", "ts", "session_id", "payload"],
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": [
+        "session.started",
+        "assistant.delta",
+        "assistant.message",
+        "tool.call",
+        "tool.result",
+        "status",
+        "error",
+        "done"
+      ]
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "const": "assistant.delta"
+          }
+        },
+        "required": ["event"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["chunk", "index"],
+            "properties": {
+              "chunk": { "type": "string" },
+              "index": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "const": "tool.call"
+          }
+        },
+        "required": ["event"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tool_call_id", "name", "arguments"],
+            "properties": {
+              "tool_call_id": { "type": "string", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 },
+              "arguments": { "type": "object" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "const": "tool.result"
+          }
+        },
+        "required": ["event"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tool_call_id", "ok", "output"],
+            "properties": {
+              "tool_call_id": { "type": "string", "minLength": 1 },
+              "ok": { "type": "boolean" },
+              "output": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "const": "error"
+          }
+        },
+        "required": ["event"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string", "minLength": 1 },
+              "message": { "type": "string", "minLength": 1 },
+              "retryable": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "event": "assistant.delta",
+      "ts": "2026-02-25T01:23:45Z",
+      "session_id": "default",
+      "trace_id": "trace-1",
+      "payload": {
+        "chunk": "hello",
+        "index": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+﻿{
+  "kind": "completion_vectors",
+  "version": "v1",
+  "category": "command_prefix",
+  "cases": [
+    {
+      "id": "cmd-prefix-empty",
+      "input": "/",
+      "cursor": 1,
+      "context": {},
+      "expected": ["/add", "/agents", "/approve", "/clear", "/compact", "/config", "/context", "/deny", "/doctor", "/exit", "/export", "/files", "/grep", "/help", "/history", "/ls", "/model", "/new", "/permissions", "/pwd", "/read", "/rename", "/run", "/session", "/status", "/switch", "/tools", "/tree", "/version", "/write"]
+    },
+    {
+      "id": "cmd-prefix-co",
+      "input": "/co",
+      "cursor": 3,
+      "context": {},
+      "expected": ["/compact", "/config", "/context"]
+    },
+    {
+      "id": "cmd-prefix-s",
+      "input": "/s",
+      "cursor": 2,
+      "context": {},
+      "expected": ["/session", "/status", "/switch"]
+    },
+    {
+      "id": "cmd-prefix-do",
+      "input": "/do",
+      "cursor": 3,
+      "context": {},
+      "expected": ["/doctor"]
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minicli4.local/spec/commands.schema.json",
+  "title": "MiniCLI4 Slash Command Contract",
+  "description": "Cross-language slash command grammar and metadata contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "commands"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 30,
+      "maxItems": 30,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/command"
+      }
+    }
+  },
+  "$defs": {
+    "permission": {
+      "type": "string",
+      "enum": [
+        "public",
+        "session_read",
+        "session_write",
+        "config_write",
+        "context_read",
+        "context_write",
+        "tool_execute",
+        "tool_control"
+      ]
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "required"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "boolean", "path", "enum"]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "enumValues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "usage", "permission", "subcommands", "aliases", "parameters"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "/help",
+            "/exit",
+            "/clear",
+            "/status",
+            "/version",
+            "/model",
+            "/config",
+            "/session",
+            "/history",
+            "/new",
+            "/switch",
+            "/rename",
+            "/context",
+            "/compact",
+            "/tools",
+            "/permissions",
+            "/grep",
+            "/tree",
+            "/run",
+            "/read",
+            "/write",
+            "/ls",
+            "/pwd",
+            "/export",
+            "/doctor",
+            "/agents",
+            "/approve",
+            "/deny",
+            "/files",
+            "/add"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "usage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "permission": {
+          "$ref": "#/$defs/permission"
+        },
+        "subcommands": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/parameter"
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "version": "v1",
+      "commands": [
+        {
+          "name": "/help",
+          "description": "Show help",
+          "usage": "/help [command]",
+          "permission": "public",
+          "subcommands": [],
+          "aliases": [],
+          "parameters": [
+            {
+              "name": "command",
+              "type": "string",
+              "required": false
+            }
+          ]
+        },
+        {
+          "name": "/config",
+          "description": "Manage config",
+          "usage": "/config <get|set|list|reset> [key] [value]",
+          "permission": "config_write",
+          "subcommands": ["get", "set", "list", "reset"],
+          "aliases": [],
+          "parameters": [
+            {
+              "name": "action",
+              "type": "enum",
+              "required": true,
+              "enumValues": ["get", "set", "list", "reset"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

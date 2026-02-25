@@ -1,0 +1,34 @@
+﻿{
+  "kind": "completion_vectors",
+  "version": "v1",
+  "category": "path_arguments",
+  "cases": [
+    {
+      "id": "path-read-prefix-src",
+      "input": "/read src/",
+      "cursor": 10,
+      "context": {
+        "project_paths": ["README.md", "src/main.ts", "src/repl.ts", "spec/config.schema.json", "tests/unit/repl.test.ts"]
+      },
+      "expected": ["src/main.ts", "src/repl.ts"]
+    },
+    {
+      "id": "path-write-prefix-spec",
+      "input": "/write spec/",
+      "cursor": 12,
+      "context": {
+        "project_paths": ["spec/config.schema.json", "spec/commands.schema.json", "spec/events.schema.json", "src/app.ts"]
+      },
+      "expected": ["spec/commands.schema.json", "spec/config.schema.json", "spec/events.schema.json"]
+    },
+    {
+      "id": "path-tree-prefix-root",
+      "input": "/tree ",
+      "cursor": 6,
+      "context": {
+        "project_paths": ["src", "spec", "tests", "docs"]
+      },
+      "expected": ["docs", "spec", "src", "tests"]
+    }
+  ]
+}

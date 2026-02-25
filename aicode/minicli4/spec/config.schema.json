@@ -1,0 +1,136 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://minicli4.local/spec/config.schema.json",
+  "title": "MiniCLI4 Project Config",
+  "description": "Project-local configuration loaded from .minicli4/config.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model",
+    "base_url",
+    "stream",
+    "timeout_ms",
+    "max_retries",
+    "temperature",
+    "max_tokens",
+    "agent_max_rounds",
+    "safe_mode",
+    "allowed_paths",
+    "shell_allowlist",
+    "slash_completion_mode"
+  ],
+  "properties": {
+    "api_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "GLM API key. May be overridden by GLM_API_KEY env var."
+    },
+    "base_url": {
+      "type": "string",
+      "format": "uri",
+      "default": "https://open.bigmodel.cn/api/paas/v4"
+    },
+    "model": {
+      "type": "string",
+      "const": "glm-5",
+      "default": "glm-5"
+    },
+    "stream": {
+      "type": "boolean",
+      "default": true
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 600000,
+      "default": 120000
+    },
+    "max_retries": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10,
+      "default": 3
+    },
+    "temperature": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2,
+      "default": 0.7
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65536,
+      "default": 4096
+    },
+    "agent_max_rounds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 32,
+      "default": 6
+    },
+    "safe_mode": {
+      "type": "string",
+      "enum": ["strict", "balanced"],
+      "default": "strict"
+    },
+    "allowed_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "default": ["."]
+    },
+    "shell_allowlist": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": ["pwd", "ls", "dir", "cat", "type", "rg"]
+    },
+    "slash_completion_mode": {
+      "type": "string",
+      "enum": ["prefix", "contextual"],
+      "default": "contextual"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "safe_mode": {
+            "const": "strict"
+          }
+        },
+        "required": ["safe_mode"]
+      },
+      "then": {
+        "properties": {
+          "shell_allowlist": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "api_key": "<redacted>",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "model": "glm-5",
+      "stream": true,
+      "timeout_ms": 120000,
+      "max_retries": 3,
+      "temperature": 0.7,
+      "max_tokens": 4096,
+      "agent_max_rounds": 6,
+      "safe_mode": "strict",
+      "allowed_paths": ["."],
+      "shell_allowlist": ["pwd", "ls", "rg"],
+      "slash_completion_mode": "contextual"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+﻿{
+  "name": "minicli4-typescript",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "bin": {
+    "minicli4-ts": "build/src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:unit": "npm run build && node --test build/tests/unit/**/*.test.js",
+    "test:integration": "npm run build && node --test build/tests/integration/**/*.test.js",
+    "test": "npm run test:unit && npm run test:integration"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.2",
+    "typescript": "^5.9.2"
+  }
+}
