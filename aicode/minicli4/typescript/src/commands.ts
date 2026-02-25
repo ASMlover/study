@@ -146,9 +146,15 @@ export function runSlash(ctx: CommandContext, input: string): boolean {
   }
 
   if (cmd === "/status") {
-    ctx.out(`session=${ctx.session.session_id}`);
-    ctx.out(`model=${ctx.config.model}`);
-    ctx.out(`safe_mode=${ctx.config.safe_mode}`);
+    ctx.out("[STATUS]");
+    ctx.out(`  session     : ${ctx.session.session_id}`);
+    ctx.out(`  model       : ${ctx.config.model}`);
+    ctx.out(`  safe_mode   : ${ctx.config.safe_mode}`);
+    ctx.out(`  theme       : ${ctx.config.theme}`);
+    ctx.out(`  motion      : ${ctx.config.motion}`);
+    ctx.out(`  stream      : ${ctx.config.stream}`);
+    ctx.out(`  timeout_ms  : ${ctx.config.timeout_ms}`);
+    ctx.out(`  max_retries : ${ctx.config.max_retries}`);
     return true;
   }
 
@@ -204,6 +210,10 @@ export function runSlash(ctx: CommandContext, input: string): boolean {
         next.temperature = Number(value);
       } else if (key === "safe_mode") {
         next.safe_mode = value === "balanced" ? "balanced" : "strict";
+      } else if (key === "theme") {
+        next.theme = value === "light" ? "light" : "dark";
+      } else if (key === "motion") {
+        next.motion = value === "minimal" ? "minimal" : "full";
       } else if (key === "allowed_paths" || key === "shell_allowlist") {
         (next as Record<string, unknown>)[key] = value.split(",").map((x) => x.trim()).filter(Boolean);
       } else {
@@ -326,8 +336,12 @@ export function runSlash(ctx: CommandContext, input: string): boolean {
 
   if (cmd === "/context") {
     const chars = ctx.session.messages.reduce((n, m) => n + m.content.length, 0);
+    const estimatedTokens = Math.floor(chars / 4);
+    const tokenBudget = Math.max(1, ctx.config.max_tokens);
+    const usagePercent = Math.round((estimatedTokens / tokenBudget) * 100);
     ctx.out(`messages=${ctx.session.messages.length}`);
-    ctx.out(`tokens~=${Math.floor(chars / 4)}`);
+    ctx.out(`tokens~=${estimatedTokens}`);
+    ctx.out(`context_usage~=${usagePercent}% (${estimatedTokens}/${tokenBudget})`);
     return true;
   }
 
@@ -459,7 +473,12 @@ export function runSlash(ctx: CommandContext, input: string): boolean {
   }
 
   if (cmd === "/doctor") {
-    ctx.out("doctor: runtime reachable");
+    ctx.out("[DOCTOR]");
+    ctx.out("  runtime     : reachable");
+    ctx.out(`  model_lock  : ${ctx.config.model === "glm-5" ? "ok" : "invalid"}`);
+    ctx.out(`  api_key     : ${ctx.config.api_key.trim().length > 0 ? "set" : "missing"}`);
+    ctx.out(`  tools       : ${ctx.tools.listToolNames().length}`);
+    ctx.out(`  safe_mode   : ${ctx.config.safe_mode}`);
     return true;
   }
 

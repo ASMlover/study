@@ -208,6 +208,11 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 - 2026-02-25: Repo uses root-level `subagents/` with 8 role files.
 - 2026-02-25: Plan tracking uses milestone + task IDs.
 - 2026-02-25: Strict cross-language command parity remains a hard requirement.
+- 2026-02-25: TypeScript TUI iteration moved to append-only, colorized semantic labels (`[YOU]/[AI]/[SYS]`), and streaming markdown rendering for product-style CLI output.
+- 2026-02-25: TypeScript TUI added light/dark theme detection (`MINICLI4_THEME`/`COLORFGBG`), markdown table+code-line rendering, and product-style cards for `/status` and `/doctor`.
+- 2026-02-25: TypeScript config now supports `theme` via `/config set theme <dark|light>`, AI/system output prefixes were removed for cleaner product presentation, and thinking animation was refined to concise professional motion text.
+- 2026-02-25: TypeScript TUI thinking spinner upgraded to icon-forward branded animation (`MiniCLI4` logo frames + stage icons + aura pulse) instead of plain character-only frame cycling.
+- 2026-02-25: `/context` now reports estimated context usage percentage (`context_usage~`) based on estimated tokens vs `max_tokens`, enabling proactive archive/clear decisions.
 
 
 
