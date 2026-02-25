@@ -16,18 +16,110 @@ export interface CommandContext {
   pendingApproval: () => string;
 }
 
-export const COMMANDS: string[] = [
-  "/help", "/exit", "/clear", "/status", "/version", "/model", "/config", "/session", "/history", "/new",
-  "/switch", "/rename", "/context", "/compact", "/tools", "/permissions", "/grep", "/tree", "/run", "/read",
-  "/write", "/ls", "/pwd", "/export", "/doctor", "/agents", "/approve", "/deny", "/files", "/add"
+interface CommandHelp {
+  name: string;
+  description: string;
+  usage: string;
+  category: "Core" | "Session" | "Context" | "Tools" | "System";
+  subcommands?: string[];
+}
+
+const COMMAND_HELP: CommandHelp[] = [
+  { name: "/help", description: "Show slash command help.", usage: "/help [command]", category: "Core" },
+  { name: "/exit", description: "Exit REPL.", usage: "/exit", category: "Core" },
+  { name: "/clear", description: "Clear current session messages.", usage: "/clear", category: "Session" },
+  { name: "/status", description: "Show runtime status summary.", usage: "/status", category: "System" },
+  { name: "/version", description: "Show CLI version.", usage: "/version", category: "System" },
+  { name: "/model", description: "Show current model (locked to glm-5).", usage: "/model", category: "System" },
+  {
+    name: "/config",
+    description: "Read or update local project configuration.",
+    usage: "/config <get|set|list|reset> [key] [value]",
+    category: "System",
+    subcommands: ["get", "set", "list", "reset"]
+  },
+  {
+    name: "/session",
+    description: "Session lifecycle operations.",
+    usage: "/session <list|new|switch|delete|rename|current> [args]",
+    category: "Session",
+    subcommands: ["list", "new", "switch", "delete", "rename", "current"]
+  },
+  { name: "/history", description: "Show recent message history.", usage: "/history", category: "Session" },
+  { name: "/new", description: "Create and switch to a new session.", usage: "/new [session_id]", category: "Session" },
+  { name: "/switch", description: "Switch active session.", usage: "/switch <session_id>", category: "Session" },
+  { name: "/rename", description: "Rename current session.", usage: "/rename <new_session_id>", category: "Session" },
+  { name: "/context", description: "Show context usage estimate.", usage: "/context", category: "Context" },
+  { name: "/compact", description: "Compact old context messages.", usage: "/compact", category: "Context" },
+  {
+    name: "/tools",
+    description: "List or toggle tool state.",
+    usage: "/tools <enable|disable> [tool_name]",
+    category: "Tools",
+    subcommands: ["enable", "disable"]
+  },
+  { name: "/permissions", description: "Show safety and permission settings.", usage: "/permissions", category: "System" },
+  { name: "/grep", description: "Search project text by regex.", usage: "/grep <pattern> [path]", category: "Tools" },
+  { name: "/tree", description: "Show project tree view.", usage: "/tree [path] [depth]", category: "Tools" },
+  { name: "/run", description: "Run shell command under safety policy.", usage: "/run <command>", category: "Tools" },
+  { name: "/read", description: "Read text file content.", usage: "/read <path>", category: "Tools" },
+  { name: "/write", description: "Write text to file.", usage: "/write <path> <content>", category: "Tools" },
+  { name: "/ls", description: "List directory entries.", usage: "/ls [path]", category: "Tools" },
+  { name: "/pwd", description: "Print project root path.", usage: "/pwd", category: "Tools" },
+  { name: "/export", description: "Export current session messages.", usage: "/export [output_path]", category: "Session" },
+  { name: "/doctor", description: "Run runtime diagnostics.", usage: "/doctor", category: "System" },
+  {
+    name: "/agents",
+    description: "Inspect or set agent profiles.",
+    usage: "/agents <list|set> [profile]",
+    category: "System",
+    subcommands: ["list", "set"]
+  },
+  { name: "/approve", description: "Approve pending guarded command.", usage: "/approve", category: "Tools" },
+  { name: "/deny", description: "Deny pending guarded command.", usage: "/deny", category: "Tools" },
+  { name: "/files", description: "Show context file list (reserved).", usage: "/files", category: "Context" },
+  { name: "/add", description: "Add context file (reserved).", usage: "/add <path>", category: "Context" }
 ];
 
-function showHelp(ctx: CommandContext): void {
-  ctx.out("Slash commands:");
-  for (const cmd of COMMANDS) {
-    ctx.out(`- ${cmd}`);
+export const COMMANDS: string[] = COMMAND_HELP.map((item) => item.name);
+
+function showCommandHelp(ctx: CommandContext, command: string): void {
+  const key = command.startsWith("/") ? command : `/${command}`;
+  const item = COMMAND_HELP.find((entry) => entry.name === key);
+  if (!item) {
+    ctx.out(`Unknown command: ${command}`);
+    ctx.out("Use /help to list all commands.");
+    return;
   }
-  ctx.out("Subcommands: /config <get|set|list|reset>, /session <list|new|switch|delete|rename|current>, /tools <enable|disable>, /agents <list|set>");
+
+  ctx.out(`${item.name} - ${item.description}`);
+  ctx.out(`Usage: ${item.usage}`);
+  if (item.subcommands && item.subcommands.length > 0) {
+    ctx.out(`Subcommands: ${item.subcommands.join(", ")}`);
+  }
+}
+
+function showHelp(ctx: CommandContext): void {
+  const categories: Array<CommandHelp["category"]> = ["Core", "Session", "Context", "Tools", "System"];
+  ctx.out("MiniCLI4 Help");
+  ctx.out("Usage: /help [command]");
+  ctx.out("");
+
+  for (const category of categories) {
+    const items = COMMAND_HELP.filter((item) => item.category === category);
+    if (items.length === 0) {
+      continue;
+    }
+    ctx.out(`${category}:`);
+    for (const item of items) {
+      ctx.out(`  ${item.name.padEnd(13)} ${item.description}`);
+    }
+    ctx.out("");
+  }
+
+  ctx.out("Tips:");
+  ctx.out("  Tab completes commands and arguments.");
+  ctx.out("  Use /help <command> for command details.");
 }
 
 export function runSlash(ctx: CommandContext, input: string): boolean {
@@ -44,7 +136,12 @@ export function runSlash(ctx: CommandContext, input: string): boolean {
   }
 
   if (cmd === "/help") {
-    showHelp(ctx);
+    const target = parts[1];
+    if (target) {
+      showCommandHelp(ctx, target);
+    } else {
+      showHelp(ctx);
+    }
     return true;
   }
 

@@ -1,4 +1,4 @@
-﻿import readline from "node:readline";
+import readline from "node:readline";
 import { loadConfig, RuntimeConfig } from "./config";
 import { runMultiAgentRound } from "./agent";
 import { complete } from "./completion";
@@ -7,6 +7,7 @@ import { SessionRecord, SessionStore } from "./session";
 import { GLMProvider } from "./provider";
 import { ToolRegistry } from "./tools";
 import { PaneState, TwoPaneTui } from "./tui";
+import { MarkdownAnsiStreamRenderer } from "./markdown";
 
 export interface ReplRuntime {
   input: NodeJS.ReadableStream;
@@ -24,7 +25,8 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
 
   const provider = new GLMProvider(config);
   let tools = new ToolRegistry(projectRoot, config);
-  const tui = new TwoPaneTui(runtime.output);
+  const tui = new TwoPaneTui(runtime.output as NodeJS.WritableStream & { isTTY?: boolean; columns?: number });
+  const isTTY = Boolean((runtime.output as NodeJS.WritableStream & { isTTY?: boolean }).isTTY);
 
   const pane: PaneState = {
     sessionId: session.session_id,
@@ -35,11 +37,25 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
     pendingApproval: "none"
   };
 
-  const display: string[] = [];
   const pushLine = (line: string): void => {
-    display.push(line);
+    if (isTTY) {
+      tui.printEvent(line);
+      return;
+    }
     runtime.stdout(`${line}\n`);
-    tui.render(display, pane);
+  };
+
+  const pushLines = (lines: string[]): void => {
+    if (lines.length === 0) {
+      return;
+    }
+    if (isTTY) {
+      for (const line of lines) {
+        tui.printEvent(line);
+      }
+      return;
+    }
+    runtime.stdout(`${lines.join("\n")}\n`);
   };
 
   const rl = readline.createInterface({
@@ -60,6 +76,9 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
 
   runtime.stdout("MiniCLI4 TypeScript REPL\n");
   runtime.stdout("Type /help for commands.\n");
+  if (isTTY) {
+    tui.start(pane);
+  }
   rl.setPrompt("> ");
   rl.prompt();
 
@@ -67,11 +86,15 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
   readline.emitKeypressEvents(inputStream, rl);
   const onKeypress = (_str: string, key: readline.Key): void => {
     if (key.ctrl && key.name === "l") {
-      tui.render(display, pane);
+      if (isTTY) {
+        tui.printEvent("[ui] append-only mode; showing latest status");
+        tui.printStatus(pane);
+      }
       rl.prompt();
       return;
     }
     if (key.name === "f1") {
+      const lines: string[] = [];
       runSlash(
         {
           projectRoot,
@@ -81,13 +104,19 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
           tools,
           setConfig: () => {},
           setSession: () => {},
-          out: pushLine,
+          out: (line) => {
+            lines.push(line);
+          },
           setPendingApproval: () => {},
           clearPendingApproval: () => {},
           pendingApproval: () => pendingApproval
         },
         "/help"
       );
+      if (isTTY) {
+        tui.announceInput("/help");
+      }
+      pushLines(lines);
       rl.prompt();
       return;
     }
@@ -105,11 +134,13 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
     pane.mode = config.safe_mode;
     pane.tools = tools.listToolNames().join(",");
     tui.applyConfig(next);
+    tui.updateStatus(pane);
   };
 
   const setSession = (next: SessionRecord): void => {
     session = next;
     pane.sessionId = next.session_id;
+    tui.updateStatus(pane);
   };
 
   rl.on("line", async (line: string) => {
@@ -121,6 +152,10 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
 
     try {
       if (input.startsWith("/")) {
+        if (isTTY) {
+          tui.announceInput(input);
+        }
+        const commandLines: string[] = [];
         const keep = runSlash(
           {
             projectRoot,
@@ -130,7 +165,9 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
             tools,
             setConfig,
             setSession,
-            out: pushLine,
+            out: (line) => {
+              commandLines.push(line);
+            },
             setPendingApproval: (value) => {
               pendingApproval = value;
               pane.pendingApproval = value;
@@ -144,6 +181,9 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
           input
         );
 
+        pushLines(commandLines);
+        tui.updateStatus(pane);
+
         if (!keep) {
           rl.close();
           return;
@@ -154,33 +194,91 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
 
       session.messages.push({ role: "user", content: input, created_at: new Date().toISOString() });
       sessions.save(session);
-      pushLine(`user: ${input}`);
-      pane.stage = "planner";
 
+      pane.stage = "planner";
+      tui.updateStatus(pane);
+      if (isTTY) {
+        tui.startThinking();
+      }
+
+      let streamStarted = false;
+      const markdownRenderer = new MarkdownAnsiStreamRenderer({ colorize: isTTY });
       const result = await runMultiAgentRound(input, session.messages, provider, tools, config, {
-        onStage: (stage, detail) => {
+        onStage: (stage, _detail) => {
           pane.stage = stage;
-          pushLine(`[stage:${stage}] ${detail}`);
+          tui.updateStatus(pane);
         },
-        onTool: (name, output) => {
-          pushLine(`[tool:${name}] ${output.slice(0, 160)}`);
-        },
+        onTool: (_name, _output) => {},
         onDelta: (chunk) => {
-          if (display.length === 0 || !display[display.length - 1].startsWith("assistant: ")) {
-            display.push("assistant: ");
+          const rendered = markdownRenderer.write(chunk);
+          if (!rendered) {
+            return;
           }
-          display[display.length - 1] += chunk;
-          tui.render(display, pane);
+          if (!streamStarted) {
+            streamStarted = true;
+            if (isTTY) {
+              tui.stopThinking();
+              tui.startAssistantStream();
+            } else {
+              runtime.stdout("✦ ");
+            }
+          }
+          if (isTTY) {
+            tui.appendAssistantChunk(rendered);
+          } else {
+            runtime.stdout(rendered);
+          }
         }
       });
+
+      const tail = markdownRenderer.flush();
+      if (tail.length > 0) {
+        if (!streamStarted) {
+          streamStarted = true;
+          if (isTTY) {
+            tui.stopThinking();
+            tui.startAssistantStream();
+          } else {
+            runtime.stdout("✦ ");
+          }
+        }
+        if (isTTY) {
+          tui.appendAssistantChunk(tail);
+        } else {
+          runtime.stdout(tail);
+        }
+      }
+
+      if (streamStarted) {
+        if (isTTY) {
+          tui.stopThinking();
+          tui.endAssistantStream();
+        } else {
+          runtime.stdout("\n");
+        }
+      } else {
+        if (isTTY) {
+          tui.stopThinking();
+          tui.startAssistantStream();
+          tui.appendAssistantChunk(result.final);
+          tui.endAssistantStream();
+        } else {
+          runtime.stdout(`✦ ${result.final}\n`);
+        }
+      }
 
       session.messages.push({ role: "assistant", content: result.final, created_at: new Date().toISOString() });
       sessions.save(session);
       pane.stage = "idle";
+      tui.updateStatus(pane);
     } catch (error) {
       const e = error as Error;
+      if (isTTY) {
+        tui.stopThinking();
+      }
       runtime.stderr(`[error] ${e.message}\n`);
       pane.stage = "error";
+      tui.updateStatus(pane);
     }
 
     rl.prompt();

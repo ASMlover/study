@@ -1,4 +1,5 @@
-﻿import { RuntimeConfig } from "./config";
+import { RuntimeConfig } from "./config";
+import { ansi } from "./ansi";
 
 export interface PaneState {
   sessionId: string;
@@ -11,44 +12,131 @@ export interface PaneState {
 
 export class TwoPaneTui {
   private readonly isTTY: boolean;
+  private streamOpen = false;
+  private turn = 0;
+  private lastStatusSignature = "";
+  private thinkingTimer: NodeJS.Timeout | null = null;
+  private thinkingFrame = 0;
+  private thinkingActive = false;
+  private readonly thinkingFrames = [
+    "[thinking] ⠋ planning",
+    "[thinking] ⠙ planning",
+    "[thinking] ⠹ reasoning",
+    "[thinking] ⠸ reasoning",
+    "[thinking] ⠼ drafting",
+    "[thinking] ⠴ drafting",
+    "[thinking] ⠦ refining",
+    "[thinking] ⠧ refining",
+    "[thinking] ⠇ finalizing",
+    "[thinking] ⠏ finalizing"
+  ];
+
   constructor(private readonly output: NodeJS.WritableStream & { isTTY?: boolean; columns?: number }) {
     this.isTTY = Boolean(output.isTTY);
   }
 
-  render(messages: string[], status: PaneState): void {
+  start(status: PaneState): void {
     if (!this.isTTY) {
       return;
     }
-    const width = this.output.columns ?? 120;
-    const leftWidth = Math.max(50, Math.floor(width * 0.7));
-    const rightWidth = Math.max(24, width - leftWidth - 3);
+    this.output.write(`${ansi.bold(ansi.cyan("MiniCLI4 TUI"))} ${ansi.gray("(append-only)")}\n`);
+    this.output.write(`${ansi.gray("keys:")} ${ansi.blue("Tab")} next/prev | ${ansi.blue("Ctrl+C")} stop | ${ansi.blue("Ctrl+L")} status | ${ansi.blue("F1")} /help | ${ansi.blue("Esc")} close menu\n`);
+    this.lastStatusSignature = this.signature(status);
+  }
 
-    const left = messages.slice(-18).map((line) => fit(line, leftWidth));
-    const right = [
-      `session: ${status.sessionId}`,
-      `model: ${status.model}`,
-      `stage: ${status.stage}`,
-      `tools: ${status.tools}`,
-      `mode: ${status.mode}`,
-      `approval: ${status.pendingApproval}`,
-      "",
-      "keys:",
-      "Tab/Shift+Tab complete",
-      "Ctrl+C interrupt",
-      "Ctrl+L clear screen",
-      "F1 help",
-      "Esc hide candidates"
-    ].map((line) => fit(line, rightWidth));
-
-    const rows = Math.max(left.length, right.length, 16);
-    const out: string[] = ["\x1b[2J\x1b[H", `MiniCLI4 TUI ${"-".repeat(Math.max(0, width - 13))}`];
-    for (let i = 0; i < rows; i += 1) {
-      const l = (left[i] ?? "").padEnd(leftWidth, " ");
-      const r = right[i] ?? "";
-      out.push(`${l} | ${r}`);
+  announceInput(input: string): void {
+    if (!this.isTTY) {
+      return;
     }
-    out.push("-".repeat(width));
-    this.output.write(`${out.join("\n")}\n`);
+    this.stopThinking();
+    this.turn += 1;
+    this.endAssistantStream();
+    this.output.write(`\n${ansi.gray(`[${String(this.turn).padStart(2, "0")}]`)} ${ansi.green(">")} ${ansi.bold(input)}\n`);
+  }
+
+  printEvent(line: string): void {
+    if (!this.isTTY) {
+      return;
+    }
+    this.stopThinking();
+    this.endAssistantStream();
+    this.output.write(`${ansi.gray("•")} ${line}\n`);
+  }
+
+  updateStatus(status: PaneState): void {
+    if (!this.isTTY) {
+      return;
+    }
+    this.lastStatusSignature = this.signature(status);
+  }
+
+  printStatus(status: PaneState): void {
+    if (!this.isTTY) {
+      return;
+    }
+    this.stopThinking();
+    this.lastStatusSignature = this.signature(status);
+    this.endAssistantStream();
+    this.output.write(`${ansi.yellow("[status]")} session=${ansi.cyan(status.sessionId)} model=${ansi.magenta(status.model)} stage=${ansi.blue(status.stage)} mode=${ansi.green(status.mode)} approval=${ansi.yellow(status.pendingApproval)}\n`);
+  }
+
+  startAssistantStream(): void {
+    if (!this.isTTY) {
+      return;
+    }
+    this.stopThinking();
+    if (this.streamOpen) {
+      return;
+    }
+    this.streamOpen = true;
+    this.output.write(`${ansi.magenta("✦")} `);
+  }
+
+  appendAssistantChunk(chunk: string): void {
+    if (!this.isTTY) {
+      return;
+    }
+    if (!this.streamOpen) {
+      this.startAssistantStream();
+    }
+    this.output.write(chunk);
+  }
+
+  endAssistantStream(): void {
+    if (!this.isTTY || !this.streamOpen) {
+      return;
+    }
+    this.output.write("\n");
+    this.streamOpen = false;
+  }
+
+  startThinking(): void {
+    if (!this.isTTY || this.thinkingActive) {
+      return;
+    }
+    this.endAssistantStream();
+    this.thinkingActive = true;
+    this.thinkingFrame = 0;
+    this.output.write(`\r\x1b[2K${ansi.blue(this.thinkingFrames[this.thinkingFrame])}`);
+    this.thinkingTimer = setInterval(() => {
+      if (!this.thinkingActive) {
+        return;
+      }
+      this.thinkingFrame = (this.thinkingFrame + 1) % this.thinkingFrames.length;
+      this.output.write(`\r\x1b[2K${ansi.blue(this.thinkingFrames[this.thinkingFrame])}`);
+    }, 120);
+  }
+
+  stopThinking(): void {
+    if (!this.isTTY || !this.thinkingActive) {
+      return;
+    }
+    if (this.thinkingTimer) {
+      clearInterval(this.thinkingTimer);
+      this.thinkingTimer = null;
+    }
+    this.thinkingActive = false;
+    this.output.write("\r\x1b[2K");
   }
 
   printLine(text: string): void {
@@ -58,14 +146,8 @@ export class TwoPaneTui {
   applyConfig(_config: RuntimeConfig): void {
     // reserved for future style/runtime changes
   }
-}
 
-function fit(text: string, width: number): string {
-  if (text.length <= width) {
-    return text;
+  private signature(status: PaneState): string {
+    return `${status.sessionId}|${status.model}|${status.stage}|${status.mode}|${status.pendingApproval}`;
   }
-  if (width <= 1) {
-    return text.slice(0, width);
-  }
-  return `${text.slice(0, width - 1)}...`;
 }
