@@ -1,8 +1,11 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
+import { detectAnsiTheme } from "./ansi";
 
 export type SafeMode = "strict" | "balanced";
 export type CompletionMode = "prefix" | "contextual";
+export type ThemeMode = "dark" | "light";
+export type MotionMode = "full" | "minimal";
 
 export interface RuntimeConfig {
   api_key: string;
@@ -15,6 +18,8 @@ export interface RuntimeConfig {
   max_tokens: number;
   agent_max_rounds: number;
   safe_mode: SafeMode;
+  theme: ThemeMode;
+  motion: MotionMode;
   allowed_paths: string[];
   shell_allowlist: string[];
   slash_completion_mode: CompletionMode;
@@ -31,6 +36,8 @@ export const DEFAULT_CONFIG: RuntimeConfig = {
   max_tokens: 4096,
   agent_max_rounds: 6,
   safe_mode: "strict",
+  theme: detectAnsiTheme(),
+  motion: "full",
   allowed_paths: ["."],
   shell_allowlist: ["pwd", "ls", "dir", "cat", "type", "rg"],
   slash_completion_mode: "contextual"
@@ -59,11 +66,14 @@ function ensureState(projectRoot: string): void {
 
 function coerceConfig(raw: Partial<RuntimeConfig>): RuntimeConfig {
   const apiKeyFromEnv = process.env.GLM_API_KEY;
+  const themeFromEnv = detectAnsiTheme();
   const merged: RuntimeConfig = {
     ...DEFAULT_CONFIG,
     ...raw,
     model: "glm-5",
-    api_key: apiKeyFromEnv && apiKeyFromEnv.trim().length > 0 ? apiKeyFromEnv : (raw.api_key ?? "")
+    api_key: apiKeyFromEnv && apiKeyFromEnv.trim().length > 0 ? apiKeyFromEnv : (raw.api_key ?? ""),
+    theme: raw.theme === "light" || raw.theme === "dark" ? raw.theme : themeFromEnv,
+    motion: raw.motion === "minimal" ? "minimal" : "full"
   };
   return merged;
 }

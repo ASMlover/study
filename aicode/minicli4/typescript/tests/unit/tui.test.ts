@@ -43,12 +43,14 @@ test("tui uses append-only output without full-screen clear", () => {
   const text = chunks.join("");
   const plain = stripAnsi(text);
   assert.doesNotMatch(text, /\x1b\[2J/);
-  assert.match(plain, /MiniCLI4 TUI \(append-only\)/);
-  assert.match(plain, /\[01\] > \/help/);
+  assert.match(plain, /MiniCLI4 TypeScript Agent CLI/);
+  assert.match(plain, /\[\d{2}:\d{2}:\d{2}\] \[YOU 01\] \/help/);
   assert.match(plain, /MiniCLI4 Help/);
-  assert.match(plain, /\[status\] session=default model=glm-5 stage=planner mode=strict approval=none/);
-  assert.match(plain, /\[thinking\]/);
-  assert.match(plain, /✦ Hello world/);
+  assert.match(plain, /\[STATUS\] session=default model=glm-5 stage=planner mode=strict approval=none/);
+  assert.match(plain, /(Thinking|Reasoning|Drafting|Refining|Finalizing)/);
+  assert.match(plain, /MiniCLI4/);
+  assert.match(plain, /(🧠|🧭|🛠|✨|🚀)/);
+  assert.match(plain, /Hello world/);
 });
 
 test("updateStatus is silent and printStatus is explicit", () => {
@@ -69,6 +71,6 @@ test("updateStatus is silent and printStatus is explicit", () => {
   tui.printStatus(makePane({ stage: "planner" }));
 
   const text = stripAnsi(chunks.join(""));
-  const statusCount = (text.match(/\[status\]/g) ?? []).length;
+  const statusCount = (text.match(/\[STATUS\]/g) ?? []).length;
   assert.equal(statusCount, 1);
 });

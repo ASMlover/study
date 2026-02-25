@@ -8,6 +8,7 @@ import { GLMProvider } from "./provider";
 import { ToolRegistry } from "./tools";
 import { PaneState, TwoPaneTui } from "./tui";
 import { MarkdownAnsiStreamRenderer } from "./markdown";
+import { setAnsiTheme } from "./ansi";
 
 export interface ReplRuntime {
   input: NodeJS.ReadableStream;
@@ -19,6 +20,7 @@ export interface ReplRuntime {
 export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): readline.Interface {
   const loaded = loadConfig(projectRoot);
   let config: RuntimeConfig = loaded.config;
+  setAnsiTheme(config.theme);
   const sessions = new SessionStore(loaded.stateDir);
   let session: SessionRecord = sessions.current();
   let pendingApproval = "";
@@ -77,6 +79,7 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
   runtime.stdout("MiniCLI4 TypeScript REPL\n");
   runtime.stdout("Type /help for commands.\n");
   if (isTTY) {
+    tui.applyConfig(config);
     tui.start(pane);
   }
   rl.setPrompt("> ");
@@ -129,6 +132,7 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
 
   const setConfig = (next: RuntimeConfig): void => {
     config = next;
+    setAnsiTheme(next.theme);
     tools = new ToolRegistry(projectRoot, config);
     pane.model = config.model;
     pane.mode = config.safe_mode;
@@ -149,12 +153,12 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
       rl.prompt();
       return;
     }
+    if (isTTY) {
+      tui.announceInput(input);
+    }
 
     try {
       if (input.startsWith("/")) {
-        if (isTTY) {
-          tui.announceInput(input);
-        }
         const commandLines: string[] = [];
         const keep = runSlash(
           {
@@ -219,8 +223,6 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
             if (isTTY) {
               tui.stopThinking();
               tui.startAssistantStream();
-            } else {
-              runtime.stdout("✦ ");
             }
           }
           if (isTTY) {
@@ -238,8 +240,6 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
           if (isTTY) {
             tui.stopThinking();
             tui.startAssistantStream();
-          } else {
-            runtime.stdout("✦ ");
           }
         }
         if (isTTY) {
@@ -257,13 +257,15 @@ export function startRepl(runtime: ReplRuntime, projectRoot = process.cwd()): re
           runtime.stdout("\n");
         }
       } else {
+        const nonStreamRenderer = new MarkdownAnsiStreamRenderer({ colorize: isTTY });
+        const fallbackRendered = `${nonStreamRenderer.write(`${result.final}\n`)}${nonStreamRenderer.flush()}`.replace(/\n$/, "");
         if (isTTY) {
           tui.stopThinking();
           tui.startAssistantStream();
-          tui.appendAssistantChunk(result.final);
+          tui.appendAssistantChunk(fallbackRendered);
           tui.endAssistantStream();
         } else {
-          runtime.stdout(`✦ ${result.final}\n`);
+          runtime.stdout(`${fallbackRendered}\n`);
         }
       }
 
