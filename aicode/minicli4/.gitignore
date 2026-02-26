@@ -1,3 +1,5 @@
 ﻿typescript/node_modules/
 typescript/build/
 .minicli4/
+python/.pytest_cache/
+python/**/__pycache__/

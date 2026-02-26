@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minicli4-py"
+version = "0.1.0"
+description = "MiniCLI4 Python parity implementation"
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+minicli4-py = "minicli4_py.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

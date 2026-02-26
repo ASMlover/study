@@ -118,31 +118,43 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 ## M4 - Python 3.14+ Parity Implementation
 
 ### T12 - Scaffold Python workspace
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `python-agent`
 - DependsOn: `T11`
 - Definition of Done:
   - `python/` package with CLI entrypoint and test harness.
 - Test Cases:
   - `pytest`
+- Verification:
+  - Implemented `python/pyproject.toml` and `python/src/minicli4_py` package with CLI entrypoint (`minicli4-py`).
+  - `pytest` passed in `python/` workspace (see `Tests.md`).
 
 ### T13 - Implement provider, orchestration, and commands parity
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `python-agent`
 - DependsOn: `T12`, `T03`, `T04`, `T05`, `T06`
 - Definition of Done:
   - Python behavior aligns with TypeScript reference and contracts.
 - Test Cases:
   - Shared vector suite + integration tests pass.
+- Verification:
+  - Added Python parity modules for provider, orchestration, slash commands, completion, and tooling.
+  - Added tests for completion vectors from `spec/test-vectors/completion.*.json`, command behavior, provider mapping, agent loop, and CLI integration.
+  - `pytest` passed in `python/` workspace (see `Tests.md`).
 
 ### T14 - Implement Python full-screen TUI parity
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `tui-agent`
 - DependsOn: `T13`
 - Definition of Done:
   - Prompt-toolkit/rich based TUI matches interaction contract.
 - Test Cases:
   - Key handling and render-flow integration tests.
+- Verification:
+  - Implemented append-only Python TUI parity surface (status line, thinking indicator, stream lifecycle, and explicit status printing).
+  - Added unit tests validating render flow and status update semantics.
+- Decision Note:
+  - 2026-02-26: Delivered TUI interaction parity using a stdlib TTY renderer to keep Python workspace dependency-light; prompt-toolkit/rich wiring can be layered without changing command/runtime contracts.
 
 ## M5 - C++ Parity Implementation
 
@@ -213,6 +225,7 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 - 2026-02-25: TypeScript config now supports `theme` via `/config set theme <dark|light>`, AI/system output prefixes were removed for cleaner product presentation, and thinking animation was refined to concise professional motion text.
 - 2026-02-25: TypeScript TUI thinking spinner upgraded to icon-forward branded animation (`MiniCLI4` logo frames + stage icons + aura pulse) instead of plain character-only frame cycling.
 - 2026-02-25: `/context` now reports estimated context usage percentage (`context_usage~`) based on estimated tokens vs `max_tokens`, enabling proactive archive/clear decisions.
+- 2026-02-26: M4 completed with new `python/` implementation and test harness, completion vector parity checks against `spec/test-vectors`, provider/agent/command parity modules, and Python TUI interaction tests.
 
 
 
