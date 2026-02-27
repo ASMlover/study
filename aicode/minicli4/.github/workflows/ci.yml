@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    name: contracts-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: typescript/package-lock.json
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install TypeScript dependencies
+        run: npm ci
+        working-directory: typescript
+
+      - name: Run cross-language contracts
+        run: python scripts/run_contracts.py --json-report .minicli4/logs/contracts-${{ matrix.os }}.json
+
+      - name: Upload contract report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contracts-${{ matrix.os }}
+          path: .minicli4/logs/contracts-${{ matrix.os }}.json
+
+      - name: Upload TypeScript build artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typescript-build-${{ matrix.os }}
+          path: typescript/build
+
+      - name: Upload C++ smoke artifact
+        if: success() && runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minicli4-cpp-linux
+          path: build/cpp/minicli4-cpp
+
+      - name: Upload C++ smoke artifact (Windows)
+        if: success() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: minicli4-cpp-windows
+          path: build/cpp/Debug/minicli4-cpp.exe

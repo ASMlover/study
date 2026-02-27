@@ -207,31 +207,55 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 ## M6 - Cross-language QA and Release
 
 ### T18 - Build shared contract test runner
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `qa-release-agent`
 - DependsOn: `T14`, `T17`
 - Definition of Done:
   - Single command runs contract vectors against all three implementations.
 - Test Cases:
   - Runner returns pass/fail per language and aggregate summary.
+- Verification:
+  - Added root cross-language runner `scripts/run_contracts.py`.
+  - Runner executes shared completion vector contract checks for TypeScript and Python implementations, C++ ctest contract coverage, plus CLI smoke checks.
+  - Runner prints pass/fail per language and aggregate summary, and can emit machine-readable report JSON with `--json-report`.
+  - Local verification command:
+    - `python scripts/run_contracts.py --json-report .minicli4/logs/contracts-local.json`
+  - Local result:
+    - `typescript: PASS`
+    - `python: PASS`
+    - `cpp: PASS`
+    - `aggregate: PASS`
 
 ### T19 - Add CI matrix and release checks
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `qa-release-agent`
 - DependsOn: `T18`
 - Definition of Done:
   - Windows/Linux CI covers build, test, vectors, and smoke artifacts.
 - Test Cases:
   - CI dry-run scripts pass locally where supported.
+- Verification:
+  - Added GitHub Actions matrix workflow at `.github/workflows/ci.yml` for `ubuntu-latest` and `windows-latest`.
+  - Workflow sets up Node 22 and Python 3.14, installs TypeScript dependencies, and runs:
+    - `python scripts/run_contracts.py --json-report .minicli4/logs/contracts-${{ matrix.os }}.json`
+  - Workflow uploads:
+    - Contract summary report artifact per OS.
+    - TypeScript build artifact per OS.
+    - C++ smoke binary artifact per OS.
+  - Local CI-dry-run equivalent verification (where supported):
+    - `python scripts/run_contracts.py --json-report .minicli4/logs/contracts-local.json` -> aggregate `PASS`.
 
 ### T20 - Milestone closeout and release notes
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `qa-release-agent`
 - DependsOn: `T19`
 - Definition of Done:
   - Release notes summarize parity status, known risks, and artifact checks.
 - Test Cases:
   - Manual sign-off checklist completed.
+- Verification:
+  - Added milestone release notes: `release-notes/M6.md`.
+  - Included parity summary, known risks, CI artifact checks, and sign-off checklist with completion status.
 
 ## Decision Notes
 - 2026-02-25: M3 completed with TypeScript scaffold, provider streaming, multi-agent orchestration, 30-command baseline, completion, and two-pane TUI implementation.
@@ -247,6 +271,7 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 - 2026-02-26: M4 completed with new `python/` implementation and test harness, completion vector parity checks against `spec/test-vectors`, provider/agent/command parity modules, and Python TUI interaction tests.
 - 2026-02-27: M5 completed with new `cpp/` implementation (CMake scaffold, command/completion/provider/agent parity modules, and append-only TUI parity surface) plus passing C++ build/test/smoke verification.
 - 2026-02-27: C++ TUI now includes explicit optional FTXUI backend wiring (`find_package(ftxui)` + runtime backend selection via `MINICLI4_TUI_BACKEND`), with ANSI append-only fallback preserved for environments without FTXUI.
+- 2026-02-27: M6 shared QA runner uses shared completion vectors as contract baseline across TypeScript/Python and existing C++ ctest contract coverage, with cross-platform CI matrix and smoke artifact upload.
 
 
 

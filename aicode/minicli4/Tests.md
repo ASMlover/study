@@ -46,3 +46,14 @@
   - Added optional FTXUI backend linking/wiring in CMake (`MINICLI4_ENABLE_FTXUI`, `find_package(ftxui)`).
   - Added runtime TUI backend selection with `MINICLI4_TUI_BACKEND` and automatic FTXUI default when available.
   - Preserved existing append-only ANSI behavior and contract-compatible method surface as fallback.
+
+## 2026-02-27 - M6 Cross-language QA Runner and CI Readiness
+
+- Workspace: repository root
+- Command: `python scripts/run_contracts.py --json-report .minicli4/logs/contracts-local.json`
+- Result: `PASS (typescript/pass, python/pass, cpp/pass, aggregate/pass)`
+- Coverage focus:
+  - Shared completion contract vector checks across TypeScript and Python implementations.
+  - C++ configure/build/ctest contract coverage.
+  - Cross-language CLI smoke checks (`--version`) for TypeScript, Python, and C++.
+  - Machine-readable report generation for CI artifact upload.
