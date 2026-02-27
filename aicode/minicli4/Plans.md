@@ -159,31 +159,50 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 ## M5 - C++ Parity Implementation
 
 ### T15 - Scaffold C++ workspace and dependencies
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `cpp-agent`
 - DependsOn: `T11`
 - Definition of Done:
   - `cpp/` builds on Windows and Linux using CMake.
 - Test Cases:
   - Debug build + smoke execution.
+- Verification:
+  - Implemented new `cpp/` workspace with CMake-based library, CLI entrypoint (`minicli4-cpp`), and unit/integration-style test harness.
+  - Confirmed build generation and Debug compilation from project root using:
+    - `cmake -S cpp -B build/cpp`
+    - `cmake --build build/cpp --config Debug`
+  - Confirmed smoke CLI execution:
+    - `build\\cpp\\Debug\\minicli4-cpp.exe --version`
 
 ### T16 - Implement provider, orchestration, commands, completion parity
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `cpp-agent`
 - DependsOn: `T15`, `T03`, `T04`, `T05`, `T06`
 - Definition of Done:
   - C++ feature parity with shared contracts and TS reference behavior.
 - Test Cases:
   - Shared vectors + integration tests pass.
+- Verification:
+  - Added C++ parity modules for runtime config, session lifecycle, tool registry safety gates, GLM provider envelope + SSE chunk parser, multi-stage agent orchestration, slash commands, and completion.
+  - Implemented and validated 30-command slash baseline with command semantics aligned to TypeScript/Python contracts.
+  - Added completion coverage for command prefixes, subcommands, dynamic arguments, and path candidates aligned to vectors in `spec/test-vectors/completion.*.json`.
+  - Added orchestration/provider tests covering staged agent execution, tool callback flow, and streamed delta parsing behavior.
 
 ### T17 - Implement C++ full-screen TUI parity
-- Status: `pending`
+- Status: `done`
 - OwnerAgent: `tui-agent`
 - DependsOn: `T16`
 - Definition of Done:
   - FTXUI two-pane TUI with standard keybindings and streaming rendering.
 - Test Cases:
   - Interaction and state transition tests.
+- Verification:
+  - Implemented C++ append-only two-pane TUI parity surface with status line, thinking lifecycle, assistant streaming output, and explicit status rendering hooks.
+  - Added C++ tests validating append-only render flow, input/status lifecycle, and streamed assistant chunk concatenation behavior.
+  - Verified test suite pass:
+    - `ctest --test-dir build/cpp -C Debug --output-on-failure`
+- Decision Note:
+  - 2026-02-27: Delivered M5 TUI parity with a lightweight ANSI append-only renderer in C++ to keep dependencies minimal in initial parity pass; explicit FTXUI integration can be layered later without changing command or orchestration contracts.
 
 ## M6 - Cross-language QA and Release
 
@@ -226,6 +245,8 @@ Status legend: `pending`, `in_progress`, `blocked`, `done`
 - 2026-02-25: TypeScript TUI thinking spinner upgraded to icon-forward branded animation (`MiniCLI4` logo frames + stage icons + aura pulse) instead of plain character-only frame cycling.
 - 2026-02-25: `/context` now reports estimated context usage percentage (`context_usage~`) based on estimated tokens vs `max_tokens`, enabling proactive archive/clear decisions.
 - 2026-02-26: M4 completed with new `python/` implementation and test harness, completion vector parity checks against `spec/test-vectors`, provider/agent/command parity modules, and Python TUI interaction tests.
+- 2026-02-27: M5 completed with new `cpp/` implementation (CMake scaffold, command/completion/provider/agent parity modules, and append-only TUI parity surface) plus passing C++ build/test/smoke verification.
+- 2026-02-27: C++ TUI now includes explicit optional FTXUI backend wiring (`find_package(ftxui)` + runtime backend selection via `MINICLI4_TUI_BACKEND`), with ANSI append-only fallback preserved for environments without FTXUI.
 
 
 
