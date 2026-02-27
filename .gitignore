@@ -28,3 +28,5 @@ cmake-build
 asio
 MARK.CNYX
 MARK.NOTE
+.minicli*
+python/hfserver/uploads
