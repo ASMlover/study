@@ -1,0 +1,4 @@
+node_modules/
+dist/
+.minicli5/
+*.js.map

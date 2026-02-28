@@ -1,0 +1,17 @@
+{
+  "name": "minicli5",
+  "version": "0.1.0",
+  "description": "AI Agent CLI Tool inspired by Claude Code",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
