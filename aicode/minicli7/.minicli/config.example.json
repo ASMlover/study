@@ -1,0 +1,11 @@
+﻿{
+  "model": "glm-5",
+  "apiBaseUrl": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+  "apiKeyEnv": "GLM_API_KEY",
+  "maxContextTokens": 12000,
+  "compactKeepRecentMessages": 12,
+  "autoCompact": true,
+  "permission": {
+    "allowReadWithoutPrompt": false
+  }
+}

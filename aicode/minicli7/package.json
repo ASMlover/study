@@ -1,0 +1,13 @@
+﻿{
+  "name": "minicli7",
+  "version": "0.1.0",
+  "description": "Independent AI agent CLI with Claude-Code-like TUI workflow",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
