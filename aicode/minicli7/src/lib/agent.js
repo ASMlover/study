@@ -38,6 +38,10 @@ export class Agent {
     for (const m of this.baseSystemMessages()) {
       this.store.addMessage(m);
     }
+
+    if (typeof this.ui.setSlashCompletionSpec === "function") {
+      this.ui.setSlashCompletionSpec(this.slashCompletionSpec());
+    }
   }
 
   baseSystemMessages() {
@@ -48,6 +52,34 @@ export class Agent {
           "You are minicli7 agent. Be precise, execute via tools when needed, ask for permission before any tool action, and keep outputs concise.",
       },
     ];
+  }
+
+  slashCompletionSpec() {
+    return {
+      commands: [
+        "/help",
+        "/status",
+        "/context",
+        "/compact",
+        "/clear",
+        "/exit",
+        "/quit",
+        "/todo",
+        "/task",
+        "/bg",
+        "/skills",
+        "/agent",
+      ],
+      subcommands: {
+        "/todo": ["list", "add", "done"],
+        "/task": ["list", "add", "run"],
+        "/bg": ["list", "run"],
+        "/skills": ["list", "show", "run"],
+      },
+      argumentHints: {
+        "/task add": ["--deps=", "--goal="],
+      },
+    };
   }
 
   async runInteractive() {
@@ -84,7 +116,8 @@ export class Agent {
     }
 
     if (cmd === "/clear") {
-      console.clear();
+      this.clearContext();
+      this.ui.notify("Context cleared. Conversation reset to system prompt.", "ok");
       return true;
     }
 
@@ -348,6 +381,13 @@ export class Agent {
     }
 
     this.store.messages = compactContext(this.store.messages, this.config.compactKeepRecentMessages);
+  }
+
+  clearContext() {
+    this.store.messages = [];
+    for (const m of this.baseSystemMessages()) {
+      this.store.addMessage(m);
+    }
   }
 
   showContextStatus() {

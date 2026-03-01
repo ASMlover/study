@@ -25,10 +25,15 @@ const SPINNER_COLOR_CYCLE = [COLORS.cyan, COLORS.blue, COLORS.magenta, COLORS.am
 
 export class UI {
   constructor() {
+    this.slashCommands = [];
+    this.slashSubcommands = {};
+    this.slashArgumentHints = {};
+
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
       terminal: true,
+      completer: (line) => this.completeInput(line),
     });
     this.spinnerTimer = null;
     this.spinnerIndex = 0;
@@ -41,6 +46,13 @@ export class UI {
     process.stdout.on("resize", () => {
       this.columns = process.stdout.columns || 100;
     });
+  }
+
+  setSlashCompletionSpec(spec = {}) {
+    this.slashCommands = Array.isArray(spec.commands) ? [...spec.commands] : [];
+    this.slashSubcommands = spec.subcommands && typeof spec.subcommands === "object" ? { ...spec.subcommands } : {};
+    this.slashArgumentHints =
+      spec.argumentHints && typeof spec.argumentHints === "object" ? { ...spec.argumentHints } : {};
   }
 
   printBanner(config) {
@@ -69,7 +81,7 @@ export class UI {
     this.printCommand("/help", "show command help");
     this.printCommand("/status | /context", "show context usage");
     this.printCommand("/compact", "compact conversation memory");
-    this.printCommand("/clear", "clear screen");
+    this.printCommand("/clear", "clear conversation context");
     this.printCommand("/exit", "quit session");
 
     this.section("Todo");
@@ -190,6 +202,46 @@ export class UI {
   close() {
     this.stopSpinner();
     this.rl.close();
+  }
+
+  completeInput(line) {
+    if (!line.startsWith("/")) {
+      return [[], line];
+    }
+
+    const hasTrailingSpace = /\s$/.test(line);
+    const parts = line.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) {
+      return [this.slashCommands, line];
+    }
+
+    const cmd = parts[0];
+    if (parts.length === 1 && !hasTrailingSpace) {
+      const matches = this.slashCommands.filter((candidate) => candidate.startsWith(cmd));
+      return [matches.length ? matches : this.slashCommands, cmd];
+    }
+
+    const subcommands = this.slashSubcommands[cmd];
+    if (!Array.isArray(subcommands) || !subcommands.length) {
+      return [[], line];
+    }
+
+    const sub = hasTrailingSpace ? "" : parts[1] || "";
+    if (parts.length <= 2) {
+      const matches = subcommands.filter((candidate) => candidate.startsWith(sub)).map((candidate) => `${cmd} ${candidate}`);
+      return [matches.length ? matches : subcommands.map((candidate) => `${cmd} ${candidate}`), line];
+    }
+
+    const argKey = `${cmd} ${parts[1]}`;
+    const hints = this.slashArgumentHints[argKey];
+    if (!Array.isArray(hints) || !hints.length) {
+      return [[], line];
+    }
+
+    const currentToken = hasTrailingSpace ? "" : parts[parts.length - 1];
+    const prefix = hasTrailingSpace ? line : line.slice(0, line.length - currentToken.length);
+    const matches = hints.filter((candidate) => candidate.startsWith(currentToken)).map((candidate) => `${prefix}${candidate}`);
+    return [matches, currentToken];
   }
 
   c(text, color) {
