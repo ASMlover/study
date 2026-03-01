@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import chalk from 'chalk';
+import { theme, getStatusColor } from '../theme';
 
 interface StatusBarProps {
   status: string;
@@ -8,38 +8,55 @@ interface StatusBarProps {
   model?: string;
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ status, tokens, model }) => {
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'thinking':
-        return 'yellow';
-      case 'tool_use':
-        return 'blue';
-      case 'waiting_input':
-        return 'green';
-      default:
-        return 'gray';
-    }
+export const StatusBar: React.FC<StatusBarProps> = React.memo(({ status, tokens, model }) => {
+  const statusColor = getStatusColor(status);
+
+  const statusLabels: Record<string, string> = {
+    idle: 'READY',
+    thinking: 'THINKING',
+    tool_use: 'TOOL USE',
+    waiting_input: 'INPUT',
+  };
+
+  const statusIcons: Record<string, string> = {
+    idle: theme.icons.completed,
+    thinking: theme.icons.inProgress,
+    tool_use: theme.icons.tool,
+    waiting_input: theme.icons.pending,
   };
 
   return (
-    <Box borderStyle="single" borderColor="gray" paddingX={1}>
-      <Box flexGrow={1}>
-        <Text>
-          <Text bold>Status: </Text>
-          <Text color={getStatusColor(status)}>{status}</Text>
+    <Box flexDirection="column">
+      <Box>
+        <Text dimColor color={theme.colors.dim}>
+          {theme.borders.thinHorizontal.repeat(75)}
         </Text>
       </Box>
-      {model && (
-        <Box marginRight={2}>
-          <Text dimColor>Model: {model}</Text>
+      <Box>
+        <Box flexGrow={1}>
+          <Box marginRight={2}>
+            <Text color={statusColor}>
+              {statusIcons[status] || theme.icons.info} {statusLabels[status] || status.toUpperCase()}
+            </Text>
+          </Box>
+          {model && (
+            <Box marginRight={2}>
+              <Text dimColor color={theme.colors.dim}>
+                {theme.icons.diamond} {model}
+              </Text>
+            </Box>
+          )}
         </Box>
-      )}
-      {tokens !== undefined && (
-        <Box>
-          <Text dimColor>Tokens: {tokens.toLocaleString()}</Text>
-        </Box>
-      )}
+        {tokens !== undefined && (
+          <Box>
+            <Text dimColor color={theme.colors.dim}>
+              {theme.icons.sparkle} {tokens.toLocaleString()} tokens
+            </Text>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
-};
+});
+
+StatusBar.displayName = 'StatusBar';

@@ -4,14 +4,16 @@ import { Message, ToolCall } from '../types';
 import { TodoItem } from '../types/todo';
 import { Chat } from './components/Chat';
 import { Input } from './components/Input';
+import { Header } from './components/Header';
 import { StatusBar } from './components/StatusBar';
 import { LoadingSpinner } from './components/Spinner';
 import { ToolConfirm } from './components/ToolConfirm';
 import { TodoList } from './components/TodoList';
 import { Agent, AgentStatus, AgentEvent } from '../agent/Agent.js';
-import { ConfigManager } from '../core/Config.js';
+import { ConfigManager, MiniCLIConfig } from '../core/Config.js';
 import { PermissionDecision } from '../agent/Executor.js';
 import { ToolCall as ToolSystemCall } from '../tools/Tool.js';
+import { theme } from './theme.js';
 
 const HELP_TEXT = `
 MiniCLI - AI Agent CLI Tool
@@ -71,36 +73,75 @@ interface AppProps {
   debug?: boolean;
 }
 
-export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debug }) => {
+const MainContent: React.FC<{
+  messages: Message[];
+  streamingMessage?: Message;
+  todos: TodoItem[];
+  status: AgentStatus;
+}> = React.memo(({ messages, streamingMessage, todos, status }) => (
+  <>
+    <Box flexGrow={1}>
+      <Chat messages={messages} streamingMessage={streamingMessage} />
+    </Box>
+
+    {todos.length > 0 && (
+      <Box marginBottom={1}>
+        <TodoList items={todos} />
+      </Box>
+    )}
+
+    {status === 'thinking' && (
+      <Box marginBottom={1}>
+        <LoadingSpinner status="thinking" text="Thinking..." />
+      </Box>
+    )}
+
+    {status === 'tool_use' && (
+      <Box marginBottom={1}>
+        <LoadingSpinner status="tool_use" text="Executing tool..." />
+      </Box>
+    )}
+  </>
+));
+
+MainContent.displayName = 'MainContent';
+
+export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model: modelArg, debug }) => {
   const { exit } = useApp();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [status, setStatus] = useState<AgentStatus>('idle');
   const [tokens, setTokens] = useState<number>(0);
-  const [modelOverride] = useState<string>(model || 'glm-4-plus');
+  const [currentModel, setCurrentModel] = useState<string>('glm-4-plus');
   const [streamingMessage, setStreamingMessage] = useState<Message | undefined>();
   const [initError, setInitError] = useState<string | null>(null);
   const streamingRef = useRef<{ content: string; id: string } | null>(null);
+  const configRef = useRef<MiniCLIConfig | null>(null);
   
   const [pendingToolCall, setPendingToolCall] = useState<ToolCall | null>(null);
   const pendingToolResolveRef = useRef<((decision: PermissionDecision) => void) | null>(null);
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const lastToolCallRef = useRef<ToolCall | null>(null);
   const initialPromptSentRef = useRef(false);
+  const agentRef = useRef<Agent | null>(null);
 
   useEffect(() => {
     const initAgent = async () => {
       try {
         const configManager = new ConfigManager();
         const config = await configManager.load(configPath);
+        configRef.current = config;
 
         if (!config.provider.apiKey) {
           setInitError('API key not configured. Please set GLM_API_KEY environment variable or configure in ~/.minicli/config.yaml');
           return;
         }
 
+        const effectiveModel = modelArg || config.provider.model;
+        setCurrentModel(effectiveModel);
+
         const agentInstance = new Agent({
-          config,
+          config: { ...config, provider: { ...config.provider, model: effectiveModel } },
           onStatusChange: setStatus,
           onToolCall: async (toolCall: ToolSystemCall): Promise<PermissionDecision> => {
             return new Promise((resolve) => {
@@ -111,7 +152,7 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
         });
 
         agentInstance.setSystemPrompt('You are a helpful AI assistant.');
-
+        agentRef.current = agentInstance;
         setAgent(agentInstance);
       } catch (error) {
         setInitError(`Failed to initialize agent: ${(error as Error).message}`);
@@ -119,7 +160,7 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
     };
 
     initAgent();
-  }, [configPath]);
+  }, [configPath, modelArg]);
 
   const handleToolDecision = useCallback((allowed: boolean, scope: 'once' | 'session' | 'permanent') => {
     if (pendingToolResolveRef.current) {
@@ -130,19 +171,17 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
   }, []);
 
   const handleInput = useCallback(async (text: string) => {
-    // Handle commands
     if (text.startsWith('/')) {
       const command = text.toLowerCase().trim();
       
       switch (command) {
         case '/help':
-          const helpMsg: Message = {
+          setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: 'assistant',
             content: HELP_TEXT,
             timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, helpMsg]);
+          }]);
           return;
           
         case '/exit':
@@ -159,41 +198,39 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
           setMessages([]);
           setTodos([]);
           setTokens(0);
-          if (agent) {
-            agent.reset();
+          if (agentRef.current) {
+            agentRef.current.reset();
           }
-          const resetMsg: Message = {
+          setMessages([{
             id: Date.now().toString(),
             role: 'assistant',
             content: 'Agent reset. Starting fresh session.',
             timestamp: new Date(),
-          };
-          setMessages([resetMsg]);
+          }]);
           return;
           
         case '/status':
-          const statusMsg: Message = {
+          setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: 'assistant',
-            content: `Status: ${status}\nMessages: ${messages.length}\nTokens: ~${tokens}\nModel: ${modelOverride}`,
+            content: `Status: ${status}\nMessages: ${prev.length}\nTokens: ~${tokens}\nModel: ${currentModel}`,
             timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, statusMsg]);
+          }]);
           return;
           
         default:
-          const unknownMsg: Message = {
+          setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role: 'assistant',
             content: `Unknown command: ${text}\nType /help for available commands.`,
             timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, unknownMsg]);
+          }]);
           return;
       }
     }
 
-    if (!agent) {
+    const currentAgent = agentRef.current;
+    if (!currentAgent) {
       return;
     }
 
@@ -209,16 +246,15 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
     const assistantId = (Date.now() + 1).toString();
     streamingRef.current = { content: '', id: assistantId };
 
-    const assistantMessage: Message = {
+    setStreamingMessage({
       id: assistantId,
       role: 'assistant',
       content: '',
       timestamp: new Date(),
-    };
-    setStreamingMessage(assistantMessage);
+    });
 
     try {
-      for await (const event of agent.sendMessage(text)) {
+      for await (const event of currentAgent.sendMessage(text)) {
         switch (event.type) {
           case 'text':
             if (streamingRef.current) {
@@ -264,45 +300,42 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
 
           case 'done':
             if (streamingRef.current && streamingRef.current.content) {
-              const finalMessage: Message = {
+              setMessages(prev => [...prev, {
                 id: assistantId,
                 role: 'assistant',
-                content: streamingRef.current.content,
+                content: streamingRef.current!.content,
                 timestamp: new Date(),
-              };
-              setMessages(prev => [...prev, finalMessage]);
+              }]);
             }
             setStreamingMessage(undefined);
             streamingRef.current = null;
             break;
 
           case 'error':
-            const errorMsg: Message = {
+            setMessages(prev => [...prev, {
               id: `${assistantId}-error`,
               role: 'assistant',
               content: `Error: ${event.error.message}`,
               timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, errorMsg]);
+            }]);
             setStreamingMessage(undefined);
             streamingRef.current = null;
             break;
         }
       }
     } catch (error) {
-      const errorMsg: Message = {
+      setMessages(prev => [...prev, {
         id: `${assistantId}-error`,
         role: 'assistant',
         content: `Error: ${(error as Error).message}`,
         timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMsg]);
+      }]);
       setStreamingMessage(undefined);
       streamingRef.current = null;
     }
 
     setTokens(prev => prev + 100);
-  }, [agent, exit, messages.length, status, tokens, modelOverride]);
+  }, [exit, currentModel, status, tokens]);
 
   useEffect(() => {
     if (agent && initialPrompt && !initialPromptSentRef.current) {
@@ -311,37 +344,27 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
     }
   }, [agent, initialPrompt, handleInput]);
 
+  const isInputDisabled = status !== 'idle' || !agent || pendingToolCall !== null;
+  const inputPlaceholder = agent ? 'Type a message...' : 'Initializing...';
+
   if (initError) {
     return (
       <Box padding={1}>
-        <MessageDisplay content={initError} />
+        <Text color="red">{initError}</Text>
       </Box>
     );
   }
 
   return (
     <Box flexDirection="column" height="100%" padding={1}>
-      <Box flexGrow={1}>
-        <Chat messages={messages} streamingMessage={streamingMessage} />
-      </Box>
+      <Header model={currentModel} />
 
-      {todos.length > 0 && (
-        <Box marginBottom={1}>
-          <TodoList items={todos} />
-        </Box>
-      )}
-
-      {status === 'thinking' && (
-        <Box marginBottom={1}>
-          <LoadingSpinner text="Thinking..." />
-        </Box>
-      )}
-
-      {status === 'tool_use' && (
-        <Box marginBottom={1}>
-          <LoadingSpinner text="Executing tool..." />
-        </Box>
-      )}
+      <MainContent
+        messages={messages}
+        streamingMessage={streamingMessage}
+        todos={todos}
+        status={status}
+      />
 
       {pendingToolCall && (
         <Box marginBottom={1}>
@@ -355,25 +378,15 @@ export const App: React.FC<AppProps> = ({ initialPrompt, configPath, model, debu
 
       <Input
         onSubmit={handleInput}
-        disabled={status !== 'idle' || !agent || pendingToolCall !== null}
-        placeholder={agent ? 'Type a message...' : 'Initializing...'}
+        disabled={isInputDisabled}
+        placeholder={inputPlaceholder}
       />
 
-      <Box marginTop={1}>
-        <StatusBar
-          status={status}
-          tokens={tokens}
-          model={modelOverride}
-        />
-      </Box>
-    </Box>
-  );
-};
-
-const MessageDisplay: React.FC<{ content: string }> = ({ content }) => {
-  return (
-    <Box>
-      <Text color="red">{content}</Text>
+      <StatusBar
+        status={status}
+        tokens={tokens}
+        model={currentModel}
+      />
     </Box>
   );
 };
