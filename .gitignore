@@ -35,4 +35,5 @@ MARK.NOTE
 .minicli
 node_modules/
 dist/
+minicli.yaml
 python/hfserver/uploads
