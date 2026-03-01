@@ -1,13 +1,14 @@
 import { getTheme } from "./theme.js";
 import type { AgentStage } from "../types.js";
 
-const FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+// Smooth braille orbit animation
+const FRAMES = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
 
-const STAGE_LABELS: Record<AgentStage, string> = {
-  planning: "Thinking",
-  coding: "Working",
-  reviewing: "Reviewing",
-  orchestrating: "Responding",
+const STAGE_CONFIG: Record<AgentStage, { icon: string; label: string }> = {
+  planning:      { icon: "◆", label: "Thinking" },
+  coding:        { icon: "▸", label: "Working" },
+  reviewing:     { icon: "◇", label: "Reviewing" },
+  orchestrating: { icon: "●", label: "Responding" },
 };
 
 export class Spinner {
@@ -15,10 +16,12 @@ export class Spinner {
   private frameIdx = 0;
   private stage: AgentStage = "planning";
   private detail = "";
+  private startTime = 0;
 
   start(stage?: AgentStage): void {
     if (stage) this.stage = stage;
     this.frameIdx = 0;
+    this.startTime = Date.now();
     this.stop();
 
     this.interval = setInterval(() => {
@@ -42,10 +45,21 @@ export class Spinner {
 
   private render(): void {
     const t = getTheme();
-    const frame = FRAMES[this.frameIdx];
-    const label = STAGE_LABELS[this.stage];
-    const detailStr = this.detail ? ` ${t.dim}${this.detail}${t.reset}` : "";
-    process.stderr.write(`\r\x1b[K${t.spinner}${frame}${t.reset} ${label}${detailStr}`);
+    const pulse = t.spinnerPulse;
+    const colorIdx = this.frameIdx % pulse.length;
+    const frame = FRAMES[this.frameIdx % FRAMES.length];
+    const cfg = STAGE_CONFIG[this.stage];
+
+    // Elapsed time
+    const elapsed = ((Date.now() - this.startTime) / 1000).toFixed(0);
+    const timeStr = `${t.dim}${elapsed}s${t.reset}`;
+
+    // Detail text
+    const detailStr = this.detail ? `${t.dim} · ${this.detail}${t.reset}` : "";
+
+    process.stderr.write(
+      `\r\x1b[K  ${pulse[colorIdx]}${frame}${t.reset} ${cfg.label}${detailStr} ${timeStr}`
+    );
   }
 }
 

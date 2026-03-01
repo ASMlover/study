@@ -27,10 +27,13 @@ export class Prompt {
       };
 
       const t = getTheme();
+      // Distinctive two-char prompt: dim triangle + bright chevron
+      const promptStr = `${t.dim}▲${t.reset} ${t.promptChar}›${t.reset} `;
+
       this.rl = readline.createInterface({
         input: process.stdin,
         output: process.stderr,
-        prompt: `${t.primary}❯${t.reset} `,
+        prompt: promptStr,
         terminal: true,
         completer: (line: string) => this.complete(line),
         history: this.history,
@@ -41,15 +44,12 @@ export class Prompt {
         if (trimmed) {
           this.history.push(trimmed);
         }
-        // Resolve BEFORE close to avoid the close handler winning
-        // Empty string means empty input; null is reserved for Ctrl+D/close
         done(trimmed || "");
         this.rl?.close();
         this.rl = null;
       });
 
       this.rl.on("close", () => {
-        // Only fires as exit signal if line handler didn't resolve first
         this.rl = null;
         done(null);
       });

@@ -1,5 +1,5 @@
 import * as readline from "node:readline";
-import { getTheme } from "./theme.js";
+import { getTheme, BOX } from "./theme.js";
 
 export type ConfirmResult = "yes" | "always" | "no";
 
@@ -14,16 +14,43 @@ export function clearAlwaysAllowed(): void {
   alwaysAllowed.clear();
 }
 
-// ─── Permission Box Rendering ─────────────────────────────────────────────────
+// ─── Tool Icons ──────────────────────────────────────────────────────────────
+
+const TOOL_ICONS: Record<string, string> = {
+  shell:       "⚙",
+  write_file:  "✎",
+  read_file:   "◉",
+  list_dir:    "☰",
+  grep:        "⌕",
+  glob:        "✦",
+  default:     "◈",
+};
+
+function getToolIcon(toolName: string): string {
+  return TOOL_ICONS[toolName] ?? TOOL_ICONS.default;
+}
+
+function getToolLabel(toolName: string): string {
+  const labels: Record<string, string> = {
+    shell: "Shell Command",
+    write_file: "Write File",
+    read_file: "Read File",
+    list_dir: "List Directory",
+    grep: "Search Content",
+    glob: "Find Files",
+  };
+  return labels[toolName] ?? toolName;
+}
+
+// ─── Permission Box ─────────────────────────────────────────────────────────
 
 function renderPermissionBox(toolName: string, detail: string, context?: string): string {
   const t = getTheme();
-  const width = Math.min(process.stderr.columns || 80, 80);
-  const innerW = width - 4; // │ + space + content + space + │
-  const HR = "─".repeat(width - 2);
+  const width = Math.min(process.stderr.columns || 80, 76);
+  const innerW = width - 4;
+  const HR = BOX.h.repeat(width - 2);
 
   const pad = (s: string, w: number) => {
-    // Strip ANSI for length calc
     const visible = s.replace(/\x1b\[[0-9;]*m/g, "");
     const diff = w - visible.length;
     return diff > 0 ? s + " ".repeat(diff) : s;
@@ -46,51 +73,49 @@ function renderPermissionBox(toolName: string, detail: string, context?: string)
   };
 
   const lines: string[] = [];
+  const icon = getToolIcon(toolName);
+  const label = getToolLabel(toolName);
 
-  // Top border
-  lines.push(`${t.warning}┌${HR}┐${t.reset}`);
+  // Top border — rounded with accent color
+  lines.push(`  ${t.borderAccent}${BOX.rtl}${HR}${BOX.rtr}${t.reset}`);
 
-  // Title line
-  const titleIcon = toolName === "shell" ? "⚙" : "✏";
-  const titleLabel = toolName === "shell" ? "Shell Command" : toolName === "write_file" ? "Write File" : toolName;
-  const title = `${titleIcon}  ${t.bold}${titleLabel}${t.reset}`;
-  lines.push(`${t.warning}│${t.reset} ${pad(title, innerW)} ${t.warning}│${t.reset}`);
+  // Title line with icon
+  const title = `${t.warning}${icon}${t.reset}  ${t.bold}${label}${t.reset}`;
+  lines.push(`  ${t.borderAccent}${BOX.v}${t.reset} ${pad(title, innerW)} ${t.borderAccent}${BOX.v}${t.reset}`);
 
   // Separator
-  lines.push(`${t.warning}├${HR}┤${t.reset}`);
+  lines.push(`  ${t.borderAccent}${BOX.lt}${HR}${BOX.rt}${t.reset}`);
 
   // Detail lines
   const detailLines = wrapLines(detail, innerW);
   for (const dl of detailLines) {
-    lines.push(`${t.warning}│${t.reset} ${pad(dl, innerW)} ${t.warning}│${t.reset}`);
+    lines.push(`  ${t.border}${BOX.v}${t.reset} ${pad(dl, innerW)} ${t.border}${BOX.v}${t.reset}`);
   }
 
-  // Context (e.g., file content preview for write, command for shell)
+  // Context preview (file content, command, etc.)
   if (context) {
-    lines.push(`${t.warning}│${t.reset} ${pad("", innerW)} ${t.warning}│${t.reset}`);
-    const ctxLines = wrapLines(context, innerW).slice(0, 8); // Max 8 preview lines
+    lines.push(`  ${t.border}${BOX.v}${t.reset} ${pad("", innerW)} ${t.border}${BOX.v}${t.reset}`);
+    const ctxLines = wrapLines(context, innerW).slice(0, 8);
     for (const cl of ctxLines) {
-      lines.push(`${t.warning}│${t.reset} ${pad(`${t.dim}${cl}${t.reset}`, innerW)} ${t.warning}│${t.reset}`);
+      lines.push(`  ${t.border}${BOX.v}${t.reset} ${pad(`${t.dim}${cl}${t.reset}`, innerW)} ${t.border}${BOX.v}${t.reset}`);
     }
     if (wrapLines(context, innerW).length > 8) {
-      lines.push(`${t.warning}│${t.reset} ${pad(`${t.dim}... (truncated)${t.reset}`, innerW)} ${t.warning}│${t.reset}`);
+      lines.push(`  ${t.border}${BOX.v}${t.reset} ${pad(`${t.dim}... (truncated)${t.reset}`, innerW)} ${t.border}${BOX.v}${t.reset}`);
     }
   }
 
-  // Separator
-  lines.push(`${t.warning}├${HR}┤${t.reset}`);
+  // Option bar
+  lines.push(`  ${t.border}${BOX.lt}${HR}${BOX.rt}${t.reset}`);
+  const opts = `${t.success}y${t.reset} allow  ${t.primary}a${t.reset} always  ${t.error}n${t.reset} deny`;
+  lines.push(`  ${t.border}${BOX.v}${t.reset} ${pad(opts, innerW)} ${t.border}${BOX.v}${t.reset}`);
 
-  // Options
-  const opts = `${t.success}y${t.reset}=allow  ${t.primary}a${t.reset}=always  ${t.error}n${t.reset}=deny`;
-  lines.push(`${t.warning}│${t.reset} ${pad(opts, innerW)} ${t.warning}│${t.reset}`);
-
-  // Bottom border
-  lines.push(`${t.warning}└${HR}┘${t.reset}`);
+  // Bottom border — rounded
+  lines.push(`  ${t.borderAccent}${BOX.rbl}${HR}${BOX.rbr}${t.reset}`);
 
   return lines.join("\n");
 }
 
-// ─── Confirm Prompt ───────────────────────────────────────────────────────────
+// ─── Confirm Prompt ──────────────────────────────────────────────────────────
 
 export async function confirmPermission(
   toolName: string,
@@ -100,7 +125,7 @@ export async function confirmPermission(
   // If user already chose "always allow" for this tool, skip prompt
   if (alwaysAllowed.has(toolName)) {
     const t = getTheme();
-    process.stderr.write(`${t.dim}  ✓ auto-approved (${toolName})${t.reset}\n`);
+    process.stderr.write(`     ${t.dim}✓ auto-approved${t.reset} ${t.muted}(${toolName})${t.reset}\n`);
     return true;
   }
 
@@ -113,18 +138,18 @@ export async function confirmPermission(
   if (answer === "always") {
     alwaysAllowed.add(toolName);
     const t = getTheme();
-    process.stderr.write(`${t.success}  ✓ Allowed (always for this session)${t.reset}\n`);
+    process.stderr.write(`  ${t.success}✓ Allowed${t.reset} ${t.dim}(always for this session)${t.reset}\n`);
     return true;
   }
 
   if (answer === "yes") {
     const t = getTheme();
-    process.stderr.write(`${t.success}  ✓ Allowed${t.reset}\n`);
+    process.stderr.write(`  ${t.success}✓ Allowed${t.reset}\n`);
     return true;
   }
 
   const t = getTheme();
-  process.stderr.write(`${t.error}  ✗ Denied${t.reset}\n`);
+  process.stderr.write(`  ${t.error}✗ Denied${t.reset}\n`);
   return false;
 }
 
@@ -141,7 +166,7 @@ function askConfirm(): Promise<ConfirmResult> {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stderr,
-      prompt: `${t.warning}?${t.reset} Allow? [y/a/n] `,
+      prompt: `  ${t.warning}?${t.reset} Allow? ${t.dim}[y/a/n]${t.reset} `,
       terminal: true,
     });
 

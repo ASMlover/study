@@ -95,7 +95,7 @@ export async function runAgentLoop(opts: AgentLoopOptions): Promise<AgentTurn> {
 
   // Token usage display
   const totalTokens = totalPrompt + totalCompletion;
-  process.stderr.write(`\n${t.dim}tokens: ${totalPrompt}→${totalCompletion} (${totalTokens} total)${t.reset}\n`);
+  process.stderr.write(`\n  ${t.muted}◇${t.reset} ${t.dim}${totalPrompt}→${totalCompletion} (${totalTokens} tokens)${t.reset}\n`);
 
   const turn: AgentTurn = {
     role: "assistant",

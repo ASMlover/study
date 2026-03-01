@@ -6,7 +6,7 @@ import { runAgentLoop } from "./agent/loop.js";
 import { spawnSubAgent } from "./agent/sub-agent.js";
 import { prompt } from "./tui/prompt.js";
 import { spinner } from "./tui/spinner.js";
-import { getTheme, colorize } from "./tui/theme.js";
+import { getTheme, colorize, hrule, BOX } from "./tui/theme.js";
 import { confirmPermission, clearAlwaysAllowed } from "./tui/confirm.js";
 import { initLogger, log } from "./utils/logger.js";
 import { initSkills, getSkill, skillNames, listSkills } from "./skills/registry.js";
@@ -43,32 +43,71 @@ function parseArgs(): { projectRoot: string; sessionId?: string; model?: string 
 
 function showBanner(config: AppConfig): void {
   const t = getTheme();
-  process.stderr.write(`\n${t.bold}${t.primary}  MiniCLI5${t.reset} ${t.dim}v0.1.0${t.reset}\n`);
-  process.stderr.write(`${t.dim}  Model: ${config.model} | Provider: ${config.provider}${t.reset}\n`);
-  process.stderr.write(`${t.dim}  Type /help for commands, Ctrl+D to exit${t.reset}\n\n`);
+  const w = Math.min(process.stderr.columns || 60, 60);
+
+  // ASCII art logo — geometric, compact
+  const logo = [
+    `${t.primary}    ╔╦╗╦╔╗╔╦  ╔═╗╦  ╦${t.reset}`,
+    `${t.primary}    ║║║║║║║║  ║  ║  ║${t.reset}`,
+    `${t.accent}    ╩ ╩╩╝╚╝╩  ╚═╝╩═╝╩${t.reset}  ${t.dim}v0.1.0${t.reset}`,
+  ];
+
+  process.stderr.write("\n");
+  for (const line of logo) {
+    process.stderr.write(line + "\n");
+  }
+
+  process.stderr.write(`\n  ${hrule(w - 4)}\n`);
+  process.stderr.write(`  ${t.muted}Model${t.reset}  ${t.dim}${config.model}${t.reset}\n`);
+  process.stderr.write(`  ${t.muted}API${t.reset}    ${t.dim}${config.provider}${t.reset}\n`);
+  process.stderr.write(`  ${hrule(w - 4)}\n`);
+  process.stderr.write(`  ${t.dim}/help commands ${BOX.v} Ctrl+D exit${t.reset}\n\n`);
 }
 
 // ─── Slash Commands ──────────────────────────────────────────────────────────
 
 function showHelp(): void {
   const t = getTheme();
-  const lines = [
-    `${t.heading}Commands${t.reset}`,
-    `  ${t.primary}/help${t.reset}      Show this help`,
-    `  ${t.primary}/clear${t.reset}     Clear conversation history`,
-    `  ${t.primary}/status${t.reset}    Show session status`,
-    `  ${t.primary}/tasks${t.reset}     Show task list`,
-    `  ${t.primary}/compact${t.reset}   Trigger context compaction`,
-    `  ${t.primary}/session${t.reset}   Session management`,
-    `  ${t.primary}/skills${t.reset}    List available skills`,
-    "",
-    `${t.heading}Skills${t.reset}`,
-    ...listSkills().map(s => `  ${t.primary}/${s.name}${t.reset}  ${t.dim}${s.description}${t.reset}`),
-    "",
-    `${t.heading}Keys${t.reset}`,
-    `  ${t.dim}Ctrl+C${t.reset}  Abort current generation`,
-    `  ${t.dim}Ctrl+D${t.reset}  Exit`,
+  const w = Math.min(process.stderr.columns || 60, 60);
+
+  const cmds = [
+    ["/help",    "Show this help"],
+    ["/clear",   "Clear conversation"],
+    ["/status",  "Session status"],
+    ["/tasks",   "Task list"],
+    ["/compact", "Compact context"],
+    ["/session", "Session management"],
+    ["/skills",  "Available skills"],
   ];
+
+  const skills = listSkills();
+
+  const lines: string[] = [];
+
+  // Commands section
+  lines.push(`\n  ${t.heading}Commands${t.reset}`);
+  lines.push(`  ${hrule(w - 4)}`);
+  for (const [cmd, desc] of cmds) {
+    lines.push(`  ${t.primary}${cmd.padEnd(12)}${t.reset}${t.dim}${desc}${t.reset}`);
+  }
+
+  // Skills section
+  if (skills.length > 0) {
+    lines.push("");
+    lines.push(`  ${t.heading}Skills${t.reset}`);
+    lines.push(`  ${hrule(w - 4)}`);
+    for (const s of skills) {
+      lines.push(`  ${t.accent}/${s.name.padEnd(11)}${t.reset}${t.dim}${s.description}${t.reset}`);
+    }
+  }
+
+  // Keys section
+  lines.push("");
+  lines.push(`  ${t.heading}Keys${t.reset}`);
+  lines.push(`  ${hrule(w - 4)}`);
+  lines.push(`  ${t.muted}Ctrl+C${t.reset}      ${t.dim}Abort generation${t.reset}`);
+  lines.push(`  ${t.muted}Ctrl+D${t.reset}      ${t.dim}Exit${t.reset}`);
+
   process.stderr.write(lines.join("\n") + "\n\n");
 }
 
@@ -108,7 +147,7 @@ async function main(): Promise<void> {
     if (loaded) {
       session = loaded;
       if (loaded.tasks) loadTasks(loaded.tasks);
-      process.stderr.write(colorize("dim", `Resumed session: ${session.name}\n\n`));
+      process.stderr.write(`  ${colorize("success", "✓")} ${colorize("dim", `Resumed session: ${session.name}`)}\n\n`);
     } else {
       session = createSession(projectRoot);
     }
@@ -139,7 +178,7 @@ async function main(): Promise<void> {
     onAbort: () => {
       abortController.abort();
       spinner.stop();
-      process.stderr.write("\n" + colorize("warning", "Aborted.") + "\n");
+      process.stderr.write(`\n  ${colorize("warning", "◆ Aborted.")}\n`);
     },
   });
 
@@ -149,7 +188,7 @@ async function main(): Promise<void> {
 
     if (input === null) {
       // Ctrl+D or close
-      process.stderr.write("\n" + colorize("dim", "Goodbye.") + "\n");
+      process.stderr.write(`\n  ${colorize("dim", "Goodbye.")} ${colorize("muted", "◆")}\n`);
       break;
     }
 
@@ -169,21 +208,28 @@ async function main(): Promise<void> {
           messages = [];
           if (memory) messages.push({ role: "system", content: `[Cross-session memory]\n${memory}` });
           clearAlwaysAllowed();
-          process.stderr.write(colorize("success", "Conversation cleared.") + "\n\n");
+          process.stderr.write(`  ${colorize("success", "✓")} ${colorize("dim", "Conversation cleared.")}\n\n`);
           continue;
 
         case "status": {
           const t = getTheme();
           const tokenCount = estimateMessagesTokens(messages);
           const pct = ((tokenCount / config.context_max_tokens) * 100).toFixed(1);
-          process.stderr.write([
-            `${t.heading}Session${t.reset}: ${session.name} (${session.id})`,
-            `${t.dim}Messages${t.reset}: ${messages.length}`,
-            `${t.dim}Tokens${t.reset}: ~${tokenCount} / ${config.context_max_tokens} (${pct}%)`,
-            `${t.dim}Turns${t.reset}: ${session.turns.length}`,
-            `${t.dim}Tasks${t.reset}: ${listTasks().length}`,
-            `${t.dim}Model${t.reset}: ${config.model}`,
-          ].join("\n") + "\n\n");
+          const pctNum = parseFloat(pct);
+
+          // Token usage bar
+          const barWidth = 20;
+          const filled = Math.round(barWidth * pctNum / 100);
+          const barColor = pctNum > 80 ? t.error : pctNum > 60 ? t.warning : t.success;
+          const bar = `${barColor}${"█".repeat(filled)}${t.dim}${"░".repeat(barWidth - filled)}${t.reset}`;
+
+          const w = Math.min(process.stderr.columns || 60, 60);
+          process.stderr.write(`\n  ${t.heading}Status${t.reset}\n`);
+          process.stderr.write(`  ${hrule(w - 4)}\n`);
+          process.stderr.write(`  ${t.muted}Session${t.reset}   ${session.name} ${t.dim}(${session.id.slice(0, 8)})${t.reset}\n`);
+          process.stderr.write(`  ${t.muted}Model${t.reset}     ${config.model}\n`);
+          process.stderr.write(`  ${t.muted}Messages${t.reset}  ${messages.length}  ${t.dim}${BOX.v}${t.reset}  ${t.muted}Turns${t.reset}  ${session.turns.length}  ${t.dim}${BOX.v}${t.reset}  ${t.muted}Tasks${t.reset}  ${listTasks().length}\n`);
+          process.stderr.write(`  ${t.muted}Tokens${t.reset}    ${bar} ${t.dim}~${tokenCount}/${config.context_max_tokens} (${pct}%)${t.reset}\n\n`);
           continue;
         }
 
@@ -192,12 +238,12 @@ async function main(): Promise<void> {
           continue;
 
         case "compact": {
-          process.stderr.write(colorize("dim", "Compacting context...") + "\n");
+          process.stderr.write(`  ${colorize("dim", "◇ Compacting context...")}\n`);
           const result = await compactContext(provider, messages, config);
           messages = result.messages;
           session.compactedSummary = result.summary;
           saveSession(projectRoot, session);
-          process.stderr.write(colorize("success", "Context compacted.") + "\n\n");
+          process.stderr.write(`  ${colorize("success", "✓")} ${colorize("dim", "Context compacted.")}\n\n`);
           continue;
         }
 
@@ -225,14 +271,14 @@ async function main(): Promise<void> {
                 messages.push({ role: turn.role, content: turn.content });
               }
               if (loaded.tasks) loadTasks(loaded.tasks);
-              process.stderr.write(colorize("success", `Switched to session: ${session.name}`) + "\n\n");
+              process.stderr.write(`  ${colorize("success", "✓")} ${colorize("dim", `Switched to: ${session.name}`)}\n\n`);
             } else {
               process.stderr.write(colorize("error", `Session not found: ${sid}`) + "\n\n");
             }
           } else if (arg.startsWith("delete ")) {
             const sid = arg.slice(7).trim();
             if (deleteSession(projectRoot, sid)) {
-              process.stderr.write(colorize("success", `Deleted session: ${sid}`) + "\n\n");
+              process.stderr.write(`  ${colorize("success", "✓")} ${colorize("dim", `Deleted: ${sid}`)}\n\n`);
             } else {
               process.stderr.write(colorize("error", `Session not found: ${sid}`) + "\n\n");
             }
@@ -278,7 +324,7 @@ async function main(): Promise<void> {
 
     // ── Auto-compact check ──
     if (shouldCompact(messages, config)) {
-      process.stderr.write(colorize("dim", "Auto-compacting context...") + "\n");
+      process.stderr.write(`  ${colorize("dim", "◇ Auto-compacting context...")}\n`);
       const result = await compactContext(provider, messages, config);
       messages = result.messages;
       session.compactedSummary = result.summary;
@@ -307,10 +353,10 @@ async function main(): Promise<void> {
     } catch (err: unknown) {
       spinner.stop();
       if (err instanceof Error && err.name === "AbortError") {
-        process.stderr.write(colorize("warning", "Generation aborted.") + "\n\n");
+        process.stderr.write(`  ${colorize("warning", "◆ Generation aborted.")}\n\n`);
       } else {
         const msg = err instanceof Error ? err.message : String(err);
-        process.stderr.write(colorize("error", `Error: ${msg}`) + "\n\n");
+        process.stderr.write(`  ${colorize("error", `✗ ${msg}`)}\n\n`);
         log("error", "Agent loop error", { error: msg });
       }
     }

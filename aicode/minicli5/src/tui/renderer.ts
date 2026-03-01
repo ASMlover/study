@@ -1,4 +1,4 @@
-import { getTheme } from "./theme.js";
+import { getTheme, BOX } from "./theme.js";
 
 interface RenderState {
   inCodeBlock: boolean;
@@ -31,14 +31,18 @@ export class MarkdownRenderer {
 
       if (line.startsWith("```")) {
         if (this.state.inCodeBlock) {
+          // Close code block with bottom border
           this.state.inCodeBlock = false;
-          output += `${t.reset}\n`;
+          output += `${t.codeBorder}  ${BOX.rbl}${BOX.h.repeat(50)}${BOX.rbr}${t.reset}\n`;
         } else {
+          // Open code block with top border + language pill
           this.state.inCodeBlock = true;
           this.state.codeLang = line.slice(3).trim();
           this.state.codeLineNum = 0;
-          const langLabel = this.state.codeLang ? ` ${t.dim}${this.state.codeLang}${t.reset}` : "";
-          output += `${t.secondary}┌──${langLabel}\n`;
+          const langPill = this.state.codeLang
+            ? ` ${t.codeLang}${this.state.codeLang}${t.reset} `
+            : "";
+          output += `${t.codeBorder}  ${BOX.rtl}${BOX.h.repeat(3)}${t.reset}${langPill}${t.codeBorder}${BOX.h.repeat(Math.max(0, 46 - (this.state.codeLang?.length || 0)))}${BOX.rtr}${t.reset}\n`;
         }
         continue;
       }
@@ -46,7 +50,7 @@ export class MarkdownRenderer {
       if (this.state.inCodeBlock) {
         this.state.codeLineNum++;
         const lineNo = String(this.state.codeLineNum).padStart(3);
-        output += `${t.secondary}│${t.dim}${lineNo}${t.reset} ${t.codeBlock}${line}${t.reset}\n`;
+        output += `${t.codeBorder}  ${BOX.v}${t.codeLineNo}${lineNo}${t.reset} ${t.codeBlock}${line}${t.reset}\n`;
         continue;
       }
 
@@ -65,7 +69,7 @@ export class MarkdownRenderer {
       const t = getTheme();
       this.state.codeLineNum++;
       const lineNo = String(this.state.codeLineNum).padStart(3);
-      return `${t.secondary}│${t.dim}${lineNo}${t.reset} ${t.codeBlock}${line}${t.reset}`;
+      return `${t.codeBorder}  ${BOX.v}${t.codeLineNo}${lineNo}${t.reset} ${t.codeBlock}${line}${t.reset}`;
     }
     return this.renderLine(line);
   }
@@ -73,34 +77,40 @@ export class MarkdownRenderer {
   private renderLine(line: string): string {
     const t = getTheme();
 
-    // Headings
+    // Headings — with decorative prefix
     const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
     if (headingMatch) {
-      return `${t.heading}${headingMatch[1]} ${headingMatch[2]}${t.reset}`;
+      const level = headingMatch[1].length;
+      if (level <= 2) {
+        return `\n  ${t.heading}${headingMatch[2]}${t.reset}`;
+      }
+      return `  ${t.subheading}${headingMatch[2]}${t.reset}`;
     }
 
-    // Bullet points
+    // Bullet points — indented with custom bullet
     if (line.match(/^\s*[-*]\s/)) {
-      return `${t.secondary}•${t.reset} ${this.renderInline(line.replace(/^\s*[-*]\s/, ""))}`;
+      const indent = line.match(/^(\s*)/)?.[1] || "";
+      const content = line.replace(/^\s*[-*]\s/, "");
+      return `  ${indent}${t.accent}▸${t.reset} ${this.renderInline(content)}`;
     }
 
     // Numbered lists
     const numMatch = line.match(/^\s*(\d+)\.\s/);
     if (numMatch) {
-      return `${t.secondary}${numMatch[1]}.${t.reset} ${this.renderInline(line.replace(/^\s*\d+\.\s/, ""))}`;
+      return `  ${t.muted}${numMatch[1]}.${t.reset} ${this.renderInline(line.replace(/^\s*\d+\.\s/, ""))}`;
     }
 
-    // Blockquotes
+    // Blockquotes — with gradient bar
     if (line.startsWith("> ")) {
-      return `${t.secondary}│${t.reset} ${t.dim}${this.renderInline(line.slice(2))}${t.reset}`;
+      return `  ${t.borderAccent}▌${t.reset} ${t.italic}${this.renderInline(line.slice(2))}${t.reset}`;
     }
 
     // Horizontal rules
     if (/^[-*_]{3,}\s*$/.test(line)) {
-      return `${t.secondary}${"─".repeat(40)}${t.reset}`;
+      return `  ${t.borderDim}${BOX.h.repeat(40)}${t.reset}`;
     }
 
-    return this.renderInline(line);
+    return `  ${this.renderInline(line)}`;
   }
 
   private renderInline(text: string): string {
@@ -108,27 +118,37 @@ export class MarkdownRenderer {
     return text
       .replace(/`([^`]+)`/g, `${t.code}\`$1\`${t.reset}`)
       .replace(/\*\*([^*]+)\*\*/g, `${t.bold}$1${t.reset}`)
-      .replace(/\*([^*]+)\*/g, `${t.dim}$1${t.reset}`);
+      .replace(/\*([^*]+)\*/g, `${t.italic}$1${t.reset}`);
   }
 }
 
+// ─── Tool Call Display ───────────────────────────────────────────────────────
+
 export function renderToolCall(name: string, args: Record<string, unknown>): string {
   const t = getTheme();
+
+  // Format args as key=value pairs
   const argsStr = Object.entries(args)
     .map(([k, v]) => {
       const val = typeof v === "string" ? v : JSON.stringify(v);
       const display = val.length > 60 ? val.slice(0, 57) + "..." : val;
-      return `${t.toolArg}${k}${t.reset}=${t.dim}${display}${t.reset}`;
+      return `${t.toolArg}${k}${t.reset}${t.dim}=${t.reset}${t.muted}${display}${t.reset}`;
     })
     .join(" ");
-  return `${t.secondary}⚡${t.reset} ${t.toolName}${name}${t.reset} ${argsStr}`;
+
+  return `  ${t.toolIcon}⚡${t.reset} ${t.toolName}${name}${t.reset} ${argsStr}`;
 }
 
 export function renderToolResult(result: { success: boolean; output: string }): string {
   const t = getTheme();
-  const icon = result.success ? `${t.success}✓${t.reset}` : `${t.error}✗${t.reset}`;
+
+  if (result.success) {
+    const preview = result.output.length > 200 ? result.output.slice(0, 197) + "..." : result.output;
+    return `     ${t.success}✓${t.reset} ${t.dim}${preview}${t.reset}`;
+  }
+
   const preview = result.output.length > 200 ? result.output.slice(0, 197) + "..." : result.output;
-  return `  ${icon} ${t.dim}${preview}${t.reset}`;
+  return `     ${t.error}✗${t.reset} ${t.dim}${preview}${t.reset}`;
 }
 
 export const renderer = new MarkdownRenderer();
