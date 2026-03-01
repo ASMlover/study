@@ -43,7 +43,7 @@
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
     "typescript": "^5.3.3",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.25.0",
     "ts-node": "^10.9.2",
     "@types/marked-terminal": "^6.0.4",
     "@yao-pkg/pkg": "^5.11.0"
