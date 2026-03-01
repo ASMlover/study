@@ -3,17 +3,25 @@
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 const RESET = "\x1b[0m";
 const COLORS = {
-  cyan: "\x1b[36m",
-  blue: "\x1b[34m",
-  green: "\x1b[32m",
-  yellow: "\x1b[33m",
-  red: "\x1b[31m",
-  magenta: "\x1b[35m",
+  cyan: "\x1b[38;5;81m",
+  blue: "\x1b[38;5;75m",
+  green: "\x1b[38;5;114m",
+  yellow: "\x1b[38;5;220m",
+  amber: "\x1b[38;5;214m",
+  red: "\x1b[38;5;203m",
+  magenta: "\x1b[38;5;177m",
   gray: "\x1b[90m",
   white: "\x1b[97m",
+  dim: "\x1b[2m",
   bold: "\x1b[1m",
 };
-const SPINNER_COLOR_CYCLE = [COLORS.cyan, COLORS.blue, COLORS.magenta, COLORS.green];
+const BG = {
+  cyanSoft: "\x1b[48;5;24m",
+  amberSoft: "\x1b[48;5;58m",
+  redSoft: "\x1b[48;5;52m",
+  slateSoft: "\x1b[48;5;238m",
+};
+const SPINNER_COLOR_CYCLE = [COLORS.cyan, COLORS.blue, COLORS.magenta, COLORS.amber];
 
 export class UI {
   constructor() {
@@ -25,51 +33,72 @@ export class UI {
     this.spinnerTimer = null;
     this.spinnerIndex = 0;
     this.spinnerText = "";
+    this.spinnerStartTs = 0;
     this.streaming = false;
     this.useColor = Boolean(process.stdout.isTTY);
+    this.columns = process.stdout.columns || 100;
+
+    process.stdout.on("resize", () => {
+      this.columns = process.stdout.columns || 100;
+    });
   }
 
   printBanner(config) {
-    console.log(`\n${this.c("minicli7 - AI Agent CLI", `${COLORS.bold}${COLORS.cyan}`)}`);
-    console.log(
-      `${this.c("model", COLORS.green)}: ${this.c(config.model, COLORS.white)} | ${this.c("endpoint", COLORS.green)}: ${this.c(config.apiBaseUrl, COLORS.gray)}`
-    );
+    const title = this.c(" MINICLI7 ", `${COLORS.bold}${COLORS.amber}${BG.slateSoft}`);
+    const subtitle = this.c("Agent Terminal", `${COLORS.bold}${COLORS.cyan}`);
+    const modelBadge = this.badge(`model ${config.model}`, "info");
+    const endpoint = this.c(config.apiBaseUrl, `${COLORS.dim}${COLORS.gray}`);
+
+    console.log("");
+    console.log(`${title}  ${subtitle}`);
+    this.printDivider("thin");
+    console.log(`${modelBadge}  ${this.c("endpoint", COLORS.gray)} ${endpoint}`);
+
     if (Array.isArray(config.warnings) && config.warnings.length) {
       for (const warning of config.warnings) {
-        console.log(`${this.c("config warning", COLORS.yellow)}: ${this.c(warning, COLORS.yellow)}`);
+        console.log(`${this.badge("config warning", "warn")} ${this.c(warning, COLORS.yellow)}`);
       }
     }
-    console.log(
-      `${this.c("commands", COLORS.blue)}: ${this.c("/help /status /context /todo /task /bg /skills /agent /compact /exit", COLORS.gray)}\n`
-    );
+    console.log(`${this.c("quick", COLORS.gray)} ${this.c("/help  /status  /todo list  /task list  /exit", COLORS.gray)}`);
+    this.printDivider("thick");
+    console.log("");
   }
 
   printHelp() {
-    console.log(this.c("Commands:", `${COLORS.bold}${COLORS.cyan}`));
-    console.log("  /help");
-    console.log("  /status");
-    console.log("  /context");
-    console.log("  /exit");
-    console.log("  /todo add <text>");
-    console.log("  /todo done <id>");
-    console.log("  /todo list");
-    console.log("  /task add <title> [--deps=1,2] [--goal=text]");
-    console.log("  /task list");
-    console.log("  /task run");
-    console.log("  /bg run <shell-command>");
-    console.log("  /bg list");
-    console.log("  /skills list");
-    console.log("  /skills show <name>");
-    console.log("  /skills run <name> <input>");
-    console.log("  /agent <goal>");
-    console.log("  /compact");
-    console.log("  /clear");
+    this.section("Core");
+    this.printCommand("/help", "show command help");
+    this.printCommand("/status | /context", "show context usage");
+    this.printCommand("/compact", "compact conversation memory");
+    this.printCommand("/clear", "clear screen");
+    this.printCommand("/exit", "quit session");
+
+    this.section("Todo");
+    this.printCommand("/todo list", "show todos");
+    this.printCommand("/todo add <text>", "create todo");
+    this.printCommand("/todo done <id>", "mark todo done");
+
+    this.section("Tasks");
+    this.printCommand("/task list", "show task graph");
+    this.printCommand("/task add <title> [--deps=1,2] [--goal=text]", "create task");
+    this.printCommand("/task run", "run ready tasks");
+
+    this.section("Tools");
+    this.printCommand("/bg run <shell-command>", "start background command");
+    this.printCommand("/bg list", "show background jobs");
+    this.printCommand("/agent <goal>", "launch sub-agent run");
+
+    this.section("Skills");
+    this.printCommand("/skills list", "list local skills");
+    this.printCommand("/skills show <name>", "inspect skill file");
+    this.printCommand("/skills run <name> <input>", "run skill prompt");
+
+    this.printDivider("thin");
   }
 
   prompt(promptText = "you> ") {
     const styledPrompt =
       promptText === "you> "
-        ? `${this.c("you", `${COLORS.bold}${COLORS.green}`)}${this.c(">", COLORS.green)} `
+        ? `${this.c(this.timeTag(), COLORS.gray)} ${this.badge("you", "ok")} ${this.c("›", COLORS.green)} `
         : promptText;
 
     return new Promise((resolve) => {
@@ -78,17 +107,33 @@ export class UI {
   }
 
   async confirm(question) {
-    const q = `${this.c(question, COLORS.white)} ${this.c("[y/N]", COLORS.yellow)} `;
+    const q = `${this.badge("confirm", "warn")} ${this.c(question, COLORS.white)} ${this.c("[y/N]", COLORS.yellow)} `;
     const answer = (await this.prompt(q)).trim().toLowerCase();
     return answer === "y" || answer === "yes";
   }
 
-  notify(message) {
-    console.log(this.c(message, COLORS.gray));
+  notify(message, tone = "info") {
+    const colorMap = {
+      info: COLORS.gray,
+      ok: COLORS.green,
+      warn: COLORS.yellow,
+      tool: COLORS.cyan,
+      task: COLORS.blue,
+    };
+    const markerMap = {
+      info: "·",
+      ok: "✓",
+      warn: "!",
+      tool: "⚙",
+      task: "▣",
+    };
+    const color = colorMap[tone] || COLORS.gray;
+    const marker = markerMap[tone] || "·";
+    console.log(`${this.c(marker, `${COLORS.bold}${color}`)} ${this.c(message, color)}`);
   }
 
   error(message) {
-    console.error(`${this.c("Error", `${COLORS.bold}${COLORS.red}`)}: ${this.c(message, COLORS.red)}`);
+    console.error(`${this.badge("error", "error")} ${this.c(message, COLORS.red)}`);
   }
 
   startSpinner(text = "assistant thinking") {
@@ -97,16 +142,17 @@ export class UI {
     }
     this.spinnerText = text;
     this.spinnerIndex = 0;
+    this.spinnerStartTs = Date.now();
     this.spinnerTimer = setInterval(() => {
       const frame = SPINNER_FRAMES[this.spinnerIndex % SPINNER_FRAMES.length];
       const color = SPINNER_COLOR_CYCLE[this.spinnerIndex % SPINNER_COLOR_CYCLE.length];
-      const dots = ".".repeat((this.spinnerIndex % 3) + 1);
-      const pad = " ".repeat(3 - dots.length);
-      const line = `${this.c(frame, `${COLORS.bold}${color}`)} ${this.c(this.spinnerText, COLORS.white)}${this.c(
-        dots,
+      const elapsed = ((Date.now() - this.spinnerStartTs) / 1000).toFixed(1);
+      const pulse = "█".repeat((this.spinnerIndex % 4) + 1).padEnd(4, "·");
+      const line = `${this.c(frame, `${COLORS.bold}${color}`)} ${this.c(this.spinnerText, COLORS.white)} ${this.c(
+        pulse,
         color
-      )}${pad}`;
-      process.stdout.write(`\r${line}`);
+      )} ${this.c(`${elapsed}s`, COLORS.gray)}`;
+      process.stdout.write(`\r\x1b[2K${line}`);
       this.spinnerIndex += 1;
     }, 100);
   }
@@ -122,7 +168,9 @@ export class UI {
 
   beginAssistantStream() {
     this.streaming = true;
-    process.stdout.write(`${this.c("assistant", `${COLORS.bold}${COLORS.blue}`)}${this.c(">", COLORS.blue)} `);
+    process.stdout.write(
+      `${this.c(this.timeTag(), COLORS.gray)} ${this.badge("assistant", "assistant")} ${this.c("╭─ ", COLORS.blue)}`
+    );
   }
 
   pushAssistantToken(token) {
@@ -134,7 +182,7 @@ export class UI {
 
   endAssistantStream() {
     if (this.streaming) {
-      process.stdout.write("\n");
+      process.stdout.write(`\n${this.c(" ".repeat(13), COLORS.gray)}${this.c("╰─ done", COLORS.gray)}\n`);
     }
     this.streaming = false;
   }
@@ -149,5 +197,42 @@ export class UI {
       return text;
     }
     return `${color}${text}${RESET}`;
+  }
+
+  badge(text, tone = "info") {
+    const map = {
+      info: { fg: COLORS.cyan, bg: BG.cyanSoft },
+      ok: { fg: COLORS.green, bg: BG.slateSoft },
+      warn: { fg: COLORS.yellow, bg: BG.amberSoft },
+      error: { fg: COLORS.red, bg: BG.redSoft },
+      assistant: { fg: COLORS.blue, bg: BG.slateSoft },
+    };
+    const t = map[tone] || map.info;
+    return this.c(` ${text.toUpperCase()} `, `${COLORS.bold}${t.fg}${t.bg}`);
+  }
+
+  section(name) {
+    console.log(`\n${this.badge(name, "info")}`);
+  }
+
+  printCommand(command, desc) {
+    const left = this.c(command.padEnd(42, " "), COLORS.white);
+    const right = this.c(desc, COLORS.gray);
+    console.log(`  ${left} ${right}`);
+  }
+
+  printDivider(style = "thin") {
+    const width = Math.max(36, Math.min(this.columns - 2, 110));
+    const line = style === "thick" ? "═".repeat(width) : "─".repeat(width);
+    const color = style === "thick" ? COLORS.gray : `${COLORS.dim}${COLORS.gray}`;
+    console.log(this.c(line, color));
+  }
+
+  timeTag() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    return `${hh}:${mm}:${ss}`;
   }
 }

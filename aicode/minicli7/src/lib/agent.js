@@ -90,7 +90,7 @@ export class Agent {
 
     if (cmd === "/compact") {
       this.applyCompaction(true);
-      this.ui.notify("Context compacted.");
+      this.ui.notify("Context compacted.", "ok");
       return true;
     }
 
@@ -107,14 +107,14 @@ export class Agent {
       }
       const approved = await this.ui.confirm(`Run sub-agent for goal: ${goal}?`);
       if (!approved) {
-        this.ui.notify("Cancelled.");
+        this.ui.notify("Cancelled.", "warn");
         return true;
       }
       this.ui.startSpinner("sub-agent working");
       try {
         const report = await this.subAgentRunner.run(goal, 4);
         this.ui.stopSpinner();
-        this.ui.notify(`sub-agent> ${report}`);
+        this.ui.notify(`sub-agent> ${report}`, "tool");
       } catch (err) {
         this.ui.stopSpinner();
         this.ui.error(err.message);
@@ -156,7 +156,7 @@ export class Agent {
         return;
       }
       const todo = this.store.addTodo(text);
-      this.ui.notify(`Added todo #${todo.id}: ${todo.text}`);
+      this.ui.notify(`Added todo #${todo.id}: ${todo.text}`, "ok");
       return;
     }
 
@@ -167,13 +167,13 @@ export class Agent {
         return;
       }
       const todo = this.store.markTodoDone(id);
-      this.ui.notify(todo ? `Done todo #${todo.id}` : "Todo not found");
+      this.ui.notify(todo ? `Done todo #${todo.id}` : "Todo not found", todo ? "ok" : "warn");
       return;
     }
 
     const todos = this.store.listTodos();
     if (!todos.length) {
-      this.ui.notify("No todos.");
+      this.ui.notify("No todos.", "warn");
       return;
     }
     for (const t of todos) {
@@ -191,21 +191,21 @@ export class Agent {
       }
       const approved = await this.ui.confirm(`Allow background shell command? ${command}`);
       if (!approved) {
-        this.ui.notify("Cancelled.");
+        this.ui.notify("Cancelled.", "warn");
         return;
       }
       const job = this.background.start(command);
-      this.ui.notify(`Started job #${job.id} pid=${job.pid}`);
+      this.ui.notify(`Started job #${job.id} pid=${job.pid}`, "ok");
       return;
     }
 
     const jobs = this.background.list();
     if (!jobs.length) {
-      this.ui.notify("No background jobs.");
+      this.ui.notify("No background jobs.", "warn");
       return;
     }
     for (const j of jobs) {
-      this.ui.notify(`#${j.id} ${j.status} pid=${j.pid} cmd=${j.command}`);
+      this.ui.notify(`#${j.id} ${j.status} pid=${j.pid} cmd=${j.command}`, "task");
     }
   }
 
@@ -215,7 +215,7 @@ export class Agent {
     if (sub === "list") {
       const names = await this.skills.listSkills();
       if (!names.length) {
-        this.ui.notify("No skills found under .minicli/skills");
+        this.ui.notify("No skills found under .minicli/skills", "warn");
         return;
       }
       for (const name of names) {
@@ -283,7 +283,7 @@ export class Agent {
       const goal = goalMatch ? goalMatch[1].trim() : "";
 
       const task = this.tasks.addTask({ title, deps, goal });
-      this.ui.notify(`Added task #${task.id}: ${task.title}`);
+      this.ui.notify(`Added task #${task.id}: ${task.title}`, "ok");
       return;
     }
 
@@ -294,11 +294,11 @@ export class Agent {
 
     const list = this.tasks.list();
     if (!list.length) {
-      this.ui.notify("No tasks.");
+      this.ui.notify("No tasks.", "warn");
       return;
     }
     for (const t of list) {
-      this.ui.notify(`#${t.id} [${t.status}] deps=[${t.deps.join(",")}] ${t.title}`);
+      this.ui.notify(`#${t.id} [${t.status}] deps=[${t.deps.join(",")}] ${t.title}`, "task");
     }
   }
 
@@ -314,18 +314,18 @@ export class Agent {
 
       for (const task of ready) {
         this.tasks.updateStatus(task.id, "running");
-        this.ui.notify(`Running task #${task.id}: ${task.title}`);
+        this.ui.notify(`Running task #${task.id}: ${task.title}`, "task");
 
         try {
           if (task.goal) {
             const approved = await this.ui.confirm(`Allow sub-agent for task #${task.id}?`);
             if (!approved) {
               this.tasks.updateStatus(task.id, "failed");
-              this.ui.notify(`Task #${task.id} cancelled by user`);
+              this.ui.notify(`Task #${task.id} cancelled by user`, "warn");
               continue;
             }
             const result = await this.subAgentRunner.run(task.goal, 4);
-            this.ui.notify(`Task #${task.id} result: ${result.slice(0, 400)}`);
+            this.ui.notify(`Task #${task.id} result: ${result.slice(0, 400)}`, "tool");
           }
           this.tasks.updateStatus(task.id, "done");
         } catch (err) {
@@ -336,7 +336,7 @@ export class Agent {
     }
 
     if (!progressed) {
-      this.ui.notify("No runnable tasks. Check dependencies/status.");
+      this.ui.notify("No runnable tasks. Check dependencies/status.", "warn");
     }
   }
 
@@ -429,7 +429,7 @@ export class Agent {
 
       try {
         const result = await this.toolExecutor.execute(tc.function.name, args);
-        this.ui.notify(`tool:${tc.function.name}> ${String(result).slice(0, 600)}`);
+        this.ui.notify(`tool:${tc.function.name}> ${String(result).slice(0, 600)}`, "tool");
         this.store.addMessage({
           role: "tool",
           tool_call_id: tc.id,
