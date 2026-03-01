@@ -28,5 +28,11 @@ cmake-build
 asio
 MARK.CNYX
 MARK.NOTE
-.minicli*
+.claude
+.opencode
+.codex
+.kimi
+.minicli
+node_modules/
+dist/
 python/hfserver/uploads

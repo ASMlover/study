@@ -1,0 +1,54 @@
+name: skill-creator
+description: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.
+version: 1.0.0
+author: minicli
+
+parameters:
+  - name: skill_name
+    type: string
+    description: Name of the skill to create
+    required: true
+
+  - name: purpose
+    type: string
+    description: Description of what the skill should accomplish
+    required: true
+
+  - name: parameters
+    type: string
+    description: Comma-separated list of parameter names the skill needs
+    required: false
+    default: ""
+
+prompt: |
+  Create a new skill with the following specifications:
+  
+  **Skill Name**: {{skill_name}}
+  **Purpose**: {{purpose}}
+  **Parameters**: {{parameters}}
+  
+  Create a skill.yaml file following this structure:
+  
+  ```yaml
+  name: <skill_name>
+  description: <clear description of when and how to use this skill>
+  version: 1.0.0
+  author: <author name>
+  
+  parameters:
+    - name: <param1>
+      type: string|number|boolean
+      description: <parameter description>
+      required: true|false
+      default: <default value if optional>
+  
+  prompt: |
+    <detailed prompt template with {{parameter}} placeholders>
+  ```
+  
+  Guidelines for effective skills:
+  1. Write clear, specific descriptions that help AI understand when to use the skill
+  2. Define parameters that capture essential inputs
+  3. Create comprehensive prompts with step-by-step instructions
+  4. Include examples or templates where helpful
+  5. Consider edge cases and error handling

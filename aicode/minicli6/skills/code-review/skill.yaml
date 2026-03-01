@@ -1,0 +1,25 @@
+name: code-review
+description: Perform a code review on specified files
+version: 1.0.0
+author: minicli
+
+parameters:
+  - name: files
+    type: string
+    description: Comma-separated list of files to review
+    required: true
+    
+  - name: focus
+    type: string
+    description: Areas to focus on (security, performance, style, all)
+    required: false
+    default: all
+
+prompt: |
+  Please review the following files: {{files}}
+  Focus areas: {{focus}}
+  
+  Provide:
+  1. Overall assessment
+  2. Specific issues found
+  3. Suggestions for improvement

@@ -1,0 +1,37 @@
+name: frontend-design
+description: Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics.
+version: 1.0.0
+author: minicli
+
+parameters:
+  - name: task
+    type: string
+    description: Description of the frontend component or page to create
+    required: true
+
+  - name: style
+    type: string
+    description: Design style preference (modern, minimal, corporate, playful, dark, etc.)
+    required: false
+    default: modern
+
+  - name: framework
+    type: string
+    description: Target framework (react, vue, vanilla, tailwind, etc.)
+    required: false
+    default: vanilla
+
+prompt: |
+  Create a distinctive, production-grade frontend interface with the following specifications:
+  
+  **Task**: {{task}}
+  **Style**: {{style}}
+  **Framework**: {{framework}}
+  
+  Guidelines:
+  1. Use modern design principles with unique visual elements
+  2. Implement responsive layouts that work across devices
+  3. Include meaningful interactions and animations
+  4. Ensure accessibility best practices
+  5. Generate clean, maintainable code
+  6. Avoid generic AI aesthetics - be creative and distinctive

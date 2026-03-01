@@ -1,0 +1,28 @@
+provider:
+  type: glm5
+  apiKey: ${GLM_API_KEY}
+  baseUrl: https://open.bigmodel.cn/api/paas/v4
+  model: glm-4-plus
+
+agent:
+  maxIterations: 50
+  timeout: 300000
+
+tools:
+  permissions:
+    bash: confirm
+    read: auto
+    write: confirm
+    edit: confirm
+    glob: auto
+    grep: auto
+
+context:
+  maxTokens: 128000
+  compactThreshold: 100000
+  preserveRecent: 10
+
+ui:
+  theme: dark
+  spinner: dots
+  showTokens: true
