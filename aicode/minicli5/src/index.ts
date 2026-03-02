@@ -61,7 +61,7 @@ function showBanner(config: AppConfig): void {
   process.stderr.write(`  ${t.muted}Model${t.reset}  ${t.dim}${config.model}${t.reset}\n`);
   process.stderr.write(`  ${t.muted}API${t.reset}    ${t.dim}${config.provider}${t.reset}\n`);
   process.stderr.write(`  ${hrule(w - 4)}\n`);
-  process.stderr.write(`  ${t.dim}/help commands ${BOX.v} Ctrl+D exit${t.reset}\n\n`);
+  process.stderr.write(`  ${t.dim}/help commands ${BOX.v} Esc interrupt ${BOX.v} /exit quit${t.reset}\n\n`);
 }
 
 // ─── Slash Commands ──────────────────────────────────────────────────────────
@@ -78,6 +78,7 @@ function showHelp(): void {
     ["/compact", "Compact context"],
     ["/session", "Session management"],
     ["/skills",  "Available skills"],
+    ["/exit",    "Exit MiniCLI5"],
   ];
 
   const skills = listSkills();
@@ -105,10 +106,34 @@ function showHelp(): void {
   lines.push("");
   lines.push(`  ${t.heading}Keys${t.reset}`);
   lines.push(`  ${hrule(w - 4)}`);
+  lines.push(`  ${t.muted}Esc${t.reset}         ${t.dim}Abort generation${t.reset}`);
   lines.push(`  ${t.muted}Ctrl+C${t.reset}      ${t.dim}Abort generation${t.reset}`);
   lines.push(`  ${t.muted}Ctrl+D${t.reset}      ${t.dim}Exit${t.reset}`);
 
   process.stderr.write(lines.join("\n") + "\n\n");
+}
+
+// ─── ESC Key Listener ───────────────────────────────────────────────────
+
+function listenEscape(onEscape: () => void): () => void {
+  const handler = (data: Buffer) => {
+    // ESC = 0x1b (standalone, not part of an escape sequence)
+    if (data.length === 1 && data[0] === 0x1b) {
+      onEscape();
+    }
+  };
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+  }
+  process.stdin.on("data", handler);
+  return () => {
+    process.stdin.off("data", handler);
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+    }
+  };
 }
 
 // ─── Approval Gate ───────────────────────────────────────────────────────────
@@ -174,7 +199,7 @@ async function main(): Promise<void> {
 
   // Prompt setup
   prompt.init({
-    skills: [...skillNames(), "help", "clear", "status", "tasks", "compact", "session", "skills"],
+    skills: [...skillNames(), "help", "clear", "status", "tasks", "compact", "session", "skills", "exit"],
     onAbort: () => {
       abortController.abort();
       spinner.stop();
@@ -200,6 +225,14 @@ async function main(): Promise<void> {
       const arg = rest.join(" ");
 
       switch (cmd) {
+        case "exit":
+        case "quit":
+          process.stderr.write(`\n  ${colorize("dim", "Goodbye.")} ${colorize("muted", "◆")}\n`);
+          session.tasks = exportTasks();
+          saveSession(projectRoot, session);
+          prompt.close();
+          process.exit(0);
+
         case "help":
           showHelp();
           continue;
@@ -333,6 +366,12 @@ async function main(): Promise<void> {
     // ── Agent Loop ──
     abortController = new AbortController();
 
+    // Listen for ESC key to abort generation
+    const stopListening = listenEscape(() => {
+      abortController.abort();
+      spinner.stop();
+    });
+
     try {
       const turn = await runAgentLoop({
         provider,
@@ -341,6 +380,7 @@ async function main(): Promise<void> {
         projectRoot,
         messages,
         approve: approveAction,
+        signal: abortController.signal,
         onTurn: (t) => {
           addTurn(session, t);
           session.tasks = exportTasks();
@@ -353,12 +393,14 @@ async function main(): Promise<void> {
     } catch (err: unknown) {
       spinner.stop();
       if (err instanceof Error && err.name === "AbortError") {
-        process.stderr.write(`  ${colorize("warning", "◆ Generation aborted.")}\n\n`);
+        process.stderr.write(`\n  ${colorize("warning", "◆ Interrupted.")}\n`);
       } else {
         const msg = err instanceof Error ? err.message : String(err);
         process.stderr.write(`  ${colorize("error", `✗ ${msg}`)}\n\n`);
         log("error", "Agent loop error", { error: msg });
       }
+    } finally {
+      stopListening();
     }
 
     process.stderr.write("\n");

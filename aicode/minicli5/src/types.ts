@@ -69,6 +69,7 @@ export interface ChatRequest {
   temperature?: number;
   max_tokens?: number;
   model?: string;
+  signal?: AbortSignal;
 }
 
 export interface ChatChoice {

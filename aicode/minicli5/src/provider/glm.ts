@@ -50,6 +50,7 @@ export class GlmProvider extends BaseProvider {
         method: "POST",
         headers: this.headers,
         body: JSON.stringify(body),
+        signal: req.signal,
       });
 
       if (!res.ok) {
@@ -72,6 +73,7 @@ export class GlmProvider extends BaseProvider {
         method: "POST",
         headers: this.headers,
         body: JSON.stringify(body),
+        signal: req.signal,
       });
       if (!r.ok) {
         const text = await r.text();
