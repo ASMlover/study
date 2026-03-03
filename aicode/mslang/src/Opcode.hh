@@ -1,0 +1,122 @@
+// Copyright (c) 2026 ASMlover. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+//  * Redistributions of source code must retain the above copyright
+//    notice, this list ofconditions and the following disclaimer.
+//
+//  * Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in
+//    the documentation and/or other materialsprovided with the
+//    distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+// COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+#pragma once
+
+#include "Types.hh"
+
+namespace ms {
+
+enum class OpCode : u8_t {
+  OP_CONSTANT,
+  OP_NIL,
+  OP_TRUE,
+  OP_FALSE,
+  OP_POP,
+  OP_GET_LOCAL,
+  OP_SET_LOCAL,
+  OP_GET_GLOBAL,
+  OP_DEFINE_GLOBAL,
+  OP_SET_GLOBAL,
+  OP_GET_UPVALUE,
+  OP_SET_UPVALUE,
+  OP_GET_PROPERTY,
+  OP_SET_PROPERTY,
+  OP_GET_SUPER,
+  OP_EQUAL,
+  OP_GREATER,
+  OP_LESS,
+  OP_ADD,
+  OP_SUBTRACT,
+  OP_MULTIPLY,
+  OP_DIVIDE,
+  OP_NOT,
+  OP_NEGATE,
+  OP_PRINT,
+  OP_JUMP,
+  OP_JUMP_IF_FALSE,
+  OP_LOOP,
+  OP_CALL,
+  OP_INVOKE,
+  OP_SUPER_INVOKE,
+  OP_CLOSURE,
+  OP_CLOSE_UPVALUE,
+  OP_RETURN,
+  OP_CLASS,
+  OP_INHERIT,
+  OP_METHOD,
+  OP_IMPORT,
+  OP_IMPORT_FROM,
+  OP_IMPORT_ALIAS,
+};
+
+inline cstr_t opcode_name(OpCode code) noexcept {
+  switch (code) {
+  case OpCode::OP_CONSTANT:       return "OP_CONSTANT";
+  case OpCode::OP_NIL:            return "OP_NIL";
+  case OpCode::OP_TRUE:           return "OP_TRUE";
+  case OpCode::OP_FALSE:          return "OP_FALSE";
+  case OpCode::OP_POP:            return "OP_POP";
+  case OpCode::OP_GET_LOCAL:      return "OP_GET_LOCAL";
+  case OpCode::OP_SET_LOCAL:      return "OP_SET_LOCAL";
+  case OpCode::OP_GET_GLOBAL:     return "OP_GET_GLOBAL";
+  case OpCode::OP_DEFINE_GLOBAL:  return "OP_DEFINE_GLOBAL";
+  case OpCode::OP_SET_GLOBAL:     return "OP_SET_GLOBAL";
+  case OpCode::OP_GET_UPVALUE:    return "OP_GET_UPVALUE";
+  case OpCode::OP_SET_UPVALUE:    return "OP_SET_UPVALUE";
+  case OpCode::OP_GET_PROPERTY:   return "OP_GET_PROPERTY";
+  case OpCode::OP_SET_PROPERTY:   return "OP_SET_PROPERTY";
+  case OpCode::OP_GET_SUPER:      return "OP_GET_SUPER";
+  case OpCode::OP_EQUAL:          return "OP_EQUAL";
+  case OpCode::OP_GREATER:        return "OP_GREATER";
+  case OpCode::OP_LESS:           return "OP_LESS";
+  case OpCode::OP_ADD:            return "OP_ADD";
+  case OpCode::OP_SUBTRACT:       return "OP_SUBTRACT";
+  case OpCode::OP_MULTIPLY:       return "OP_MULTIPLY";
+  case OpCode::OP_DIVIDE:         return "OP_DIVIDE";
+  case OpCode::OP_NOT:            return "OP_NOT";
+  case OpCode::OP_NEGATE:         return "OP_NEGATE";
+  case OpCode::OP_PRINT:          return "OP_PRINT";
+  case OpCode::OP_JUMP:           return "OP_JUMP";
+  case OpCode::OP_JUMP_IF_FALSE:  return "OP_JUMP_IF_FALSE";
+  case OpCode::OP_LOOP:           return "OP_LOOP";
+  case OpCode::OP_CALL:           return "OP_CALL";
+  case OpCode::OP_INVOKE:         return "OP_INVOKE";
+  case OpCode::OP_SUPER_INVOKE:   return "OP_SUPER_INVOKE";
+  case OpCode::OP_CLOSURE:        return "OP_CLOSURE";
+  case OpCode::OP_CLOSE_UPVALUE:  return "OP_CLOSE_UPVALUE";
+  case OpCode::OP_RETURN:         return "OP_RETURN";
+  case OpCode::OP_CLASS:          return "OP_CLASS";
+  case OpCode::OP_INHERIT:        return "OP_INHERIT";
+  case OpCode::OP_METHOD:         return "OP_METHOD";
+  case OpCode::OP_IMPORT:         return "OP_IMPORT";
+  case OpCode::OP_IMPORT_FROM:    return "OP_IMPORT_FROM";
+  case OpCode::OP_IMPORT_ALIAS:   return "OP_IMPORT_ALIAS";
+  default:                        return "OP_UNKNOWN";
+  }
+}
+
+} // namespace ms

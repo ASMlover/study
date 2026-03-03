@@ -579,15 +579,15 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 
 | Phase | Task | Status |
 |-------|------|--------|
-| 1 | 1.1 CMake | [ ] |
-| 1 | 1.2 Platform headers | [ ] |
-| 1 | 1.3 Colorful system | [ ] |
-| 1 | 1.4 Logger | [ ] |
-| 1 | 1.5 Opcode | [ ] |
-| 1 | 1.6 Value | [ ] |
-| 1 | 1.7 Chunk | [ ] |
-| 1 | 1.8 Debug disassembler | [ ] |
-| 1 | 1.9 main.cc skeleton | [ ] |
+| 1 | 1.1 CMake | [x] |
+| 1 | 1.2 Platform headers | [x] |
+| 1 | 1.3 Colorful system | [x] |
+| 1 | 1.4 Logger | [x] |
+| 1 | 1.5 Opcode | [x] |
+| 1 | 1.6 Value | [x] |
+| 1 | 1.7 Chunk | [x] |
+| 1 | 1.8 Debug disassembler | [x] |
+| 1 | 1.9 main.cc skeleton | [x] |
 | 2 | 2.1 Token system | [ ] |
 | 2 | 2.2 Scanner | [ ] |
 | 2 | 2.3 Compiler (expressions) | [ ] |
