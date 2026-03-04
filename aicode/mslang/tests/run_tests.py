@@ -23,10 +23,18 @@ def find_executable():
     return None
 
 def parse_expectations(filepath):
-    """Extract expected output lines from // expect: comments."""
+    """Extract expected output and error lines from // expect: comments."""
     expectations = []
+    error_expectations = []
     with open(filepath, "r") as f:
-        for line in f:
+        for lineno, line in enumerate(f, 1):
+            # Check for runtime error expectation
+            idx = line.find("// expect runtime error: ")
+            if idx != -1:
+                expected = line[idx + len("// expect runtime error: "):].rstrip("\n\r")
+                error_expectations.append((lineno, expected))
+                continue
+
             idx = line.find("// expect: ")
             if idx != -1:
                 expected = line[idx + len("// expect: "):].rstrip("\n\r")
@@ -36,12 +44,12 @@ def parse_expectations(filepath):
                 idx = line.find("// expect:")
                 expected = line[idx + len("// expect:"):].rstrip("\n\r")
                 expectations.append(expected)
-    return expectations
+    return expectations, error_expectations
 
 def run_test(executable, filepath):
     """Run a single test file and return (passed, message)."""
-    expectations = parse_expectations(filepath)
-    if not expectations:
+    expectations, error_expectations = parse_expectations(filepath)
+    if not expectations and not error_expectations:
         return True, f"  SKIP {filepath} (no expectations)"
 
     result = subprocess.run(
@@ -50,6 +58,30 @@ def run_test(executable, filepath):
         text=True,
         timeout=10,
     )
+
+    # Handle runtime error tests
+    if error_expectations:
+        if result.returncode == 0:
+            return False, f"  FAIL {filepath}\n    Expected runtime error but got exit code 0"
+        stderr = result.stderr
+        for lineno, expected_msg in error_expectations:
+            if expected_msg not in stderr:
+                return False, (
+                    f"  FAIL {filepath}\n"
+                    f"    Line {lineno}: expected error '{expected_msg}' not found in stderr\n"
+                    f"    Stderr: {stderr.strip()}"
+                )
+        # Also check stdout expectations if any
+        if expectations:
+            actual_lines = result.stdout.rstrip("\n").split("\n") if result.stdout.strip() else []
+            for i, (expected, actual) in enumerate(zip(expectations, actual_lines)):
+                if expected != actual:
+                    return False, (
+                        f"  FAIL {filepath}\n"
+                        f"    Output line {i + 1}: expected '{expected}', got '{actual}'"
+                    )
+        total = len(expectations) + len(error_expectations)
+        return True, f"  PASS {filepath} ({total} assertions)"
 
     actual_lines = result.stdout.rstrip("\n").split("\n") if result.stdout.strip() else []
 
@@ -85,6 +117,7 @@ def main():
         sys.exit(1)
 
     test_files = sorted(glob.glob(os.path.join("tests", "*.ms")))
+    test_files += sorted(glob.glob(os.path.join("tests", "errors", "*.ms")))
     if not test_files:
         print("No test files found.")
         sys.exit(1)

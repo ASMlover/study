@@ -60,6 +60,7 @@ public:
 
   int count() const noexcept { return count_; }
   int capacity() const noexcept { return static_cast<int>(entries_.size()); }
+  const std::vector<Entry>& entries() const noexcept { return entries_; }
 };
 
 } // namespace ms

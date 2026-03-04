@@ -527,20 +527,21 @@ print "hello";      // expect: hello
 
 | 测试文件 | 覆盖范围 |
 |---------|---------|
-| `arithmetic.ms` | 四则运算、取负、优先级 |
-| `variables.ms` | 变量声明、赋值、作用域 |
-| `control_flow.ms` | if/else、while、for |
-| `functions.ms` | 函数定义、调用、递归 |
-| `closures.ms` | 闭包捕获、upvalue |
-| `classes.ms` | 类、实例、方法、继承、super |
-| `strings.ms` | 字符串拼接、比较 |
-| `import_test.ms` | import、from-import-as |
-| `errors.ms` | 编译错误、运行时错误 |
+| `arithmetic.ms` | 四则运算、取负、优先级、浮点数、比较、布尔运算 |
+| `variables.ms` | 全局/局部变量声明、赋值、作用域、遮蔽 |
+| `control_flow.ms` | if/else、while、for、逻辑运算符、短路求值 |
+| `functions.ms` | 函数定义、调用、递归(fibonacci)、嵌套函数、高阶函数、返回nil |
+| `closures.ms` | 闭包捕获、makeCounter模式、共享upvalue、嵌套闭包、独立计数器 |
+| `classes.ms` | 类声明、实例化、字段、方法、this、init构造器、继承(:)、super、方法覆盖、绑定方法 |
+| `strings.ms` | 字符串拼接、字面量、比较、空字符串 |
+| `import_test.ms` | import、from-import、from-import-as |
+| `errors/*.ms` | 运行时错误(未定义变量、参数数量、类型错误、非实例属性、调用非函数、继承非类) |
 
 ### 10.3 Test Runner
 
 提供 `tests/run_tests.py` 脚本：
-- 解析 `// expect:` 注释
-- 运行每个 `.ms` 文件
-- 比较实际输出与期望输出
-- 报告通过/失败统计
+- 解析 `// expect:` 注释匹配 stdout 输出
+- 解析 `// expect runtime error:` 注释匹配 stderr 错误信息
+- 自动发现 `tests/*.ms` 和 `tests/errors/*.ms`
+- 运行每个 `.ms` 文件并比较实际输出与期望输出
+- 报告通过/失败/跳过统计

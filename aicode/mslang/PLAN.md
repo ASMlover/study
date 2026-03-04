@@ -601,21 +601,21 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 4 | 4.1 Native functions | [x] |
 | 4 | 4.2 Function compilation | [x] |
 | 4 | 4.3 Closures & upvalues | [x] |
-| 4 | 4.4 Phase 4 tests | [ ] |
+| 4 | 4.4 Phase 4 tests | [x] |
 | 5 | 5.1 Classes & instances | [x] |
 | 5 | 5.2 Methods & this | [x] |
 | 5 | 5.3 Inheritance & super | [x] |
-| 5 | 5.4 Phase 5 tests | [ ] |
+| 5 | 5.4 Phase 5 tests | [x] |
 | 6 | 6.1 GC infrastructure | [x] |
 | 6 | 6.2 Mark phase | [x] |
 | 6 | 6.3 Trace & sweep | [x] |
-| 6 | 6.4 GC stress test | [ ] |
+| 6 | 6.4 GC stress test | [x] |
 | 7 | 7.1 Module loader | [x] |
 | 7 | 7.2 import statement | [x] |
 | 7 | 7.3 from-import-as | [x] |
-| 7 | 7.4 Phase 7 tests | [ ] |
+| 7 | 7.4 Phase 7 tests | [x] |
 | 8 | 8.1 REPL polish | [x] |
-| 8 | 8.2 Error messages | [~] |
+| 8 | 8.2 Error messages | [x] |
 | 8 | 8.3 Test runner | [x] |
-| 8 | 8.4 Example scripts | [ ] |
-| 8 | 8.5 Documentation | [ ] |
+| 8 | 8.4 Example scripts | [x] |
+| 8 | 8.5 Documentation | [x] |

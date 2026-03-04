@@ -29,6 +29,7 @@
 #include <fstream>
 #include <iostream>
 #include <format>
+#include <unordered_set>
 #include "VM.hh"
 #include "Compiler.hh"
 #include "Memory.hh"
@@ -230,6 +231,15 @@ void VM::mark_roots() noexcept {
 
   // Mark init string
   mark_object(init_string_);
+
+  // Mark pending import modules
+  for (auto& pending : pending_imports_) {
+    mark_object(pending.module);
+    for (auto& req : pending.from_imports) {
+      mark_object(req.name);
+      if (req.alias) mark_object(req.alias);
+    }
+  }
 }
 
 void VM::concatenate() noexcept {
@@ -318,6 +328,18 @@ bool VM::invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noex
 
 bool VM::invoke(ObjString* name, int arg_count) noexcept {
   Value receiver = peek(arg_count);
+
+  // Handle module property access (e.g., math.add(1, 2))
+  if (is_obj_type(receiver, ObjectType::OBJ_MODULE)) {
+    ObjModule* module = as_module(receiver);
+    auto it = module->exports_.find(name);
+    if (it == module->exports_.end()) {
+      runtime_error(std::format("Undefined export '{}'.", name->value_));
+      return false;
+    }
+    stack_top_[-arg_count - 1] = it->second;
+    return call_value(it->second, arg_count);
+  }
 
   if (!is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
     runtime_error("Only instances have methods.");
@@ -413,15 +435,25 @@ void VM::import_module(ObjString* path) noexcept {
     return;
   }
 
+  // Snapshot current global keys before module execution
+  std::vector<ObjString*> pre_keys;
+  for (auto& entry : globals_.entries()) {
+    if (entry.key != nullptr) {
+      pre_keys.push_back(entry.key);
+    }
+  }
+
+  // Create module object and cache it
+  ObjModule* module = allocate<ObjModule>(path);
+  modules_[path_str] = module;
+
   // Execute module
   ObjClosure* closure = allocate<ObjClosure>(function);
   push(Value(static_cast<Object*>(closure)));
   call(closure, 0);
 
-  // Module execution happens in the normal run loop
-  // For now, just mark it as imported
-  ObjModule* module = allocate<ObjModule>(path);
-  modules_[path_str] = module;
+  // Track this import so OP_RETURN can collect exports
+  pending_imports_.push_back({frame_count_ - 1, module, std::move(pre_keys)});
 }
 
 InterpretResult VM::interpret(strv_t source) noexcept {
@@ -539,6 +571,19 @@ InterpretResult VM::run() noexcept {
     }
 
     case OpCode::OP_GET_PROPERTY: {
+      if (is_obj_type(peek(0), ObjectType::OBJ_MODULE)) {
+        ObjModule* module = as_module(peek(0));
+        ObjString* name = READ_STRING();
+        auto it = module->exports_.find(name);
+        if (it != module->exports_.end()) {
+          pop(); // Module
+          push(it->second);
+          break;
+        }
+        runtime_error(std::format("Undefined export '{}'.", name->value_));
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+
       if (!is_obj_type(peek(0), ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have properties.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -709,6 +754,39 @@ InterpretResult VM::run() noexcept {
       stack_top_ = frame->slots;
       push(result);
       frame = &frames_[frame_count_ - 1];
+
+      // Check if we just returned from a module frame
+      if (!pending_imports_.empty() && pending_imports_.back().frame_index == frame_count_) {
+        auto pending = std::move(pending_imports_.back());
+        pending_imports_.pop_back();
+
+        // Collect new globals as module exports
+        std::unordered_set<ObjString*> pre_set(
+            pending.pre_global_keys.begin(), pending.pre_global_keys.end());
+        for (auto& entry : globals_.entries()) {
+          if (entry.key != nullptr && pre_set.find(entry.key) == pre_set.end()) {
+            pending.module->exports_[entry.key] = entry.value;
+          }
+        }
+
+        // Define module as global variable using filename without extension
+        str_t mod_path = pending.module->name_->value_;
+        auto slash = mod_path.find_last_of("/\\");
+        str_t filename = (slash != str_t::npos) ? mod_path.substr(slash + 1) : mod_path;
+        auto dot = filename.find_last_of('.');
+        str_t mod_name = (dot != str_t::npos) ? filename.substr(0, dot) : filename;
+        ObjString* name_str = copy_string(mod_name.c_str(), mod_name.size());
+        globals_.set(name_str, Value(static_cast<Object*>(pending.module)));
+
+        // Process deferred from-import requests
+        for (auto& req : pending.from_imports) {
+          auto exp_it = pending.module->exports_.find(req.name);
+          if (exp_it != pending.module->exports_.end()) {
+            ObjString* target = req.alias ? req.alias : req.name;
+            globals_.set(target, exp_it->second);
+          }
+        }
+      }
       break;
     }
 
@@ -748,6 +826,7 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       import_module(as_string(path_val));
+      frame = &frames_[frame_count_ - 1];
       break;
     }
 
@@ -760,16 +839,23 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       ObjString* path = as_string(path_val);
+      ObjString* name = as_string(name_val);
+      bool was_cached = modules_.find(path->value_) != modules_.end();
       import_module(path);
+      frame = &frames_[frame_count_ - 1];
 
-      // Look up the exported name
-      auto mod_it = modules_.find(path->value_);
-      if (mod_it != modules_.end()) {
-        ObjString* name = as_string(name_val);
-        auto exp_it = mod_it->second->exports_.find(name);
-        if (exp_it != mod_it->second->exports_.end()) {
-          globals_.set(name, exp_it->second);
+      if (was_cached) {
+        // Module already executed, exports available
+        auto mod_it = modules_.find(path->value_);
+        if (mod_it != modules_.end()) {
+          auto exp_it = mod_it->second->exports_.find(name);
+          if (exp_it != mod_it->second->exports_.end()) {
+            globals_.set(name, exp_it->second);
+          }
         }
+      } else if (!pending_imports_.empty()) {
+        // Module not yet executed, defer lookup
+        pending_imports_.back().from_imports.push_back({name, nullptr});
       }
       break;
     }
@@ -784,16 +870,22 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       ObjString* path = as_string(path_val);
+      ObjString* name = as_string(name_val);
+      ObjString* alias = as_string(alias_val);
+      bool was_cached = modules_.find(path->value_) != modules_.end();
       import_module(path);
+      frame = &frames_[frame_count_ - 1];
 
-      auto mod_it = modules_.find(path->value_);
-      if (mod_it != modules_.end()) {
-        ObjString* name = as_string(name_val);
-        ObjString* alias = as_string(alias_val);
-        auto exp_it = mod_it->second->exports_.find(name);
-        if (exp_it != mod_it->second->exports_.end()) {
-          globals_.set(alias, exp_it->second);
+      if (was_cached) {
+        auto mod_it = modules_.find(path->value_);
+        if (mod_it != modules_.end()) {
+          auto exp_it = mod_it->second->exports_.find(name);
+          if (exp_it != mod_it->second->exports_.end()) {
+            globals_.set(alias, exp_it->second);
+          }
         }
+      } else if (!pending_imports_.empty()) {
+        pending_imports_.back().from_imports.push_back({name, alias});
       }
       break;
     }

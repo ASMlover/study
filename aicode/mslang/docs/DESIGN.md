@@ -784,13 +784,21 @@ for test_file in glob("tests/*.ms"):
 
 | Phase | 测试文件 | 验证内容 |
 |-------|---------|---------|
-| 3 | arithmetic.ms | 四则运算、优先级、取负 |
-| 3 | variables.ms | 全局/局部变量、作用域、赋值 |
-| 3 | strings.ms | 字符串拼接、字面量 |
-| 3 | control_flow.ms | if/else, while, for |
-| 4 | functions.ms | 函数定义、调用、递归、原生函数 |
-| 4 | closures.ms | 闭包捕获、upvalue sharing |
-| 5 | classes.ms | 类、实例、方法、继承、super |
-| 6 | (all above) | GC 启用下全部通过 |
-| 7 | import_test.ms | import, from-import-as |
-| 8 | errors.ms | 编译/运行时错误信息 |
+| 3 | arithmetic.ms | 四则运算、优先级、取负、浮点数、比较 |
+| 3 | variables.ms | 全局/局部变量、作用域、遮蔽、赋值 |
+| 3 | strings.ms | 字符串拼接、字面量、比较、空字符串 |
+| 3 | control_flow.ms | if/else, while, for, 逻辑运算符, 短路求值 |
+| 4 | functions.ms | 函数定义、调用、递归、嵌套函数、高阶函数 |
+| 4 | closures.ms | 闭包捕获、makeCounter、共享upvalue、嵌套闭包 |
+| 5 | classes.ms | 类、实例、字段、方法、this、init、继承、super、绑定方法 |
+| 6 | (all above) | GC stress 模式下全部通过 |
+| 7 | import_test.ms | import, from-import, from-import-as |
+| 8 | errors/*.ms | 运行时错误（未定义变量、参数数量、类型错误等） |
+
+### 13.4 Example Scripts
+
+| 文件 | 内容 |
+|------|------|
+| examples/fibonacci.ms | 递归 + 迭代 Fibonacci |
+| examples/counter.ms | 闭包计数器 (dispatch pattern) |
+| examples/oop.ms | 类继承层次 + 多态 |

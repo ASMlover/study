@@ -66,6 +66,19 @@ class VM : public Singleton<VM> {
 
   std::unordered_map<str_t, ObjModule*> modules_;
 
+  // Pending module import tracking
+  struct FromImportRequest {
+    ObjString* name;
+    ObjString* alias; // nullptr for non-alias imports
+  };
+  struct PendingImport {
+    int frame_index;
+    ObjModule* module;
+    std::vector<ObjString*> pre_global_keys;
+    std::vector<FromImportRequest> from_imports;
+  };
+  std::vector<PendingImport> pending_imports_;
+
   // VM dispatch
   InterpretResult run() noexcept;
 
