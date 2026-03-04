@@ -29,6 +29,7 @@
 #include <iomanip>
 #include <format>
 #include "Debug.hh"
+#include "Object.hh"
 
 namespace ms {
 
@@ -74,8 +75,22 @@ static sz_t closure_instruction(const Chunk& chunk, sz_t offset) noexcept {
   u8_t index = chunk.code_at(offset + 1);
   std::cout << std::format("{:<16s} {:4d} '{}'\n",
       "OP_CLOSURE", index, chunk.constant_at(index).stringify());
-  // Phase 1: upvalue details will be added when ObjFunction exists
-  return offset + 2;
+  offset += 2;
+
+  // Print upvalue metadata
+  Value constant = chunk.constant_at(index);
+  if (constant.is_object() && constant.as_object()->type() == ObjectType::OBJ_FUNCTION) {
+    ObjFunction* function = as_obj<ObjFunction>(constant.as_object());
+    for (int j = 0; j < function->upvalue_count_; j++) {
+      u8_t is_local = chunk.code_at(offset);
+      u8_t upvalue_index = chunk.code_at(offset + 1);
+      std::cout << std::format("{:04d}      |                     {} {}\n",
+          offset, is_local ? "local" : "upvalue", upvalue_index);
+      offset += 2;
+    }
+  }
+
+  return offset;
 }
 
 } // anonymous namespace

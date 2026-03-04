@@ -26,62 +26,19 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <type_traits>
-#include <sstream>
-#include "Types.hh"
-#include "Consts.hh"
+#include "Scanner.hh"
+#include "Object.hh"
 
 namespace ms {
 
-class Copyable {
-protected:
-  Copyable() noexcept = default;
-  ~Copyable() noexcept = default;
-  Copyable(const Copyable&) noexcept = default;
-  Copyable(Copyable&&) noexcept = default;
-  Copyable& operator=(const Copyable&) noexcept = default;
-  Copyable& operator=(Copyable&&) noexcept = default;
+enum class FunctionType {
+  TYPE_FUNCTION,
+  TYPE_INITIALIZER,
+  TYPE_METHOD,
+  TYPE_SCRIPT,
 };
 
-class UnCopyable {
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable(UnCopyable&&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-  UnCopyable& operator=(UnCopyable&&) = delete;
-};
-
-template <typename T>
-class Singleton : private UnCopyable {
-public:
-  static T& get_instance() noexcept {
-    static T instance;
-    return instance;
-  }
-};
-
-template <typename T, typename U>
-inline T as_type(U x) noexcept {
-  return static_cast<T>(x);
-}
-
-template <typename T, typename U>
-inline T* as_down(U* p) noexcept {
-  return static_cast<T*>(p);
-}
-
-template <typename T>
-inline T* as_ptr(T& ref) noexcept {
-  return &ref;
-}
-
-template <typename T>
-inline str_t to_str(T&& val) {
-  std::stringstream ss;
-  ss << std::forward<T>(val);
-  return ss.str();
-}
+ObjFunction* compile(strv_t source) noexcept;
+void mark_compiler_roots() noexcept;
 
 } // namespace ms

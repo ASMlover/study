@@ -26,62 +26,27 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <type_traits>
-#include <sstream>
 #include "Types.hh"
-#include "Consts.hh"
 
 namespace ms {
 
-class Copyable {
-protected:
-  Copyable() noexcept = default;
-  ~Copyable() noexcept = default;
-  Copyable(const Copyable&) noexcept = default;
-  Copyable(Copyable&&) noexcept = default;
-  Copyable& operator=(const Copyable&) noexcept = default;
-  Copyable& operator=(Copyable&&) noexcept = default;
+enum class TokenType : int {
+#define TOKEN_TYPE(name) TOKEN_##name,
+#include "TokenTypes.hh"
 };
 
-class UnCopyable {
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable(UnCopyable&&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-  UnCopyable& operator=(UnCopyable&&) = delete;
-};
-
-template <typename T>
-class Singleton : private UnCopyable {
-public:
-  static T& get_instance() noexcept {
-    static T instance;
-    return instance;
+inline cstr_t token_type_name(TokenType type) noexcept {
+  switch (type) {
+#define TOKEN_TYPE(name) case TokenType::TOKEN_##name: return #name;
+#include "TokenTypes.hh"
+  default: return "UNKNOWN";
   }
+}
+
+struct Token {
+  TokenType type{TokenType::TOKEN_EOF};
+  strv_t lexeme{};
+  int line{1};
 };
-
-template <typename T, typename U>
-inline T as_type(U x) noexcept {
-  return static_cast<T>(x);
-}
-
-template <typename T, typename U>
-inline T* as_down(U* p) noexcept {
-  return static_cast<T*>(p);
-}
-
-template <typename T>
-inline T* as_ptr(T& ref) noexcept {
-  return &ref;
-}
-
-template <typename T>
-inline str_t to_str(T&& val) {
-  std::stringstream ss;
-  ss << std::forward<T>(val);
-  return ss.str();
-}
 
 } // namespace ms

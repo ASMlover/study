@@ -28,6 +28,7 @@
 #include <iostream>
 #include <format>
 #include "Value.hh"
+#include "Object.hh"
 
 namespace ms {
 
@@ -89,18 +90,17 @@ str_t Value::stringify() const noexcept {
     return std::format("{:g}", val);
   }
   if (is_object()) {
-    // TODO: call obj->stringify() once Object is defined
-    return "<object>";
+    return as_object()->stringify();
   }
   return "nil";
 }
 
-// Convenience object type checks — stubs until Object is available
-bool Value::is_string() const noexcept { return false; }
-bool Value::is_function() const noexcept { return false; }
-bool Value::is_closure() const noexcept { return false; }
-bool Value::is_class() const noexcept { return false; }
-bool Value::is_instance() const noexcept { return false; }
+// Convenience object type checks
+bool Value::is_string() const noexcept { return is_obj_type(*this, ObjectType::OBJ_STRING); }
+bool Value::is_function() const noexcept { return is_obj_type(*this, ObjectType::OBJ_FUNCTION); }
+bool Value::is_closure() const noexcept { return is_obj_type(*this, ObjectType::OBJ_CLOSURE); }
+bool Value::is_class() const noexcept { return is_obj_type(*this, ObjectType::OBJ_CLASS); }
+bool Value::is_instance() const noexcept { return is_obj_type(*this, ObjectType::OBJ_INSTANCE); }
 
 std::ostream& operator<<(std::ostream& os, const Value& value) {
   os << value.stringify();

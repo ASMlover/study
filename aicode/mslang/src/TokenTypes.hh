@@ -26,62 +26,65 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <type_traits>
-#include <sstream>
-#include "Types.hh"
-#include "Consts.hh"
+// X-macro for all token types.
+// Usage: define TOKEN_TYPE(name) before including, then #undef after.
 
-namespace ms {
+#ifndef TOKEN_TYPE
+# define TOKEN_TYPE(name)
+#endif
 
-class Copyable {
-protected:
-  Copyable() noexcept = default;
-  ~Copyable() noexcept = default;
-  Copyable(const Copyable&) noexcept = default;
-  Copyable(Copyable&&) noexcept = default;
-  Copyable& operator=(const Copyable&) noexcept = default;
-  Copyable& operator=(Copyable&&) noexcept = default;
-};
+// Single-character tokens
+TOKEN_TYPE(LEFT_PAREN)
+TOKEN_TYPE(RIGHT_PAREN)
+TOKEN_TYPE(LEFT_BRACE)
+TOKEN_TYPE(RIGHT_BRACE)
+TOKEN_TYPE(COMMA)
+TOKEN_TYPE(DOT)
+TOKEN_TYPE(MINUS)
+TOKEN_TYPE(PLUS)
+TOKEN_TYPE(SEMICOLON)
+TOKEN_TYPE(SLASH)
+TOKEN_TYPE(STAR)
 
-class UnCopyable {
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable(UnCopyable&&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-  UnCopyable& operator=(UnCopyable&&) = delete;
-};
+// One or two character tokens
+TOKEN_TYPE(BANG)
+TOKEN_TYPE(BANG_EQUAL)
+TOKEN_TYPE(EQUAL)
+TOKEN_TYPE(EQUAL_EQUAL)
+TOKEN_TYPE(GREATER)
+TOKEN_TYPE(GREATER_EQUAL)
+TOKEN_TYPE(LESS)
+TOKEN_TYPE(LESS_EQUAL)
+TOKEN_TYPE(COLON)
 
-template <typename T>
-class Singleton : private UnCopyable {
-public:
-  static T& get_instance() noexcept {
-    static T instance;
-    return instance;
-  }
-};
+// Literals
+TOKEN_TYPE(IDENTIFIER)
+TOKEN_TYPE(STRING)
+TOKEN_TYPE(NUMBER)
 
-template <typename T, typename U>
-inline T as_type(U x) noexcept {
-  return static_cast<T>(x);
-}
+// Keywords
+TOKEN_TYPE(AND)
+TOKEN_TYPE(CLASS)
+TOKEN_TYPE(ELSE)
+TOKEN_TYPE(FALSE)
+TOKEN_TYPE(FOR)
+TOKEN_TYPE(FUN)
+TOKEN_TYPE(IF)
+TOKEN_TYPE(IMPORT)
+TOKEN_TYPE(FROM)
+TOKEN_TYPE(AS)
+TOKEN_TYPE(NIL)
+TOKEN_TYPE(OR)
+TOKEN_TYPE(PRINT)
+TOKEN_TYPE(RETURN)
+TOKEN_TYPE(SUPER)
+TOKEN_TYPE(THIS)
+TOKEN_TYPE(TRUE)
+TOKEN_TYPE(VAR)
+TOKEN_TYPE(WHILE)
 
-template <typename T, typename U>
-inline T* as_down(U* p) noexcept {
-  return static_cast<T*>(p);
-}
+// Special
+TOKEN_TYPE(ERROR)
+TOKEN_TYPE(EOF)
 
-template <typename T>
-inline T* as_ptr(T& ref) noexcept {
-  return &ref;
-}
-
-template <typename T>
-inline str_t to_str(T&& val) {
-  std::stringstream ss;
-  ss << std::forward<T>(val);
-  return ss.str();
-}
-
-} // namespace ms
+#undef TOKEN_TYPE

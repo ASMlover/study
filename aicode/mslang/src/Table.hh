@@ -26,62 +26,40 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <type_traits>
-#include <sstream>
-#include "Types.hh"
-#include "Consts.hh"
+#include <vector>
+#include "Value.hh"
 
 namespace ms {
 
-class Copyable {
-protected:
-  Copyable() noexcept = default;
-  ~Copyable() noexcept = default;
-  Copyable(const Copyable&) noexcept = default;
-  Copyable(Copyable&&) noexcept = default;
-  Copyable& operator=(const Copyable&) noexcept = default;
-  Copyable& operator=(Copyable&&) noexcept = default;
+class ObjString;
+
+struct Entry {
+  ObjString* key{nullptr};
+  Value value{};
 };
 
-class UnCopyable {
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable(UnCopyable&&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-  UnCopyable& operator=(UnCopyable&&) = delete;
-};
+class Table {
+  std::vector<Entry> entries_;
+  int count_{0};
 
-template <typename T>
-class Singleton : private UnCopyable {
+  static constexpr double kMAX_LOAD = 0.75;
+
+  void adjust_capacity(int capacity) noexcept;
+  Entry* find_entry(std::vector<Entry>& entries, ObjString* key) noexcept;
 public:
-  static T& get_instance() noexcept {
-    static T instance;
-    return instance;
-  }
+  Table() noexcept = default;
+
+  bool get(ObjString* key, Value* value) const noexcept;
+  bool set(ObjString* key, Value value) noexcept;
+  bool remove(ObjString* key) noexcept;
+  void add_all(Table& from) noexcept;
+
+  ObjString* find_string(cstr_t chars, sz_t length, u32_t hash) const noexcept;
+  void remove_white() noexcept;
+  void mark_table() noexcept;
+
+  int count() const noexcept { return count_; }
+  int capacity() const noexcept { return static_cast<int>(entries_.size()); }
 };
-
-template <typename T, typename U>
-inline T as_type(U x) noexcept {
-  return static_cast<T>(x);
-}
-
-template <typename T, typename U>
-inline T* as_down(U* p) noexcept {
-  return static_cast<T*>(p);
-}
-
-template <typename T>
-inline T* as_ptr(T& ref) noexcept {
-  return &ref;
-}
-
-template <typename T>
-inline str_t to_str(T&& val) {
-  std::stringstream ss;
-  ss << std::forward<T>(val);
-  return ss.str();
-}
 
 } // namespace ms

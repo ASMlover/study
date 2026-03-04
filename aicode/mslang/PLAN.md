@@ -588,34 +588,34 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 1 | 1.7 Chunk | [x] |
 | 1 | 1.8 Debug disassembler | [x] |
 | 1 | 1.9 main.cc skeleton | [x] |
-| 2 | 2.1 Token system | [ ] |
-| 2 | 2.2 Scanner | [ ] |
-| 2 | 2.3 Compiler (expressions) | [ ] |
-| 3 | 3.1 Table | [ ] |
-| 3 | 3.2 Object basics | [ ] |
-| 3 | 3.3 VM core | [ ] |
-| 3 | 3.4 Global variables | [ ] |
-| 3 | 3.5 Local variables & scope | [ ] |
-| 3 | 3.6 Control flow | [ ] |
-| 3 | 3.7 Phase 3 tests | [ ] |
-| 4 | 4.1 Native functions | [ ] |
-| 4 | 4.2 Function compilation | [ ] |
-| 4 | 4.3 Closures & upvalues | [ ] |
+| 2 | 2.1 Token system | [x] |
+| 2 | 2.2 Scanner | [x] |
+| 2 | 2.3 Compiler (expressions) | [x] |
+| 3 | 3.1 Table | [x] |
+| 3 | 3.2 Object basics | [x] |
+| 3 | 3.3 VM core | [x] |
+| 3 | 3.4 Global variables | [x] |
+| 3 | 3.5 Local variables & scope | [x] |
+| 3 | 3.6 Control flow | [x] |
+| 3 | 3.7 Phase 3 tests | [x] |
+| 4 | 4.1 Native functions | [x] |
+| 4 | 4.2 Function compilation | [x] |
+| 4 | 4.3 Closures & upvalues | [x] |
 | 4 | 4.4 Phase 4 tests | [ ] |
-| 5 | 5.1 Classes & instances | [ ] |
-| 5 | 5.2 Methods & this | [ ] |
-| 5 | 5.3 Inheritance & super | [ ] |
+| 5 | 5.1 Classes & instances | [x] |
+| 5 | 5.2 Methods & this | [x] |
+| 5 | 5.3 Inheritance & super | [x] |
 | 5 | 5.4 Phase 5 tests | [ ] |
-| 6 | 6.1 GC infrastructure | [ ] |
-| 6 | 6.2 Mark phase | [ ] |
-| 6 | 6.3 Trace & sweep | [ ] |
+| 6 | 6.1 GC infrastructure | [x] |
+| 6 | 6.2 Mark phase | [x] |
+| 6 | 6.3 Trace & sweep | [x] |
 | 6 | 6.4 GC stress test | [ ] |
-| 7 | 7.1 Module loader | [ ] |
-| 7 | 7.2 import statement | [ ] |
-| 7 | 7.3 from-import-as | [ ] |
+| 7 | 7.1 Module loader | [x] |
+| 7 | 7.2 import statement | [x] |
+| 7 | 7.3 from-import-as | [x] |
 | 7 | 7.4 Phase 7 tests | [ ] |
-| 8 | 8.1 REPL polish | [ ] |
-| 8 | 8.2 Error messages | [ ] |
-| 8 | 8.3 Test runner | [ ] |
+| 8 | 8.1 REPL polish | [x] |
+| 8 | 8.2 Error messages | [~] |
+| 8 | 8.3 Test runner | [x] |
 | 8 | 8.4 Example scripts | [ ] |
 | 8 | 8.5 Documentation | [ ] |

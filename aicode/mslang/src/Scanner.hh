@@ -26,62 +26,35 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <type_traits>
-#include <sstream>
-#include "Types.hh"
-#include "Consts.hh"
+#include "Token.hh"
 
 namespace ms {
 
-class Copyable {
-protected:
-  Copyable() noexcept = default;
-  ~Copyable() noexcept = default;
-  Copyable(const Copyable&) noexcept = default;
-  Copyable(Copyable&&) noexcept = default;
-  Copyable& operator=(const Copyable&) noexcept = default;
-  Copyable& operator=(Copyable&&) noexcept = default;
-};
+class Scanner {
+  cstr_t start_{};
+  cstr_t current_{};
+  int line_{1};
 
-class UnCopyable {
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable(UnCopyable&&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-  UnCopyable& operator=(UnCopyable&&) = delete;
-};
+  bool is_at_end() const noexcept;
+  char advance() noexcept;
+  char peek() const noexcept;
+  char peek_next() const noexcept;
+  bool match(char expected) noexcept;
 
-template <typename T>
-class Singleton : private UnCopyable {
+  void skip_whitespace() noexcept;
+  Token make_token(TokenType type) const noexcept;
+  Token error_token(cstr_t message) const noexcept;
+  Token scan_string() noexcept;
+  Token scan_number() noexcept;
+  Token scan_identifier() noexcept;
+  TokenType identifier_type() const noexcept;
+  TokenType check_keyword(int start, int length, cstr_t rest, TokenType type) const noexcept;
 public:
-  static T& get_instance() noexcept {
-    static T instance;
-    return instance;
-  }
+  Scanner() noexcept = default;
+  explicit Scanner(strv_t source) noexcept;
+
+  void init(strv_t source) noexcept;
+  Token scan_token() noexcept;
 };
-
-template <typename T, typename U>
-inline T as_type(U x) noexcept {
-  return static_cast<T>(x);
-}
-
-template <typename T, typename U>
-inline T* as_down(U* p) noexcept {
-  return static_cast<T*>(p);
-}
-
-template <typename T>
-inline T* as_ptr(T& ref) noexcept {
-  return &ref;
-}
-
-template <typename T>
-inline str_t to_str(T&& val) {
-  std::stringstream ss;
-  ss << std::forward<T>(val);
-  return ss.str();
-}
 
 } // namespace ms

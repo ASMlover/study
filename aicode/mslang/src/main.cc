@@ -28,12 +28,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include "Chunk.hh"
-#include "Debug.hh"
-#include "Logger.hh"
+#include "VM.hh"
 
 static void repl() noexcept {
+  auto& vm = ms::VM::get_instance();
   ms::str_t line;
+
   for (;;) {
     std::cout << "maple> ";
 
@@ -42,8 +42,9 @@ static void repl() noexcept {
       break;
     }
 
-    // TODO: pass line to VM for interpretation
-    std::cout << line << std::endl;
+    if (line.empty()) continue;
+
+    vm.interpret(line);
   }
 }
 
@@ -54,45 +55,21 @@ static void run_file(const ms::str_t& path) noexcept {
     std::exit(74);
   }
 
-  // TODO: read source and pass to VM for interpretation
-  std::cout << "Running: " << path << std::endl;
-}
+  file.seekg(0, std::ios::end);
+  auto size = file.tellg();
+  file.seekg(0, std::ios::beg);
+  ms::str_t source;
+  source.resize(static_cast<ms::sz_t>(size));
+  file.read(source.data(), size);
 
-static void phase1_test() noexcept {
-  ms::Chunk chunk;
+  auto& vm = ms::VM::get_instance();
+  ms::InterpretResult result = vm.interpret(source);
 
-  // Add constants
-  auto idx_a = chunk.add_constant(ms::Value(1.2));
-  auto idx_b = chunk.add_constant(ms::Value(3.4));
-
-  // Write instructions: OP_CONSTANT(0), OP_CONSTANT(1), OP_ADD, OP_NEGATE, OP_PRINT, OP_RETURN
-  chunk.write(ms::OpCode::OP_CONSTANT, 1);
-  chunk.write(static_cast<ms::u8_t>(idx_a), 1);
-
-  chunk.write(ms::OpCode::OP_CONSTANT, 1);
-  chunk.write(static_cast<ms::u8_t>(idx_b), 1);
-
-  chunk.write(ms::OpCode::OP_ADD, 1);
-  chunk.write(ms::OpCode::OP_NEGATE, 1);
-  chunk.write(ms::OpCode::OP_PRINT, 1);
-  chunk.write(ms::OpCode::OP_RETURN, 2);
-
-  // Disassemble
-  ms::disassemble_chunk(chunk, "phase1-test");
-
-  // Logger test messages
-  auto& logger = ms::Logger::get_instance();
-  logger.set_level(ms::LogLevel::TRACE);
-  logger.trace("main", "Phase 1 trace message");
-  logger.debug("main", "Phase 1 debug message");
-  logger.info("main", "Phase 1 verification complete");
-  logger.warn("main", "VM not yet implemented");
-  logger.error("main", "This is a sample error (not a real error)");
+  if (result == ms::InterpretResult::INTERPRET_COMPILE_ERROR) std::exit(65);
+  if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);
 }
 
 int main(int argc, char* argv[]) {
-  phase1_test();
-
   if (argc == 1) {
     repl();
   } else if (argc == 2) {

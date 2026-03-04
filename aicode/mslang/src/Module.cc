@@ -24,64 +24,37 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#pragma once
+#include <fstream>
+#include <filesystem>
+#include <ios>
+#include "Module.hh"
 
-#include <type_traits>
-#include <sstream>
-#include "Types.hh"
-#include "Consts.hh"
+namespace fs = std::filesystem;
 
 namespace ms {
 
-class Copyable {
-protected:
-  Copyable() noexcept = default;
-  ~Copyable() noexcept = default;
-  Copyable(const Copyable&) noexcept = default;
-  Copyable(Copyable&&) noexcept = default;
-  Copyable& operator=(const Copyable&) noexcept = default;
-  Copyable& operator=(Copyable&&) noexcept = default;
-};
+std::optional<str_t> ModuleLoader::read_source(strv_t path) noexcept {
+  str_t path_str{path};
+  std::ifstream file{path_str};
+  if (!file.is_open()) return std::nullopt;
 
-class UnCopyable {
-protected:
-  UnCopyable() noexcept = default;
-  ~UnCopyable() noexcept = default;
-  UnCopyable(const UnCopyable&) = delete;
-  UnCopyable(UnCopyable&&) = delete;
-  UnCopyable& operator=(const UnCopyable&) = delete;
-  UnCopyable& operator=(UnCopyable&&) = delete;
-};
-
-template <typename T>
-class Singleton : private UnCopyable {
-public:
-  static T& get_instance() noexcept {
-    static T instance;
-    return instance;
-  }
-};
-
-template <typename T, typename U>
-inline T as_type(U x) noexcept {
-  return static_cast<T>(x);
+  str_t source;
+  file.seekg(0, std::ios::end);
+  auto size = file.tellg();
+  file.seekg(0, std::ios::beg);
+  source.resize(static_cast<sz_t>(size));
+  file.read(source.data(), size);
+  return source;
 }
 
-template <typename T, typename U>
-inline T* as_down(U* p) noexcept {
-  return static_cast<T*>(p);
-}
+str_t ModuleLoader::resolve_path(strv_t module_path, strv_t importer_path) noexcept {
+  fs::path importer(importer_path);
+  fs::path module(module_path);
 
-template <typename T>
-inline T* as_ptr(T& ref) noexcept {
-  return &ref;
-}
+  if (module.is_absolute()) return str_t(module_path);
 
-template <typename T>
-inline str_t to_str(T&& val) {
-  std::stringstream ss;
-  ss << std::forward<T>(val);
-  return ss.str();
+  fs::path resolved = importer.parent_path() / module;
+  return resolved.string();
 }
 
 } // namespace ms
