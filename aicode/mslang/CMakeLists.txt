@@ -153,6 +153,9 @@ endif()
 enable_testing()
 
 file(GLOB MSLANG_TEST_SCRIPTS tests/*.ms)
+# Tests that expect a runtime error (non-zero exit)
+set(MSLANG_RUNTIME_ERROR_TESTS stack_overflow)
+
 foreach(test_script ${MSLANG_TEST_SCRIPTS})
   get_filename_component(test_name "${test_script}" NAME_WE)
   add_test(
@@ -160,4 +163,7 @@ foreach(test_script ${MSLANG_TEST_SCRIPTS})
     COMMAND $<TARGET_FILE:${PROJECT_NAME}> "${test_script}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  if(test_name IN_LIST MSLANG_RUNTIME_ERROR_TESTS)
+    set_tests_properties("test_${test_name}" PROPERTIES WILL_FAIL TRUE)
+  endif()
 endforeach()

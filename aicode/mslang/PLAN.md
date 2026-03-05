@@ -788,7 +788,7 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 8 | 8.4 Example scripts | [x] |
 | 8 | 8.5 Documentation | [x] |
 | **9** | **9.1.1 GC remove_white 时序** | [x] |
-| 9 | 9.1.2 push 栈溢出检查 | [ ] |
+| 9 | 9.1.2 push 栈溢出检查 | [x] |
 | 9 | 9.1.3 import 使用 ModuleLoader | [ ] |
 | 9 | 9.1.4 stringify 大数溢出 | [ ] |
 | 9 | 9.2.1 Compiler 静态状态消除 | [ ] |

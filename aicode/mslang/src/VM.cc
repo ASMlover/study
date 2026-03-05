@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <cstdarg>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <format>
@@ -120,6 +121,10 @@ void VM::reset_stack() noexcept {
 }
 
 void VM::push(Value value) noexcept {
+  if (stack_top_ >= stack_.data() + stack_.size()) {
+    runtime_error("Stack overflow.");
+    std::exit(70);
+  }
   *stack_top_ = value;
   stack_top_++;
 }
