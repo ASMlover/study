@@ -53,6 +53,7 @@ class Compiler;
 class VM;
 class Memory;
 class Object;
+class Value;
 class Table;
 class Chunk;
 class Debug;

@@ -1,12 +1,13 @@
 #pragma once
 
 #include "ms/common.hh"
-#include "ms/object.hh"
 
 #include <string>
 #include <string_view>
 
 namespace ms {
+
+struct Obj;
 
 enum class Type : uint8_t {
     Nil,

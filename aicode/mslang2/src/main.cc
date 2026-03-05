@@ -1,4 +1,6 @@
 #include "ms/scanner.hh"
+#include "ms/compiler.hh"
+#include "ms/chunk.hh"
 
 #include <iostream>
 #include <fstream>
@@ -7,10 +9,20 @@
 
 namespace ms {
 
-void printToken(const Token& token) {
-    std::cout << "Token{type=" << static_cast<int>(token.type)
-              << ", text=\"" << token.start << "\""
-              << ", line=" << token.line << "}" << std::endl;
+void runSource(const std::string& source) {
+    Chunk chunk;
+    Scanner scanner;
+    Compiler compiler(&scanner, &chunk);
+
+    if (!compiler.compile(source, &chunk)) {
+        return;
+    }
+
+    std::cout << "Compiled successfully!" << std::endl;
+    std::cout << "Constants: " << chunk.constants().size() << std::endl;
+    for (size_t i = 0; i < chunk.constants().size(); ++i) {
+        std::cout << "  " << i << ": " << chunk.constants()[i].toString() << std::endl;
+    }
 }
 
 void runFile(const std::string& path) {
@@ -24,21 +36,10 @@ void runFile(const std::string& path) {
     oss << file.rdbuf();
     std::string source = oss.str();
 
-    Scanner scanner;
-    scanner.initSource(source);
-
-    Token token;
-    while (true) {
-        token = scanner.scanToken();
-        printToken(token);
-        if (token.type == TokenType::TOKEN_EOF) {
-            break;
-        }
-    }
+    runSource(source);
 }
 
 void runPrompt() {
-    Scanner scanner;
     std::string line;
 
     while (true) {
@@ -51,16 +52,7 @@ void runPrompt() {
             continue;
         }
 
-        scanner.initSource(line);
-
-        Token token;
-        while (true) {
-            token = scanner.scanToken();
-            printToken(token);
-            if (token.type == TokenType::TOKEN_EOF) {
-                break;
-            }
-        }
+        runSource(line);
     }
     std::cout << std::endl;
 }

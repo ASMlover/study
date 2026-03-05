@@ -1,4 +1,5 @@
 #include "ms/value.hh"
+#include "ms/object.hh"
 
 #include <sstream>
 #include <iomanip>
