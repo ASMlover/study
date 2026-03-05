@@ -575,6 +575,174 @@ Phase 7: Phase 6 → 7.1 → 7.2 → 7.3 → 7.4
 Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 ```
 
+---
+
+## Phase 9: Improvements — Bug 修复、代码质量与语言特性增强
+
+> 基于对已完成 Phase 1-8 核心实现的全面审查，列出以下改进点。
+> 按优先级分为：Bug 修复（必须）、代码质量（建议）、语言特性（扩展）。
+
+### 9.1 Bug 修复
+
+#### Task 9.1.1: GC `remove_white()` 时序错误 [严重]
+- **Files**: `src/VM.cc`
+- **Problem**: `VM::allocate()` 中非 stress-GC 路径下 `strings_.remove_white()` 在 `collect_garbage()` **之前**调用。此时所有对象 `is_marked_` 为 false（上轮 sweep 已重置），导致所有 interned string 被从驻留表移除。
+- **Fix**: 将 `remove_white()` 移至 `Memory.cc::collect_garbage()` 中 `trace_references()` 之后、`sweep()` 之前，与 clox 原实现一致。
+- **Verify**: 启用 `MAPLE_DEBUG_STRESS_GC` 运行全部测试通过。
+
+#### Task 9.1.2: `VM::push()` 无栈溢出检查
+- **Files**: `src/VM.cc`
+- **Problem**: `push()` 直接写入 `*stack_top_++`，无边界检查。恶意或深度递归脚本可越界写入。
+- **Fix**: 添加 `stack_top_ < stack_.data() + stack_.size()` 断言或运行时检查。
+- **Verify**: 构造深度超限脚本，验证报错而非崩溃。
+
+#### Task 9.1.3: `import_module` 未使用 `ModuleLoader`
+- **Files**: `src/VM.cc`, `src/Module.hh/cc`
+- **Problem**: `VM::import_module()` 直接用 `std::ifstream` 读文件，未使用已有的 `ModuleLoader::read_source()` 和 `ModuleLoader::resolve_path()`。导致：(1) 代码重复 (2) 无相对路径解析——import 路径只能是相对于 CWD 的路径，无法相对于导入文件路径解析。
+- **Fix**: 重构 `import_module` 使用 `ModuleLoader`，传入当前执行文件路径用于相对路径解析。
+- **Verify**: 跨目录 import 测试（如 `tests/nested/` 目录结构）。
+
+#### Task 9.1.4: `Value::stringify()` 大数值转 int 溢出
+- **Files**: `src/Value.cc`
+- **Problem**: `stringify()` 将整数 double 强转 `i32_t`，当值超过 `INT32_MAX` 时溢出产生错误输出。
+- **Fix**: 改用 `i64_t` 或 `static_cast<long long>` 并检查范围。
+- **Verify**: `print 2147483648;` 应输出 `2147483648` 而非负数。
+
+### 9.2 代码质量改进
+
+#### Task 9.2.1: Compiler 静态状态消除
+- **Files**: `src/Compiler.hh`, `src/Compiler.cc`
+- **Problem**: `scanner_`, `current_`, `previous_`, `had_error_`, `panic_mode_`, `current_class_`, `current_compiler_` 全部是 static 成员，定义在 `.cc` 文件中。这使得 Compiler 不可重入、非线程安全，且静态成员定义在 .cc 中违反 ODR 惯例。
+- **Fix**: 将 Parser 状态抽取为 `ParseState` 结构体，通过指针在 Compiler 实例间共享（第一个 Compiler 创建时分配，嵌套 Compiler 继承同一指针）。
+- **Verify**: 编译通过，全部测试通过。
+
+#### Task 9.2.2: GC 耦合解耦 — 消除全局 `vm_*` 函数
+- **Files**: `src/VM.hh/cc`, `src/Memory.hh/cc`
+- **Problem**: `Memory.cc` 通过 6 个全局 `vm_*()` 自由函数访问 VM 的 GC 状态。VM.cc 中还有大量 `allocate_object` 模板显式实例化。耦合严重。
+- **Fix**: 引入 `GCContext` 结构体（持有 objects_, bytes_allocated_, next_gc_, gray_stack_ 引用），`collect_garbage(GCContext&)` 接收上下文；或将 GC 逻辑移入 VM 类方法。
+- **Verify**: 编译通过，全部测试通过。
+
+#### Task 9.2.3: Object 成员可见性封装
+- **Files**: `src/Object.hh`
+- **Problem**: 所有 Object 子类成员（`value_`, `hash_`, `function_`, `klass_`, `methods_`, `fields_`, `exports_` 等）全部 public，外部直接读写。
+- **Fix**: 将成员改为 private/protected，提供 accessor 方法。对 VM 热路径（如 `function_->chunk_`）可用 friend 或保留 public。
+- **Verify**: 编译通过。
+
+#### Task 9.2.4: `Table::get()` 消除 `const_cast`
+- **Files**: `src/Table.hh/cc`
+- **Problem**: `get()` 是 const 方法但内部 `const_cast` 调用非 const 的 `find_entry()`。
+- **Fix**: 将 `find_entry` 拆分为 const 和 non-const 版本，或使其内部不修改状态（已经满足）则标记为 const。
+- **Verify**: 编译通过。
+
+#### Task 9.2.5: 统一 Object 字段/方法存储 — Table 替代 `std::unordered_map`
+- **Files**: `src/Object.hh/cc`, `src/VM.cc`
+- **Problem**: `globals_` 和 `strings_` 使用自定义 `Table`（支持 GC mark/remove_white），但 `ObjClass::methods_`、`ObjInstance::fields_`、`ObjModule::exports_` 使用 `std::unordered_map<ObjString*, Value>`。GC 交互方式不一致（Table 用 mark_table，unordered_map 需手动遍历 trace_references）。
+- **Fix**: 统一使用 `Table` 存储所有 ObjString* -> Value 映射，或为 unordered_map 提供统一的 GC mark 工具函数。
+- **Verify**: 全部测试通过，GC stress 测试通过。
+
+#### Task 9.2.6: ParseRule 表安全化
+- **Files**: `src/Compiler.cc`
+- **Problem**: `rules[]` 是 C 风格数组，按 `TokenType` 枚举值索引。如果 TokenTypes.hh 新增/调整枚举顺序，rules 数组与枚举不同步将导致静默错误。
+- **Fix**: 改用 `std::array<ParseRule, TOKEN_COUNT>` 或 `std::unordered_map<TokenType, ParseRule>`，并用静态断言验证大小匹配；或在每条规则前使用 `[static_cast<int>(TokenType::TOKEN_XXX)] = {...}` designated initializer 风格。
+- **Verify**: 编译通过。
+
+#### Task 9.2.7: `Compiler::number()` 避免临时 string 构造
+- **Files**: `src/Compiler.cc`
+- **Problem**: `number()` 用 `std::strtod(str_t(previous_.lexeme).c_str(), nullptr)` 从 `strv_t` 解析数字，每次分配临时 `std::string`。
+- **Fix**: 使用 `std::from_chars()`（C++17），直接操作 `strv_t` 的底层指针，零分配。
+- **Verify**: 数值解析测试通过。
+
+### 9.3 语言特性增强
+
+#### Task 9.3.1: `break` / `continue` 语句
+- **Files**: `src/TokenTypes.hh`, `src/Scanner.cc`, `src/Compiler.cc`, `src/Opcode.hh`, `src/VM.cc`
+- **Work**:
+  - 新增 `TOKEN_BREAK`, `TOKEN_CONTINUE` 关键字
+  - Compiler 记录当前循环上下文（loop_start, scope_depth, break patch 列表）
+  - `break` 发射 OP_JUMP 跳至循环后，`continue` 发射 OP_LOOP 跳至增量/条件
+  - 循环结束时 patch 所有 break jump
+- **Verify**: `tests/break_continue.ms` 测试通过。
+
+#### Task 9.3.2: 取模运算符 `%`
+- **Files**: `src/TokenTypes.hh`, `src/Scanner.cc`, `src/Opcode.hh`, `src/Compiler.cc`, `src/VM.cc`
+- **Work**:
+  - 新增 `TOKEN_PERCENT` 标点、`OP_MODULO` 操作码
+  - Scanner 识别 `%`，Compiler 按 PREC_FACTOR 优先级处理
+  - VM 中使用 `std::fmod(a, b)` 实现
+- **Verify**: `print 10 % 3;` → 输出 1。
+
+#### Task 9.3.3: 字符串转义序列
+- **Files**: `src/Scanner.cc` 或 `src/Compiler.cc`
+- **Work**:
+  - 在 `scan_string()` 或 `string()` 编译时处理 `\n`, `\t`, `\\`, `\"`, `\r`, `\0`
+  - 遇到 `\` 时消费下一字符并替换为对应控制字符
+- **Verify**: `print "hello\tworld\n";` 输出含制表符和换行。
+
+#### Task 9.3.4: OP_CONSTANT_LONG — 扩展常量池
+- **Files**: `src/Opcode.hh`, `src/Chunk.hh/cc`, `src/Compiler.cc`, `src/VM.cc`, `src/Debug.cc`
+- **Problem**: `make_constant()` 将常量索引限制为 u8_t（最多 256 个），大函数或含大量字符串的脚本会报 "Too many constants"。
+- **Work**:
+  - 新增 `OP_CONSTANT_LONG`：操作数为 3 字节（24 位索引，最多 16M 常量）
+  - `make_constant()` 在 index > 255 时自动切换为 long 版本
+  - Debug 反汇编器支持 long constant
+- **Verify**: 构造超过 256 个常量的测试脚本。
+
+#### Task 9.3.5: Chunk 行号 RLE 压缩
+- **Files**: `src/Chunk.hh/cc`
+- **Problem**: `lines_` 为 `vector<int>`，每个字节码对应一个 int。一个 1000 行脚本可能产生 4000+ 字节码，占用 16KB+ 仅用于行号。
+- **Work**:
+  - 改用 RLE 编码：`vector<pair<int, int>>` 或 `vector<LineStart>`（{line, offset}）
+  - `line_at(offset)` 用二分查找
+- **Verify**: 全部测试通过，内存占用下降。
+
+#### Task 9.3.6: 更多原生函数
+- **Files**: `src/VM.cc`
+- **Work**:
+  - `type(value)` → 返回值类型字符串 ("nil"/"bool"/"number"/"string"/"function"/"class"/"instance")
+  - `strlen(str)` → 字符串长度
+  - `str(value)` → 值转字符串
+  - `num(str)` → 字符串转数字
+  - `input([prompt])` → 读取标准输入行
+- **Verify**: 各原生函数测试通过。
+
+#### Task 9.3.7: 列表（Array）数据类型
+- **Files**: 新增 `ObjList` 类型，修改 Scanner/Compiler/VM
+- **Work**:
+  - `ObjList`: 持有 `vector<Value>`，GC trace 所有元素
+  - 语法: `var a = [1, 2, 3]; a[0]; a[1] = 42; a.push(5); a.len();`
+  - 新增 `TOKEN_LEFT_BRACKET`, `TOKEN_RIGHT_BRACKET`
+  - 新增 `OP_BUILD_LIST`, `OP_INDEX_GET`, `OP_INDEX_SET`
+- **Verify**: `tests/lists.ms` 测试通过。
+
+#### Task 9.3.8: Map（Dictionary）数据类型
+- **Files**: 新增 `ObjMap` 类型，修改 Compiler/VM
+- **Work**:
+  - `ObjMap`: 持有 `unordered_map<Value, Value>` 或基于 Table 的实现
+  - 语法: `var m = {"a": 1, "b": 2}; m["a"]; m["c"] = 3;`
+  - 复用 `OP_INDEX_GET`, `OP_INDEX_SET`
+- **Verify**: `tests/maps.ms` 测试通过。
+
+### 9.4 性能优化（可选）
+
+#### Task 9.4.1: NaN-boxing Value 表示
+- **Files**: `src/Value.hh/cc`
+- **Problem**: `std::variant` 占 16 字节（8 字节 double + 8 字节 type tag/alignment），且 `holds_alternative` / `get` 有分支开销。
+- **Work**:
+  - 利用 IEEE 754 NaN 的 quiet NaN 空间编码 nil/bool/Object*
+  - Value 缩小为 8 字节，类型检查变为位运算
+  - 保持 API 兼容（is_nil/is_number/as_number 等接口不变）
+- **Verify**: 全部测试通过，fibonacci 基准测试性能提升。
+
+#### Task 9.4.2: computed goto 分发（GCC/Clang）
+- **Files**: `src/VM.cc`
+- **Problem**: `switch` 分发在每次迭代有间接跳转，现代 CPU 分支预测不友好。
+- **Work**:
+  - 使用 GCC/Clang `&&label` 扩展实现 threaded dispatch
+  - 用 `#ifdef MAPLE_GNUC` 条件编译，MSVC 回退 switch
+- **Verify**: 性能基准测试对比。
+
+---
+
 ## Progress Tracking
 
 | Phase | Task | Status |
@@ -619,3 +787,24 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 8 | 8.3 Test runner | [x] |
 | 8 | 8.4 Example scripts | [x] |
 | 8 | 8.5 Documentation | [x] |
+| **9** | **9.1.1 GC remove_white 时序** | [ ] |
+| 9 | 9.1.2 push 栈溢出检查 | [ ] |
+| 9 | 9.1.3 import 使用 ModuleLoader | [ ] |
+| 9 | 9.1.4 stringify 大数溢出 | [ ] |
+| 9 | 9.2.1 Compiler 静态状态消除 | [ ] |
+| 9 | 9.2.2 GC 耦合解耦 | [ ] |
+| 9 | 9.2.3 Object 成员封装 | [ ] |
+| 9 | 9.2.4 Table const_cast 消除 | [ ] |
+| 9 | 9.2.5 统一 Table 存储 | [ ] |
+| 9 | 9.2.6 ParseRule 表安全化 | [ ] |
+| 9 | 9.2.7 number 零分配解析 | [ ] |
+| 9 | 9.3.1 break/continue | [ ] |
+| 9 | 9.3.2 取模运算符 % | [ ] |
+| 9 | 9.3.3 字符串转义序列 | [ ] |
+| 9 | 9.3.4 OP_CONSTANT_LONG | [ ] |
+| 9 | 9.3.5 行号 RLE 压缩 | [ ] |
+| 9 | 9.3.6 更多原生函数 | [ ] |
+| 9 | 9.3.7 列表数据类型 | [ ] |
+| 9 | 9.3.8 Map 数据类型 | [ ] |
+| 9 | 9.4.1 NaN-boxing | [ ] |
+| 9 | 9.4.2 computed goto | [ ] |
