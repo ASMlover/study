@@ -28,6 +28,7 @@
 #include <format>
 #include <vector>
 #include "Memory.hh"
+#include "Table.hh"
 #include "Logger.hh"
 
 // Forward declaration — VM provides access to GC state
@@ -39,6 +40,7 @@ sz_t& vm_bytes_allocated() noexcept;
 sz_t& vm_next_gc() noexcept;
 std::vector<Object*>& vm_gray_stack() noexcept;
 void vm_mark_roots() noexcept;
+Table& vm_strings() noexcept;
 
 void mark_object(Object* object) noexcept {
   if (object == nullptr) return;
@@ -114,9 +116,8 @@ void collect_garbage() noexcept {
   vm_mark_roots();
   trace_references();
 
-  // Remove interned strings that are about to be swept
-  // (This is called from VM which calls strings_.remove_white())
-  // The VM handles this before calling sweep.
+  // Remove interned strings that are unmarked before sweep
+  vm_strings().remove_white();
 
   sweep();
 

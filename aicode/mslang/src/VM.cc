@@ -59,6 +59,10 @@ void vm_mark_roots() noexcept {
   VM::get_instance().mark_roots();
 }
 
+Table& vm_strings() noexcept {
+  return VM::get_instance().gc_strings();
+}
+
 // --- Global accessor for Compiler ---
 ObjString* vm_copy_string(cstr_t chars, sz_t length) noexcept {
   return VM::get_instance().copy_string(chars, length);
@@ -188,7 +192,6 @@ T* VM::allocate(Args&&... args) noexcept {
   collect_garbage();
 #else
   if (bytes_allocated_ > next_gc_) {
-    strings_.remove_white();
     collect_garbage();
   }
 #endif
