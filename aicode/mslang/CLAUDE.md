@@ -139,6 +139,18 @@ print 1 + 2;    // expect: 3
 print "hello";  // expect: hello
 ```
 
+## Git Commit Convention
+
+- Commit messages MUST be written in English
+- Each commit message MUST start with a [gitmoji](https://gitmoji.dev/) emoji prefix
+- Format: `<gitmoji> <description>`
+- Examples:
+  - `:sparkles: add string interpolation support`
+  - `:bug: fix stack overflow in recursive calls`
+  - `:memo: update architecture documentation`
+  - `:recycle: refactor compiler parse rules`
+  - `:white_check_mark: add tests for closure upvalues`
+
 ## Reference
 - [Crafting Interpreters — clox](https://github.com/munificent/craftinginterpreters) (c/ directory)
 - Design doc: `docs/DESIGN.md`
