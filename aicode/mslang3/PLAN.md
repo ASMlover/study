@@ -7,7 +7,7 @@
 | 阶段 | 状态 | 说明 |
 |------|------|------|
 | 阶段1：基础基础设施 | ✅ 已完成 | CMake构建系统、基础定义模块、日志系统已实现并通过编译验证 |
-| 阶段2：内存与值系统 | ⏳ 未开始 | 等待实现 |
+| 阶段2：内存与值系统 | ✅ 已完成 | 动态数组、NaN Boxing值系统、内存管理、字符串对象已实现并通过测试 |
 | 阶段3：字节码与调试 | ⏳ 未开始 | 等待实现 |
 | 阶段4：虚拟机核心 | ⏳ 未开始 | 等待实现 |
 | 阶段5：词法分析器 | ⏳ 未开始 | 等待实现 |
@@ -102,10 +102,10 @@ cmake --build . --config Debug
 **目标**：实现模板化的动态数组，用于常量池等
 
 **验收标准**：
-- [ ] 模板类 `DynArray<T>`
-- [ ] 支持动态扩容
-- [ ] 支持索引访问
-- [ ] 支持迭代
+- [x] 模板类 `DynArray<T>`
+- [x] 支持动态扩容
+- [x] 支持索引访问
+- [x] 支持迭代
 
 **验证测试**：
 ```cpp
@@ -124,11 +124,11 @@ assert(arr[0] == 10);
 **目标**：实现NaN Boxing技术的动态类型系统
 
 **验收标准**：
-- [ ] 实现ValueType枚举（Nil, Bool, Number, Object）
-- [ ] 实现Value类，使用NaN Boxing存储
-- [ ] 实现类型检查和转换方法
-- [ ] 支持nil, bool, double, Obj*的统一存储
-- [ ] 实现值的比较操作（==, <, >等）
+- [x] 实现ValueType枚举（Nil, Bool, Number, Object）
+- [x] 实现Value类，使用NaN Boxing存储
+- [x] 实现类型检查和转换方法
+- [x] 支持nil, bool, double, Obj*的统一存储
+- [x] 实现值的比较操作（==, <, >等）
 
 **单元测试** `tests/unit/test_value.cpp`：
 ```cpp
@@ -155,9 +155,9 @@ void test_value() {
 **目标**：实现内存分配器和GC基础接口
 
 **验收标准**：
-- [ ] 实现 `reallocate()` 函数
-- [ ] 实现分配时GC触发检查
-- [ ] 定义GC相关宏（GROW_CAPACITY, FREE_ARRAY等）
+- [x] 实现 `reallocate()` 函数
+- [x] 实现分配时GC触发检查
+- [x] 定义GC相关宏（GROW_CAPACITY, FREE_ARRAY等）
 
 **验证方式**：Valgrind/ASan检测无内存泄漏
 
@@ -167,11 +167,11 @@ void test_value() {
 **目标**：实现对象基类和字符串对象
 
 **验收标准**：
-- [ ] 实现Obj结构体（type, isMarked, next字段）
-- [ ] 实现ObjType枚举
-- [ ] 实现ObjString（字符串驻留）
-- [ ] 实现字符串哈希预计算
-- [ ] 实现GC链表管理
+- [x] 实现Obj结构体（type, isMarked, next字段）
+- [x] 实现ObjType枚举
+- [x] 实现ObjString（字符串驻留）
+- [x] 实现字符串哈希预计算
+- [x] 实现GC链表管理
 
 **单元测试** `tests/unit/test_object.cpp`：
 ```cpp
