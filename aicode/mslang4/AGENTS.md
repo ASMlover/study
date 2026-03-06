@@ -251,6 +251,8 @@ When working on this project:
 8. **Performance**: Consider performance implications of design decisions
 9. **Read the Docs**: Consult REQUIREMENTS.md and DESIGN.md for context
 10. **Incremental Progress**: Work through the implementation phases systematically
+11. **Update PLAN.md**: Automatically update task progress in PLAN.md after completing and verifying a task
+12. **Gitmoji Commits**: Use gitmoji identifiers and English messages for all git commits
 
 ## Current Status
 
