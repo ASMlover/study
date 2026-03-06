@@ -85,7 +85,7 @@ str_t Value::stringify() const noexcept {
   if (is_number()) {
     double val = as_number();
     if (val == std::floor(val) && !std::isinf(val) && !std::isnan(val)) {
-      return std::format("{}", static_cast<i32_t>(val));
+      return std::format("{}", static_cast<long long>(val));
     }
     return std::format("{:g}", val);
   }
