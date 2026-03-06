@@ -24,10 +24,17 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
+#include "map.hh"
 
-int main(int argc, char* argv[]) {
-  (void)argc, (void)argv;
+PyMODINIT_FUNC PyInit__pyut() {
+  static PyMethodDef _pyut_methods[] = { {nullptr} };
+  static PyModuleDef _pyut_module = {
+    PyModuleDef_HEAD_INIT,
+    "_pyut",
+    "pyutils module",
+    -1,
+    _pyut_methods
+  };
 
-  return 0;
+  return PyModule_Create(&_pyut_module);
 }

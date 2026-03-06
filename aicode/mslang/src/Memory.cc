@@ -24,23 +24,11 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
-#include <iostream>
-#include <format>
-#include <vector>
 #include "Memory.hh"
-#include "Table.hh"
+#include "VM.hh"
 #include "Logger.hh"
 
-// Forward declaration — VM provides access to GC state
 namespace ms {
-
-// These are implemented in VM.cc and provide access to the VM's GC state
-Object*& vm_objects() noexcept;
-sz_t& vm_bytes_allocated() noexcept;
-sz_t& vm_next_gc() noexcept;
-std::vector<Object*>& vm_gray_stack() noexcept;
-void vm_mark_roots() noexcept;
-Table& vm_strings() noexcept;
 
 void mark_object(Object* object) noexcept {
   if (object == nullptr) return;
@@ -53,90 +41,11 @@ void mark_object(Object* object) noexcept {
 #endif
 
   object->is_marked_ = true;
-  vm_gray_stack().push_back(object);
+  VM::get_instance().push_gray(object);
 }
 
 void mark_value(Value& value) noexcept {
   if (value.is_object()) mark_object(value.as_object());
-}
-
-static void trace_references() noexcept {
-  auto& gray_stack = vm_gray_stack();
-  while (!gray_stack.empty()) {
-    Object* object = gray_stack.back();
-    gray_stack.pop_back();
-
-#ifdef MAPLE_DEBUG_LOG_GC
-    auto& logger = Logger::get_instance();
-    logger.debug("GC", "blacken {} ({})",
-        static_cast<void*>(object), object->stringify());
-#endif
-
-    object->trace_references();
-  }
-}
-
-static void sweep() noexcept {
-  Object* previous = nullptr;
-  Object* object = vm_objects();
-
-  while (object != nullptr) {
-    if (object->is_marked_) {
-      object->is_marked_ = false;
-      previous = object;
-      object = object->next_;
-    } else {
-      Object* unreached = object;
-      object = object->next_;
-      if (previous != nullptr) {
-        previous->next_ = object;
-      } else {
-        vm_objects() = object;
-      }
-
-#ifdef MAPLE_DEBUG_LOG_GC
-      auto& logger = Logger::get_instance();
-      logger.debug("GC", "free {} ({})",
-          static_cast<void*>(unreached), unreached->stringify());
-#endif
-
-      vm_bytes_allocated() -= unreached->size();
-      delete unreached;
-    }
-  }
-}
-
-void collect_garbage() noexcept {
-#ifdef MAPLE_DEBUG_LOG_GC
-  auto& logger = Logger::get_instance();
-  logger.info("GC", "-- gc begin");
-  sz_t before = vm_bytes_allocated();
-#endif
-
-  vm_mark_roots();
-  trace_references();
-
-  // Remove interned strings that are unmarked before sweep
-  vm_strings().remove_white();
-
-  sweep();
-
-  vm_next_gc() = vm_bytes_allocated() * kGC_HEAP_GROW;
-
-#ifdef MAPLE_DEBUG_LOG_GC
-  logger.info("GC", "-- gc end (collected {} bytes, from {} to {}, next at {})",
-      before - vm_bytes_allocated(), before, vm_bytes_allocated(), vm_next_gc());
-#endif
-}
-
-void free_objects() noexcept {
-  Object* object = vm_objects();
-  while (object != nullptr) {
-    Object* next = object->next_;
-    delete object;
-    object = next;
-  }
-  vm_objects() = nullptr;
 }
 
 } // namespace ms

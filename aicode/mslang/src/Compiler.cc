@@ -28,13 +28,11 @@
 #include <iostream>
 #include <format>
 #include "Compiler.hh"
+#include "VM.hh"
 #include "Memory.hh"
 #include "Debug.hh"
 
 namespace ms {
-
-// Forward declarations from VM
-ObjString* vm_copy_string(cstr_t chars, sz_t length) noexcept;
 
 enum class Precedence : int {
   PREC_NONE,
@@ -277,10 +275,10 @@ Compiler::Compiler(ParseState& ps, FunctionType type) noexcept
   enclosing_ = ps_->current_compiler;
   ps_->current_compiler = this;
 
-  function_ = allocate_object<ObjFunction>();
+  function_ = VM::get_instance().allocate<ObjFunction>();
 
   if (type != FunctionType::TYPE_SCRIPT) {
-    function_->name_ = vm_copy_string(
+    function_->name_ = VM::get_instance().copy_string(
         ps_->previous.lexeme.data(), ps_->previous.lexeme.length());
   }
 
@@ -422,7 +420,7 @@ void Compiler::emit_loop(sz_t loop_start) noexcept {
 
 u8_t Compiler::identifier_constant(const Token& name) noexcept {
   return make_constant(Value(static_cast<Object*>(
-      vm_copy_string(name.lexeme.data(), name.lexeme.length()))));
+      VM::get_instance().copy_string(name.lexeme.data(), name.lexeme.length()))));
 }
 
 u8_t Compiler::parse_variable(strv_t error_msg) noexcept {
@@ -610,7 +608,7 @@ void Compiler::number(bool /*can_assign*/) noexcept {
 void Compiler::string(bool /*can_assign*/) noexcept {
   // Trim the surrounding quotes
   emit_constant(Value(static_cast<Object*>(
-      vm_copy_string(ps_->previous.lexeme.data() + 1,
+      VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
                      ps_->previous.lexeme.length() - 2))));
 }
 
@@ -865,7 +863,7 @@ void Compiler::import_declaration() noexcept {
   consume(TokenType::TOKEN_STRING, "Expect module path string.");
   // Trim quotes from the string
   u8_t path_constant = make_constant(Value(static_cast<Object*>(
-      vm_copy_string(ps_->previous.lexeme.data() + 1,
+      VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
                      ps_->previous.lexeme.length() - 2))));
 
   consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after import path.");
@@ -1043,7 +1041,7 @@ void Compiler::declaration() noexcept {
     // from "path" import name [as alias];
     consume(TokenType::TOKEN_STRING, "Expect module path string after 'from'.");
     u8_t path_constant = make_constant(Value(static_cast<Object*>(
-        vm_copy_string(ps_->previous.lexeme.data() + 1,
+        VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
                        ps_->previous.lexeme.length() - 2))));
     consume(TokenType::TOKEN_IMPORT, "Expect 'import' after module path.");
     consume(TokenType::TOKEN_IDENTIFIER, "Expect name to import.");

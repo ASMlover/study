@@ -32,10 +32,5 @@ namespace ms {
 
 void mark_object(Object* object) noexcept;
 void mark_value(Value& value) noexcept;
-void collect_garbage() noexcept;
-void free_objects() noexcept;
-
-template <typename T, typename... Args>
-T* allocate_object(Args&&... args) noexcept;
 
 } // namespace ms

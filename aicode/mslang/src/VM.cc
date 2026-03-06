@@ -38,61 +38,6 @@
 
 namespace ms {
 
-// --- Global accessor functions for GC/Memory ---
-Object*& vm_objects() noexcept {
-  return VM::get_instance().gc_objects();
-}
-
-sz_t& vm_bytes_allocated() noexcept {
-  return VM::get_instance().gc_bytes_allocated();
-}
-
-sz_t& vm_next_gc() noexcept {
-  return VM::get_instance().gc_next_gc();
-}
-
-std::vector<Object*>& vm_gray_stack() noexcept {
-  return VM::get_instance().gc_gray_stack();
-}
-
-void vm_mark_roots() noexcept {
-  VM::get_instance().mark_roots();
-}
-
-Table& vm_strings() noexcept {
-  return VM::get_instance().gc_strings();
-}
-
-// --- Global accessor for Compiler ---
-ObjString* vm_copy_string(cstr_t chars, sz_t length) noexcept {
-  return VM::get_instance().copy_string(chars, length);
-}
-
-// --- allocate_object template (used by Memory.hh) ---
-template <typename T, typename... Args>
-T* allocate_object(Args&&... args) noexcept {
-  return VM::get_instance().allocate<T>(std::forward<Args>(args)...);
-}
-
-// Explicit template instantiations
-template ObjString* allocate_object<ObjString>(str_t&&, u32_t&&);
-template ObjString* allocate_object<ObjString>(str_t&, u32_t&);
-template ObjFunction* allocate_object<ObjFunction>();
-template ObjNative* allocate_object<ObjNative>(NativeFn&&);
-template ObjNative* allocate_object<ObjNative>(NativeFn&);
-template ObjClosure* allocate_object<ObjClosure>(ObjFunction*&&);
-template ObjClosure* allocate_object<ObjClosure>(ObjFunction*&);
-template ObjUpvalue* allocate_object<ObjUpvalue>(Value*&&);
-template ObjUpvalue* allocate_object<ObjUpvalue>(Value*&);
-template ObjClass* allocate_object<ObjClass>(ObjString*&&);
-template ObjClass* allocate_object<ObjClass>(ObjString*&);
-template ObjInstance* allocate_object<ObjInstance>(ObjClass*&&);
-template ObjInstance* allocate_object<ObjInstance>(ObjClass*&);
-template ObjBoundMethod* allocate_object<ObjBoundMethod>(Value&&, ObjClosure*&&);
-template ObjBoundMethod* allocate_object<ObjBoundMethod>(Value&, ObjClosure*&);
-template ObjModule* allocate_object<ObjModule>(ObjString*&&);
-template ObjModule* allocate_object<ObjModule>(ObjString*&);
-
 // --- VM implementation ---
 
 VM::VM() noexcept {
@@ -213,6 +158,9 @@ T* VM::allocate(Args&&... args) noexcept {
   return object;
 }
 
+// Explicit instantiations for types allocated from outside VM.cc (e.g. Compiler.cc)
+template ObjFunction* VM::allocate<ObjFunction>();
+
 void VM::mark_roots() noexcept {
   // Mark the stack
   for (Value* slot = stack_.data(); slot < stack_top_; slot++) {
@@ -247,6 +195,88 @@ void VM::mark_roots() noexcept {
       if (req.alias) mark_object(req.alias);
     }
   }
+}
+
+void VM::push_gray(Object* object) noexcept {
+  gray_stack_.push_back(object);
+}
+
+void VM::trace_references() noexcept {
+  while (!gray_stack_.empty()) {
+    Object* object = gray_stack_.back();
+    gray_stack_.pop_back();
+
+#ifdef MAPLE_DEBUG_LOG_GC
+    auto& logger = Logger::get_instance();
+    logger.debug("GC", "blacken {} ({})",
+        static_cast<void*>(object), object->stringify());
+#endif
+
+    object->trace_references();
+  }
+}
+
+void VM::sweep() noexcept {
+  Object* previous = nullptr;
+  Object* object = objects_;
+
+  while (object != nullptr) {
+    if (object->is_marked_) {
+      object->is_marked_ = false;
+      previous = object;
+      object = object->next_;
+    } else {
+      Object* unreached = object;
+      object = object->next_;
+      if (previous != nullptr) {
+        previous->next_ = object;
+      } else {
+        objects_ = object;
+      }
+
+#ifdef MAPLE_DEBUG_LOG_GC
+      auto& logger = Logger::get_instance();
+      logger.debug("GC", "free {} ({})",
+          static_cast<void*>(unreached), unreached->stringify());
+#endif
+
+      bytes_allocated_ -= unreached->size();
+      delete unreached;
+    }
+  }
+}
+
+void VM::collect_garbage() noexcept {
+#ifdef MAPLE_DEBUG_LOG_GC
+  auto& logger = Logger::get_instance();
+  logger.info("GC", "-- gc begin");
+  sz_t before = bytes_allocated_;
+#endif
+
+  mark_roots();
+  trace_references();
+
+  // Remove interned strings that are unmarked before sweep
+  strings_.remove_white();
+
+  sweep();
+
+  next_gc_ = bytes_allocated_ * kGC_HEAP_GROW;
+
+#ifdef MAPLE_DEBUG_LOG_GC
+  logger.info("GC", "-- gc end (collected {} bytes, from {} to {}, next at {})",
+      before - bytes_allocated_, before, bytes_allocated_, next_gc_);
+#endif
+}
+
+void VM::free_objects() noexcept {
+  Object* object = objects_;
+  while (object != nullptr) {
+    Object* next = object->next_;
+    delete object;
+    object = next;
+  }
+  objects_ = nullptr;
 }
 
 void VM::concatenate() noexcept {

@@ -85,6 +85,13 @@ class VM : public Singleton<VM> {
   // VM dispatch
   InterpretResult run() noexcept;
 
+  // GC internals
+  void mark_roots() noexcept;
+  void collect_garbage() noexcept;
+  void trace_references() noexcept;
+  void sweep() noexcept;
+  void free_objects() noexcept;
+
   // Stack operations
   void push(Value value) noexcept;
   Value pop() noexcept;
@@ -121,20 +128,15 @@ public:
   InterpretResult interpret(strv_t source) noexcept;
   InterpretResult interpret(strv_t source, strv_t script_path) noexcept;
 
-  // Object allocation (accessible from Compiler/Memory)
+  // Object allocation (accessible from Compiler)
   ObjString* copy_string(cstr_t chars, sz_t length) noexcept;
   ObjString* take_string(str_t value) noexcept;
 
   template <typename T, typename... Args>
   T* allocate(Args&&... args) noexcept;
 
-  // GC interface
-  Object*& gc_objects() noexcept { return objects_; }
-  sz_t& gc_bytes_allocated() noexcept { return bytes_allocated_; }
-  sz_t& gc_next_gc() noexcept { return next_gc_; }
-  std::vector<Object*>& gc_gray_stack() noexcept { return gray_stack_; }
-  void mark_roots() noexcept;
-  Table& gc_strings() noexcept { return strings_; }
+  // Used by mark_object() in Memory.cc
+  void push_gray(Object* object) noexcept;
 };
 
 } // namespace ms

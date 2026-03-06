@@ -71,7 +71,9 @@ bool Value::operator==(const Value& r) const noexcept {
   return false;
 }
 
-bool Value::operator!=(const Value& r) const noexcept { return false; }
+bool Value::operator!=(const Value& r) const noexcept {
+  return !(*this == r);
+}
 
 bool Value::is_truthy() const {
   switch (type_) {

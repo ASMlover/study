@@ -38,6 +38,8 @@ static void run_script(const ms::str_t& source_bytes) noexcept {
 
   ms::Parser parser(tokens);
   auto statements = parser.parse();
+  for (auto& s : statements)
+    std::cout << s << std::endl;
 
   ms::Interpreter interpreter;
   interpreter.interpret(statements);
@@ -52,7 +54,8 @@ static void run_file(const ms::str_t& path) noexcept {
 
   ms::ss_t buffer;
   buffer << fp.rdbuf();
-  run_script(buffer.str());
+  auto source_bytes = buffer.str();
+  run_script(source_bytes);
 }
 
 static void run_prompt() noexcept {
@@ -72,10 +75,6 @@ static void run_prompt() noexcept {
       ms::Parser parser(tokens);
       auto statements = parser.parse();
 
-      for (auto& s : statements)
-        std::cout << s.get() << std::endl;
-
-      std::cout << "============= begin interpret =============" << std::endl;
       interpreter.interpret(statements);
     }
     catch (const std::runtime_error& error) {

@@ -792,7 +792,7 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 9 | 9.1.3 import 使用 ModuleLoader | [x] |
 | 9 | 9.1.4 stringify 大数溢出 | [x] |
 | 9 | 9.2.1 Compiler 静态状态消除 | [x] |
-| 9 | 9.2.2 GC 耦合解耦 | [ ] |
+| 9 | 9.2.2 GC 耦合解耦 | [x] |
 | 9 | 9.2.3 Object 成员封装 | [ ] |
 | 9 | 9.2.4 Table const_cast 消除 | [ ] |
 | 9 | 9.2.5 统一 Table 存储 | [ ] |

@@ -31,7 +31,7 @@
 from bisect import insort
 from collections import Counter
 from hashlib import md5
-from typing import Callable, List, Dict, Optional
+from typing import Callable, List, Dict, Optional, Iterator
 
 class KetamaRing(object):
     def __init__(self) -> None:
@@ -49,3 +49,16 @@ class KetamaRing(object):
         dh = self._listbytes(md5(str(key)).encode("utf-8")).digest()
         rd = replica * 4
         return (dh[3 + rd] << 24) | (dh[2 + rd] << 16) | (dh[1 + rd] << 8) | dh[0 + rd]
+
+    def _hashi_weight_generator(self, node_name: str, node_conf: dict) -> Iterator[int]:
+        ks = node_conf["vnodes"] * len(self._nodes) * node_conf["weight"]
+        for w in range(0, ks):
+            w_node_name = "%s-%s" % (node_name, w)
+            for i in range(0, self._replicas):
+                yield self.hashi(w_node_name, replica=i)
+
+    def _create_ring(self, nodes: dict) -> None:
+        pass
+
+    def _remove_node(self, node_name: str) -> None:
+        pass
