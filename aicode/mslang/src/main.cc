@@ -25,7 +25,6 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include "VM.hh"
@@ -49,21 +48,14 @@ static void repl() noexcept {
 }
 
 static void run_file(const ms::str_t& path) noexcept {
-  std::ifstream file(path);
-  if (!file.is_open()) {
+  auto source_opt = ms::ModuleLoader::read_source(path);
+  if (!source_opt.has_value()) {
     std::cerr << "Could not open file \"" << path << "\"." << std::endl;
     std::exit(74);
   }
 
-  file.seekg(0, std::ios::end);
-  auto size = file.tellg();
-  file.seekg(0, std::ios::beg);
-  ms::str_t source;
-  source.resize(static_cast<ms::sz_t>(size));
-  file.read(source.data(), size);
-
   auto& vm = ms::VM::get_instance();
-  ms::InterpretResult result = vm.interpret(source);
+  ms::InterpretResult result = vm.interpret(*source_opt, path);
 
   if (result == ms::InterpretResult::INTERPRET_COMPILE_ERROR) std::exit(65);
   if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);

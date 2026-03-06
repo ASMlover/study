@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <vector>
 #include "Common.hh"
+#include "Module.hh"
 #include "Object.hh"
 #include "Table.hh"
 
@@ -64,6 +65,7 @@ class VM : public Singleton<VM> {
   sz_t next_gc_{kGC_INITIAL_SIZE};
   std::vector<Object*> gray_stack_;
 
+  str_t current_script_path_;
   std::unordered_map<str_t, ObjModule*> modules_;
 
   // Pending module import tracking
@@ -76,6 +78,7 @@ class VM : public Singleton<VM> {
     ObjModule* module;
     std::vector<ObjString*> pre_global_keys;
     std::vector<FromImportRequest> from_imports;
+    str_t previous_script_path;
   };
   std::vector<PendingImport> pending_imports_;
 
@@ -116,6 +119,7 @@ public:
   ~VM() noexcept;
 
   InterpretResult interpret(strv_t source) noexcept;
+  InterpretResult interpret(strv_t source, strv_t script_path) noexcept;
 
   // Object allocation (accessible from Compiler/Memory)
   ObjString* copy_string(cstr_t chars, sz_t length) noexcept;

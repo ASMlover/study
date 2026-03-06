@@ -27,7 +27,6 @@
 #include <chrono>
 #include <cstdarg>
 #include <cstdlib>
-#include <fstream>
 #include <iostream>
 #include <format>
 #include <unordered_set>
@@ -414,32 +413,26 @@ void VM::close_upvalues(Value* last) noexcept {
 }
 
 void VM::import_module(ObjString* path) noexcept {
-  str_t path_str = path->value_;
+  // Resolve path relative to current script
+  str_t resolved = ModuleLoader::resolve_path(path->value_, current_script_path_);
 
   // Check cache
-  auto it = modules_.find(path_str);
+  auto it = modules_.find(resolved);
   if (it != modules_.end()) {
     return; // already imported
   }
 
-  // Read source file
-  std::ifstream file(path_str);
-  if (!file.is_open()) {
-    runtime_error(std::format("Could not open module '{}'.", path_str));
+  // Read source file via ModuleLoader
+  auto source_opt = ModuleLoader::read_source(resolved);
+  if (!source_opt.has_value()) {
+    runtime_error(std::format("Could not open module '{}'.", resolved));
     return;
   }
 
-  file.seekg(0, std::ios::end);
-  auto file_size = file.tellg();
-  file.seekg(0, std::ios::beg);
-  str_t source;
-  source.resize(static_cast<sz_t>(file_size));
-  file.read(source.data(), file_size);
-
   // Compile module
-  ObjFunction* function = compile(strv_t(source));
+  ObjFunction* function = compile(strv_t(*source_opt));
   if (function == nullptr) {
-    runtime_error(std::format("Could not compile module '{}'.", path_str));
+    runtime_error(std::format("Could not compile module '{}'.", resolved));
     return;
   }
 
@@ -451,9 +444,14 @@ void VM::import_module(ObjString* path) noexcept {
     }
   }
 
-  // Create module object and cache it
-  ObjModule* module = allocate<ObjModule>(path);
-  modules_[path_str] = module;
+  // Create module object and cache it (use resolved path as key)
+  ObjString* resolved_str = copy_string(resolved.c_str(), resolved.size());
+  ObjModule* module = allocate<ObjModule>(resolved_str);
+  modules_[resolved] = module;
+
+  // Save current script path and switch to module path
+  str_t previous_path = current_script_path_;
+  current_script_path_ = resolved;
 
   // Execute module
   ObjClosure* closure = allocate<ObjClosure>(function);
@@ -461,10 +459,16 @@ void VM::import_module(ObjString* path) noexcept {
   call(closure, 0);
 
   // Track this import so OP_RETURN can collect exports
-  pending_imports_.push_back({frame_count_ - 1, module, std::move(pre_keys)});
+  pending_imports_.push_back({frame_count_ - 1, module, std::move(pre_keys), {}, std::move(previous_path)});
 }
 
 InterpretResult VM::interpret(strv_t source) noexcept {
+  return interpret(source, "");
+}
+
+InterpretResult VM::interpret(strv_t source, strv_t script_path) noexcept {
+  current_script_path_ = str_t(script_path);
+
   ObjFunction* function = compile(source);
   if (function == nullptr) return InterpretResult::INTERPRET_COMPILE_ERROR;
 
@@ -768,6 +772,9 @@ InterpretResult VM::run() noexcept {
         auto pending = std::move(pending_imports_.back());
         pending_imports_.pop_back();
 
+        // Restore previous script path
+        current_script_path_ = std::move(pending.previous_script_path);
+
         // Collect new globals as module exports
         std::unordered_set<ObjString*> pre_set(
             pending.pre_global_keys.begin(), pending.pre_global_keys.end());
@@ -848,13 +855,14 @@ InterpretResult VM::run() noexcept {
       }
       ObjString* path = as_string(path_val);
       ObjString* name = as_string(name_val);
-      bool was_cached = modules_.find(path->value_) != modules_.end();
+      str_t resolved = ModuleLoader::resolve_path(path->value_, current_script_path_);
+      bool was_cached = modules_.find(resolved) != modules_.end();
       import_module(path);
       frame = &frames_[frame_count_ - 1];
 
       if (was_cached) {
         // Module already executed, exports available
-        auto mod_it = modules_.find(path->value_);
+        auto mod_it = modules_.find(resolved);
         if (mod_it != modules_.end()) {
           auto exp_it = mod_it->second->exports_.find(name);
           if (exp_it != mod_it->second->exports_.end()) {
@@ -880,12 +888,13 @@ InterpretResult VM::run() noexcept {
       ObjString* path = as_string(path_val);
       ObjString* name = as_string(name_val);
       ObjString* alias = as_string(alias_val);
-      bool was_cached = modules_.find(path->value_) != modules_.end();
+      str_t resolved = ModuleLoader::resolve_path(path->value_, current_script_path_);
+      bool was_cached = modules_.find(resolved) != modules_.end();
       import_module(path);
       frame = &frames_[frame_count_ - 1];
 
       if (was_cached) {
-        auto mod_it = modules_.find(path->value_);
+        auto mod_it = modules_.find(resolved);
         if (mod_it != modules_.end()) {
           auto exp_it = mod_it->second->exports_.find(name);
           if (exp_it != mod_it->second->exports_.end()) {
