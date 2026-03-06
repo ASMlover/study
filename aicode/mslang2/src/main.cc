@@ -1,6 +1,4 @@
-#include "ms/scanner.hh"
-#include "ms/compiler.hh"
-#include "ms/chunk.hh"
+#include "ms/vm.hh"
 
 #include <iostream>
 #include <fstream>
@@ -9,23 +7,7 @@
 
 namespace ms {
 
-void runSource(const std::string& source) {
-    Chunk chunk;
-    Scanner scanner;
-    Compiler compiler(&scanner, &chunk);
-
-    if (!compiler.compile(source, &chunk)) {
-        return;
-    }
-
-    std::cout << "Compiled successfully!" << std::endl;
-    std::cout << "Constants: " << chunk.constants().size() << std::endl;
-    for (size_t i = 0; i < chunk.constants().size(); ++i) {
-        std::cout << "  " << i << ": " << chunk.constants()[i].toString() << std::endl;
-    }
-}
-
-void runFile(const std::string& path) {
+void runFile(const std::string& path, VM& vm) {
     std::ifstream file(path);
     if (!file) {
         std::cerr << "Could not open file: " << path << std::endl;
@@ -36,10 +18,10 @@ void runFile(const std::string& path) {
     oss << file.rdbuf();
     std::string source = oss.str();
 
-    runSource(source);
+    vm.interpret(source);
 }
 
-void runPrompt() {
+void runPrompt(VM& vm) {
     std::string line;
 
     while (true) {
@@ -52,7 +34,7 @@ void runPrompt() {
             continue;
         }
 
-        runSource(line);
+        vm.interpret(line);
     }
     std::cout << std::endl;
 }
@@ -60,15 +42,12 @@ void runPrompt() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc > 2) {
-        std::cerr << "Usage: maple [script]" << std::endl;
-        return 1;
-    }
+    ms::VM vm;
 
-    if (argc == 2) {
-        ms::runFile(argv[1]);
+    if (argc > 1) {
+        ms::runFile(argv[1], vm);
     } else {
-        ms::runPrompt();
+        ms::runPrompt(vm);
     }
 
     return 0;

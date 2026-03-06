@@ -75,11 +75,7 @@ void printValue(Value value) {
             std::cout << std::setprecision(17) << value.asNumber();
             break;
         case Type::Obj:
-            if (value.asObj()->type == ObjType::OBJ_STRING) {
-                std::cout << static_cast<ObjString*>(value.asObj())->str;
-            } else {
-                std::cout << "<object>";
-            }
+            std::cout << value.asObj()->toString();
             break;
     }
 }

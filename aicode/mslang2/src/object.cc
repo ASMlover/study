@@ -1,5 +1,6 @@
 #include "ms/object.hh"
 #include "ms/value.hh"
+#include "ms/table.hh"
 
 #include <cstring>
 #include <sstream>
@@ -137,8 +138,8 @@ ObjMethod* newMethod(ObjClosure* closure) {
     return obj;
 }
 
-ObjBoundMethod* newBoundMethod(Value* receiver, ObjClosure* method) {
-    auto* obj = new ObjBoundMethod(receiver, method);
+ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method) {
+    auto* obj = new ObjBoundMethod(&receiver, method);
     obj->next = boundMethodList;
     boundMethodList = obj;
     return obj;
@@ -236,9 +237,9 @@ ObjClosure::~ObjClosure() {
 
 ObjUpvalue::ObjUpvalue(Value* loc) : Obj(ObjType::OBJ_UPVALUE), location(loc), closed(nullptr), next(nullptr) {}
 
-ObjClass::ObjClass(ObjString* n) : Obj(ObjType::OBJ_CLASS), name(n), methods(nullptr) {}
+ObjClass::ObjClass(ObjString* n) : Obj(ObjType::OBJ_CLASS), name(n), methods(new Table()) {}
 
-ObjInstance::ObjInstance(ObjClass* k) : Obj(ObjType::OBJ_INSTANCE), klass(k), fields(nullptr) {}
+ObjInstance::ObjInstance(ObjClass* k) : Obj(ObjType::OBJ_INSTANCE), klass(k), fields(new Table()) {}
 
 ObjMethod::ObjMethod(ObjClosure* c) : Obj(ObjType::OBJ_METHOD), closure(c) {}
 
