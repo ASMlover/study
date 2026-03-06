@@ -38,6 +38,19 @@ enum class FunctionType {
   TYPE_SCRIPT,
 };
 
+struct ClassCompiler;
+class Compiler;
+
+struct ParseState {
+  Scanner scanner;
+  Token current{};
+  Token previous{};
+  bool had_error{false};
+  bool panic_mode{false};
+  ClassCompiler* current_class{nullptr};
+  Compiler* current_compiler{nullptr};
+};
+
 ObjFunction* compile(strv_t source) noexcept;
 void mark_compiler_roots() noexcept;
 

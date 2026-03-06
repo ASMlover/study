@@ -50,8 +50,6 @@ enum class Precedence : int {
   PREC_PRIMARY,
 };
 
-class Compiler;
-
 using ParseFn = void (Compiler::*)(bool can_assign);
 
 struct ParseRule {
@@ -77,13 +75,8 @@ struct ClassCompiler {
 };
 
 class Compiler {
-  // Parser state (shared across all Compiler instances via static)
-  static Scanner scanner_;
-  static Token current_;
-  static Token previous_;
-  static bool had_error_;
-  static bool panic_mode_;
-  static ClassCompiler* current_class_;
+  // Parser state (shared across all Compiler instances via pointer)
+  ParseState* ps_;
 
   // Compiler state (per function scope)
   Compiler* enclosing_{nullptr};
@@ -94,8 +87,6 @@ class Compiler {
   int local_count_{0};
   Upvalue upvalues_[kUINT8_COUNT];
   int scope_depth_{0};
-
-  static Compiler* current_compiler_;
 
   // Error reporting
   void error_at(const Token& token, strv_t message) noexcept;
@@ -163,7 +154,7 @@ class Compiler {
   ObjFunction* end_compiler() noexcept;
 
 public:
-  Compiler(FunctionType type) noexcept;
+  Compiler(ParseState& ps, FunctionType type) noexcept;
 
   // Expression parsers — public so ParseRule table can take member-function pointers
   void grouping(bool can_assign) noexcept;
@@ -185,14 +176,7 @@ public:
   friend void mark_compiler_roots() noexcept;
 };
 
-// Static member definitions
-Scanner Compiler::scanner_;
-Token Compiler::current_;
-Token Compiler::previous_;
-bool Compiler::had_error_ = false;
-bool Compiler::panic_mode_ = false;
-ClassCompiler* Compiler::current_class_ = nullptr;
-Compiler* Compiler::current_compiler_ = nullptr;
+static ParseState* active_parse_state_ = nullptr;
 
 // Parse rule table
 static ParseRule rules[] = {
@@ -288,16 +272,16 @@ static ParseRule rules[] = {
 
 // --- Compiler implementation ---
 
-Compiler::Compiler(FunctionType type) noexcept
-    : type_(type) {
-  enclosing_ = current_compiler_;
-  current_compiler_ = this;
+Compiler::Compiler(ParseState& ps, FunctionType type) noexcept
+    : ps_(&ps), type_(type) {
+  enclosing_ = ps_->current_compiler;
+  ps_->current_compiler = this;
 
   function_ = allocate_object<ObjFunction>();
 
   if (type != FunctionType::TYPE_SCRIPT) {
     function_->name_ = vm_copy_string(
-        previous_.lexeme.data(), previous_.lexeme.length());
+        ps_->previous.lexeme.data(), ps_->previous.lexeme.length());
   }
 
   // Slot 0 is reserved for the VM's internal use
@@ -312,8 +296,8 @@ Compiler::Compiler(FunctionType type) noexcept
 }
 
 void Compiler::error_at(const Token& token, strv_t message) noexcept {
-  if (panic_mode_) return;
-  panic_mode_ = true;
+  if (ps_->panic_mode) return;
+  ps_->panic_mode = true;
 
   std::cerr << std::format("[line {}] Error", token.line);
 
@@ -324,30 +308,30 @@ void Compiler::error_at(const Token& token, strv_t message) noexcept {
   }
 
   std::cerr << ": " << message << std::endl;
-  had_error_ = true;
+  ps_->had_error = true;
 }
 
 void Compiler::error(strv_t message) noexcept {
-  error_at(previous_, message);
+  error_at(ps_->previous, message);
 }
 
 void Compiler::error_at_current(strv_t message) noexcept {
-  error_at(current_, message);
+  error_at(ps_->current, message);
 }
 
 void Compiler::advance() noexcept {
-  previous_ = current_;
+  ps_->previous = ps_->current;
 
   for (;;) {
-    current_ = scanner_.scan_token();
-    if (current_.type != TokenType::TOKEN_ERROR) break;
+    ps_->current = ps_->scanner.scan_token();
+    if (ps_->current.type != TokenType::TOKEN_ERROR) break;
 
-    error_at_current(current_.lexeme);
+    error_at_current(ps_->current.lexeme);
   }
 }
 
 void Compiler::consume(TokenType type, strv_t message) noexcept {
-  if (current_.type == type) {
+  if (ps_->current.type == type) {
     advance();
     return;
   }
@@ -355,7 +339,7 @@ void Compiler::consume(TokenType type, strv_t message) noexcept {
 }
 
 bool Compiler::check(TokenType type) const noexcept {
-  return current_.type == type;
+  return ps_->current.type == type;
 }
 
 bool Compiler::match(TokenType type) noexcept {
@@ -369,7 +353,7 @@ Chunk& Compiler::current_chunk() noexcept {
 }
 
 void Compiler::emit_byte(u8_t byte) noexcept {
-  current_chunk().write(byte, previous_.line);
+  current_chunk().write(byte, ps_->previous.line);
 }
 
 void Compiler::emit_bytes(u8_t byte1, u8_t byte2) noexcept {
@@ -447,7 +431,7 @@ u8_t Compiler::parse_variable(strv_t error_msg) noexcept {
   declare_variable();
   if (scope_depth_ > 0) return 0;
 
-  return identifier_constant(previous_);
+  return identifier_constant(ps_->previous);
 }
 
 void Compiler::define_variable(u8_t global) noexcept {
@@ -461,7 +445,7 @@ void Compiler::define_variable(u8_t global) noexcept {
 void Compiler::declare_variable() noexcept {
   if (scope_depth_ == 0) return;
 
-  Token& name = previous_;
+  Token& name = ps_->previous;
 
   for (int i = local_count_ - 1; i >= 0; i--) {
     Local& local = locals_[i];
@@ -589,7 +573,7 @@ const ParseRule& Compiler::get_rule(TokenType type) noexcept {
 
 void Compiler::parse_precedence(Precedence precedence) noexcept {
   advance();
-  ParseFn prefix_rule = get_rule(previous_.type).prefix;
+  ParseFn prefix_rule = get_rule(ps_->previous.type).prefix;
   if (prefix_rule == nullptr) {
     error("Expect expression.");
     return;
@@ -598,9 +582,9 @@ void Compiler::parse_precedence(Precedence precedence) noexcept {
   bool can_assign = (precedence <= Precedence::PREC_ASSIGNMENT);
   (this->*prefix_rule)(can_assign);
 
-  while (precedence <= get_rule(current_.type).precedence) {
+  while (precedence <= get_rule(ps_->current.type).precedence) {
     advance();
-    ParseFn infix_rule = get_rule(previous_.type).infix;
+    ParseFn infix_rule = get_rule(ps_->previous.type).infix;
     (this->*infix_rule)(can_assign);
   }
 
@@ -619,23 +603,23 @@ void Compiler::grouping(bool /*can_assign*/) noexcept {
 }
 
 void Compiler::number(bool /*can_assign*/) noexcept {
-  double value = std::strtod(str_t(previous_.lexeme).c_str(), nullptr);
+  double value = std::strtod(str_t(ps_->previous.lexeme).c_str(), nullptr);
   emit_constant(Value(value));
 }
 
 void Compiler::string(bool /*can_assign*/) noexcept {
   // Trim the surrounding quotes
   emit_constant(Value(static_cast<Object*>(
-      vm_copy_string(previous_.lexeme.data() + 1,
-                     previous_.lexeme.length() - 2))));
+      vm_copy_string(ps_->previous.lexeme.data() + 1,
+                     ps_->previous.lexeme.length() - 2))));
 }
 
 void Compiler::variable(bool can_assign) noexcept {
-  named_variable(previous_, can_assign);
+  named_variable(ps_->previous, can_assign);
 }
 
 void Compiler::unary(bool /*can_assign*/) noexcept {
-  TokenType operator_type = previous_.type;
+  TokenType operator_type = ps_->previous.type;
 
   parse_precedence(Precedence::PREC_UNARY);
 
@@ -647,7 +631,7 @@ void Compiler::unary(bool /*can_assign*/) noexcept {
 }
 
 void Compiler::binary(bool /*can_assign*/) noexcept {
-  TokenType operator_type = previous_.type;
+  TokenType operator_type = ps_->previous.type;
   const ParseRule& rule = get_rule(operator_type);
   parse_precedence(static_cast<Precedence>(static_cast<int>(rule.precedence) + 1));
 
@@ -667,7 +651,7 @@ void Compiler::binary(bool /*can_assign*/) noexcept {
 }
 
 void Compiler::literal(bool /*can_assign*/) noexcept {
-  switch (previous_.type) {
+  switch (ps_->previous.type) {
   case TokenType::TOKEN_FALSE: emit_op(OpCode::OP_FALSE); break;
   case TokenType::TOKEN_NIL:   emit_op(OpCode::OP_NIL); break;
   case TokenType::TOKEN_TRUE:  emit_op(OpCode::OP_TRUE); break;
@@ -717,7 +701,7 @@ void Compiler::call(bool /*can_assign*/) noexcept {
 
 void Compiler::dot(bool can_assign) noexcept {
   consume(TokenType::TOKEN_IDENTIFIER, "Expect property name after '.'.");
-  u8_t name = identifier_constant(previous_);
+  u8_t name = identifier_constant(ps_->previous);
 
   if (can_assign && match(TokenType::TOKEN_EQUAL)) {
     expression();
@@ -732,7 +716,7 @@ void Compiler::dot(bool can_assign) noexcept {
 }
 
 void Compiler::this_(bool /*can_assign*/) noexcept {
-  if (current_class_ == nullptr) {
+  if (ps_->current_class == nullptr) {
     error("Can't use 'this' outside of a class.");
     return;
   }
@@ -740,25 +724,25 @@ void Compiler::this_(bool /*can_assign*/) noexcept {
 }
 
 void Compiler::super_(bool /*can_assign*/) noexcept {
-  if (current_class_ == nullptr) {
+  if (ps_->current_class == nullptr) {
     error("Can't use 'super' outside of a class.");
-  } else if (!current_class_->has_superclass) {
+  } else if (!ps_->current_class->has_superclass) {
     error("Can't use 'super' in a class with no superclass.");
   }
 
   consume(TokenType::TOKEN_DOT, "Expect '.' after 'super'.");
   consume(TokenType::TOKEN_IDENTIFIER, "Expect superclass method name.");
-  u8_t name = identifier_constant(previous_);
+  u8_t name = identifier_constant(ps_->previous);
 
-  named_variable(Token{TokenType::TOKEN_THIS, "this", previous_.line}, false);
+  named_variable(Token{TokenType::TOKEN_THIS, "this", ps_->previous.line}, false);
 
   if (match(TokenType::TOKEN_LEFT_PAREN)) {
     u8_t arg_count = argument_list();
-    named_variable(Token{TokenType::TOKEN_SUPER, "super", previous_.line}, false);
+    named_variable(Token{TokenType::TOKEN_SUPER, "super", ps_->previous.line}, false);
     emit_bytes(static_cast<u8_t>(OpCode::OP_SUPER_INVOKE), name);
     emit_byte(arg_count);
   } else {
-    named_variable(Token{TokenType::TOKEN_SUPER, "super", previous_.line}, false);
+    named_variable(Token{TokenType::TOKEN_SUPER, "super", ps_->previous.line}, false);
     emit_op_byte(OpCode::OP_GET_SUPER, name);
   }
 }
@@ -784,7 +768,7 @@ void Compiler::var_declaration() noexcept {
 }
 
 void Compiler::function(FunctionType type) noexcept {
-  Compiler compiler(type);
+  Compiler compiler(*ps_, type);
   compiler.begin_scope();
 
   consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after function name.");
@@ -820,10 +804,10 @@ void Compiler::fun_declaration() noexcept {
 
 void Compiler::method() noexcept {
   consume(TokenType::TOKEN_IDENTIFIER, "Expect method name.");
-  u8_t constant = identifier_constant(previous_);
+  u8_t constant = identifier_constant(ps_->previous);
 
   FunctionType type = FunctionType::TYPE_METHOD;
-  if (previous_.lexeme == "init") {
+  if (ps_->previous.lexeme == "init") {
     type = FunctionType::TYPE_INITIALIZER;
   }
   function(type);
@@ -833,28 +817,28 @@ void Compiler::method() noexcept {
 
 void Compiler::class_declaration() noexcept {
   consume(TokenType::TOKEN_IDENTIFIER, "Expect class name.");
-  Token class_name = previous_;
-  u8_t name_constant = identifier_constant(previous_);
+  Token class_name = ps_->previous;
+  u8_t name_constant = identifier_constant(ps_->previous);
   declare_variable();
 
   emit_op_byte(OpCode::OP_CLASS, name_constant);
   define_variable(name_constant);
 
   ClassCompiler class_compiler;
-  class_compiler.enclosing = current_class_;
+  class_compiler.enclosing = ps_->current_class;
   class_compiler.has_superclass = false;
-  current_class_ = &class_compiler;
+  ps_->current_class = &class_compiler;
 
   if (match(TokenType::TOKEN_COLON)) {
     consume(TokenType::TOKEN_IDENTIFIER, "Expect superclass name.");
     variable(false);
 
-    if (class_name.lexeme == previous_.lexeme) {
+    if (class_name.lexeme == ps_->previous.lexeme) {
       error("A class can't inherit from itself.");
     }
 
     begin_scope();
-    add_local(Token{TokenType::TOKEN_SUPER, "super", previous_.line});
+    add_local(Token{TokenType::TOKEN_SUPER, "super", ps_->previous.line});
     define_variable(0);
 
     named_variable(class_name, false);
@@ -874,15 +858,15 @@ void Compiler::class_declaration() noexcept {
     end_scope();
   }
 
-  current_class_ = current_class_->enclosing;
+  ps_->current_class = ps_->current_class->enclosing;
 }
 
 void Compiler::import_declaration() noexcept {
   consume(TokenType::TOKEN_STRING, "Expect module path string.");
   // Trim quotes from the string
   u8_t path_constant = make_constant(Value(static_cast<Object*>(
-      vm_copy_string(previous_.lexeme.data() + 1,
-                     previous_.lexeme.length() - 2))));
+      vm_copy_string(ps_->previous.lexeme.data() + 1,
+                     ps_->previous.lexeme.length() - 2))));
 
   consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after import path.");
 
@@ -1003,11 +987,11 @@ void Compiler::return_statement() noexcept {
 }
 
 void Compiler::synchronize() noexcept {
-  panic_mode_ = false;
+  ps_->panic_mode = false;
 
-  while (current_.type != TokenType::TOKEN_EOF) {
-    if (previous_.type == TokenType::TOKEN_SEMICOLON) return;
-    switch (current_.type) {
+  while (ps_->current.type != TokenType::TOKEN_EOF) {
+    if (ps_->previous.type == TokenType::TOKEN_SEMICOLON) return;
+    switch (ps_->current.type) {
     case TokenType::TOKEN_CLASS:
     case TokenType::TOKEN_FUN:
     case TokenType::TOKEN_VAR:
@@ -1059,15 +1043,15 @@ void Compiler::declaration() noexcept {
     // from "path" import name [as alias];
     consume(TokenType::TOKEN_STRING, "Expect module path string after 'from'.");
     u8_t path_constant = make_constant(Value(static_cast<Object*>(
-        vm_copy_string(previous_.lexeme.data() + 1,
-                       previous_.lexeme.length() - 2))));
+        vm_copy_string(ps_->previous.lexeme.data() + 1,
+                       ps_->previous.lexeme.length() - 2))));
     consume(TokenType::TOKEN_IMPORT, "Expect 'import' after module path.");
     consume(TokenType::TOKEN_IDENTIFIER, "Expect name to import.");
-    u8_t name_constant = identifier_constant(previous_);
+    u8_t name_constant = identifier_constant(ps_->previous);
 
     if (match(TokenType::TOKEN_AS)) {
       consume(TokenType::TOKEN_IDENTIFIER, "Expect alias name after 'as'.");
-      u8_t alias_constant = identifier_constant(previous_);
+      u8_t alias_constant = identifier_constant(ps_->previous);
 
       emit_op_byte(OpCode::OP_CONSTANT, path_constant);
       emit_op_byte(OpCode::OP_CONSTANT, name_constant);
@@ -1084,7 +1068,7 @@ void Compiler::declaration() noexcept {
     statement();
   }
 
-  if (panic_mode_) synchronize();
+  if (ps_->panic_mode) synchronize();
 }
 
 ObjFunction* Compiler::end_compiler() noexcept {
@@ -1092,22 +1076,22 @@ ObjFunction* Compiler::end_compiler() noexcept {
   ObjFunction* function = function_;
 
 #ifdef MAPLE_DEBUG_PRINT
-  if (!had_error_) {
+  if (!ps_->had_error) {
     disassemble_chunk(current_chunk(),
         function->name_ != nullptr ? strv_t(function->name_->value_) : "<script>");
   }
 #endif
 
-  current_compiler_ = enclosing_;
+  ps_->current_compiler = enclosing_;
   return function;
 }
 
 ObjFunction* compile(strv_t source) noexcept {
-  Compiler::scanner_.init(source);
-  Compiler::had_error_ = false;
-  Compiler::panic_mode_ = false;
+  ParseState ps;
+  ps.scanner.init(source);
+  active_parse_state_ = &ps;
 
-  Compiler compiler(FunctionType::TYPE_SCRIPT);
+  Compiler compiler(ps, FunctionType::TYPE_SCRIPT);
   compiler.advance();
 
   while (!compiler.match(TokenType::TOKEN_EOF)) {
@@ -1115,11 +1099,13 @@ ObjFunction* compile(strv_t source) noexcept {
   }
 
   ObjFunction* function = compiler.end_compiler();
-  return Compiler::had_error_ ? nullptr : function;
+  active_parse_state_ = nullptr;
+  return ps.had_error ? nullptr : function;
 }
 
 void mark_compiler_roots() noexcept {
-  Compiler* compiler = Compiler::current_compiler_;
+  if (active_parse_state_ == nullptr) return;
+  Compiler* compiler = active_parse_state_->current_compiler;
   while (compiler != nullptr) {
     mark_object(compiler->function_);
     compiler = compiler->enclosing_;
