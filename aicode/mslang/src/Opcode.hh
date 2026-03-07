@@ -32,6 +32,7 @@ namespace ms {
 
 enum class OpCode : u8_t {
   OP_CONSTANT,
+  OP_CONSTANT_LONG,
   OP_NIL,
   OP_TRUE,
   OP_FALSE,
@@ -77,6 +78,7 @@ enum class OpCode : u8_t {
 inline cstr_t opcode_name(OpCode code) noexcept {
   switch (code) {
   case OpCode::OP_CONSTANT:       return "OP_CONSTANT";
+  case OpCode::OP_CONSTANT_LONG:  return "OP_CONSTANT_LONG";
   case OpCode::OP_NIL:            return "OP_NIL";
   case OpCode::OP_TRUE:           return "OP_TRUE";
   case OpCode::OP_FALSE:          return "OP_FALSE";

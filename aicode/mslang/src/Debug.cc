@@ -71,6 +71,15 @@ static sz_t invoke_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noe
   return offset + 3;
 }
 
+static sz_t constant_long_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
+  u32_t index = chunk.code_at(offset + 1);
+  index |= static_cast<u32_t>(chunk.code_at(offset + 2)) << 8;
+  index |= static_cast<u32_t>(chunk.code_at(offset + 3)) << 16;
+  std::cout << std::format("{:<16s} {:4d} '{}'\n",
+      name, index, chunk.constant_at(index).stringify());
+  return offset + 4;
+}
+
 static sz_t closure_instruction(const Chunk& chunk, sz_t offset) noexcept {
   u8_t index = chunk.code_at(offset + 1);
   std::cout << std::format("{:<16s} {:4d} '{}'\n",
@@ -146,6 +155,10 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_SET_UPVALUE:
   case OpCode::OP_CALL:
     return byte_instruction(opcode_name(op), chunk, offset);
+
+  // Constant long instruction (3 byte operand = constant index)
+  case OpCode::OP_CONSTANT_LONG:
+    return constant_long_instruction(opcode_name(op), chunk, offset);
 
   // Constant instructions (1 byte operand = constant index)
   case OpCode::OP_CONSTANT:

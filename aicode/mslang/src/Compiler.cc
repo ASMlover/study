@@ -119,7 +119,7 @@ class Compiler {
   sz_t emit_jump(OpCode op) noexcept;
   void patch_jump(sz_t offset) noexcept;
   void emit_loop(sz_t loop_start) noexcept;
-  u8_t make_constant(Value value) noexcept;
+  sz_t make_constant(Value value) noexcept;
 
   // Variables
   u8_t identifier_constant(const Token& name) noexcept;
@@ -402,17 +402,25 @@ void Compiler::emit_return() noexcept {
   emit_op(OpCode::OP_RETURN);
 }
 
-u8_t Compiler::make_constant(Value value) noexcept {
+sz_t Compiler::make_constant(Value value) noexcept {
   sz_t constant = current_chunk().add_constant(value);
-  if (constant > 255) {
+  if (constant > 0xFFFFFF) {
     error("Too many constants in one chunk.");
     return 0;
   }
-  return static_cast<u8_t>(constant);
+  return constant;
 }
 
 void Compiler::emit_constant(Value value) noexcept {
-  emit_op_byte(OpCode::OP_CONSTANT, make_constant(value));
+  sz_t index = make_constant(value);
+  if (index <= 255) {
+    emit_op_byte(OpCode::OP_CONSTANT, static_cast<u8_t>(index));
+  } else {
+    emit_op(OpCode::OP_CONSTANT_LONG);
+    emit_byte(static_cast<u8_t>(index & 0xFF));
+    emit_byte(static_cast<u8_t>((index >> 8) & 0xFF));
+    emit_byte(static_cast<u8_t>((index >> 16) & 0xFF));
+  }
 }
 
 sz_t Compiler::emit_jump(OpCode op) noexcept {
@@ -444,8 +452,13 @@ void Compiler::emit_loop(sz_t loop_start) noexcept {
 }
 
 u8_t Compiler::identifier_constant(const Token& name) noexcept {
-  return make_constant(Value(static_cast<Object*>(
+  sz_t index = make_constant(Value(static_cast<Object*>(
       VM::get_instance().copy_string(name.lexeme.data(), name.lexeme.length()))));
+  if (index > 255) {
+    error("Too many constants in one chunk.");
+    return 0;
+  }
+  return static_cast<u8_t>(index);
 }
 
 u8_t Compiler::parse_variable(strv_t error_msg) noexcept {
@@ -839,7 +852,12 @@ void Compiler::function(FunctionType type) noexcept {
   compiler.block();
 
   ObjFunction* function = compiler.end_compiler();
-  emit_op_byte(OpCode::OP_CLOSURE, make_constant(Value(static_cast<Object*>(function))));
+  sz_t closure_index = make_constant(Value(static_cast<Object*>(function)));
+  if (closure_index > 255) {
+    error("Too many constants in one chunk.");
+    return;
+  }
+  emit_op_byte(OpCode::OP_CLOSURE, static_cast<u8_t>(closure_index));
 
   for (int i = 0; i < function->upvalue_count(); i++) {
     emit_byte(compiler.upvalues_[i].is_local ? 1 : 0);
@@ -916,13 +934,12 @@ void Compiler::class_declaration() noexcept {
 void Compiler::import_declaration() noexcept {
   consume(TokenType::TOKEN_STRING, "Expect module path string.");
   // Trim quotes from the string
-  u8_t path_constant = make_constant(Value(static_cast<Object*>(
+  emit_constant(Value(static_cast<Object*>(
       VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
                      ps_->previous.lexeme.length() - 2))));
 
   consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after import path.");
 
-  emit_op_byte(OpCode::OP_CONSTANT, path_constant);
   emit_op(OpCode::OP_IMPORT);
 }
 
@@ -1169,24 +1186,26 @@ void Compiler::declaration() noexcept {
   } else if (match(TokenType::TOKEN_FROM)) {
     // from "path" import name [as alias];
     consume(TokenType::TOKEN_STRING, "Expect module path string after 'from'.");
-    u8_t path_constant = make_constant(Value(static_cast<Object*>(
+    Value path_value = Value(static_cast<Object*>(
         VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
-                       ps_->previous.lexeme.length() - 2))));
+                       ps_->previous.lexeme.length() - 2)));
     consume(TokenType::TOKEN_IMPORT, "Expect 'import' after module path.");
     consume(TokenType::TOKEN_IDENTIFIER, "Expect name to import.");
-    u8_t name_constant = identifier_constant(ps_->previous);
+    Value name_value = Value(static_cast<Object*>(
+        VM::get_instance().copy_string(ps_->previous.lexeme.data(), ps_->previous.lexeme.length())));
 
     if (match(TokenType::TOKEN_AS)) {
       consume(TokenType::TOKEN_IDENTIFIER, "Expect alias name after 'as'.");
-      u8_t alias_constant = identifier_constant(ps_->previous);
+      Value alias_value = Value(static_cast<Object*>(
+          VM::get_instance().copy_string(ps_->previous.lexeme.data(), ps_->previous.lexeme.length())));
 
-      emit_op_byte(OpCode::OP_CONSTANT, path_constant);
-      emit_op_byte(OpCode::OP_CONSTANT, name_constant);
-      emit_op_byte(OpCode::OP_CONSTANT, alias_constant);
+      emit_constant(path_value);
+      emit_constant(name_value);
+      emit_constant(alias_value);
       emit_op(OpCode::OP_IMPORT_ALIAS);
     } else {
-      emit_op_byte(OpCode::OP_CONSTANT, path_constant);
-      emit_op_byte(OpCode::OP_CONSTANT, name_constant);
+      emit_constant(path_value);
+      emit_constant(name_value);
       emit_op(OpCode::OP_IMPORT_FROM);
     }
 

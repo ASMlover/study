@@ -555,6 +555,14 @@ InterpretResult VM::run() noexcept {
       break;
     }
 
+    case OpCode::OP_CONSTANT_LONG: {
+      u32_t index = READ_BYTE();
+      index |= static_cast<u32_t>(READ_BYTE()) << 8;
+      index |= static_cast<u32_t>(READ_BYTE()) << 16;
+      push(frame->closure->function()->chunk().constant_at(index));
+      break;
+    }
+
     case OpCode::OP_NIL:   push(Value()); break;
     case OpCode::OP_TRUE:  push(Value(true)); break;
     case OpCode::OP_FALSE: push(Value(false)); break;
