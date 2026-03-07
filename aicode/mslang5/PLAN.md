@@ -1,4 +1,4 @@
-﻿# Requirements.md
+# Requirements.md
 
 ## 1. 背景与目标
 
@@ -216,6 +216,7 @@ flowchart TD
 ### T00 - 工程初始化与约束落地（P0）
 
 - Goal: 建立 CMake 工程骨架与目录结构，锁定 C++23、命名空间约束、文件后缀规范。
+- Status: completed (2026-03-08)
 - Inputs: PLAN.md、AGENTS.md。
 - Outputs:
   - `CMakeLists.txt`
