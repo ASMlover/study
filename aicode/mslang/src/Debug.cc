@@ -81,7 +81,7 @@ static sz_t closure_instruction(const Chunk& chunk, sz_t offset) noexcept {
   Value constant = chunk.constant_at(index);
   if (constant.is_object() && constant.as_object()->type() == ObjectType::OBJ_FUNCTION) {
     ObjFunction* function = as_obj<ObjFunction>(constant.as_object());
-    for (int j = 0; j < function->upvalue_count_; j++) {
+    for (int j = 0; j < function->upvalue_count(); j++) {
       u8_t is_local = chunk.code_at(offset);
       u8_t upvalue_index = chunk.code_at(offset + 1);
       std::cout << std::format("{:04d}      |                     {} {}\n",

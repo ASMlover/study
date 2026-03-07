@@ -32,7 +32,7 @@ namespace ms {
 
 void mark_object(Object* object) noexcept {
   if (object == nullptr) return;
-  if (object->is_marked_) return;
+  if (object->is_marked()) return;
 
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
@@ -40,7 +40,7 @@ void mark_object(Object* object) noexcept {
       static_cast<void*>(object), object->stringify());
 #endif
 
-  object->is_marked_ = true;
+  object->set_marked(true);
   VM::get_instance().push_gray(object);
 }
 

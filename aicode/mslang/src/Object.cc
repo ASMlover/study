@@ -64,7 +64,7 @@ ObjFunction::ObjFunction() noexcept
 
 str_t ObjFunction::stringify() const noexcept {
   if (name_ == nullptr) return "<script>";
-  return std::format("<fn {}>", name_->value_);
+  return std::format("<fn {}>", name_->value());
 }
 
 void ObjFunction::trace_references() noexcept {
@@ -116,8 +116,8 @@ sz_t ObjUpvalue::size() const noexcept {
 ObjClosure::ObjClosure(ObjFunction* function) noexcept
     : Object(ObjectType::OBJ_CLOSURE)
     , function_(function)
-    , upvalues_(static_cast<sz_t>(function->upvalue_count_), nullptr)
-    , upvalue_count_(function->upvalue_count_) {
+    , upvalues_(static_cast<sz_t>(function->upvalue_count()), nullptr)
+    , upvalue_count_(function->upvalue_count()) {
 }
 
 str_t ObjClosure::stringify() const noexcept {
@@ -142,7 +142,7 @@ ObjClass::ObjClass(ObjString* name) noexcept
 }
 
 str_t ObjClass::stringify() const noexcept {
-  return name_->value_;
+  return name_->value();
 }
 
 void ObjClass::trace_references() noexcept {
@@ -164,7 +164,7 @@ ObjInstance::ObjInstance(ObjClass* klass) noexcept
 }
 
 str_t ObjInstance::stringify() const noexcept {
-  return std::format("{} instance", klass_->name_->value_);
+  return std::format("{} instance", klass_->name()->value());
 }
 
 void ObjInstance::trace_references() noexcept {
@@ -188,7 +188,7 @@ ObjBoundMethod::ObjBoundMethod(Value receiver, ObjClosure* method) noexcept
 }
 
 str_t ObjBoundMethod::stringify() const noexcept {
-  return method_->function_->stringify();
+  return method_->function()->stringify();
 }
 
 void ObjBoundMethod::trace_references() noexcept {
@@ -207,7 +207,7 @@ ObjModule::ObjModule(ObjString* name) noexcept
 }
 
 str_t ObjModule::stringify() const noexcept {
-  return std::format("<module {}>", name_->value_);
+  return std::format("<module {}>", name_->value());
 }
 
 void ObjModule::trace_references() noexcept {

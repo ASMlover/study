@@ -35,7 +35,7 @@ void mark_value(Value& value) noexcept;
 
 Entry* Table::find_entry(std::vector<Entry>& entries, ObjString* key) noexcept {
   auto capacity = static_cast<u32_t>(entries.size());
-  u32_t index = key->hash_ & (capacity - 1);
+  u32_t index = key->hash() & (capacity - 1);
   Entry* tombstone = nullptr;
 
   for (;;) {
@@ -130,9 +130,9 @@ ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexc
     if (entry.key == nullptr) {
       // Non-tombstone empty entry
       if (entry.value.is_nil()) return nullptr;
-    } else if (entry.key->hash_ == hash &&
-               entry.key->value_.length() == length &&
-               std::memcmp(entry.key->value_.c_str(), chars, length) == 0) {
+    } else if (entry.key->hash() == hash &&
+               entry.key->value().length() == length &&
+               std::memcmp(entry.key->value().c_str(), chars, length) == 0) {
       return entry.key;
     }
 
@@ -142,7 +142,7 @@ ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexc
 
 void Table::remove_white() noexcept {
   for (auto& entry : entries_) {
-    if (entry.key != nullptr && !entry.key->is_marked_) {
+    if (entry.key != nullptr && !entry.key->is_marked()) {
       remove(entry.key);
     }
   }

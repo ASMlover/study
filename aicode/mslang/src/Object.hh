@@ -48,11 +48,11 @@ enum class ObjectType : int {
 };
 
 class Object {
-public:
   ObjectType type_;
   bool is_marked_{false};
   Object* next_{nullptr};
 
+public:
   explicit Object(ObjectType type) noexcept : type_(type) {}
   virtual ~Object() = default;
 
@@ -62,6 +62,9 @@ public:
 
   ObjectType type() const noexcept { return type_; }
   bool is_marked() const noexcept { return is_marked_; }
+  void set_marked(bool marked) noexcept { is_marked_ = marked; }
+  Object* next() const noexcept { return next_; }
+  void set_next(Object* next) noexcept { next_ = next; }
 };
 
 template <typename T>
@@ -80,115 +83,156 @@ inline bool is_obj_type(const Value& value, ObjectType type) noexcept {
 
 // --- ObjString ---
 class ObjString final : public Object {
-public:
   str_t value_;
   u32_t hash_{0};
 
+public:
   ObjString(str_t value, u32_t hash) noexcept;
   str_t stringify() const noexcept override;
   sz_t size() const noexcept override;
+
+  const str_t& value() const noexcept { return value_; }
+  u32_t hash() const noexcept { return hash_; }
 
   static u32_t hash_string(cstr_t chars, sz_t length) noexcept;
 };
 
 // --- ObjFunction ---
 class ObjFunction final : public Object {
-public:
   int arity_{0};
   int upvalue_count_{0};
   Chunk chunk_;
   ObjString* name_{nullptr};
 
+public:
   ObjFunction() noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  int arity() const noexcept { return arity_; }
+  void set_arity(int arity) noexcept { arity_ = arity; }
+  void increment_arity() noexcept { arity_++; }
+  int upvalue_count() const noexcept { return upvalue_count_; }
+  int increment_upvalue_count() noexcept { return upvalue_count_++; }
+  Chunk& chunk() noexcept { return chunk_; }
+  const Chunk& chunk() const noexcept { return chunk_; }
+  ObjString* name() const noexcept { return name_; }
+  void set_name(ObjString* name) noexcept { name_ = name; }
 };
 
 // --- ObjNative ---
 using NativeFn = std::function<Value(int arg_count, Value* args)>;
 
 class ObjNative final : public Object {
-public:
   NativeFn function_;
 
+public:
   explicit ObjNative(NativeFn function) noexcept;
   str_t stringify() const noexcept override;
   sz_t size() const noexcept override;
+
+  NativeFn& function() noexcept { return function_; }
 };
 
 // --- ObjUpvalue ---
 class ObjUpvalue final : public Object {
-public:
   Value* location_{nullptr};
   Value closed_{};
-  ObjUpvalue* next_upvalue_{nullptr};  // next open upvalue in VM's linked list
+  ObjUpvalue* next_upvalue_{nullptr};
 
+public:
   explicit ObjUpvalue(Value* slot) noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  Value* location() const noexcept { return location_; }
+  void set_location(Value* loc) noexcept { location_ = loc; }
+  Value& closed() noexcept { return closed_; }
+  ObjUpvalue* next_upvalue() const noexcept { return next_upvalue_; }
+  void set_next_upvalue(ObjUpvalue* next) noexcept { next_upvalue_ = next; }
 };
 
 // --- ObjClosure ---
 class ObjClosure final : public Object {
-public:
   ObjFunction* function_{nullptr};
   std::vector<ObjUpvalue*> upvalues_;
   int upvalue_count_{0};
 
+public:
   explicit ObjClosure(ObjFunction* function) noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  ObjFunction* function() const noexcept { return function_; }
+  int upvalue_count() const noexcept { return upvalue_count_; }
+  ObjUpvalue* upvalue_at(sz_t index) const noexcept { return upvalues_[index]; }
+  void set_upvalue_at(sz_t index, ObjUpvalue* uv) noexcept { upvalues_[index] = uv; }
 };
 
 // --- ObjClass ---
 class ObjClass final : public Object {
-public:
   ObjString* name_{nullptr};
   std::unordered_map<ObjString*, Value> methods_;
 
+public:
   explicit ObjClass(ObjString* name) noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  ObjString* name() const noexcept { return name_; }
+  std::unordered_map<ObjString*, Value>& methods() noexcept { return methods_; }
+  const std::unordered_map<ObjString*, Value>& methods() const noexcept { return methods_; }
 };
 
 // --- ObjInstance ---
 class ObjInstance final : public Object {
-public:
   ObjClass* klass_{nullptr};
   std::unordered_map<ObjString*, Value> fields_;
 
+public:
   explicit ObjInstance(ObjClass* klass) noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  ObjClass* klass() const noexcept { return klass_; }
+  std::unordered_map<ObjString*, Value>& fields() noexcept { return fields_; }
+  const std::unordered_map<ObjString*, Value>& fields() const noexcept { return fields_; }
 };
 
 // --- ObjBoundMethod ---
 class ObjBoundMethod final : public Object {
-public:
   Value receiver_;
   ObjClosure* method_{nullptr};
 
+public:
   ObjBoundMethod(Value receiver, ObjClosure* method) noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  const Value& receiver() const noexcept { return receiver_; }
+  ObjClosure* method() const noexcept { return method_; }
 };
 
 // --- ObjModule ---
 class ObjModule final : public Object {
-public:
   ObjString* name_{nullptr};
   std::unordered_map<ObjString*, Value> exports_;
 
+public:
   explicit ObjModule(ObjString* name) noexcept;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
+
+  ObjString* name() const noexcept { return name_; }
+  std::unordered_map<ObjString*, Value>& exports() noexcept { return exports_; }
+  const std::unordered_map<ObjString*, Value>& exports() const noexcept { return exports_; }
 };
 
 // --- Convenience helpers for Value ---
@@ -225,7 +269,7 @@ inline ObjModule* as_module(const Value& v) noexcept {
 }
 
 inline strv_t as_cppstring(const Value& v) noexcept {
-  return as_string(v)->value_;
+  return as_string(v)->value();
 }
 
 } // namespace ms

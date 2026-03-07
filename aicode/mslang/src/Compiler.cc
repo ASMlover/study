@@ -278,8 +278,8 @@ Compiler::Compiler(ParseState& ps, FunctionType type) noexcept
   function_ = VM::get_instance().allocate<ObjFunction>();
 
   if (type != FunctionType::TYPE_SCRIPT) {
-    function_->name_ = VM::get_instance().copy_string(
-        ps_->previous.lexeme.data(), ps_->previous.lexeme.length());
+    function_->set_name(VM::get_instance().copy_string(
+        ps_->previous.lexeme.data(), ps_->previous.lexeme.length()));
   }
 
   // Slot 0 is reserved for the VM's internal use
@@ -347,7 +347,7 @@ bool Compiler::match(TokenType type) noexcept {
 }
 
 Chunk& Compiler::current_chunk() noexcept {
-  return function_->chunk_;
+  return function_->chunk();
 }
 
 void Compiler::emit_byte(u8_t byte) noexcept {
@@ -488,7 +488,7 @@ int Compiler::resolve_local(const Token& name) noexcept {
 }
 
 int Compiler::add_upvalue(u8_t index, bool is_local) noexcept {
-  int upvalue_count = function_->upvalue_count_;
+  int upvalue_count = function_->upvalue_count();
 
   for (int i = 0; i < upvalue_count; i++) {
     Upvalue& upvalue = upvalues_[i];
@@ -504,7 +504,7 @@ int Compiler::add_upvalue(u8_t index, bool is_local) noexcept {
 
   upvalues_[upvalue_count].is_local = is_local;
   upvalues_[upvalue_count].index = index;
-  return function_->upvalue_count_++;
+  return function_->increment_upvalue_count();
 }
 
 int Compiler::resolve_upvalue(const Token& name) noexcept {
@@ -772,8 +772,8 @@ void Compiler::function(FunctionType type) noexcept {
   consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after function name.");
   if (!check(TokenType::TOKEN_RIGHT_PAREN)) {
     do {
-      compiler.function_->arity_++;
-      if (compiler.function_->arity_ > 255) {
+      compiler.function_->increment_arity();
+      if (compiler.function_->arity() > 255) {
         compiler.error_at_current("Can't have more than 255 parameters.");
       }
       u8_t constant = compiler.parse_variable("Expect parameter name.");
@@ -787,7 +787,7 @@ void Compiler::function(FunctionType type) noexcept {
   ObjFunction* function = compiler.end_compiler();
   emit_op_byte(OpCode::OP_CLOSURE, make_constant(Value(static_cast<Object*>(function))));
 
-  for (int i = 0; i < function->upvalue_count_; i++) {
+  for (int i = 0; i < function->upvalue_count(); i++) {
     emit_byte(compiler.upvalues_[i].is_local ? 1 : 0);
     emit_byte(compiler.upvalues_[i].index);
   }
@@ -1076,7 +1076,7 @@ ObjFunction* Compiler::end_compiler() noexcept {
 #ifdef MAPLE_DEBUG_PRINT
   if (!ps_->had_error) {
     disassemble_chunk(current_chunk(),
-        function->name_ != nullptr ? strv_t(function->name_->value_) : "<script>");
+        function->name() != nullptr ? strv_t(function->name()->value()) : "<script>");
   }
 #endif
 
