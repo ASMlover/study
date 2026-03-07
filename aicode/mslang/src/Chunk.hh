@@ -34,9 +34,14 @@
 namespace ms {
 
 class Chunk {
+  struct LineRun {
+    int line;
+    int count;
+  };
+
   std::vector<u8_t> code_;
   std::vector<Value> constants_;
-  std::vector<int> lines_;
+  std::vector<LineRun> lines_;
 public:
   // Write a raw byte
   void write(u8_t byte, int line) noexcept;

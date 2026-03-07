@@ -30,7 +30,11 @@ namespace ms {
 
 void Chunk::write(u8_t byte, int line) noexcept {
   code_.push_back(byte);
-  lines_.push_back(line);
+  if (!lines_.empty() && lines_.back().line == line) {
+    lines_.back().count++;
+  } else {
+    lines_.push_back({line, 1});
+  }
 }
 
 void Chunk::write(OpCode op, int line) noexcept {
@@ -51,7 +55,14 @@ const Value& Chunk::constant_at(sz_t index) const noexcept {
 }
 
 int Chunk::line_at(sz_t offset) const noexcept {
-  return lines_[offset];
+  sz_t cumulative = 0;
+  for (const auto& run : lines_) {
+    cumulative += static_cast<sz_t>(run.count);
+    if (offset < cumulative) {
+      return run.line;
+    }
+  }
+  return 0;
 }
 
 sz_t Chunk::count() const noexcept {
