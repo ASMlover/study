@@ -796,7 +796,7 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 9 | 9.2.3 Object 成员封装 | [x] |
 | 9 | 9.2.4 Table const_cast 消除 | [x] |
 | 9 | 9.2.5 统一 Table 存储 | [x] |
-| 9 | 9.2.6 ParseRule 表安全化 | [ ] |
+| 9 | 9.2.6 ParseRule 表安全化 | [x] |
 | 9 | 9.2.7 number 零分配解析 | [ ] |
 | 9 | 9.3.1 break/continue | [ ] |
 | 9 | 9.3.2 取模运算符 % | [ ] |

@@ -33,6 +33,7 @@ namespace ms {
 enum class TokenType : int {
 #define TOKEN_TYPE(name) TOKEN_##name,
 #include "TokenTypes.hh"
+  TOKEN_COUNT,
 };
 
 inline cstr_t token_type_name(TokenType type) noexcept {

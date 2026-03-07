@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <array>
 #include <cstdlib>
 #include <iostream>
 #include <format>
@@ -176,8 +177,11 @@ public:
 
 static ParseState* active_parse_state_ = nullptr;
 
-// Parse rule table
-static ParseRule rules[] = {
+// Parse rule table — indexed by TokenType enum value.
+// Order MUST match TokenTypes.hh; static_assert below verifies size.
+static constexpr sz_t kTOKEN_COUNT = static_cast<sz_t>(TokenType::TOKEN_COUNT);
+
+static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   // TOKEN_LEFT_PAREN
   { &Compiler::grouping, &Compiler::call,    Precedence::PREC_CALL },
   // TOKEN_RIGHT_PAREN
@@ -266,7 +270,10 @@ static ParseRule rules[] = {
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_EOF
   { nullptr,             nullptr,            Precedence::PREC_NONE },
-};
+}};
+
+static_assert(rules.size() == kTOKEN_COUNT,
+    "ParseRule table size must match TokenType enum count");
 
 // --- Compiler implementation ---
 
