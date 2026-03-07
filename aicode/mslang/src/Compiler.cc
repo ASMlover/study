@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <array>
+#include <charconv>
 #include <cstdlib>
 #include <iostream>
 #include <format>
@@ -608,7 +609,14 @@ void Compiler::grouping(bool /*can_assign*/) noexcept {
 }
 
 void Compiler::number(bool /*can_assign*/) noexcept {
-  double value = std::strtod(str_t(ps_->previous.lexeme).c_str(), nullptr);
+  double value = 0.0;
+  auto [ptr, ec] = std::from_chars(
+      ps_->previous.lexeme.data(),
+      ps_->previous.lexeme.data() + ps_->previous.lexeme.size(),
+      value);
+  if (ec != std::errc{}) {
+    error("Invalid number literal.");
+  }
   emit_constant(Value(value));
 }
 
