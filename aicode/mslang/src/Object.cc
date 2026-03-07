@@ -147,10 +147,7 @@ str_t ObjClass::stringify() const noexcept {
 
 void ObjClass::trace_references() noexcept {
   mark_object(name_);
-  for (auto& [key, val] : methods_) {
-    mark_object(key);
-    mark_value(val);
-  }
+  methods_.mark_table();
 }
 
 sz_t ObjClass::size() const noexcept {
@@ -169,10 +166,7 @@ str_t ObjInstance::stringify() const noexcept {
 
 void ObjInstance::trace_references() noexcept {
   mark_object(klass_);
-  for (auto& [key, val] : fields_) {
-    mark_object(key);
-    mark_value(val);
-  }
+  fields_.mark_table();
 }
 
 sz_t ObjInstance::size() const noexcept {
@@ -212,10 +206,7 @@ str_t ObjModule::stringify() const noexcept {
 
 void ObjModule::trace_references() noexcept {
   mark_object(name_);
-  for (auto& [key, val] : exports_) {
-    mark_object(key);
-    mark_value(val);
-  }
+  exports_.mark_table();
 }
 
 sz_t ObjModule::size() const noexcept {

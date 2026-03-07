@@ -27,11 +27,10 @@
 #pragma once
 
 #include <functional>
-#include <unordered_map>
 #include <vector>
 #include "Common.hh"
 #include "Chunk.hh"
-#include "Value.hh"
+#include "Table.hh"
 
 namespace ms {
 
@@ -175,7 +174,7 @@ public:
 // --- ObjClass ---
 class ObjClass final : public Object {
   ObjString* name_{nullptr};
-  std::unordered_map<ObjString*, Value> methods_;
+  Table methods_;
 
 public:
   explicit ObjClass(ObjString* name) noexcept;
@@ -184,14 +183,14 @@ public:
   sz_t size() const noexcept override;
 
   ObjString* name() const noexcept { return name_; }
-  std::unordered_map<ObjString*, Value>& methods() noexcept { return methods_; }
-  const std::unordered_map<ObjString*, Value>& methods() const noexcept { return methods_; }
+  Table& methods() noexcept { return methods_; }
+  const Table& methods() const noexcept { return methods_; }
 };
 
 // --- ObjInstance ---
 class ObjInstance final : public Object {
   ObjClass* klass_{nullptr};
-  std::unordered_map<ObjString*, Value> fields_;
+  Table fields_;
 
 public:
   explicit ObjInstance(ObjClass* klass) noexcept;
@@ -200,8 +199,8 @@ public:
   sz_t size() const noexcept override;
 
   ObjClass* klass() const noexcept { return klass_; }
-  std::unordered_map<ObjString*, Value>& fields() noexcept { return fields_; }
-  const std::unordered_map<ObjString*, Value>& fields() const noexcept { return fields_; }
+  Table& fields() noexcept { return fields_; }
+  const Table& fields() const noexcept { return fields_; }
 };
 
 // --- ObjBoundMethod ---
@@ -222,7 +221,7 @@ public:
 // --- ObjModule ---
 class ObjModule final : public Object {
   ObjString* name_{nullptr};
-  std::unordered_map<ObjString*, Value> exports_;
+  Table exports_;
 
 public:
   explicit ObjModule(ObjString* name) noexcept;
@@ -231,8 +230,8 @@ public:
   sz_t size() const noexcept override;
 
   ObjString* name() const noexcept { return name_; }
-  std::unordered_map<ObjString*, Value>& exports() noexcept { return exports_; }
-  const std::unordered_map<ObjString*, Value>& exports() const noexcept { return exports_; }
+  Table& exports() noexcept { return exports_; }
+  const Table& exports() const noexcept { return exports_; }
 };
 
 // --- Convenience helpers for Value ---

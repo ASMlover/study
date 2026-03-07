@@ -329,9 +329,9 @@ bool VM::call_value(Value callee, int arg_count) noexcept {
       stack_top_[-arg_count - 1] = Value(static_cast<Object*>(allocate<ObjInstance>(klass)));
 
       // Call initializer if present
-      auto it = klass->methods().find(init_string_);
-      if (it != klass->methods().end()) {
-        return call(as_closure(it->second), arg_count);
+      Value init_method;
+      if (klass->methods().get(init_string_, &init_method)) {
+        return call(as_closure(init_method), arg_count);
       } else if (arg_count != 0) {
         runtime_error(std::format("Expected 0 arguments but got {}.", arg_count));
         return false;
@@ -355,12 +355,12 @@ bool VM::call_value(Value callee, int arg_count) noexcept {
 }
 
 bool VM::invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noexcept {
-  auto it = klass->methods().find(name);
-  if (it == klass->methods().end()) {
+  Value method;
+  if (!klass->methods().get(name, &method)) {
     runtime_error(std::format("Undefined property '{}'.", name->value()));
     return false;
   }
-  return call(as_closure(it->second), arg_count);
+  return call(as_closure(method), arg_count);
 }
 
 bool VM::invoke(ObjString* name, int arg_count) noexcept {
@@ -369,13 +369,13 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
   // Handle module property access (e.g., math.add(1, 2))
   if (is_obj_type(receiver, ObjectType::OBJ_MODULE)) {
     ObjModule* module = as_module(receiver);
-    auto it = module->exports().find(name);
-    if (it == module->exports().end()) {
+    Value export_val;
+    if (!module->exports().get(name, &export_val)) {
       runtime_error(std::format("Undefined export '{}'.", name->value()));
       return false;
     }
-    stack_top_[-arg_count - 1] = it->second;
-    return call_value(it->second, arg_count);
+    stack_top_[-arg_count - 1] = export_val;
+    return call_value(export_val, arg_count);
   }
 
   if (!is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
@@ -386,23 +386,23 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
   ObjInstance* instance = as_instance(receiver);
 
   // Check for field first (field shadowing method)
-  auto it = instance->fields().find(name);
-  if (it != instance->fields().end()) {
-    stack_top_[-arg_count - 1] = it->second;
-    return call_value(it->second, arg_count);
+  Value field_val;
+  if (instance->fields().get(name, &field_val)) {
+    stack_top_[-arg_count - 1] = field_val;
+    return call_value(field_val, arg_count);
   }
 
   return invoke_from_class(instance->klass(), name, arg_count);
 }
 
 void VM::bind_method(ObjClass* klass, ObjString* name) noexcept {
-  auto it = klass->methods().find(name);
-  if (it == klass->methods().end()) {
+  Value method;
+  if (!klass->methods().get(name, &method)) {
     runtime_error(std::format("Undefined property '{}'.", name->value()));
     return;
   }
 
-  ObjBoundMethod* bound = allocate<ObjBoundMethod>(peek(0), as_closure(it->second));
+  ObjBoundMethod* bound = allocate<ObjBoundMethod>(peek(0), as_closure(method));
   pop();
   push(Value(static_cast<Object*>(bound)));
 }
@@ -616,10 +616,10 @@ InterpretResult VM::run() noexcept {
       if (is_obj_type(peek(0), ObjectType::OBJ_MODULE)) {
         ObjModule* module = as_module(peek(0));
         ObjString* name = READ_STRING();
-        auto it = module->exports().find(name);
-        if (it != module->exports().end()) {
+        Value export_val;
+        if (module->exports().get(name, &export_val)) {
           pop(); // Module
-          push(it->second);
+          push(export_val);
           break;
         }
         runtime_error(std::format("Undefined export '{}'.", name->value()));
@@ -634,10 +634,10 @@ InterpretResult VM::run() noexcept {
       ObjInstance* instance = as_instance(peek(0));
       ObjString* name = READ_STRING();
 
-      auto it = instance->fields().find(name);
-      if (it != instance->fields().end()) {
+      Value field_val;
+      if (instance->fields().get(name, &field_val)) {
         pop(); // Instance
-        push(it->second);
+        push(field_val);
         break;
       }
 
@@ -653,7 +653,7 @@ InterpretResult VM::run() noexcept {
 
       ObjInstance* instance = as_instance(peek(1));
       ObjString* name = READ_STRING();
-      instance->fields()[name] = peek(0);
+      instance->fields().set(name, peek(0));
       Value value = pop();
       pop();
       push(value);
@@ -810,7 +810,7 @@ InterpretResult VM::run() noexcept {
             pending.pre_global_keys.begin(), pending.pre_global_keys.end());
         for (auto& entry : globals_.entries()) {
           if (entry.key != nullptr && pre_set.find(entry.key) == pre_set.end()) {
-            pending.module->exports()[entry.key] = entry.value;
+            pending.module->exports().set(entry.key, entry.value);
           }
         }
 
@@ -825,10 +825,10 @@ InterpretResult VM::run() noexcept {
 
         // Process deferred from-import requests
         for (auto& req : pending.from_imports) {
-          auto exp_it = pending.module->exports().find(req.name);
-          if (exp_it != pending.module->exports().end()) {
+          Value exp_val;
+          if (pending.module->exports().get(req.name, &exp_val)) {
             ObjString* target = req.alias ? req.alias : req.name;
-            globals_.set(target, exp_it->second);
+            globals_.set(target, exp_val);
           }
         }
       }
@@ -848,9 +848,7 @@ InterpretResult VM::run() noexcept {
 
       ObjClass* subclass = as_class(peek(0));
       // Copy methods from superclass
-      for (auto& [key, val] : as_class(superclass)->methods()) {
-        subclass->methods()[key] = val;
-      }
+      subclass->methods().add_all(as_class(superclass)->methods());
       pop(); // Subclass
       break;
     }
@@ -859,7 +857,7 @@ InterpretResult VM::run() noexcept {
       ObjString* name = READ_STRING();
       Value method = peek(0);
       ObjClass* klass = as_class(peek(1));
-      klass->methods()[name] = method;
+      klass->methods().set(name, method);
       pop();
       break;
     }
@@ -894,9 +892,9 @@ InterpretResult VM::run() noexcept {
         // Module already executed, exports available
         auto mod_it = modules_.find(resolved);
         if (mod_it != modules_.end()) {
-          auto exp_it = mod_it->second->exports().find(name);
-          if (exp_it != mod_it->second->exports().end()) {
-            globals_.set(name, exp_it->second);
+          Value exp_val;
+          if (mod_it->second->exports().get(name, &exp_val)) {
+            globals_.set(name, exp_val);
           }
         }
       } else if (!pending_imports_.empty()) {
@@ -926,9 +924,9 @@ InterpretResult VM::run() noexcept {
       if (was_cached) {
         auto mod_it = modules_.find(resolved);
         if (mod_it != modules_.end()) {
-          auto exp_it = mod_it->second->exports().find(name);
-          if (exp_it != mod_it->second->exports().end()) {
-            globals_.set(alias, exp_it->second);
+          Value exp_val;
+          if (mod_it->second->exports().get(name, &exp_val)) {
+            globals_.set(alias, exp_val);
           }
         }
       } else if (!pending_imports_.empty()) {
