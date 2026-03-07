@@ -639,9 +639,30 @@ void Compiler::number(bool /*can_assign*/) noexcept {
 
 void Compiler::string(bool /*can_assign*/) noexcept {
   // Trim the surrounding quotes
+  const char* start = ps_->previous.lexeme.data() + 1;
+  sz_t length = ps_->previous.lexeme.length() - 2;
+
+  str_t result;
+  result.reserve(length);
+  for (sz_t i = 0; i < length; ++i) {
+    if (start[i] == '\\' && i + 1 < length) {
+      ++i;
+      switch (start[i]) {
+      case 'n':  result += '\n'; break;
+      case 't':  result += '\t'; break;
+      case 'r':  result += '\r'; break;
+      case '\\': result += '\\'; break;
+      case '"':  result += '"';  break;
+      case '0':  result += '\0'; break;
+      default:   result += '\\'; result += start[i]; break;
+      }
+    } else {
+      result += start[i];
+    }
+  }
+
   emit_constant(Value(static_cast<Object*>(
-      VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
-                     ps_->previous.lexeme.length() - 2))));
+      VM::get_instance().copy_string(result.data(), result.length()))));
 }
 
 void Compiler::variable(bool can_assign) noexcept {

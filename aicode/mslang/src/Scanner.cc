@@ -121,6 +121,12 @@ void Scanner::skip_whitespace() noexcept {
 
 Token Scanner::scan_string() noexcept {
   while (peek() != '"' && !is_at_end()) {
+    if (peek() == '\\' && !is_at_end()) {
+      advance(); // skip the backslash
+      if (peek() == '\n') line_++;
+      advance(); // skip the escaped character
+      continue;
+    }
     if (peek() == '\n') line_++;
     advance();
   }
