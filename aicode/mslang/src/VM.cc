@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <cstdarg>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <format>
@@ -695,6 +696,17 @@ InterpretResult VM::run() noexcept {
     case OpCode::OP_SUBTRACT: BINARY_OP(Value, -); break;
     case OpCode::OP_MULTIPLY: BINARY_OP(Value, *); break;
     case OpCode::OP_DIVIDE:   BINARY_OP(Value, /); break;
+
+    case OpCode::OP_MODULO: {
+      if (!peek(0).is_number() || !peek(1).is_number()) {
+        runtime_error("Operands must be numbers.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+      double b = pop().as_number();
+      double a = pop().as_number();
+      push(Value(std::fmod(a, b)));
+      break;
+    }
 
     case OpCode::OP_NOT:
       push(Value(!pop().is_truthy()));

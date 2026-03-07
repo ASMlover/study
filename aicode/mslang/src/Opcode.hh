@@ -53,6 +53,7 @@ enum class OpCode : u8_t {
   OP_SUBTRACT,
   OP_MULTIPLY,
   OP_DIVIDE,
+  OP_MODULO,
   OP_NOT,
   OP_NEGATE,
   OP_PRINT,
@@ -97,6 +98,7 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_SUBTRACT:       return "OP_SUBTRACT";
   case OpCode::OP_MULTIPLY:       return "OP_MULTIPLY";
   case OpCode::OP_DIVIDE:         return "OP_DIVIDE";
+  case OpCode::OP_MODULO:        return "OP_MODULO";
   case OpCode::OP_NOT:            return "OP_NOT";
   case OpCode::OP_NEGATE:         return "OP_NEGATE";
   case OpCode::OP_PRINT:          return "OP_PRINT";

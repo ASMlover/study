@@ -236,6 +236,7 @@ Token Scanner::scan_token() noexcept {
   case '+': return make_token(TokenType::TOKEN_PLUS);
   case '/': return make_token(TokenType::TOKEN_SLASH);
   case '*': return make_token(TokenType::TOKEN_STAR);
+  case '%': return make_token(TokenType::TOKEN_PERCENT);
   case ':': return make_token(TokenType::TOKEN_COLON);
   case '!': return make_token(match('=') ? TokenType::TOKEN_BANG_EQUAL : TokenType::TOKEN_BANG);
   case '=': return make_token(match('=') ? TokenType::TOKEN_EQUAL_EQUAL : TokenType::TOKEN_EQUAL);

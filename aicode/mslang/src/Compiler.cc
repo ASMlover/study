@@ -216,6 +216,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { nullptr,             &Compiler::binary,  Precedence::PREC_FACTOR },
   // TOKEN_STAR
   { nullptr,             &Compiler::binary,  Precedence::PREC_FACTOR },
+  // TOKEN_PERCENT
+  { nullptr,             &Compiler::binary,  Precedence::PREC_FACTOR },
   // TOKEN_BANG
   { &Compiler::unary,    nullptr,            Precedence::PREC_NONE },
   // TOKEN_BANG_EQUAL
@@ -674,6 +676,7 @@ void Compiler::binary(bool /*can_assign*/) noexcept {
   case TokenType::TOKEN_MINUS:         emit_op(OpCode::OP_SUBTRACT); break;
   case TokenType::TOKEN_STAR:          emit_op(OpCode::OP_MULTIPLY); break;
   case TokenType::TOKEN_SLASH:         emit_op(OpCode::OP_DIVIDE); break;
+  case TokenType::TOKEN_PERCENT:       emit_op(OpCode::OP_MODULO); break;
   default: return;
   }
 }
