@@ -46,6 +46,7 @@ class Table {
 
   void adjust_capacity(int capacity) noexcept;
   Entry* find_entry(std::vector<Entry>& entries, ObjString* key) noexcept;
+  const Entry* find_entry(const std::vector<Entry>& entries, ObjString* key) const noexcept;
 public:
   Table() noexcept = default;
 

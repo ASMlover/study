@@ -56,6 +56,24 @@ Entry* Table::find_entry(std::vector<Entry>& entries, ObjString* key) noexcept {
   }
 }
 
+const Entry* Table::find_entry(const std::vector<Entry>& entries, ObjString* key) const noexcept {
+  auto capacity = static_cast<u32_t>(entries.size());
+  u32_t index = key->hash() & (capacity - 1);
+
+  for (;;) {
+    const Entry* entry = &entries[index];
+    if (entry->key == nullptr) {
+      if (entry->value.is_nil()) {
+        return entry;
+      }
+    } else if (entry->key == key) {
+      return entry;
+    }
+
+    index = (index + 1) & (capacity - 1);
+  }
+}
+
 void Table::adjust_capacity(int capacity) noexcept {
   std::vector<Entry> new_entries(static_cast<sz_t>(capacity));
 
@@ -75,9 +93,7 @@ void Table::adjust_capacity(int capacity) noexcept {
 bool Table::get(ObjString* key, Value* value) const noexcept {
   if (count_ == 0) return false;
 
-  // Use const_cast for find_entry since we don't modify through the pointer
-  auto& entries = const_cast<std::vector<Entry>&>(entries_);
-  Entry* entry = const_cast<Table*>(this)->find_entry(entries, key);
+  const Entry* entry = find_entry(entries_, key);
   if (entry->key == nullptr) return false;
 
   *value = entry->value;

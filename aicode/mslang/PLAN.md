@@ -794,7 +794,7 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 9 | 9.2.1 Compiler 静态状态消除 | [x] |
 | 9 | 9.2.2 GC 耦合解耦 | [x] |
 | 9 | 9.2.3 Object 成员封装 | [x] |
-| 9 | 9.2.4 Table const_cast 消除 | [ ] |
+| 9 | 9.2.4 Table const_cast 消除 | [x] |
 | 9 | 9.2.5 统一 Table 存储 | [ ] |
 | 9 | 9.2.6 ParseRule 表安全化 | [ ] |
 | 9 | 9.2.7 number 零分配解析 | [ ] |
