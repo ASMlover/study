@@ -69,6 +69,14 @@ struct Upvalue {
   bool is_local{false};
 };
 
+struct LoopContext {
+  sz_t continue_target{0};
+  int break_depth{0};
+  int continue_depth{0};
+  std::vector<sz_t> break_jumps;
+  LoopContext* enclosing{nullptr};
+};
+
 struct ClassCompiler {
   ClassCompiler* enclosing{nullptr};
   bool has_superclass{false};
@@ -87,6 +95,7 @@ class Compiler {
   int local_count_{0};
   Upvalue upvalues_[kUINT8_COUNT];
   int scope_depth_{0};
+  LoopContext* current_loop_{nullptr};
 
   // Error reporting
   void error_at(const Token& token, strv_t message) noexcept;
@@ -146,6 +155,8 @@ class Compiler {
   void if_statement() noexcept;
   void while_statement() noexcept;
   void for_statement() noexcept;
+  void break_statement() noexcept;
+  void continue_statement() noexcept;
   void return_statement() noexcept;
   void function(FunctionType type) noexcept;
   void method() noexcept;
@@ -231,7 +242,11 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { &Compiler::number,   nullptr,            Precedence::PREC_NONE },
   // TOKEN_AND
   { nullptr,             &Compiler::and_,    Precedence::PREC_AND },
+  // TOKEN_BREAK
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_CLASS
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_CONTINUE
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_ELSE
   { nullptr,             nullptr,            Precedence::PREC_NONE },
@@ -918,22 +933,43 @@ void Compiler::if_statement() noexcept {
 }
 
 void Compiler::while_statement() noexcept {
+  LoopContext loop;
+  loop.enclosing = current_loop_;
+  loop.break_depth = scope_depth_;
+  loop.continue_depth = scope_depth_;
+
   sz_t loop_start = current_chunk().count();
+  loop.continue_target = loop_start;
+
   consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
   expression();
   consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
 
   sz_t exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
   emit_op(OpCode::OP_POP);
+
+  current_loop_ = &loop;
   statement();
+  current_loop_ = loop.enclosing;
+
   emit_loop(loop_start);
 
   patch_jump(exit_jump);
   emit_op(OpCode::OP_POP);
+
+  for (sz_t offset : loop.break_jumps) {
+    patch_jump(offset);
+  }
 }
 
 void Compiler::for_statement() noexcept {
+  LoopContext loop;
+  loop.enclosing = current_loop_;
+  loop.break_depth = scope_depth_;
+
   begin_scope();
+  loop.continue_depth = scope_depth_;
+
   consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
 
   // Initializer
@@ -970,7 +1006,12 @@ void Compiler::for_statement() noexcept {
     patch_jump(body_jump);
   }
 
+  loop.continue_target = loop_start;
+
+  current_loop_ = &loop;
   statement();
+  current_loop_ = loop.enclosing;
+
   emit_loop(loop_start);
 
   if (exit_jump != static_cast<sz_t>(-1)) {
@@ -979,6 +1020,51 @@ void Compiler::for_statement() noexcept {
   }
 
   end_scope();
+
+  for (sz_t offset : loop.break_jumps) {
+    patch_jump(offset);
+  }
+}
+
+void Compiler::break_statement() noexcept {
+  if (current_loop_ == nullptr) {
+    error("Can't use 'break' outside of a loop.");
+    return;
+  }
+
+  // Pop locals deeper than the loop's outer scope
+  for (int i = local_count_ - 1; i >= 0 && locals_[i].depth > current_loop_->break_depth; i--) {
+    if (locals_[i].is_captured) {
+      emit_op(OpCode::OP_CLOSE_UPVALUE);
+    } else {
+      emit_op(OpCode::OP_POP);
+    }
+  }
+
+  sz_t jump = emit_jump(OpCode::OP_JUMP);
+  current_loop_->break_jumps.push_back(jump);
+
+  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+}
+
+void Compiler::continue_statement() noexcept {
+  if (current_loop_ == nullptr) {
+    error("Can't use 'continue' outside of a loop.");
+    return;
+  }
+
+  // Pop locals deeper than the loop body's scope
+  for (int i = local_count_ - 1; i >= 0 && locals_[i].depth > current_loop_->continue_depth; i--) {
+    if (locals_[i].is_captured) {
+      emit_op(OpCode::OP_CLOSE_UPVALUE);
+    } else {
+      emit_op(OpCode::OP_POP);
+    }
+  }
+
+  emit_loop(current_loop_->continue_target);
+
+  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
 }
 
 void Compiler::return_statement() noexcept {
@@ -1034,6 +1120,10 @@ void Compiler::statement() noexcept {
     while_statement();
   } else if (match(TokenType::TOKEN_FOR)) {
     for_statement();
+  } else if (match(TokenType::TOKEN_BREAK)) {
+    break_statement();
+  } else if (match(TokenType::TOKEN_CONTINUE)) {
+    continue_statement();
   } else if (match(TokenType::TOKEN_LEFT_BRACE)) {
     begin_scope();
     block();
