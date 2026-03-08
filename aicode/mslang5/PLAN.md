@@ -344,7 +344,7 @@ flowchart TD
 ### T08 - 函数/闭包/upvalue（P0）
 
 - Goal: 实现函数对象、调用帧、闭包捕获与 upvalue 生命周期。
-- Status: in_progress (2026-03-08, clox-full-semantics-upgrade)
+- Status: completed (2026-03-08, clox-full-semantics-upgrade, closure-batch)
 - Current State:
   - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整闭包语义。
   - 2026-03-08 补充了词法与运行时对象承载基础：`fun/return/class/this/super` 关键字和相关符号 token 已接入 lexer；`Value` 已支持通用运行时对象持有（`RuntimeObject`），为 closure/class 对象模型接入提供存储通道。
@@ -372,7 +372,7 @@ flowchart TD
 ### T09 - 类/继承/方法绑定（P0）
 
 - Goal: 实现 class、instance、method、super 调用链。
-- Status: in_progress (2026-03-08, clox-full-semantics-upgrade)
+- Status: completed (2026-03-08, clox-full-semantics-upgrade, class-inheritance-batch)
 - Current State:
   - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整 class/inheritance 语义。
   - 2026-03-08 已完成类语义前置基础：新增 class 语法关键 token 与对象值通道，后续可在不破坏 `Value` ABI 的前提下落地 `ObjClass/ObjInstance/ObjBoundMethod` 与调用分派链。
@@ -527,7 +527,7 @@ flowchart TD
 
 ## 2026-03-08 Incremental Update
 - T08 status: completed (closure batch, D1~D5).
-- T09 status: in_progress (class/inheritance batch pending).
+- T09 status: completed (class/inheritance batch).
 - Verification: cmake --build build --config Debug; ctest --test-dir build --output-on-failure -C Debug.
 
 - 2026-03-08 update: T09 class/inheritance batch completed with class_* integration scripts and tests.
