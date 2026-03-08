@@ -151,6 +151,10 @@ print "hello";  // expect: hello
   - `:recycle: refactor compiler parse rules`
   - `:white_check_mark: add tests for closure upvalues`
 
+## Workflow
+
+- 当一个 PLAN.md 中的 Task 实现并验证完毕后，自动将该 Task 在 PLAN.md 进度表中的状态从 `[ ]` 更新为 `[x]`，无需用户额外指示。
+
 ## Reference
 - [Crafting Interpreters — clox](https://github.com/munificent/craftinginterpreters) (c/ directory)
 - Design doc: `docs/DESIGN.md`

@@ -28,6 +28,7 @@
 #include <cstdarg>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <format>
 #include <unordered_set>
@@ -51,6 +52,98 @@ VM::VM() noexcept {
     auto now = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(now.time_since_epoch());
     return Value(static_cast<double>(duration.count()) / 1000000.0);
+  });
+
+  define_native("type", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("type() takes exactly 1 argument.");
+      return Value();
+    }
+    Value& val = args[0];
+    cstr_t type_str = "nil";
+    if (val.is_boolean()) {
+      type_str = "bool";
+    } else if (val.is_number()) {
+      type_str = "number";
+    } else if (val.is_object()) {
+      switch (val.as_object()->type()) {
+      case ObjectType::OBJ_STRING:       type_str = "string"; break;
+      case ObjectType::OBJ_FUNCTION:
+      case ObjectType::OBJ_CLOSURE:
+      case ObjectType::OBJ_NATIVE:
+      case ObjectType::OBJ_BOUND_METHOD: type_str = "function"; break;
+      case ObjectType::OBJ_CLASS:        type_str = "class"; break;
+      case ObjectType::OBJ_INSTANCE:     type_str = "instance"; break;
+      default:                           type_str = "object"; break;
+      }
+    }
+    return Value(static_cast<Object*>(copy_string(type_str, std::strlen(type_str))));
+  });
+
+  define_native("strlen", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("strlen() takes exactly 1 argument.");
+      return Value();
+    }
+    if (!args[0].is_string()) {
+      runtime_error("strlen() argument must be a string.");
+      return Value();
+    }
+    return Value(static_cast<double>(as_string(args[0])->value().length()));
+  });
+
+  define_native("str", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("str() takes exactly 1 argument.");
+      return Value();
+    }
+    str_t s = args[0].stringify();
+    return Value(static_cast<Object*>(copy_string(s.data(), s.length())));
+  });
+
+  define_native("num", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("num() takes exactly 1 argument.");
+      return Value();
+    }
+    if (!args[0].is_string()) {
+      runtime_error("num() argument must be a string.");
+      return Value();
+    }
+    const str_t& s = as_string(args[0])->value();
+    sz_t pos = 0;
+    double result;
+    try {
+      result = std::stod(s, &pos);
+    } catch (...) {
+      runtime_error(std::format("Could not convert '{}' to a number.", s));
+      return Value();
+    }
+    if (pos != s.length()) {
+      runtime_error(std::format("Could not convert '{}' to a number.", s));
+      return Value();
+    }
+    return Value(result);
+  });
+
+  define_native("input", [this](int arg_count, Value* args) -> Value {
+    if (arg_count > 1) {
+      runtime_error("input() takes 0 or 1 arguments.");
+      return Value();
+    }
+    if (arg_count == 1) {
+      if (!args[0].is_string()) {
+        runtime_error("input() prompt must be a string.");
+        return Value();
+      }
+      std::cout << as_string(args[0])->value();
+      std::cout.flush();
+    }
+    str_t line;
+    if (!std::getline(std::cin, line)) {
+      return Value(); // nil on EOF
+    }
+    return Value(static_cast<Object*>(copy_string(line.data(), line.length())));
   });
 }
 

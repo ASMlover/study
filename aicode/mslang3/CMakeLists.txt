@@ -218,6 +218,27 @@ else()
     # target_link_options(maple PRIVATE $<$<CONFIG:Debug>:-fsanitize=address,undefined>)
 endif()
 
+# Unit Tests
+# ----------
+# 创建不包含main.cc的源文件列表用于测试
+set(MAPLE_LIB_SOURCES ${MAPLE_SOURCES})
+list(FILTER MAPLE_LIB_SOURCES EXCLUDE REGEX "main\\.cc$")
+
+add_executable(test_phase2
+    tests/unit/test_phase2.cpp
+    ${MAPLE_LIB_SOURCES}
+)
+
+target_include_directories(test_phase2
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
+
+target_compile_options(test_phase2 PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W3 /Zc:__cplusplus>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
+)
+
 # Installation Rules
 # ------------------
 install(TARGETS maple
