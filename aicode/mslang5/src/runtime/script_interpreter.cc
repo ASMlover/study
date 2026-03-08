@@ -23,6 +23,10 @@ struct RuntimeSignal : public std::runtime_error {
   explicit RuntimeSignal(const std::string& message) : std::runtime_error(message) {}
 };
 
+std::string RuntimeError(const std::string& code, const std::string& message) {
+  return "runtime error (" + code + "): " + message;
+}
+
 class Environment;
 struct Stmt;
 
@@ -1014,14 +1018,14 @@ class Executor {
       if (!s->superclass.empty()) {
         Value super_value;
         if (!env_->Get(s->superclass, &super_value)) {
-          throw RuntimeSignal("undefined variable: " + s->superclass);
+          throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + s->superclass));
         }
         if (!super_value.IsObject() || super_value.AsObject() == nullptr) {
-          throw RuntimeSignal("superclass must be a class");
+          throw RuntimeSignal(RuntimeError("MS4003", "superclass must be a class"));
         }
         superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
         if (superclass == nullptr) {
-          throw RuntimeSignal("superclass must be a class");
+          throw RuntimeSignal(RuntimeError("MS4003", "superclass must be a class"));
         }
       }
 
@@ -1042,7 +1046,7 @@ class Executor {
 
       auto klass = std::make_shared<RuntimeClass>(s->name, superclass, std::move(methods));
       if (!env_->Assign(s->name, Value(std::static_pointer_cast<RuntimeObject>(klass)))) {
-        throw RuntimeSignal("failed to bind class: " + s->name);
+        throw RuntimeSignal(RuntimeError("MS4001", "failed to bind class: " + s->name));
       }
       return;
     }
@@ -1062,12 +1066,13 @@ class Executor {
       if (!module) throw RuntimeSignal(load_error);
       Value exported;
       if (!module->exports.Get(s->symbol, &exported)) {
-        throw RuntimeSignal("module '" + s->module + "' has no symbol '" + s->symbol + "'");
+        throw RuntimeSignal("module error (MS5002): module '" + s->module + "' has no symbol '" +
+                            s->symbol + "'");
       }
       env_->Define(s->alias, exported);
       return;
     }
-    throw RuntimeSignal("unsupported statement");
+    throw RuntimeSignal(RuntimeError("MS4003", "unsupported statement"));
   }
 
   void ExecBlock(const std::vector<StmtPtr>& stmts, const EnvironmentPtr& scope) {
@@ -1088,25 +1093,33 @@ class Executor {
     if (auto e = std::dynamic_pointer_cast<VariableExpr>(expr); e != nullptr) {
       Value v;
       if (const auto depth = LookupDepth(expr); depth.has_value()) {
-        if (!env_->GetAt(*depth, e->name, &v)) throw RuntimeSignal("undefined variable: " + e->name);
+        if (!env_->GetAt(*depth, e->name, &v)) {
+          throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + e->name));
+        }
       } else {
-        if (!env_->Get(e->name, &v)) throw RuntimeSignal("undefined variable: " + e->name);
+        if (!env_->Get(e->name, &v)) {
+          throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + e->name));
+        }
       }
       return v;
     }
     if (auto e = std::dynamic_pointer_cast<AssignExpr>(expr); e != nullptr) {
       Value v = Eval(e->value);
       if (const auto depth = LookupDepth(expr); depth.has_value()) {
-        if (!env_->AssignAt(*depth, e->name, v)) throw RuntimeSignal("undefined variable: " + e->name);
+        if (!env_->AssignAt(*depth, e->name, v)) {
+          throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + e->name));
+        }
       } else {
-        if (!env_->Assign(e->name, v)) throw RuntimeSignal("undefined variable: " + e->name);
+        if (!env_->Assign(e->name, v)) {
+          throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + e->name));
+        }
       }
       return v;
     }
     if (auto e = std::dynamic_pointer_cast<GroupingExpr>(expr); e != nullptr) return Eval(e->expression);
     if (auto e = std::dynamic_pointer_cast<UnaryExpr>(expr); e != nullptr) {
       Value r = Eval(e->right);
-      if (!r.IsNumber()) throw RuntimeSignal("operand must be number");
+      if (!r.IsNumber()) throw RuntimeSignal(RuntimeError("MS4003", "operand must be number"));
       return Value(-r.AsNumber());
     }
     if (auto e = std::dynamic_pointer_cast<BinaryExpr>(expr); e != nullptr) {
@@ -1115,9 +1128,11 @@ class Executor {
       if (e->op == TokenType::kPlus) {
         if (l.IsNumber() && r.IsNumber()) return Value(l.AsNumber() + r.AsNumber());
         if (l.IsString() && r.IsString()) return Value(l.AsString() + r.AsString());
-        throw RuntimeSignal("operands must be two numbers or two strings");
+        throw RuntimeSignal(RuntimeError("MS4003", "operands must be two numbers or two strings"));
       }
-      if (!l.IsNumber() || !r.IsNumber()) throw RuntimeSignal("operands must be numbers");
+      if (!l.IsNumber() || !r.IsNumber()) {
+        throw RuntimeSignal(RuntimeError("MS4003", "operands must be numbers"));
+      }
       if (e->op == TokenType::kMinus) return Value(l.AsNumber() - r.AsNumber());
       if (e->op == TokenType::kStar) return Value(l.AsNumber() * r.AsNumber());
       return Value(l.AsNumber() / r.AsNumber());
@@ -1129,26 +1144,26 @@ class Executor {
     if (auto e = std::dynamic_pointer_cast<GetExpr>(expr); e != nullptr) {
       Value object = Eval(e->object);
       if (!object.IsObject() || object.AsObject() == nullptr) {
-        throw RuntimeSignal("only instances have properties");
+        throw RuntimeSignal(RuntimeError("MS4003", "only instances have properties"));
       }
       auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.AsObject());
       if (instance == nullptr) {
-        throw RuntimeSignal("only instances have properties");
+        throw RuntimeSignal(RuntimeError("MS4003", "only instances have properties"));
       }
       Value out;
       if (!instance->Get(e->name, &out)) {
-        throw RuntimeSignal("undefined property: " + e->name);
+        throw RuntimeSignal(RuntimeError("MS4004", "undefined property: " + e->name));
       }
       return out;
     }
     if (auto e = std::dynamic_pointer_cast<SetExpr>(expr); e != nullptr) {
       Value object = Eval(e->object);
       if (!object.IsObject() || object.AsObject() == nullptr) {
-        throw RuntimeSignal("only instances have fields");
+        throw RuntimeSignal(RuntimeError("MS4003", "only instances have fields"));
       }
       auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.AsObject());
       if (instance == nullptr) {
-        throw RuntimeSignal("only instances have fields");
+        throw RuntimeSignal(RuntimeError("MS4003", "only instances have fields"));
       }
       Value value = Eval(e->value);
       instance->Set(e->name, value);
@@ -1157,26 +1172,26 @@ class Executor {
     if (auto e = std::dynamic_pointer_cast<ThisExpr>(expr); e != nullptr) {
       Value v;
       if (!ResolveScopedRead(expr, e->name, &v)) {
-        throw RuntimeSignal("cannot use 'this' outside of a class");
+        throw RuntimeSignal(RuntimeError("MS4003", "cannot use 'this' outside of a class"));
       }
       return v;
     }
     if (auto e = std::dynamic_pointer_cast<SuperExpr>(expr); e != nullptr) {
       Value super_value;
       if (!ResolveScopedRead(expr, "super", &super_value)) {
-        throw RuntimeSignal("cannot use 'super' outside of a subclass");
+        throw RuntimeSignal(RuntimeError("MS4003", "cannot use 'super' outside of a subclass"));
       }
       auto superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
       if (superclass == nullptr) {
-        throw RuntimeSignal("invalid superclass reference");
+        throw RuntimeSignal(RuntimeError("MS4003", "invalid superclass reference"));
       }
       Value this_value;
       if (!env_->Get("this", &this_value)) {
-        throw RuntimeSignal("missing receiver for 'super' call");
+        throw RuntimeSignal(RuntimeError("MS4003", "missing receiver for 'super' call"));
       }
       auto method = superclass->FindMethod(e->method);
       if (method == nullptr) {
-        throw RuntimeSignal("undefined property: " + e->method);
+        throw RuntimeSignal(RuntimeError("MS4004", "undefined property: " + e->method));
       }
       auto bound = std::make_shared<RuntimeBoundMethod>(this_value, method);
       return Value(std::static_pointer_cast<RuntimeObject>(bound));
@@ -1184,22 +1199,25 @@ class Executor {
     if (auto e = std::dynamic_pointer_cast<CallExpr>(expr); e != nullptr) {
       Value callee = Eval(e->callee);
       if (!callee.IsObject() || callee.AsObject() == nullptr) {
-        throw RuntimeSignal("can only call functions and classes");
+        throw RuntimeSignal(RuntimeError("MS4005", "can only call functions and classes"));
       }
       auto callable = std::dynamic_pointer_cast<RuntimeCallable>(callee.AsObject());
-      if (callable == nullptr) throw RuntimeSignal("can only call functions and classes");
+      if (callable == nullptr) {
+        throw RuntimeSignal(RuntimeError("MS4005", "can only call functions and classes"));
+      }
       std::vector<Value> args;
       for (const auto& arg : e->arguments) args.push_back(Eval(arg));
       if (args.size() != callable->Arity()) {
-        throw RuntimeSignal("expected " + std::to_string(callable->Arity()) + " arguments but got " +
-                            std::to_string(args.size()));
+        throw RuntimeSignal(RuntimeError("MS4002", "expected " + std::to_string(callable->Arity()) +
+                                                       " arguments but got " +
+                                                       std::to_string(args.size())));
       }
       Value out = Value::Nil();
       std::string call_error;
       if (!callable->Call(*this, args, &out, &call_error)) throw RuntimeSignal(call_error);
       return out;
     }
-    throw RuntimeSignal("unsupported expression");
+    throw RuntimeSignal(RuntimeError("MS4003", "unsupported expression"));
   }
 
   std::optional<std::size_t> LookupDepth(const ExprPtr& expr) const {

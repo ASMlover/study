@@ -68,6 +68,8 @@ int RunClosureIntegrationTests() {
     const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
     const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
     Expect(default_run.result == ms::InterpretResult::kRuntimeError, "closure_arity_error should fail");
+    Expect(default_run.error.find("MS4002") != std::string::npos,
+           "arity mismatch should expose MS4002");
     Expect(default_run.error.find("expected 2 arguments but got 1") != std::string::npos,
            "arity mismatch should report actual and expected arguments");
     Expect(default_run.error == legacy_run.error, "closure_arity_error message should be route independent");

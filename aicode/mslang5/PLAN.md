@@ -706,8 +706,11 @@ Define Maple as a spec-driven language runtime with:
 ##### T17-GAP - Value Spec vs Runtime Behavior Delta
 
 - `GAP-01` Equality operator semantics are specified but not fully implemented in language runtime path.
+  - Status: deferred (2026-03-09, W12-D1/D2)
 - `GAP-02` Some error-code mappings (`MS400x`) are documented but not structurally emitted yet.
+  - Status: closed (2026-03-09, W12-D1/D2)
 - `GAP-03` Numeric edge-case policy is documented as draft and not yet conformance-locked.
+  - Status: deferred (2026-03-09, W12-D4)
 
 #### T18 - Module & Namespace Specification Upgrade (P1)
 - Goal: evolve module behavior from “works” to “specified”.
@@ -731,8 +734,11 @@ Define Maple as a spec-driven language runtime with:
 ##### T18-GAP - Module Spec vs Loader Implementation Delta
 
 - `GAP-01` Error payloads are currently free-form strings, not structured module diagnostics.
+  - Status: closed (2026-03-09, W12-D3)
 - `GAP-02` Export visibility policy remains baseline-only (no explicit export controls).
+  - Status: deferred (2026-03-09, W12-D3)
 - `GAP-03` Conformance-grade module matrix cases are documented but not executable as standalone harness cases.
+  - Status: closed (2026-03-09, W12-D4)
 
 #### T19 - Diagnostics Standardization (P1)
 - Goal: make diagnostics stable enough for tooling and formal tests.
@@ -1121,6 +1127,8 @@ No code changes are included in this section; it is a build-ready execution blue
 
 ### W12 - Value/Module Semantic Alignment (T17/T18-driven)
 
+- Status: completed (2026-03-09, subagents-mode; Batch A/B/C)
+
 - Goal:
   - align runtime behavior to formal value-model and module-state specs
   - stabilize operator/type/module error mapping to `MS4xxx/MS5xxx`
@@ -1228,6 +1236,20 @@ No code changes are included in this section; it is a build-ready execution blue
     - `:memo: docs(maple): record W12 verification and T17/T18 gap disposition`
   - Rollback point:
     - closeout note isolated.
+
+#### W12 Closeout Note (2026-03-09)
+
+- Delivered:
+  - `W12-D1`: aligned VM/interpreter arithmetic/type runtime failures to `MS4003` and undefined-variable path to `MS4001`.
+  - `W12-D2`: aligned callability/arity/property runtime failures to `MS4005/MS4002/MS4004` and refreshed route-parity assertions.
+  - `W12-D3`: aligned module loader lifecycle errors to `MS5001/MS5002/MS5003/MS5004` with failed-initialization memory and cache-state checks.
+  - `W12-D4`: added standalone value/module conformance cases and migrated matrix mappings.
+  - `W12-D5`: updated `T17-GAP`/`T18-GAP` dispositions with verification evidence.
+- Verification commands:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+- Verification result:
+  - pass (`1/1` test, `maple_tests`)
 
 ### W13 - Structured Diagnostics + Conformance Harness + CI Gate (T19/T20)
 

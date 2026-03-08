@@ -146,3 +146,50 @@ Date: 2026-03-08
 - `cmake --build build --config Debug`
 - `ctest --test-dir build --output-on-failure -C Debug`
 - Result: pass (`1/1` test suite)
+
+## W12 Execution (Subagents Mode)
+
+Date: 2026-03-09
+
+1. Subagent-A (Batch A: W12-D1 + W12-D2)
+- Scope:
+  - aligned runtime error-family emission for value/operator/callability contracts (`MS4001~MS4005`) across VM path and compatibility interpreter path
+  - updated integration/unit assertions to lock code-bearing diagnostics for arity/property/undefined-variable failures
+- Changed files:
+  - `src/runtime/vm.cc`
+  - `src/runtime/script_interpreter.cc`
+  - `tests/unit/test_vm_compiler.cc`
+  - `tests/integration/test_language_closure.cc`
+  - `tests/integration/test_language_class.cc`
+
+2. Subagent-B (Batch B: W12-D3)
+- Scope:
+  - aligned module loader lifecycle diagnostics and cache-state handling to `MS5001~MS5004`
+  - added module failure memory to represent failed state behavior without treating it as successful cache
+- Changed files:
+  - `src/runtime/module.hh`
+  - `src/runtime/module.cc`
+  - `src/runtime/vm.cc`
+  - `tests/unit/test_module.cc`
+
+3. Subagent-C (Batch C: W12-D4 + W12-D5)
+- Scope:
+  - migrated value/module error clauses into standalone conformance assets and refreshed matrix mappings
+  - updated wave closeout + GAP status bookkeeping
+- Changed files:
+  - `tests/conformance/MATRIX.md`
+  - `tests/conformance/semantics/runtime_arity_001.ms`
+  - `tests/conformance/semantics/runtime_invalid_operand_001.ms`
+  - `tests/conformance/semantics/runtime_non_callable_001.ms`
+  - `tests/conformance/semantics/runtime_undefined_property_001.ms`
+  - `tests/conformance/semantics/runtime_undefined_variable_001.ms`
+  - `tests/conformance/modules/module_not_found_001.ms`
+  - `tests/conformance/modules/module_symbol_not_found_001.ms`
+  - `tests/conformance/modules/module_cycle_001.ms`
+  - `PLAN.md`
+  - `SUBAGENTS.md`
+
+4. Verification command and result
+- `cmake --build build --config Debug`
+- `ctest --test-dir build --output-on-failure -C Debug`
+- Result: pass (`1/1` test suite)

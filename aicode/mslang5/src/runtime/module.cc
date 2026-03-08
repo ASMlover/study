@@ -7,6 +7,14 @@
 
 namespace ms {
 
+namespace {
+
+std::string ModuleError(const std::string& code, const std::string& message) {
+  return "module error (" + code + "): " + message;
+}
+
+}  // namespace
+
 ModuleLoader::ModuleLoader() { search_paths_.push_back("."); }
 
 void ModuleLoader::AddSearchPath(std::string path) {
@@ -37,17 +45,24 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
   if (const auto it = cache_.find(module_name); it != cache_.end()) {
     if (it->second->initializing) {
       if (error != nullptr) {
-        *error = "circular module dependency detected: " + module_name;
+        *error = ModuleError("MS5003", "circular module dependency detected: " + module_name);
       }
       return nullptr;
     }
     return it->second;
   }
+  if (const auto it = failed_.find(module_name); it != failed_.end()) {
+    if (error != nullptr) {
+      *error = ModuleError("MS5004", "module initialization previously failed: " + module_name +
+                                         " (" + it->second + ")");
+    }
+    return nullptr;
+  }
 
   auto path = ResolvePath(module_name);
   if (!path) {
     if (error != nullptr) {
-      *error = "module not found: " + module_name;
+      *error = ModuleError("MS5001", "module not found: " + module_name);
     }
     return nullptr;
   }
@@ -55,8 +70,9 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
   auto source = SourceFile::LoadFromPath(*path);
   if (!source) {
     if (error != nullptr) {
-      *error = source.error();
+      *error = ModuleError("MS5004", "failed to read module '" + module_name + "': " + source.error());
     }
+    failed_[module_name] = source.error();
     return nullptr;
   }
 
@@ -69,15 +85,17 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
   const InterpretResult r = vm.ExecuteModule(source->Text(), module, &runtime_error);
   if (r != InterpretResult::kOk) {
     cache_.erase(module_name);
+    failed_[module_name] = runtime_error;
     if (error != nullptr) {
-      *error = "failed to load module '" + module_name + "': " + runtime_error;
+      *error = ModuleError("MS5004", "failed to initialize module '" + module_name +
+                                         "': " + runtime_error);
     }
     return nullptr;
   }
+  failed_.erase(module_name);
   module->initializing = false;
   module->initialized = true;
   return module;
 }
 
 }  // namespace ms
-

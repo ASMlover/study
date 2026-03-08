@@ -36,6 +36,8 @@ int RunVmCompilerTests() {
   const ms::InterpretResult runtime_error = vm.ExecuteSource("print missing_name;\n", &error);
   Expect(runtime_error == ms::InterpretResult::kRuntimeError,
          "undefined variable should map to runtime error");
+  Expect(error.find("MS4001") != std::string::npos,
+         "undefined variable should expose MS4001 code");
   Expect(error.find("undefined variable") != std::string::npos,
          "runtime error should retain undefined variable detail");
 

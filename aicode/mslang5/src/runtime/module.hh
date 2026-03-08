@@ -32,7 +32,7 @@ class ModuleLoader {
  private:
   std::vector<std::string> search_paths_;
   std::unordered_map<std::string, std::shared_ptr<Module>> cache_;
+  std::unordered_map<std::string, std::string> failed_;
 };
 
 }  // namespace ms
-

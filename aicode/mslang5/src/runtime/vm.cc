@@ -18,6 +18,10 @@ InterpretResult LegacyResultFromError(const std::string& error) {
   return InterpretResult::kRuntimeError;
 }
 
+std::string RuntimeError(const std::string& code, const std::string& message) {
+  return "runtime error (" + code + "): " + message;
+}
+
 }  // namespace
 
 Vm::Vm() : out_(&std::cout), gc_(1024 * 64) {}
@@ -57,7 +61,7 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
         }
         if (!a.IsNumber() || !b.IsNumber()) {
           if (error != nullptr) {
-            *error = "operands must be numbers";
+            *error = RuntimeError("MS4003", "operands must be numbers");
           }
           return InterpretResult::kRuntimeError;
         }
@@ -77,7 +81,7 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
         Pop(&v);
         if (!v.IsNumber()) {
           if (error != nullptr) {
-            *error = "operand must be number";
+            *error = RuntimeError("MS4003", "operand must be number");
           }
           return InterpretResult::kRuntimeError;
         }
@@ -117,7 +121,7 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
           Value v;
           if (!GetGlobal(name, &v)) {
             if (error != nullptr) {
-              *error = "undefined variable: " + name;
+              *error = RuntimeError("MS4001", "undefined variable: " + name);
             }
             return InterpretResult::kRuntimeError;
           }
@@ -129,7 +133,7 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
           Pop(&v);
           if (!SetGlobal(name, v)) {
             if (error != nullptr) {
-              *error = "undefined variable: " + name;
+              *error = RuntimeError("MS4001", "undefined variable: " + name);
             }
             return InterpretResult::kRuntimeError;
           }
@@ -176,7 +180,7 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
         Value exported;
         if (!loaded->exports.Get(symbol, &exported)) {
           if (error != nullptr) {
-            *error = "module '" + module + "' has no symbol '" + symbol + "'";
+            *error = "module error (MS5002): module '" + module + "' has no symbol '" + symbol + "'";
           }
           return InterpretResult::kRuntimeError;
         }

@@ -67,6 +67,8 @@ int RunClassIntegrationTests() {
     const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
     const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
     Expect(default_run.result == ms::InterpretResult::kRuntimeError, "class_super_error should fail");
+    Expect(default_run.error.find("MS4004") != std::string::npos,
+           "missing super method should expose MS4004");
     Expect(default_run.error.find("undefined property: nope") != std::string::npos,
            "missing super method should report undefined property");
     Expect(default_run.error == legacy_run.error, "class_super_error message should be route independent");
