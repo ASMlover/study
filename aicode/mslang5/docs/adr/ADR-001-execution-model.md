@@ -1,6 +1,6 @@
 # ADR-001: Maple Execution Model Unification
 
-Status: Accepted (design-level, docs-only, no implementation in this step)
+Status: Accepted (partially implemented; W10 execution-path switch landed on 2026-03-08)
 Date: 2026-03-08
 Owners: Maple runtime maintainers
 
@@ -164,3 +164,8 @@ Related plan items:
 2. T15 Execution Architecture Unification Plan
 3. T16 Static Semantics & Resolver Design
 4. T20 Conformance & Regression Test System
+
+Implementation notes:
+
+1. W10 introduced VM-first `ExecuteSource` routing with explicit source execution modes.
+2. `ScriptInterpreter` remains transitional and non-normative, available via guarded compatibility/reference mode.

@@ -19,6 +19,19 @@ enum class InterpretResult {
   kRuntimeError = 2,
 };
 
+enum class SourceExecutionMode {
+  kVmPreferred = 0,
+  kVmPreferredWithLegacyFallback = 1,
+  kLegacyOnly = 2,
+};
+
+enum class SourceExecutionRoute {
+  kNone = 0,
+  kVmPipeline = 1,
+  kLegacyInterpreter = 2,
+  kVmCompileFailedThenLegacy = 3,
+};
+
 class Vm {
  public:
   Vm();
@@ -30,6 +43,9 @@ class Vm {
   InterpretResult ExecuteSource(const std::string& source, std::string* error);
   InterpretResult ExecuteModule(const std::string& source, std::shared_ptr<Module> module,
                                 std::string* error);
+  void SetSourceExecutionMode(SourceExecutionMode mode);
+  SourceExecutionMode GetSourceExecutionMode() const;
+  SourceExecutionRoute LastSourceExecutionRoute() const;
 
   bool DefineGlobal(const std::string& name, Value value);
   bool GetGlobal(const std::string& name, Value* out) const;
@@ -52,6 +68,8 @@ class Vm {
   ModuleLoader modules_;
   GcController gc_;
   std::shared_ptr<Module> current_module_;
+  SourceExecutionMode source_mode_ = SourceExecutionMode::kVmPreferredWithLegacyFallback;
+  SourceExecutionRoute last_source_route_ = SourceExecutionRoute::kNone;
 };
 
 }  // namespace ms

@@ -998,4 +998,9 @@ bool ScriptInterpreter::Execute(Vm& vm, const std::string& source, std::string* 
   return executor.Run(program, error);
 }
 
+bool ScriptInterpreter::IsCompileLikeError(const std::string& error) {
+  return error.find("parse error:") != std::string::npos ||
+         error.find("lexer error:") != std::string::npos;
+}
+
 }  // namespace ms

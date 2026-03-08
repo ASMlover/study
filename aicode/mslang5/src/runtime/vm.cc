@@ -4,9 +4,21 @@
 #include <iostream>
 
 #include "bytecode/opcode.hh"
+#include "frontend/compiler.hh"
 #include "runtime/script_interpreter.hh"
 
 namespace ms {
+
+namespace {
+
+InterpretResult LegacyResultFromError(const std::string& error) {
+  if (ScriptInterpreter::IsCompileLikeError(error)) {
+    return InterpretResult::kCompileError;
+  }
+  return InterpretResult::kRuntimeError;
+}
+
+}  // namespace
 
 Vm::Vm() : out_(&std::cout), gc_(1024 * 64) {}
 
@@ -179,11 +191,56 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
 }
 
 InterpretResult Vm::ExecuteSource(const std::string& source, std::string* error) {
-  if (!ScriptInterpreter::Execute(*this, source, error)) {
-    if (error != nullptr && error->find("parse error:") != std::string::npos) {
-      return InterpretResult::kCompileError;
+  last_source_route_ = SourceExecutionRoute::kNone;
+
+  auto execute_legacy = [&]() -> InterpretResult {
+    last_source_route_ = SourceExecutionRoute::kLegacyInterpreter;
+    std::string legacy_error;
+    const bool ok = ScriptInterpreter::Execute(*this, source, &legacy_error);
+    if (ok) {
+      if (error != nullptr) {
+        error->clear();
+      }
+      return InterpretResult::kOk;
     }
-    return InterpretResult::kRuntimeError;
+    if (error != nullptr) {
+      *error = legacy_error;
+    }
+    return LegacyResultFromError(legacy_error);
+  };
+
+  if (source_mode_ == SourceExecutionMode::kLegacyOnly) {
+    return execute_legacy();
+  }
+
+  CompileResult compiled = CompileToChunk(source);
+  if (!compiled.errors.empty()) {
+    if (error != nullptr) {
+      *error = compiled.errors.front();
+    }
+    if (source_mode_ == SourceExecutionMode::kVmPreferredWithLegacyFallback) {
+      std::string legacy_error;
+      if (ScriptInterpreter::Execute(*this, source, &legacy_error)) {
+        last_source_route_ = SourceExecutionRoute::kVmCompileFailedThenLegacy;
+        if (error != nullptr) {
+          error->clear();
+        }
+        return InterpretResult::kOk;
+      }
+      last_source_route_ = SourceExecutionRoute::kVmCompileFailedThenLegacy;
+      if (error != nullptr) {
+        *error = legacy_error;
+      }
+      return LegacyResultFromError(legacy_error);
+    }
+    last_source_route_ = SourceExecutionRoute::kVmPipeline;
+    return InterpretResult::kCompileError;
+  }
+
+  last_source_route_ = SourceExecutionRoute::kVmPipeline;
+  const InterpretResult vm_result = Execute(compiled.chunk, error);
+  if (vm_result != InterpretResult::kOk) {
+    return vm_result;
   }
   return InterpretResult::kOk;
 }
@@ -228,6 +285,12 @@ bool Vm::SetGlobal(const std::string& name, Value value) {
 ModuleLoader& Vm::Modules() { return modules_; }
 
 GcController& Vm::Gc() { return gc_; }
+
+void Vm::SetSourceExecutionMode(const SourceExecutionMode mode) { source_mode_ = mode; }
+
+SourceExecutionMode Vm::GetSourceExecutionMode() const { return source_mode_; }
+
+SourceExecutionRoute Vm::LastSourceExecutionRoute() const { return last_source_route_; }
 
 bool Vm::Push(Value value) {
   stack_.push_back(std::move(value));

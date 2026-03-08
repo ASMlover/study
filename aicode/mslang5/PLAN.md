@@ -594,6 +594,10 @@ Define Maple as a spec-driven language runtime with:
 
 - `GAP-01` Execution-path divergence:
   - Spec assumes unified normative semantics; current runtime uses dual-path (`Vm::Execute` vs `ScriptInterpreter`).
+  - Status: closed (2026-03-08, W10)
+  - Evidence:
+    - `Vm::ExecuteSource` now routes compile+bytecode+VM first.
+    - legacy interpreter kept only under explicit mode gate (`kLegacyOnly` / compatibility fallback).
 - `GAP-02` Grammar overhang:
   - Spec includes logical/comparison/control-flow grammar not fully present in current parser/compiler/interpreter path.
 - `GAP-03` Static semantic phase missing:
@@ -627,9 +631,15 @@ Define Maple as a spec-driven language runtime with:
 ##### T15-GAP - ADR vs Current Runtime Delta (to be closed by T20 and implementation waves)
 
 - `GAP-01` Default source execution still routes through `ScriptInterpreter`.
+  - Status: closed (2026-03-08, W10-D1/D2)
+  - Evidence:
+    - `Vm::ExecuteSource` switched to VM-first default route with compile/runtime category mapping.
 - `GAP-02` VM bytecode path does not yet cover full language semantics parity.
 - `GAP-03` Parity matrix and CI gate are not yet established.
 - `GAP-04` Interpreter retirement/reference-mode decision is documented but not enacted.
+  - Status: deferred (2026-03-08, W10-D4)
+  - Evidence:
+    - interpreter retained as explicit transitional/reference mode (`SourceExecutionMode`) pending later retirement wave.
 
 #### T16 - Static Semantics & Resolver Design (P0)
 - Goal: move language rule enforcement to compile/resolution phase where appropriate.
@@ -842,6 +852,8 @@ No code changes are included in this section; it is a build-ready execution blue
 
 ### W10 - Normative Execution Path Switch (T15/T14/T20 bridge)
 
+- Status: completed (2026-03-08, subagents-mode; Batch A/B/C)
+
 - Goal:
   - make compiler+bytecode+VM the default normative path for `ExecuteSource`
   - retain `ScriptInterpreter` only as temporary opt-in reference/debug path
@@ -945,6 +957,20 @@ No code changes are included in this section; it is a build-ready execution blue
     - `:memo: docs(maple): record W10 verification and GAP closure status`
   - Rollback point:
     - closeout note is isolated.
+
+#### W10 Closeout Note (2026-03-08)
+
+- Delivered:
+  - `W10-D1`: added execution mode and route guard in `Vm` with VM-first default.
+  - `W10-D2`: normalized compile/runtime category mapping for VM and legacy compatibility path.
+  - `W10-D3`: locked closure/class regression behavior with route-independent assertions.
+  - `W10-D4`: marked interpreter as transitional in runtime header and ADR-aligned policy.
+  - `W10-D5`: build/test verification captured below.
+- Verification commands:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+- Verification result:
+  - pass (`1/1` test, `maple_tests`)
 
 ### W11 - Resolver + Static Semantics Integration (T16-driven)
 

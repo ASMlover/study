@@ -69,3 +69,40 @@ Repo: Maple (`mslang5`)
 - `cmake --build build --config Debug`
 - `ctest --test-dir build --output-on-failure -C Debug`
 - Result: pass (`1/1` test suite)
+
+## W10 Execution (Subagents Mode)
+
+Date: 2026-03-08
+
+1. Subagent-A (Batch A: W10-D1 + W10-D2)
+- Scope:
+  - switched `Vm::ExecuteSource` to VM-first normative routing
+  - introduced explicit source execution mode and last-route guard state
+  - normalized compile/runtime error category mapping across VM and compatibility fallback
+- Changed files:
+  - `src/runtime/vm.hh`
+  - `src/runtime/vm.cc`
+  - `src/runtime/script_interpreter.hh`
+  - `src/runtime/script_interpreter.cc`
+  - `tests/unit/test_vm_compiler.cc`
+
+2. Subagent-B (Batch B: W10-D3)
+- Scope:
+  - locked closure/class integration behavior across execution routes
+- Changed files:
+  - `tests/integration/test_language_closure.cc`
+  - `tests/integration/test_language_class.cc`
+
+3. Subagent-C (Batch C: W10-D4 + W10-D5)
+- Scope:
+  - aligned execution-mode policy docs with ADR and plan GAP closure tracking
+  - captured verification evidence
+- Changed files:
+  - `docs/adr/ADR-001-execution-model.md`
+  - `PLAN.md`
+  - `SUBAGENTS.md`
+
+4. Verification command and result
+- `cmake --build build --config Debug`
+- `ctest --test-dir build --output-on-failure -C Debug`
+- Result: pass (`1/1` test suite)
