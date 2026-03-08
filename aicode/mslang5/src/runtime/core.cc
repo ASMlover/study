@@ -1,9 +1,13 @@
 #include "runtime/core.hh"
 
+#include "runtime/vm.hh"
+
 namespace ms {
 
-[[maybe_unused]] const char* maple_core_version() {
-  return kMapleCoreVersion;
+int RunScript(const std::string& source, std::string* error) {
+  Vm vm;
+  const InterpretResult r = vm.ExecuteSource(source, error);
+  return static_cast<int>(r);
 }
 
 }  // namespace ms

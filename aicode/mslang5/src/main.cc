@@ -1,5 +1,5 @@
 #include "cli/app.hh"
 
-int main() {
-  return ms::run_cli();
+int main(int argc, char** argv) {
+  return ms::run_cli(argc, argv);
 }

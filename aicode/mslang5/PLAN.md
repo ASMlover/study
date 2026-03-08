@@ -236,6 +236,7 @@ flowchart TD
 ### T01 - 日志系统（P0）
 
 - Goal: 实现 logger 等级、格式、颜色映射与平台适配接口。
+- Status: completed (2026-03-08, subagent-A)
 - Inputs: T00 骨架。
 - Outputs:
   - `src/support/logger.hh/.cc`
@@ -252,6 +253,7 @@ flowchart TD
 ### T02 - 源文件与错误位置信息基础设施（P0）
 
 - Goal: 实现源码装载、行列映射、统一错误位置信息结构。
+- Status: completed (2026-03-08, subagent-A)
 - Outputs:
   - `src/support/source.hh/.cc`
   - 统一错误位置数据结构
@@ -266,6 +268,7 @@ flowchart TD
 ### T03 - 字节码容器与反汇编器（P0）
 
 - Goal: 落地 opcode 定义、chunk 常量池、行号表、反汇编。
+- Status: completed (2026-03-08, subagent-A)
 - Outputs:
   - `src/bytecode/opcode.hh`
   - `src/bytecode/chunk.hh/.cc`
@@ -282,6 +285,7 @@ flowchart TD
 ### T04 - 词法分析器（P0）
 
 - Goal: 完成 token 定义与 lexer（包含关键字、字符串、数字、注释）。
+- Status: completed (2026-03-08, subagent-B)
 - Outputs:
   - `src/frontend/token.hh`
   - `src/frontend/lexer.hh/.cc`
@@ -295,6 +299,7 @@ flowchart TD
 ### T05 - 值类型与对象系统基座（P0）
 
 - Goal: 构建 `Value`、`Obj` 基类及字符串对象/哈希表基础。
+- Status: completed (2026-03-08, subagent-C)
 - Outputs:
   - `src/runtime/value.hh`
   - `src/runtime/object.hh/.cc`
@@ -310,6 +315,7 @@ flowchart TD
 ### T06 - VM 栈机最小闭环（P0）
 
 - Goal: 最小指令集执行（常量、算术、比较、跳转、打印、返回）与调用栈基础。
+- Status: completed (2026-03-08, subagent-C)
 - Outputs:
   - `src/runtime/vm.hh/.cc`
 - Depends On: T04, T05
@@ -323,6 +329,7 @@ flowchart TD
 ### T07 - 解析器（Pratt）与表达式编译（P0）
 
 - Goal: parser + compiler 完成表达式与基础语句到字节码生成。
+- Status: completed (2026-03-08, subagent-B)
 - Outputs:
   - `src/frontend/parser.hh/.cc`
   - `src/frontend/compiler.hh/.cc`
@@ -337,31 +344,60 @@ flowchart TD
 ### T08 - 函数/闭包/upvalue（P0）
 
 - Goal: 实现函数对象、调用帧、闭包捕获与 upvalue 生命周期。
+- Status: planned (2026-03-08, clox-full-semantics-upgrade)
+- Current State:
+  - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整闭包语义。
+- Design & Implementation Tasks (No Code Yet):
+  - `T08-D1` 对象模型补全：`ObjFunction / ObjClosure / ObjUpvalue`、函数原型、常量池与闭包对象关系。
+  - `T08-D2` 编译器语义补全：局部变量解析、上值解析（递归向外层捕获）、函数声明/匿名函数、作用域深度与逃逸变量管理。
+  - `T08-D3` VM 执行链补全：`OP_CALL`、`OP_CLOSURE`、`OP_GET_UPVALUE`、`OP_SET_UPVALUE`、`OP_CLOSE_UPVALUE`、`OP_RETURN` 与调用帧窗口。
+  - `T08-D4` 运行时一致性：递归、闭包写回、循环捕获、返回后上值存活、错误栈追踪与消息格式。
+  - `T08-D5` 测试矩阵：闭包 golden 脚本、递归/高阶函数、边界错误（参数个数、未定义变量、非法调用）与回归集合。
 - Outputs:
-  - `runtime` 与 `frontend/compiler` 对应扩展
+  - `src/runtime/object.hh/.cc`（函数/闭包/upvalue 对象）
+  - `src/runtime/vm.hh/.cc`（调用帧+upvalue 生命周期）
+  - `src/frontend/compiler.hh/.cc`（闭包编译路径）
+  - `tests/scripts/language/closure_*`
+  - `tests/integration/closure_*`
 - Depends On: T06
 - Parallel Group: G5
 - Test:
-  - 闭包捕获语义测试
+  - 闭包捕获（读/写）语义测试
   - 递归与高阶函数测试
+  - 上值关闭时机测试（离开作用域后仍可访问）
 - Verify:
-  - 与 clox 同类样例行为一致
+  - 与 clox Chapter 24~26 同类样例行为一致（输出和错误路径一致）
 
 ### T09 - 类/继承/方法绑定（P0）
 
 - Goal: 实现 class、instance、method、super 调用链。
+- Status: planned (2026-03-08, clox-full-semantics-upgrade)
+- Current State:
+  - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整 class/inheritance 语义。
+- Design & Implementation Tasks (No Code Yet):
+  - `T09-D1` 对象模型补全：`ObjClass / ObjInstance / ObjBoundMethod` 与字段表、方法表布局。
+  - `T09-D2` 编译器语义补全：`class` 声明、方法编译、`this` 绑定规则、`super` 解析与继承约束（禁止自继承）。
+  - `T09-D3` VM 指令链补全：`OP_CLASS`、`OP_INHERIT`、`OP_METHOD`、`OP_GET_PROPERTY`、`OP_SET_PROPERTY`、`OP_GET_SUPER`、`OP_INVOKE`、`OP_SUPER_INVOKE`。
+  - `T09-D4` 运行时一致性：构造器 `init`、方法分派、绑定方法对象生命周期、字段遮蔽与覆盖解析顺序。
+  - `T09-D5` 测试矩阵：类定义/实例字段/方法调用/继承覆盖/`super` 链/错误路径回归。
 - Outputs:
-  - 对象模型与 VM/class 指令扩展
+  - `src/runtime/object.hh/.cc`（类/实例/绑定方法对象）
+  - `src/runtime/vm.hh/.cc`（属性访问与调用分派）
+  - `src/frontend/compiler.hh/.cc`（class/this/super 编译路径）
+  - `tests/scripts/language/class_*`
+  - `tests/integration/class_*`
 - Depends On: T06
 - Parallel Group: G5
 - Test:
   - 类定义、字段读写、方法调用、继承覆盖测试
+  - `this`/`super` 语义与错误路径测试
 - Verify:
-  - 脚本行为与期望输出一致
+  - 与 clox Chapter 27~29 同类样例行为一致（输出和错误路径一致）
 
 ### T10 - GC（mark-sweep）接入（P0）
 
 - Goal: 完整 GC 根扫描、标记、清扫、触发阈值与统计日志。
+- Status: completed (2026-03-08, subagent-C)
 - Outputs:
   - `src/runtime/gc.hh/.cc`
   - VM/对象系统 GC 钩子接入
@@ -377,6 +413,7 @@ flowchart TD
 ### T11 - 模块系统：import（P0）
 
 - Goal: 支持 `import module`，含路径解析、加载、编译执行、缓存。
+- Status: completed (2026-03-08, subagent-D)
 - Outputs:
   - `src/runtime/module.hh/.cc`
   - 编译器与 VM 的导入指令/调用路径
@@ -391,6 +428,7 @@ flowchart TD
 ### T12 - 模块系统：from import as（P0）
 
 - Goal: 支持 `from a.b import x as y` 语义与错误处理。
+- Status: completed (2026-03-08, subagent-D)
 - Outputs:
   - parser/compiler/module/vm 对应扩展
 - Depends On: T10
@@ -405,6 +443,7 @@ flowchart TD
 ### T13 - CLI/REPL + 测试总装 + 跨平台 CI（P0）
 
 - Goal: 完整交付入口程序、测试目录、ctest 集成、跨平台验证脚本。
+- Status: completed (2026-03-08, subagent-D)
 - Outputs:
   - `src/main.cc`, `src/cli/app.hh/.cc`
   - `tests/unit`, `tests/integration`, `tests/scripts`
@@ -437,10 +476,11 @@ flowchart TD
 3. Wave 3: `T03`
 4. Wave 4: `T04 + T05`（并行）
 5. Wave 5: `T06`
-6. Wave 6: `T07 + T08 + T09`（并行）
-7. Wave 7: `T10`
-8. Wave 8: `T11 + T12`（并行）
-9. Wave 9: `T13`
+6. Wave 6: `T07 + T08 + T09`（baseline）
+7. Wave 6R: `T08-D1~D5 + T09-D1~D5`（clox 完整语义升级）
+8. Wave 7: `T10`
+9. Wave 8: `T11 + T12`（并行）
+10. Wave 9: `T13`
 
 ## 6. 验收矩阵（Task -> 可验证产物）
 
@@ -478,7 +518,7 @@ flowchart TD
 
 满足以下条件即视为 PLAN 对应功能“可实施且可验证”：
 
-1. T00-T13 全部完成并通过定义测试。
+1. T00-T13 全部完成并通过定义测试，且 T08/T09 达到 clox 完整语义（闭包 + 类继承）。
 2. tests 目录具备单元、集成、脚本测试分层。
 3. `import` 与 `from ... import ... as ...` 覆盖正常与错误路径。
 4. VM + GC + logger + 跨平台构建均有可复现实证。

@@ -2,6 +2,6 @@
 
 namespace ms {
 
-int run_cli();
+int run_cli(int argc, char** argv);
 
 }  // namespace ms

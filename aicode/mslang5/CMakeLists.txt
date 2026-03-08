@@ -10,6 +10,18 @@ option(MAPLE_BUILD_TESTS "Build Maple tests" ON)
 
 add_library(maple_core
   src/runtime/core.cc
+  src/support/logger.cc
+  src/support/source.cc
+  src/bytecode/chunk.cc
+  src/bytecode/disasm.cc
+  src/frontend/lexer.cc
+  src/frontend/parser.cc
+  src/frontend/compiler.cc
+  src/runtime/object.cc
+  src/runtime/table.cc
+  src/runtime/gc.cc
+  src/runtime/module.cc
+  src/runtime/vm.cc
 )
 
 target_include_directories(maple_core
@@ -43,4 +55,26 @@ endif()
 
 if(MAPLE_BUILD_TESTS)
   include(CTest)
+  add_executable(maple_tests
+    src/cli/app.cc
+    tests/unit/test_main.cc
+    tests/unit/test_logger.cc
+    tests/unit/test_source.cc
+    tests/unit/test_chunk_disasm.cc
+    tests/unit/test_lexer.cc
+    tests/unit/test_vm_compiler.cc
+    tests/unit/test_module.cc
+    tests/integration/test_cli.cc
+  )
+  target_link_libraries(maple_tests PRIVATE maple_core)
+  target_include_directories(maple_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit
+  )
+  if(MSVC)
+    target_compile_options(maple_tests PRIVATE /W4 /permissive-)
+  else()
+    target_compile_options(maple_tests PRIVATE -Wall -Wextra -Wpedantic)
+  endif()
+  add_test(NAME maple_tests COMMAND maple_tests)
 endif()
