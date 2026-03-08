@@ -10,6 +10,7 @@
 - **类型**：参考 [Crafting Interpreters](https://github.com/munificent/craftinginterpreters) 中 **clox** 的字节码脚本语言实现
 - **实现语言**：C++23，命名空间 `ms`
 - **构建**：CMake，支持 Windows（MSVC）与 Linux（GCC）
+- **开发环境**：使用 [Cursor](https://cursor.com/) 开发
 
 ---
 
