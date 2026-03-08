@@ -10,6 +10,7 @@ int RunVmCompilerTests();
 int RunModuleTests();
 int RunCliTests();
 int RunClosureIntegrationTests();
+int RunClassIntegrationTests();
 
 int main() {
   RunLoggerTests();
@@ -20,6 +21,7 @@ int main() {
   RunModuleTests();
   RunCliTests();
   RunClosureIntegrationTests();
+  RunClassIntegrationTests();
 
   if (g_failures != 0) {
     std::cerr << "Total failures: " << g_failures << "\n";

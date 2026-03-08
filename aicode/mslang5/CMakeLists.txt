@@ -67,6 +67,7 @@ if(MAPLE_BUILD_TESTS)
     tests/unit/test_module.cc
     tests/integration/test_cli.cc
     tests/integration/test_language_closure.cc
+    tests/integration/test_language_class.cc
   )
   target_link_libraries(maple_tests PRIVATE maple_core)
   target_include_directories(maple_tests PRIVATE

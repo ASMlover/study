@@ -530,3 +530,4 @@ flowchart TD
 - T09 status: in_progress (class/inheritance batch pending).
 - Verification: cmake --build build --config Debug; ctest --test-dir build --output-on-failure -C Debug.
 
+- 2026-03-08 update: T09 class/inheritance batch completed with class_* integration scripts and tests.

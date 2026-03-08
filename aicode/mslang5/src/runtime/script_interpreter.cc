@@ -74,6 +74,26 @@ struct FunctionExpr final : Expr {
   std::vector<std::string> params;
   std::vector<StmtPtr> body;
 };
+struct GetExpr final : Expr {
+  GetExpr(ExprPtr o, std::string n) : object(std::move(o)), name(std::move(n)) {}
+  ExprPtr object;
+  std::string name;
+};
+struct SetExpr final : Expr {
+  SetExpr(ExprPtr o, std::string n, ExprPtr v)
+      : object(std::move(o)), name(std::move(n)), value(std::move(v)) {}
+  ExprPtr object;
+  std::string name;
+  ExprPtr value;
+};
+struct ThisExpr final : Expr {
+  explicit ThisExpr(std::string n) : name(std::move(n)) {}
+  std::string name;
+};
+struct SuperExpr final : Expr {
+  explicit SuperExpr(std::string m) : method(std::move(m)) {}
+  std::string method;
+};
 
 struct Stmt {
   virtual ~Stmt() = default;
@@ -117,6 +137,13 @@ struct FromImportStmt final : Stmt {
   std::string symbol;
   std::string alias;
 };
+struct ClassStmt final : Stmt {
+  ClassStmt(std::string n, std::string s, std::vector<std::shared_ptr<FunctionStmt>> m)
+      : name(std::move(n)), superclass(std::move(s)), methods(std::move(m)) {}
+  std::string name;
+  std::string superclass;
+  std::vector<std::shared_ptr<FunctionStmt>> methods;
+};
 
 class Parser {
  public:
@@ -139,8 +166,11 @@ class Parser {
 
  private:
   StmtPtr Declaration() {
+    if (Match(TokenType::kClass)) {
+      return ClassDeclaration();
+    }
     if (Match(TokenType::kFun)) {
-      return FunctionDeclaration();
+      return FunctionDeclaration("function");
     }
     if (Match(TokenType::kVar)) {
       return VarDeclaration();
@@ -148,20 +178,66 @@ class Parser {
     return StatementNode();
   }
 
-  StmtPtr FunctionDeclaration() {
-    if (!Consume(TokenType::kIdentifier, "expected function name")) {
+  StmtPtr FunctionDeclaration(const std::string& kind) {
+    if (!Consume(TokenType::kIdentifier, "expected " + kind + " name")) {
       return nullptr;
     }
     const std::string name = Previous().lexeme;
-    auto body = ParseFunctionBody();
+    auto body = ParseFunctionBody(kind);
     if (!body.has_value()) {
       return nullptr;
     }
     return std::make_shared<FunctionStmt>(name, std::move(body->first), std::move(body->second));
   }
 
-  std::optional<std::pair<std::vector<std::string>, std::vector<StmtPtr>>> ParseFunctionBody() {
-    if (!Consume(TokenType::kLeftParen, "expected '(' after function name")) {
+  StmtPtr ClassDeclaration() {
+    if (!Consume(TokenType::kIdentifier, "expected class name")) {
+      return nullptr;
+    }
+    const std::string class_name = Previous().lexeme;
+
+    std::string superclass;
+    if (Match(TokenType::kLess)) {
+      if (!Consume(TokenType::kIdentifier, "expected superclass name")) {
+        return nullptr;
+      }
+      superclass = Previous().lexeme;
+      if (superclass == class_name) {
+        ReportError(Previous(), "a class cannot inherit from itself");
+      }
+    }
+
+    if (!Consume(TokenType::kLeftBrace, "expected '{' before class body")) {
+      return nullptr;
+    }
+    std::vector<std::shared_ptr<FunctionStmt>> methods;
+    while (!Check(TokenType::kRightBrace) && !IsAtEnd()) {
+      auto method = ParseMethod();
+      if (method != nullptr) {
+        methods.push_back(method);
+      } else {
+        Synchronize();
+      }
+    }
+    Consume(TokenType::kRightBrace, "expected '}' after class body");
+    return std::make_shared<ClassStmt>(class_name, superclass, std::move(methods));
+  }
+
+  std::shared_ptr<FunctionStmt> ParseMethod() {
+    if (!Consume(TokenType::kIdentifier, "expected method name")) {
+      return nullptr;
+    }
+    const std::string name = Previous().lexeme;
+    auto body = ParseFunctionBody("method");
+    if (!body.has_value()) {
+      return nullptr;
+    }
+    return std::make_shared<FunctionStmt>(name, std::move(body->first), std::move(body->second));
+  }
+
+  std::optional<std::pair<std::vector<std::string>, std::vector<StmtPtr>>> ParseFunctionBody(
+      const std::string& kind) {
+    if (!Consume(TokenType::kLeftParen, "expected '(' after " + kind + " name")) {
       return std::nullopt;
     }
     std::vector<std::string> params;
@@ -176,7 +252,7 @@ class Parser {
     if (!Consume(TokenType::kRightParen, "expected ')' after parameters")) {
       return std::nullopt;
     }
-    if (!Consume(TokenType::kLeftBrace, "expected '{' before function body")) {
+    if (!Consume(TokenType::kLeftBrace, "expected '{' before " + kind + " body")) {
       return std::nullopt;
     }
     return std::make_pair(params, ParseBlockStatements());
@@ -260,6 +336,9 @@ class Parser {
       if (auto var = std::dynamic_pointer_cast<VariableExpr>(expr); var != nullptr) {
         return std::make_shared<AssignExpr>(var->name, value);
       }
+      if (auto object = std::dynamic_pointer_cast<GetExpr>(expr); object != nullptr) {
+        return std::make_shared<SetExpr>(object->object, object->name, value);
+      }
       ReportError(Previous(), "invalid assignment target");
     }
     return expr;
@@ -294,15 +373,24 @@ class Parser {
 
   ExprPtr Call() {
     ExprPtr expr = Primary();
-    while (Match(TokenType::kLeftParen)) {
-      std::vector<ExprPtr> args;
-      if (!Check(TokenType::kRightParen)) {
-        do {
-          args.push_back(ExpressionNode());
-        } while (Match(TokenType::kComma));
+    while (true) {
+      if (Match(TokenType::kLeftParen)) {
+        std::vector<ExprPtr> args;
+        if (!Check(TokenType::kRightParen)) {
+          do {
+            args.push_back(ExpressionNode());
+          } while (Match(TokenType::kComma));
+        }
+        Consume(TokenType::kRightParen, "expected ')' after arguments");
+        expr = std::make_shared<CallExpr>(expr, std::move(args));
+        continue;
       }
-      Consume(TokenType::kRightParen, "expected ')' after arguments");
-      expr = std::make_shared<CallExpr>(expr, std::move(args));
+      if (Match(TokenType::kDot)) {
+        Consume(TokenType::kIdentifier, "expected property name after '.'");
+        expr = std::make_shared<GetExpr>(expr, Previous().lexeme);
+        continue;
+      }
+      break;
     }
     return expr;
   }
@@ -327,11 +415,19 @@ class Parser {
       return std::make_shared<VariableExpr>(Previous().lexeme);
     }
     if (Match(TokenType::kFun)) {
-      auto body = ParseFunctionBody();
+      auto body = ParseFunctionBody("anonymous function");
       if (!body.has_value()) {
         return nullptr;
       }
       return std::make_shared<FunctionExpr>(std::move(body->first), std::move(body->second));
+    }
+    if (Match(TokenType::kThis)) {
+      return std::make_shared<ThisExpr>("this");
+    }
+    if (Match(TokenType::kSuper)) {
+      Consume(TokenType::kDot, "expected '.' after 'super'");
+      Consume(TokenType::kIdentifier, "expected superclass method name");
+      return std::make_shared<SuperExpr>(Previous().lexeme);
     }
     if (Match(TokenType::kLeftParen)) {
       ExprPtr expr = ExpressionNode();
@@ -383,6 +479,7 @@ class Parser {
     while (!IsAtEnd()) {
       if (Previous().type == TokenType::kSemicolon) return;
       switch (Current().type) {
+        case TokenType::kClass:
         case TokenType::kFun:
         case TokenType::kVar:
         case TokenType::kPrint:
@@ -403,6 +500,9 @@ class Parser {
 };
 
 class RuntimeFunction;
+class RuntimeClass;
+class RuntimeInstance;
+class RuntimeBoundMethod;
 class Executor;
 
 class Environment {
@@ -463,21 +563,70 @@ struct ReturnSignal {
 class RuntimeFunction final : public RuntimeCallable {
  public:
   RuntimeFunction(std::string name, std::vector<std::string> params, std::vector<StmtPtr> body,
-                  EnvironmentPtr closure)
+                  EnvironmentPtr closure, bool is_initializer = false)
       : name_(std::move(name)),
         params_(std::move(params)),
         body_(std::move(body)),
-        closure_(std::move(closure)) {}
+        closure_(std::move(closure)),
+        is_initializer_(is_initializer) {}
 
   std::size_t Arity() const override { return params_.size(); }
   std::string ToString() const override { return name_.empty() ? "<fn anonymous>" : "<fn " + name_ + ">"; }
   bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
+  std::shared_ptr<RuntimeFunction> Bind(const Value& instance, Vm& vm) const;
+  bool IsInitializer() const { return is_initializer_; }
 
  private:
   std::string name_;
   std::vector<std::string> params_;
   std::vector<StmtPtr> body_;
   EnvironmentPtr closure_;
+  bool is_initializer_;
+};
+
+class RuntimeClass final : public RuntimeCallable, public std::enable_shared_from_this<RuntimeClass> {
+ public:
+  RuntimeClass(std::string name, std::shared_ptr<RuntimeClass> superclass,
+               std::unordered_map<std::string, std::shared_ptr<RuntimeFunction>> methods)
+      : name_(std::move(name)), superclass_(std::move(superclass)), methods_(std::move(methods)) {}
+
+  std::string ToString() const override { return "<class " + name_ + ">"; }
+  std::size_t Arity() const override;
+  bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
+  std::shared_ptr<RuntimeFunction> FindMethod(const std::string& name) const;
+  const std::string& Name() const { return name_; }
+
+ private:
+  std::string name_;
+  std::shared_ptr<RuntimeClass> superclass_;
+  std::unordered_map<std::string, std::shared_ptr<RuntimeFunction>> methods_;
+};
+
+class RuntimeInstance final : public RuntimeObject, public std::enable_shared_from_this<RuntimeInstance> {
+ public:
+  explicit RuntimeInstance(std::shared_ptr<RuntimeClass> klass) : klass_(std::move(klass)) {}
+
+  std::string ToString() const override { return "<" + klass_->Name() + " instance>"; }
+  bool Get(const std::string& name, Value* out);
+  void Set(const std::string& name, const Value& value) { fields_[name] = value; }
+
+ private:
+  std::shared_ptr<RuntimeClass> klass_;
+  std::unordered_map<std::string, Value> fields_;
+};
+
+class RuntimeBoundMethod final : public RuntimeCallable {
+ public:
+  RuntimeBoundMethod(Value receiver, std::shared_ptr<RuntimeFunction> method)
+      : receiver_(std::move(receiver)), method_(std::move(method)) {}
+
+  std::string ToString() const override { return method_->ToString(); }
+  std::size_t Arity() const override { return method_->Arity(); }
+  bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
+
+ private:
+  Value receiver_;
+  std::shared_ptr<RuntimeFunction> method_;
 };
 
 class Executor {
@@ -489,6 +638,9 @@ class Executor {
     try {
       for (const auto& s : stmts) ExecStmt(s);
       return true;
+    } catch (const ReturnSignal&) {
+      if (error != nullptr) *error = "cannot return from top-level code";
+      return false;
     } catch (const RuntimeSignal& e) {
       if (error != nullptr) *error = e.what();
       return false;
@@ -539,8 +691,45 @@ class Executor {
       return;
     }
     if (auto s = std::dynamic_pointer_cast<FunctionStmt>(stmt); s != nullptr) {
-      auto fn = std::make_shared<RuntimeFunction>(s->name, s->params, s->body, env_);
+      auto fn = std::make_shared<RuntimeFunction>(s->name, s->params, s->body, env_, false);
       env_->Define(s->name, Value(std::static_pointer_cast<RuntimeObject>(fn)));
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<ClassStmt>(stmt); s != nullptr) {
+      std::shared_ptr<RuntimeClass> superclass = nullptr;
+      if (!s->superclass.empty()) {
+        Value super_value;
+        if (!env_->Get(s->superclass, &super_value)) {
+          throw RuntimeSignal("undefined variable: " + s->superclass);
+        }
+        if (!super_value.IsObject() || super_value.AsObject() == nullptr) {
+          throw RuntimeSignal("superclass must be a class");
+        }
+        superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
+        if (superclass == nullptr) {
+          throw RuntimeSignal("superclass must be a class");
+        }
+      }
+
+      env_->Define(s->name, Value::Nil());
+
+      auto method_env = env_;
+      if (superclass != nullptr) {
+        method_env = std::make_shared<Environment>(vm_, env_);
+        method_env->Define("super", Value(std::static_pointer_cast<RuntimeObject>(superclass)));
+      }
+
+      std::unordered_map<std::string, std::shared_ptr<RuntimeFunction>> methods;
+      for (const auto& method : s->methods) {
+        const bool is_initializer = method->name == "init";
+        methods[method->name] = std::make_shared<RuntimeFunction>(
+            method->name, method->params, method->body, method_env, is_initializer);
+      }
+
+      auto klass = std::make_shared<RuntimeClass>(s->name, superclass, std::move(methods));
+      if (!env_->Assign(s->name, Value(std::static_pointer_cast<RuntimeObject>(klass)))) {
+        throw RuntimeSignal("failed to bind class: " + s->name);
+      }
       return;
     }
     if (auto s = std::dynamic_pointer_cast<ReturnStmt>(stmt); s != nullptr) {
@@ -612,8 +801,63 @@ class Executor {
       return Value(l.AsNumber() / r.AsNumber());
     }
     if (auto e = std::dynamic_pointer_cast<FunctionExpr>(expr); e != nullptr) {
-      auto fn = std::make_shared<RuntimeFunction>("", e->params, e->body, env_);
+      auto fn = std::make_shared<RuntimeFunction>("", e->params, e->body, env_, false);
       return Value(std::static_pointer_cast<RuntimeObject>(fn));
+    }
+    if (auto e = std::dynamic_pointer_cast<GetExpr>(expr); e != nullptr) {
+      Value object = Eval(e->object);
+      if (!object.IsObject() || object.AsObject() == nullptr) {
+        throw RuntimeSignal("only instances have properties");
+      }
+      auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.AsObject());
+      if (instance == nullptr) {
+        throw RuntimeSignal("only instances have properties");
+      }
+      Value out;
+      if (!instance->Get(e->name, &out)) {
+        throw RuntimeSignal("undefined property: " + e->name);
+      }
+      return out;
+    }
+    if (auto e = std::dynamic_pointer_cast<SetExpr>(expr); e != nullptr) {
+      Value object = Eval(e->object);
+      if (!object.IsObject() || object.AsObject() == nullptr) {
+        throw RuntimeSignal("only instances have fields");
+      }
+      auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.AsObject());
+      if (instance == nullptr) {
+        throw RuntimeSignal("only instances have fields");
+      }
+      Value value = Eval(e->value);
+      instance->Set(e->name, value);
+      return value;
+    }
+    if (auto e = std::dynamic_pointer_cast<ThisExpr>(expr); e != nullptr) {
+      Value v;
+      if (!env_->Get(e->name, &v)) {
+        throw RuntimeSignal("cannot use 'this' outside of a class");
+      }
+      return v;
+    }
+    if (auto e = std::dynamic_pointer_cast<SuperExpr>(expr); e != nullptr) {
+      Value super_value;
+      if (!env_->Get("super", &super_value)) {
+        throw RuntimeSignal("cannot use 'super' outside of a subclass");
+      }
+      auto superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
+      if (superclass == nullptr) {
+        throw RuntimeSignal("invalid superclass reference");
+      }
+      Value this_value;
+      if (!env_->Get("this", &this_value)) {
+        throw RuntimeSignal("missing receiver for 'super' call");
+      }
+      auto method = superclass->FindMethod(e->method);
+      if (method == nullptr) {
+        throw RuntimeSignal("undefined property: " + e->method);
+      }
+      auto bound = std::make_shared<RuntimeBoundMethod>(this_value, method);
+      return Value(std::static_pointer_cast<RuntimeObject>(bound));
     }
     if (auto e = std::dynamic_pointer_cast<CallExpr>(expr); e != nullptr) {
       Value callee = Eval(e->callee);
@@ -641,12 +885,101 @@ class Executor {
   EnvironmentPtr env_;
 
   friend class RuntimeFunction;
+  friend class RuntimeClass;
+  friend class RuntimeBoundMethod;
 };
 
 bool RuntimeFunction::Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) {
   auto scope = std::make_shared<Environment>(executor.vm_, closure_);
   for (std::size_t i = 0; i < params_.size(); ++i) scope->Define(params_[i], args[i]);
-  return executor.RunFunction(body_, scope, out, error);
+  Value call_result = Value::Nil();
+  if (!executor.RunFunction(body_, scope, &call_result, error)) {
+    return false;
+  }
+  if (is_initializer_) {
+    Value receiver;
+    if (!closure_->Get("this", &receiver)) {
+      if (error != nullptr) {
+        *error = "initializer is missing receiver";
+      }
+      return false;
+    }
+    if (out != nullptr) {
+      *out = receiver;
+    }
+    return true;
+  }
+  if (out != nullptr) {
+    *out = call_result;
+  }
+  return true;
+}
+
+std::shared_ptr<RuntimeFunction> RuntimeFunction::Bind(const Value& instance, Vm& vm) const {
+  auto bound_env = std::make_shared<Environment>(vm, closure_);
+  bound_env->Define("this", instance);
+  return std::make_shared<RuntimeFunction>(name_, params_, body_, bound_env, is_initializer_);
+}
+
+std::shared_ptr<RuntimeFunction> RuntimeClass::FindMethod(const std::string& name) const {
+  const auto it = methods_.find(name);
+  if (it != methods_.end()) {
+    return it->second;
+  }
+  if (superclass_ != nullptr) {
+    return superclass_->FindMethod(name);
+  }
+  return nullptr;
+}
+
+std::size_t RuntimeClass::Arity() const {
+  auto init = FindMethod("init");
+  return init != nullptr ? init->Arity() : 0;
+}
+
+bool RuntimeClass::Call(Executor& executor, const std::vector<Value>& args, Value* out,
+                        std::string* error) {
+  auto instance = std::make_shared<RuntimeInstance>(shared_from_this());
+  Value receiver(std::static_pointer_cast<RuntimeObject>(instance));
+
+  auto init = FindMethod("init");
+  if (init != nullptr) {
+    auto bound = init->Bind(receiver, executor.vm_);
+    Value ignored = Value::Nil();
+    if (!bound->Call(executor, args, &ignored, error)) {
+      return false;
+    }
+  }
+
+  if (out != nullptr) {
+    *out = receiver;
+  }
+  return true;
+}
+
+bool RuntimeInstance::Get(const std::string& name, Value* out) {
+  const auto field = fields_.find(name);
+  if (field != fields_.end()) {
+    if (out != nullptr) {
+      *out = field->second;
+    }
+    return true;
+  }
+  auto method = klass_->FindMethod(name);
+  if (method == nullptr) {
+    return false;
+  }
+  auto bound = std::make_shared<RuntimeBoundMethod>(
+      Value(std::static_pointer_cast<RuntimeObject>(shared_from_this())), method);
+  if (out != nullptr) {
+    *out = Value(std::static_pointer_cast<RuntimeObject>(bound));
+  }
+  return true;
+}
+
+bool RuntimeBoundMethod::Call(Executor& executor, const std::vector<Value>& args, Value* out,
+                              std::string* error) {
+  return method_->Bind(receiver_, executor.vm_)->Call(executor, args, out, error);
 }
 
 }  // namespace
