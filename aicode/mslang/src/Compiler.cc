@@ -182,6 +182,7 @@ public:
   void this_(bool can_assign) noexcept;
   void super_(bool can_assign) noexcept;
   void list_(bool can_assign) noexcept;
+  void map_(bool can_assign) noexcept;
   void subscript_(bool can_assign) noexcept;
   u8_t argument_list() noexcept;
 
@@ -201,7 +202,7 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   // TOKEN_RIGHT_PAREN
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_LEFT_BRACE
-  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  { &Compiler::map_,     nullptr,            Precedence::PREC_NONE },
   // TOKEN_RIGHT_BRACE
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_LEFT_BRACKET
@@ -831,6 +832,23 @@ void Compiler::list_(bool /*can_assign*/) noexcept {
   }
   consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after list elements.");
   emit_op_byte(OpCode::OP_BUILD_LIST, count);
+}
+
+void Compiler::map_(bool /*can_assign*/) noexcept {
+  u8_t count = 0;
+  if (!check(TokenType::TOKEN_RIGHT_BRACE)) {
+    do {
+      expression();
+      consume(TokenType::TOKEN_COLON, "Expect ':' after map key.");
+      expression();
+      if (count == 255) {
+        error("Can't have more than 255 entries in a map literal.");
+      }
+      count++;
+    } while (match(TokenType::TOKEN_COMMA));
+  }
+  consume(TokenType::TOKEN_RIGHT_BRACE, "Expect '}' after map entries.");
+  emit_op_byte(OpCode::OP_BUILD_MAP, count);
 }
 
 void Compiler::subscript_(bool can_assign) noexcept {

@@ -27,6 +27,7 @@
 #pragma once
 
 #include <functional>
+#include <unordered_map>
 #include <vector>
 #include "Common.hh"
 #include "Chunk.hh"
@@ -44,6 +45,7 @@ enum class ObjectType : int {
   OBJ_INSTANCE,
   OBJ_BOUND_METHOD,
   OBJ_LIST,
+  OBJ_MAP,
   OBJ_MODULE,
 };
 
@@ -234,6 +236,33 @@ public:
   sz_t len() const noexcept { return elements_.size(); }
 };
 
+// --- ObjMap ---
+struct ValueHash {
+  sz_t operator()(const Value& v) const noexcept;
+};
+
+struct ValueEqual {
+  bool operator()(const Value& a, const Value& b) const noexcept {
+    return a.is_equal(b);
+  }
+};
+
+using ValueMap = std::unordered_map<Value, Value, ValueHash, ValueEqual>;
+
+class ObjMap final : public Object {
+  ValueMap entries_;
+
+public:
+  ObjMap() noexcept;
+  str_t stringify() const noexcept override;
+  void trace_references() noexcept override;
+  sz_t size() const noexcept override;
+
+  ValueMap& entries() noexcept { return entries_; }
+  const ValueMap& entries() const noexcept { return entries_; }
+  sz_t len() const noexcept { return entries_.size(); }
+};
+
 // --- ObjModule ---
 class ObjModule final : public Object {
   ObjString* name_{nullptr};
@@ -281,6 +310,10 @@ inline ObjBoundMethod* as_bound_method(const Value& v) noexcept {
 
 inline ObjList* as_list(const Value& v) noexcept {
   return as_obj<ObjList>(v.as_object());
+}
+
+inline ObjMap* as_map(const Value& v) noexcept {
+  return as_obj<ObjMap>(v.as_object());
 }
 
 inline ObjModule* as_module(const Value& v) noexcept {

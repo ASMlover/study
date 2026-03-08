@@ -102,6 +102,7 @@ bool Value::is_closure() const noexcept { return is_obj_type(*this, ObjectType::
 bool Value::is_class() const noexcept { return is_obj_type(*this, ObjectType::OBJ_CLASS); }
 bool Value::is_instance() const noexcept { return is_obj_type(*this, ObjectType::OBJ_INSTANCE); }
 bool Value::is_list() const noexcept { return is_obj_type(*this, ObjectType::OBJ_LIST); }
+bool Value::is_map() const noexcept { return is_obj_type(*this, ObjectType::OBJ_MAP); }
 
 std::ostream& operator<<(std::ostream& os, const Value& value) {
   os << value.stringify();

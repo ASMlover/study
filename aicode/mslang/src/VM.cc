@@ -75,6 +75,7 @@ VM::VM() noexcept {
       case ObjectType::OBJ_CLASS:        type_str = "class"; break;
       case ObjectType::OBJ_INSTANCE:     type_str = "instance"; break;
       case ObjectType::OBJ_LIST:         type_str = "list"; break;
+      case ObjectType::OBJ_MAP:          type_str = "map"; break;
       default:                           type_str = "object"; break;
       }
     }
@@ -508,6 +509,63 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
       return true;
     }
     runtime_error(std::format("Undefined list method '{}'.", method_name));
+    return false;
+  }
+
+  if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
+    ObjMap* map = as_map(receiver);
+    strv_t method_name = name->value();
+    if (method_name == "len") {
+      if (arg_count != 0) {
+        runtime_error("len() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(static_cast<double>(map->len()));
+      return true;
+    } else if (method_name == "keys") {
+      if (arg_count != 0) {
+        runtime_error("keys() takes no arguments.");
+        return false;
+      }
+      ObjList* keys = allocate<ObjList>();
+      for (auto& [k, v] : map->entries()) {
+        keys->elements().push_back(k);
+      }
+      stack_top_[-1] = Value(static_cast<Object*>(keys));
+      return true;
+    } else if (method_name == "values") {
+      if (arg_count != 0) {
+        runtime_error("values() takes no arguments.");
+        return false;
+      }
+      ObjList* vals = allocate<ObjList>();
+      for (auto& [k, v] : map->entries()) {
+        vals->elements().push_back(v);
+      }
+      stack_top_[-1] = Value(static_cast<Object*>(vals));
+      return true;
+    } else if (method_name == "has") {
+      if (arg_count != 1) {
+        runtime_error("has() takes exactly 1 argument.");
+        return false;
+      }
+      Value key = stack_top_[-1];
+      bool found = map->entries().find(key) != map->entries().end();
+      stack_top_ -= 2; // pop arg and receiver
+      push(Value(found));
+      return true;
+    } else if (method_name == "remove") {
+      if (arg_count != 1) {
+        runtime_error("remove() takes exactly 1 argument.");
+        return false;
+      }
+      Value key = stack_top_[-1];
+      map->entries().erase(key);
+      stack_top_ -= 2; // pop arg and receiver
+      push(Value()); // return nil
+      return true;
+    }
+    runtime_error(std::format("Undefined map method '{}'.", method_name));
     return false;
   }
 
@@ -1025,6 +1083,18 @@ InterpretResult VM::run() noexcept {
       break;
     }
 
+    case OpCode::OP_BUILD_MAP: {
+      u8_t count = READ_BYTE();
+      ObjMap* map = allocate<ObjMap>();
+      for (int i = count - 1; i >= 0; i--) {
+        Value val = pop();
+        Value key = pop();
+        map->entries()[key] = val;
+      }
+      push(Value(static_cast<Object*>(map)));
+      break;
+    }
+
     case OpCode::OP_INDEX_GET: {
       Value index_val = pop();
       Value receiver = pop();
@@ -1040,6 +1110,14 @@ InterpretResult VM::run() noexcept {
           return InterpretResult::INTERPRET_RUNTIME_ERROR;
         }
         push(list->elements()[static_cast<sz_t>(index)]);
+      } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
+        ObjMap* map = as_map(receiver);
+        auto it = map->entries().find(index_val);
+        if (it == map->entries().end()) {
+          runtime_error("Key not found in map.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        push(it->second);
       } else if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
         if (!index_val.is_number()) {
           runtime_error("String index must be a number.");
@@ -1063,21 +1141,25 @@ InterpretResult VM::run() noexcept {
       Value value = pop();
       Value index_val = pop();
       Value receiver = pop();
-      if (!is_obj_type(receiver, ObjectType::OBJ_LIST)) {
-        runtime_error("Only lists support index assignment.");
+      if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
+        if (!index_val.is_number()) {
+          runtime_error("List index must be a number.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        ObjList* list = as_list(receiver);
+        int index = static_cast<int>(index_val.as_number());
+        if (index < 0 || index >= static_cast<int>(list->len())) {
+          runtime_error("List index out of bounds.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        list->elements()[static_cast<sz_t>(index)] = value;
+      } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
+        ObjMap* map = as_map(receiver);
+        map->entries()[index_val] = value;
+      } else {
+        runtime_error("Only lists and maps support index assignment.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
-      if (!index_val.is_number()) {
-        runtime_error("List index must be a number.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
-      }
-      ObjList* list = as_list(receiver);
-      int index = static_cast<int>(index_val.as_number());
-      if (index < 0 || index >= static_cast<int>(list->len())) {
-        runtime_error("List index out of bounds.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
-      }
-      list->elements()[static_cast<sz_t>(index)] = value;
       push(value);
       break;
     }

@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cstring>
 #include <format>
 #include "Object.hh"
 
@@ -222,6 +223,65 @@ void ObjList::trace_references() noexcept {
 
 sz_t ObjList::size() const noexcept {
   return sizeof(ObjList) + elements_.capacity() * sizeof(Value);
+}
+
+// --- ValueHash ---
+
+sz_t ValueHash::operator()(const Value& v) const noexcept {
+  if (v.is_nil()) return 0;
+  if (v.is_boolean()) return std::hash<bool>{}(v.as_boolean());
+  if (v.is_number()) {
+    double d = v.as_number();
+    sz_t h;
+    std::memcpy(&h, &d, sizeof(h));
+    return h;
+  }
+  if (v.is_object()) {
+    if (v.as_object()->type() == ObjectType::OBJ_STRING) {
+      return as_obj<ObjString>(v.as_object())->hash();
+    }
+    return std::hash<void*>{}(v.as_object());
+  }
+  return 0;
+}
+
+// --- ObjMap ---
+
+ObjMap::ObjMap() noexcept
+    : Object(ObjectType::OBJ_MAP) {
+}
+
+str_t ObjMap::stringify() const noexcept {
+  str_t result = "{";
+  bool first = true;
+  for (auto& [key, val] : entries_) {
+    if (!first) result += ", ";
+    first = false;
+    if (is_obj_type(key, ObjectType::OBJ_STRING)) {
+      result += "\"" + key.stringify() + "\"";
+    } else {
+      result += key.stringify();
+    }
+    result += ": ";
+    if (is_obj_type(val, ObjectType::OBJ_STRING)) {
+      result += "\"" + val.stringify() + "\"";
+    } else {
+      result += val.stringify();
+    }
+  }
+  result += "}";
+  return result;
+}
+
+void ObjMap::trace_references() noexcept {
+  for (auto& [key, val] : entries_) {
+    mark_value(const_cast<Value&>(key));
+    mark_value(val);
+  }
+}
+
+sz_t ObjMap::size() const noexcept {
+  return sizeof(ObjMap) + entries_.size() * (sizeof(Value) * 2);
 }
 
 // --- ObjModule ---

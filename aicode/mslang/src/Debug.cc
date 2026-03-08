@@ -156,6 +156,7 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_GET_UPVALUE:
   case OpCode::OP_SET_UPVALUE:
   case OpCode::OP_BUILD_LIST:
+  case OpCode::OP_BUILD_MAP:
   case OpCode::OP_CALL:
     return byte_instruction(opcode_name(op), chunk, offset);
 

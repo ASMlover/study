@@ -68,6 +68,7 @@ public:
   bool is_class() const noexcept;
   bool is_instance() const noexcept;
   bool is_list() const noexcept;
+  bool is_map() const noexcept;
 };
 
 // operator== for convenience
