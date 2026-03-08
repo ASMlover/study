@@ -39,13 +39,16 @@ struct LiteralExpr final : Expr {
   Value value;
 };
 struct VariableExpr final : Expr {
-  explicit VariableExpr(std::string n) : name(std::move(n)) {}
+  VariableExpr(std::string n, std::size_t ln) : name(std::move(n)), line(ln) {}
   std::string name;
+  std::size_t line;
 };
 struct AssignExpr final : Expr {
-  AssignExpr(std::string n, ExprPtr v) : name(std::move(n)), value(std::move(v)) {}
+  AssignExpr(std::string n, ExprPtr v, std::size_t ln)
+      : name(std::move(n)), value(std::move(v)), line(ln) {}
   std::string name;
   ExprPtr value;
+  std::size_t line;
 };
 struct GroupingExpr final : Expr {
   explicit GroupingExpr(ExprPtr e) : expression(std::move(e)) {}
@@ -87,12 +90,14 @@ struct SetExpr final : Expr {
   ExprPtr value;
 };
 struct ThisExpr final : Expr {
-  explicit ThisExpr(std::string n) : name(std::move(n)) {}
+  ThisExpr(std::string n, std::size_t ln) : name(std::move(n)), line(ln) {}
   std::string name;
+  std::size_t line;
 };
 struct SuperExpr final : Expr {
-  explicit SuperExpr(std::string m) : method(std::move(m)) {}
+  SuperExpr(std::string m, std::size_t ln) : method(std::move(m)), line(ln) {}
   std::string method;
+  std::size_t line;
 };
 
 struct Stmt {
@@ -123,8 +128,9 @@ struct FunctionStmt final : Stmt {
   std::vector<StmtPtr> body;
 };
 struct ReturnStmt final : Stmt {
-  explicit ReturnStmt(ExprPtr v) : value(std::move(v)) {}
+  ReturnStmt(ExprPtr v, std::size_t ln) : value(std::move(v)), line(ln) {}
   ExprPtr value;
+  std::size_t line;
 };
 struct ImportStmt final : Stmt {
   explicit ImportStmt(std::string m) : module(std::move(m)) {}
@@ -138,10 +144,17 @@ struct FromImportStmt final : Stmt {
   std::string alias;
 };
 struct ClassStmt final : Stmt {
-  ClassStmt(std::string n, std::string s, std::vector<std::shared_ptr<FunctionStmt>> m)
-      : name(std::move(n)), superclass(std::move(s)), methods(std::move(m)) {}
+  ClassStmt(std::string n, std::size_t ln, std::string s, std::size_t sln,
+            std::vector<std::shared_ptr<FunctionStmt>> m)
+      : name(std::move(n)),
+        line(ln),
+        superclass(std::move(s)),
+        superclass_line(sln),
+        methods(std::move(m)) {}
   std::string name;
+  std::size_t line;
   std::string superclass;
+  std::size_t superclass_line;
   std::vector<std::shared_ptr<FunctionStmt>> methods;
 };
 
@@ -195,16 +208,16 @@ class Parser {
       return nullptr;
     }
     const std::string class_name = Previous().lexeme;
+    const std::size_t class_line = Previous().line;
 
     std::string superclass;
+    std::size_t superclass_line = 0;
     if (Match(TokenType::kLess)) {
       if (!Consume(TokenType::kIdentifier, "expected superclass name")) {
         return nullptr;
       }
       superclass = Previous().lexeme;
-      if (superclass == class_name) {
-        ReportError(Previous(), "a class cannot inherit from itself");
-      }
+      superclass_line = Previous().line;
     }
 
     if (!Consume(TokenType::kLeftBrace, "expected '{' before class body")) {
@@ -220,7 +233,8 @@ class Parser {
       }
     }
     Consume(TokenType::kRightBrace, "expected '}' after class body");
-    return std::make_shared<ClassStmt>(class_name, superclass, std::move(methods));
+    return std::make_shared<ClassStmt>(class_name, class_line, superclass, superclass_line,
+                                       std::move(methods));
   }
 
   std::shared_ptr<FunctionStmt> ParseMethod() {
@@ -280,12 +294,13 @@ class Parser {
       return std::make_shared<PrintStmt>(std::move(value));
     }
     if (Match(TokenType::kReturn)) {
+      const std::size_t line = Previous().line;
       ExprPtr value = nullptr;
       if (!Check(TokenType::kSemicolon)) {
         value = ExpressionNode();
       }
       Consume(TokenType::kSemicolon, "expected ';' after return value");
-      return std::make_shared<ReturnStmt>(std::move(value));
+      return std::make_shared<ReturnStmt>(std::move(value), line);
     }
     if (Match(TokenType::kImport)) {
       const std::string module = ParseDottedName();
@@ -332,9 +347,10 @@ class Parser {
   ExprPtr Assignment() {
     ExprPtr expr = Term();
     if (Match(TokenType::kEqual)) {
+      const Token equals = Previous();
       ExprPtr value = Assignment();
       if (auto var = std::dynamic_pointer_cast<VariableExpr>(expr); var != nullptr) {
-        return std::make_shared<AssignExpr>(var->name, value);
+        return std::make_shared<AssignExpr>(var->name, value, equals.line);
       }
       if (auto object = std::dynamic_pointer_cast<GetExpr>(expr); object != nullptr) {
         return std::make_shared<SetExpr>(object->object, object->name, value);
@@ -412,7 +428,7 @@ class Parser {
       return std::make_shared<LiteralExpr>(Value::Nil());
     }
     if (Match(TokenType::kIdentifier)) {
-      return std::make_shared<VariableExpr>(Previous().lexeme);
+      return std::make_shared<VariableExpr>(Previous().lexeme, Previous().line);
     }
     if (Match(TokenType::kFun)) {
       auto body = ParseFunctionBody("anonymous function");
@@ -422,12 +438,13 @@ class Parser {
       return std::make_shared<FunctionExpr>(std::move(body->first), std::move(body->second));
     }
     if (Match(TokenType::kThis)) {
-      return std::make_shared<ThisExpr>("this");
+      return std::make_shared<ThisExpr>("this", Previous().line);
     }
     if (Match(TokenType::kSuper)) {
+      const std::size_t line = Previous().line;
       Consume(TokenType::kDot, "expected '.' after 'super'");
       Consume(TokenType::kIdentifier, "expected superclass method name");
-      return std::make_shared<SuperExpr>(Previous().lexeme);
+      return std::make_shared<SuperExpr>(Previous().lexeme, line);
     }
     if (Match(TokenType::kLeftParen)) {
       ExprPtr expr = ExpressionNode();
@@ -505,6 +522,260 @@ class RuntimeInstance;
 class RuntimeBoundMethod;
 class Executor;
 
+struct ResolveResult {
+  std::unordered_map<const Expr*, std::size_t> local_depths;
+  std::vector<std::string> errors;
+  std::size_t captured_bindings = 0;
+};
+
+class Resolver {
+ public:
+  ResolveResult Resolve(const std::vector<StmtPtr>& statements) {
+    for (const auto& stmt : statements) {
+      ResolveStmt(stmt);
+    }
+    return std::move(result_);
+  }
+
+ private:
+  enum class FunctionType { kNone, kFunction, kMethod, kInitializer };
+  enum class ClassType { kNone, kClass, kSubclass };
+
+  struct Binding {
+    bool defined = false;
+    bool captured = false;
+  };
+
+  static std::string MakeResolveError(const std::size_t line, const std::string& code,
+                                      const std::string& message) {
+    return "[line " + std::to_string(line) + "] resolve error (" + code + "): " + message;
+  }
+
+  void Report(const std::size_t line, const std::string& code, const std::string& message) {
+    result_.errors.push_back(MakeResolveError(line, code, message));
+  }
+
+  void BeginScope() { scopes_.push_back({}); }
+
+  void EndScope() { scopes_.pop_back(); }
+
+  void Declare(const std::string& name) {
+    if (scopes_.empty()) {
+      return;
+    }
+    auto& scope = scopes_.back();
+    if (scope.contains(name)) {
+      Report(current_line_, "MS3005", "variable '" + name + "' already declared in this scope");
+      return;
+    }
+    scope[name] = Binding{false, false};
+  }
+
+  void Define(const std::string& name) {
+    if (scopes_.empty()) {
+      return;
+    }
+    auto& scope = scopes_.back();
+    auto it = scope.find(name);
+    if (it != scope.end()) {
+      it->second.defined = true;
+    }
+  }
+
+  void ResolveLocal(const ExprPtr& expr, const std::string& name) {
+    for (std::size_t i = scopes_.size(); i > 0; --i) {
+      auto& scope = scopes_[i - 1];
+      auto it = scope.find(name);
+      if (it == scope.end()) {
+        continue;
+      }
+      const std::size_t depth = scopes_.size() - i;
+      result_.local_depths[expr.get()] = depth;
+      if (depth > 0 && !it->second.captured) {
+        it->second.captured = true;
+        ++result_.captured_bindings;
+      }
+      return;
+    }
+  }
+
+  void ResolveFunction(const std::vector<std::string>& params, const std::vector<StmtPtr>& body,
+                       const FunctionType type) {
+    const FunctionType enclosing_function = current_function_;
+    current_function_ = type;
+    BeginScope();
+    for (const auto& param : params) {
+      Declare(param);
+      Define(param);
+    }
+    for (const auto& stmt : body) {
+      ResolveStmt(stmt);
+    }
+    EndScope();
+    current_function_ = enclosing_function;
+  }
+
+  void ResolveStmt(const StmtPtr& stmt) {
+    if (stmt == nullptr) {
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<ExprStmt>(stmt); s != nullptr) {
+      ResolveExpr(s->expression);
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<PrintStmt>(stmt); s != nullptr) {
+      ResolveExpr(s->expression);
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<VarStmt>(stmt); s != nullptr) {
+      current_line_ = 0;
+      Declare(s->name);
+      ResolveExpr(s->initializer);
+      Define(s->name);
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<BlockStmt>(stmt); s != nullptr) {
+      BeginScope();
+      for (const auto& child : s->statements) {
+        ResolveStmt(child);
+      }
+      EndScope();
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<FunctionStmt>(stmt); s != nullptr) {
+      Declare(s->name);
+      Define(s->name);
+      ResolveFunction(s->params, s->body, FunctionType::kFunction);
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<ReturnStmt>(stmt); s != nullptr) {
+      current_line_ = s->line;
+      if (current_function_ == FunctionType::kNone) {
+        Report(s->line, "MS3001", "cannot return from top-level code");
+      }
+      if (current_function_ == FunctionType::kInitializer && s->value != nullptr) {
+        Report(s->line, "MS3007", "cannot return a value from initializer");
+      }
+      ResolveExpr(s->value);
+      return;
+    }
+    if (auto s = std::dynamic_pointer_cast<ClassStmt>(stmt); s != nullptr) {
+      current_line_ = s->line;
+      const ClassType enclosing_class = current_class_;
+      current_class_ = ClassType::kClass;
+
+      Declare(s->name);
+      Define(s->name);
+
+      if (!s->superclass.empty()) {
+        if (s->superclass == s->name) {
+          Report(s->superclass_line, "MS3004", "a class cannot inherit from itself");
+        }
+        current_class_ = ClassType::kSubclass;
+        auto super_ref = std::make_shared<VariableExpr>(s->superclass, s->superclass_line);
+        ResolveExpr(super_ref);
+        BeginScope();
+        scopes_.back()["super"] = Binding{true, false};
+      }
+
+      BeginScope();
+      scopes_.back()["this"] = Binding{true, false};
+      for (const auto& method : s->methods) {
+        const FunctionType method_type =
+            method->name == "init" ? FunctionType::kInitializer : FunctionType::kMethod;
+        ResolveFunction(method->params, method->body, method_type);
+      }
+      EndScope();
+      if (!s->superclass.empty()) {
+        EndScope();
+      }
+      current_class_ = enclosing_class;
+      return;
+    }
+  }
+
+  void ResolveExpr(const ExprPtr& expr) {
+    if (expr == nullptr) {
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<VariableExpr>(expr); e != nullptr) {
+      current_line_ = e->line;
+      if (!scopes_.empty()) {
+        auto it = scopes_.back().find(e->name);
+        if (it != scopes_.back().end() && !it->second.defined) {
+          Report(e->line, "MS3006",
+                 "cannot read local variable '" + e->name + "' in its own initializer");
+        }
+      }
+      ResolveLocal(expr, e->name);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<AssignExpr>(expr); e != nullptr) {
+      current_line_ = e->line;
+      ResolveExpr(e->value);
+      ResolveLocal(expr, e->name);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<GroupingExpr>(expr); e != nullptr) {
+      ResolveExpr(e->expression);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<UnaryExpr>(expr); e != nullptr) {
+      ResolveExpr(e->right);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<BinaryExpr>(expr); e != nullptr) {
+      ResolveExpr(e->left);
+      ResolveExpr(e->right);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<CallExpr>(expr); e != nullptr) {
+      ResolveExpr(e->callee);
+      for (const auto& arg : e->arguments) {
+        ResolveExpr(arg);
+      }
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<FunctionExpr>(expr); e != nullptr) {
+      ResolveFunction(e->params, e->body, FunctionType::kFunction);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<GetExpr>(expr); e != nullptr) {
+      ResolveExpr(e->object);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<SetExpr>(expr); e != nullptr) {
+      ResolveExpr(e->value);
+      ResolveExpr(e->object);
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<ThisExpr>(expr); e != nullptr) {
+      current_line_ = e->line;
+      if (current_class_ == ClassType::kNone) {
+        Report(e->line, "MS3002", "cannot use 'this' outside of a class");
+        return;
+      }
+      ResolveLocal(expr, "this");
+      return;
+    }
+    if (auto e = std::dynamic_pointer_cast<SuperExpr>(expr); e != nullptr) {
+      current_line_ = e->line;
+      if (current_class_ == ClassType::kNone || current_class_ == ClassType::kClass) {
+        Report(e->line, "MS3003", "cannot use 'super' outside of a subclass");
+        return;
+      }
+      ResolveLocal(expr, "super");
+      return;
+    }
+  }
+
+  ResolveResult result_;
+  std::vector<std::unordered_map<std::string, Binding>> scopes_;
+  FunctionType current_function_ = FunctionType::kNone;
+  ClassType current_class_ = ClassType::kNone;
+  std::size_t current_line_ = 0;
+};
+
 class Environment {
  public:
   Environment(Vm& vm, EnvironmentPtr enclosing)
@@ -540,6 +811,46 @@ class Environment {
     }
     if (enclosing_ != nullptr) return enclosing_->Get(name, out);
     return vm_.GetGlobal(name, out);
+  }
+
+  bool AssignAt(const std::size_t depth, const std::string& name, const Value& value) {
+    Environment* scope = this;
+    for (std::size_t i = 0; i < depth; ++i) {
+      if (scope->enclosing_ == nullptr) {
+        return false;
+      }
+      scope = scope->enclosing_.get();
+    }
+    if (scope->global_) {
+      return scope->vm_.SetGlobal(name, value);
+    }
+    auto it = scope->values_.find(name);
+    if (it == scope->values_.end()) {
+      return false;
+    }
+    it->second = value;
+    return true;
+  }
+
+  bool GetAt(const std::size_t depth, const std::string& name, Value* out) const {
+    const Environment* scope = this;
+    for (std::size_t i = 0; i < depth; ++i) {
+      if (scope->enclosing_ == nullptr) {
+        return false;
+      }
+      scope = scope->enclosing_.get();
+    }
+    if (scope->global_) {
+      return scope->vm_.GetGlobal(name, out);
+    }
+    auto it = scope->values_.find(name);
+    if (it == scope->values_.end()) {
+      return false;
+    }
+    if (out != nullptr) {
+      *out = it->second;
+    }
+    return true;
   }
 
  private:
@@ -631,8 +942,11 @@ class RuntimeBoundMethod final : public RuntimeCallable {
 
 class Executor {
  public:
-  explicit Executor(Vm& vm)
-      : vm_(vm), globals_(std::make_shared<Environment>(vm_, nullptr)), env_(globals_) {}
+  Executor(Vm& vm, const std::unordered_map<const Expr*, std::size_t>* local_depths)
+      : vm_(vm),
+        globals_(std::make_shared<Environment>(vm_, nullptr)),
+        env_(globals_),
+        local_depths_(local_depths) {}
 
   bool Run(const std::vector<StmtPtr>& stmts, std::string* error) {
     try {
@@ -773,12 +1087,20 @@ class Executor {
     if (auto e = std::dynamic_pointer_cast<LiteralExpr>(expr); e != nullptr) return e->value;
     if (auto e = std::dynamic_pointer_cast<VariableExpr>(expr); e != nullptr) {
       Value v;
-      if (!env_->Get(e->name, &v)) throw RuntimeSignal("undefined variable: " + e->name);
+      if (const auto depth = LookupDepth(expr); depth.has_value()) {
+        if (!env_->GetAt(*depth, e->name, &v)) throw RuntimeSignal("undefined variable: " + e->name);
+      } else {
+        if (!env_->Get(e->name, &v)) throw RuntimeSignal("undefined variable: " + e->name);
+      }
       return v;
     }
     if (auto e = std::dynamic_pointer_cast<AssignExpr>(expr); e != nullptr) {
       Value v = Eval(e->value);
-      if (!env_->Assign(e->name, v)) throw RuntimeSignal("undefined variable: " + e->name);
+      if (const auto depth = LookupDepth(expr); depth.has_value()) {
+        if (!env_->AssignAt(*depth, e->name, v)) throw RuntimeSignal("undefined variable: " + e->name);
+      } else {
+        if (!env_->Assign(e->name, v)) throw RuntimeSignal("undefined variable: " + e->name);
+      }
       return v;
     }
     if (auto e = std::dynamic_pointer_cast<GroupingExpr>(expr); e != nullptr) return Eval(e->expression);
@@ -834,14 +1156,14 @@ class Executor {
     }
     if (auto e = std::dynamic_pointer_cast<ThisExpr>(expr); e != nullptr) {
       Value v;
-      if (!env_->Get(e->name, &v)) {
+      if (!ResolveScopedRead(expr, e->name, &v)) {
         throw RuntimeSignal("cannot use 'this' outside of a class");
       }
       return v;
     }
     if (auto e = std::dynamic_pointer_cast<SuperExpr>(expr); e != nullptr) {
       Value super_value;
-      if (!env_->Get("super", &super_value)) {
+      if (!ResolveScopedRead(expr, "super", &super_value)) {
         throw RuntimeSignal("cannot use 'super' outside of a subclass");
       }
       auto superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
@@ -880,9 +1202,28 @@ class Executor {
     throw RuntimeSignal("unsupported expression");
   }
 
+  std::optional<std::size_t> LookupDepth(const ExprPtr& expr) const {
+    if (expr == nullptr || local_depths_ == nullptr) {
+      return std::nullopt;
+    }
+    const auto it = local_depths_->find(expr.get());
+    if (it == local_depths_->end()) {
+      return std::nullopt;
+    }
+    return it->second;
+  }
+
+  bool ResolveScopedRead(const ExprPtr& expr, const std::string& name, Value* out) const {
+    if (const auto depth = LookupDepth(expr); depth.has_value()) {
+      return env_->GetAt(*depth, name, out);
+    }
+    return env_->Get(name, out);
+  }
+
   Vm& vm_;
   EnvironmentPtr globals_;
   EnvironmentPtr env_;
+  const std::unordered_map<const Expr*, std::size_t>* local_depths_;
 
   friend class RuntimeFunction;
   friend class RuntimeClass;
@@ -994,13 +1335,22 @@ bool ScriptInterpreter::Execute(Vm& vm, const std::string& source, std::string* 
     }
     return false;
   }
-  Executor executor(vm);
+  Resolver resolver;
+  ResolveResult resolved = resolver.Resolve(program);
+  if (!resolved.errors.empty()) {
+    if (error != nullptr) {
+      *error = resolved.errors.front();
+    }
+    return false;
+  }
+  Executor executor(vm, &resolved.local_depths);
   return executor.Run(program, error);
 }
 
 bool ScriptInterpreter::IsCompileLikeError(const std::string& error) {
   return error.find("parse error:") != std::string::npos ||
-         error.find("lexer error:") != std::string::npos;
+         error.find("lexer error:") != std::string::npos ||
+         error.find("resolve error") != std::string::npos;
 }
 
 }  // namespace ms

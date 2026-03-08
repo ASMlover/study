@@ -16,10 +16,10 @@ error-path examples.
 - `class_initializer_receiver.ms`: initializer return semantics and constructed instance state.
 - `class_super_chain.ms`: multi-level inheritance and `super` method dispatch.
 - `error_parse_invalid_assignment.ms`: parse error for invalid assignment target.
-- `error_parse_self_inherit.ms`: parse error for class self-inheritance.
-- `error_runtime_top_level_return.ms`: runtime error for top-level `return`.
-- `error_runtime_this_outside_class.ms`: runtime error for `this` outside class context.
-- `error_runtime_super_outside_subclass.ms`: runtime error for `super` outside subclass context.
+- `error_parse_self_inherit.ms`: resolve error (`MS3004`) for class self-inheritance.
+- `error_runtime_top_level_return.ms`: resolve error (`MS3001`) for top-level `return`.
+- `error_runtime_this_outside_class.ms`: resolve error (`MS3002`) for `this` outside class context.
+- `error_runtime_super_outside_subclass.ms`: resolve error (`MS3003`) for `super` outside subclass context.
 - `error_runtime_undefined_variable.ms`: runtime error for undefined variable lookup.
 - `error_runtime_call_non_callable.ms`: runtime error for calling non-callable values.
 - `error_runtime_property_on_non_instance.ms`: runtime error for property get on non-instance.

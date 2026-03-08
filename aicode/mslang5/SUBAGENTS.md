@@ -70,6 +70,46 @@ Repo: Maple (`mslang5`)
 - `ctest --test-dir build --output-on-failure -C Debug`
 - Result: pass (`1/1` test suite)
 
+## W11 Execution (Subagents Mode)
+
+Date: 2026-03-08
+
+1. Subagent-A (Batch A: W11-D1)
+- Scope:
+  - added explicit resolver phase seam in `ScriptInterpreter::Execute` after parse and before runtime execution
+  - switched self-inheritance check from parse-time to resolve-time policy path
+- Changed files:
+  - `src/runtime/script_interpreter.cc`
+
+2. Subagent-B (Batch B: W11-D2 + W11-D3)
+- Scope:
+  - implemented lexical depth metadata (`local_depths`) and environment depth-aware lookup/update (`GetAt/AssignAt`)
+  - enforced resolve-phase diagnostics for `return/this/super/self-inherit` with `MS3001~MS3004`
+  - aligned compile/runtime category mapping by classifying resolve errors as compile-like
+- Changed files:
+  - `src/runtime/script_interpreter.cc`
+  - `tests/integration/test_language_resolver.cc`
+  - `tests/unit/test_main.cc`
+  - `CMakeLists.txt`
+
+3. Subagent-C (Batch C: W11-D4 + W11-D5)
+- Scope:
+  - added resolver conformance fixtures and matrix mapping
+  - updated plan GAP status and wave closeout notes
+- Changed files:
+  - `tests/conformance/semantics/resolver_return_outside_001.ms`
+  - `tests/conformance/semantics/resolver_this_outside_001.ms`
+  - `tests/conformance/semantics/resolver_super_outside_001.ms`
+  - `tests/conformance/semantics/resolver_self_inherit_001.ms`
+  - `tests/conformance/MATRIX.md`
+  - `tests/scripts/README.md`
+  - `PLAN.md`
+  - `SUBAGENTS.md`
+
+4. Verification command and result
+- `cmake --build build --config Debug`
+- `ctest --test-dir build --output-on-failure -C Debug`
+
 ## W10 Execution (Subagents Mode)
 
 Date: 2026-03-08

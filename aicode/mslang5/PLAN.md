@@ -602,6 +602,10 @@ Define Maple as a spec-driven language runtime with:
   - Spec includes logical/comparison/control-flow grammar not fully present in current parser/compiler/interpreter path.
 - `GAP-03` Static semantic phase missing:
   - Spec defines resolve-phase errors (`return/this/super` context rules); implementation is mostly runtime-checked.
+  - Status: closed (2026-03-08, W11)
+  - Evidence:
+    - `ScriptInterpreter::Execute` now runs resolver before execution and blocks run on resolve diagnostics.
+    - `MS3001/MS3002/MS3003/MS3004` violations are emitted as resolve-phase compile-like errors.
 - `GAP-04` Diagnostic schema not yet enforced:
   - Spec defines `phase/code/span/notes`; implementation currently uses free-form message strings.
 - `GAP-05` Conformance mapping absent:
@@ -643,7 +647,7 @@ Define Maple as a spec-driven language runtime with:
 
 #### T16 - Static Semantics & Resolver Design (P0)
 - Goal: move language rule enforcement to compile/resolution phase where appropriate.
-- Status: draft completed (2026-03-08, docs-only; no resolver/compiler implementation changes)
+- Status: partially implemented (2026-03-08, W11 baseline over legacy execution path)
 - Deliverables:
   - Resolver design doc (`docs/design/resolver.md`)
   - Rule table:
@@ -664,9 +668,21 @@ Define Maple as a spec-driven language runtime with:
 ##### T16-GAP - Resolver Spec vs Compiler Pipeline Delta
 
 - `GAP-01` No dedicated resolve phase exists in current frontend pipeline.
+  - Status: closed (2026-03-08, W11-D1)
+  - Evidence:
+    - explicit resolver phase inserted in `ScriptInterpreter::Execute` after parse and before runtime execution.
 - `GAP-02` Lexical depth metadata is not emitted for compiler backend.
+  - Status: closed (2026-03-08, W11-D2)
+  - Evidence:
+    - resolver emits local-depth metadata and executor consumes depth-aware `GetAt/AssignAt`.
 - `GAP-03` `MS3xxx` resolve diagnostics are not yet produced by implementation.
+  - Status: closed (2026-03-08, W11-D3)
+  - Evidence:
+    - resolver emits `MS3001/MS3002/MS3003/MS3004` and `Vm` classifies them as compile errors.
 - `GAP-04` Closure capture planning is runtime/interpreter-driven, not resolver-driven.
+  - Status: deferred (2026-03-08, W11-D2)
+  - Evidence:
+    - lexical depth is resolved, but closure planning is not yet lowered into VM compiler/upvalue instruction path.
 
 #### T17 - Type/Value/Object Semantics Formalization (P1)
 - Goal: define runtime value algebra and object protocol precisely.
@@ -974,6 +990,8 @@ No code changes are included in this section; it is a build-ready execution blue
 
 ### W11 - Resolver + Static Semantics Integration (T16-driven)
 
+- Status: completed (2026-03-08, subagents-mode; Batch A/B/C)
+
 - Goal:
   - introduce explicit resolve phase between parse and compile/runtime
   - enforce `MS3xxx` class static semantic rules
@@ -1080,6 +1098,18 @@ No code changes are included in this section; it is a build-ready execution blue
     - `:memo: docs(maple): record W11 verification and T16 gap disposition`
   - Rollback point:
     - closeout note isolated.
+
+#### W11 Closeout Note (2026-03-08)
+
+- Delivered:
+  - `W11-D1`: inserted resolver seam in legacy parse->execute pipeline and blocked runtime on resolve failure.
+  - `W11-D2`: emitted lexical-depth metadata and consumed it in executor via depth-aware environment access.
+  - `W11-D3`: enforced `MS3001/MS3002/MS3003/MS3004` (`return/this/super/self-inherit`) at resolve phase.
+  - `W11-D4`: added resolver conformance cases and updated matrix mappings.
+  - `W11-D5`: captured build/test evidence and updated T14/T16 GAP status.
+- Verification commands:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
 
 ### W12 - Value/Module Semantic Alignment (T17/T18-driven)
 

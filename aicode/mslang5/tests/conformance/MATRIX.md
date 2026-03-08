@@ -30,9 +30,10 @@ Coverage state:
 | `grammar.assignment` | `GRM-ASSIGN-001` | `tests/unit/test_vm_compiler.cc` | mapped-existing | assignment expression statement |
 | `errors.MS1002` | `LEX-ERR-STRING-001` | none | planned | unterminated string diagnostic code mapping |
 | `errors.MS2003` | `PARSE-ASSIGN-TARGET-001` | none | planned | invalid assignment target |
-| `errors.MS3001` | `RES-RETURN-OUTSIDE-001` | none | planned | resolve-phase policy pending T16 |
-| `errors.MS3002` | `RES-THIS-OUTSIDE-001` | none | planned | resolve-phase policy pending T16 |
-| `errors.MS3003` | `RES-SUPER-OUTSIDE-001` | none | planned | resolve-phase policy pending T16 |
+| `errors.MS3001` | `RES-RETURN-OUTSIDE-001` | `tests/conformance/semantics/resolver_return_outside_001.ms` | mapped-existing | resolve-phase diagnostic code enforced |
+| `errors.MS3002` | `RES-THIS-OUTSIDE-001` | `tests/conformance/semantics/resolver_this_outside_001.ms` | mapped-existing | resolve-phase diagnostic code enforced |
+| `errors.MS3003` | `RES-SUPER-OUTSIDE-001` | `tests/conformance/semantics/resolver_super_outside_001.ms` | mapped-existing | resolve-phase diagnostic code enforced |
+| `errors.MS3004` | `RES-SELF-INHERIT-001` | `tests/conformance/semantics/resolver_self_inherit_001.ms` | mapped-existing | self-inheritance rejected in resolve phase |
 | `errors.MS4001` | `RUN-UNDEF-VAR-001` | none | gap | undefined variable standardized diagnostics |
 | `errors.MS4004` | `RUN-UNDEF-PROP-001` | `tests/scripts/language/class_super_error.ms` | mapped-existing | currently string-message matched |
 | `errors.MS5001` | `MOD-NOT-FOUND-001` | `tests/unit/test_module.cc` | mapped-existing | module not found |
@@ -51,8 +52,7 @@ Priority order for first conformance-file migration:
 
 ## 4. Gaps Requiring T16/T19 Prerequisites
 
-The following need resolver/diagnostic standardization before strict conformance lock:
+The following need additional diagnostic/conformance standardization before strict lock:
 
-1. resolve-phase error families (`MS3xxx`)
-2. stable structured diagnostics (`phase + code + span`)
-3. column-level source mapping guarantees
+1. stable structured diagnostics (`phase + code + span`)
+2. column-level source mapping guarantees
