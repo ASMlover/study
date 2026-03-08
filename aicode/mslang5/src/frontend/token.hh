@@ -8,6 +8,10 @@ namespace ms {
 enum class TokenType {
   kLeftParen,
   kRightParen,
+  kLeftBrace,
+  kRightBrace,
+  kComma,
+  kLess,
   kPlus,
   kMinus,
   kStar,
@@ -23,6 +27,11 @@ enum class TokenType {
   kImport,
   kFrom,
   kAs,
+  kFun,
+  kReturn,
+  kClass,
+  kThis,
+  kSuper,
   kTrue,
   kFalse,
   kNil,
@@ -37,4 +46,3 @@ struct Token {
 };
 
 }  // namespace ms
-

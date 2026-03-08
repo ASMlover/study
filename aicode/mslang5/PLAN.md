@@ -344,9 +344,10 @@ flowchart TD
 ### T08 - 函数/闭包/upvalue（P0）
 
 - Goal: 实现函数对象、调用帧、闭包捕获与 upvalue 生命周期。
-- Status: planned (2026-03-08, clox-full-semantics-upgrade)
+- Status: in_progress (2026-03-08, clox-full-semantics-upgrade)
 - Current State:
   - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整闭包语义。
+  - 2026-03-08 补充了词法与运行时对象承载基础：`fun/return/class/this/super` 关键字和相关符号 token 已接入 lexer；`Value` 已支持通用运行时对象持有（`RuntimeObject`），为 closure/class 对象模型接入提供存储通道。
 - Design & Implementation Tasks (No Code Yet):
   - `T08-D1` 对象模型补全：`ObjFunction / ObjClosure / ObjUpvalue`、函数原型、常量池与闭包对象关系。
   - `T08-D2` 编译器语义补全：局部变量解析、上值解析（递归向外层捕获）、函数声明/匿名函数、作用域深度与逃逸变量管理。
@@ -371,9 +372,10 @@ flowchart TD
 ### T09 - 类/继承/方法绑定（P0）
 
 - Goal: 实现 class、instance、method、super 调用链。
-- Status: planned (2026-03-08, clox-full-semantics-upgrade)
+- Status: in_progress (2026-03-08, clox-full-semantics-upgrade)
 - Current State:
   - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整 class/inheritance 语义。
+  - 2026-03-08 已完成类语义前置基础：新增 class 语法关键 token 与对象值通道，后续可在不破坏 `Value` ABI 的前提下落地 `ObjClass/ObjInstance/ObjBoundMethod` 与调用分派链。
 - Design & Implementation Tasks (No Code Yet):
   - `T09-D1` 对象模型补全：`ObjClass / ObjInstance / ObjBoundMethod` 与字段表、方法表布局。
   - `T09-D2` 编译器语义补全：`class` 声明、方法编译、`this` 绑定规则、`super` 解析与继承约束（禁止自继承）。

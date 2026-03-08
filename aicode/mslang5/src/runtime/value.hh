@@ -5,20 +5,23 @@
 #include <string>
 #include <variant>
 
+#include "runtime/object.hh"
+
 namespace ms {
 
 struct Module;
 
 class Value {
  public:
-  using Storage =
-      std::variant<std::monostate, bool, double, std::string, std::shared_ptr<Module>>;
+  using Storage = std::variant<std::monostate, bool, double, std::string,
+                               std::shared_ptr<Module>, std::shared_ptr<RuntimeObject>>;
 
   Value() = default;
   explicit Value(bool v) : storage_(v) {}
   explicit Value(double v) : storage_(v) {}
   explicit Value(std::string v) : storage_(std::move(v)) {}
   explicit Value(std::shared_ptr<Module> module) : storage_(std::move(module)) {}
+  explicit Value(std::shared_ptr<RuntimeObject> object) : storage_(std::move(object)) {}
 
   static Value Nil() { return Value(); }
 
@@ -29,12 +32,18 @@ class Value {
   bool IsModule() const {
     return std::holds_alternative<std::shared_ptr<Module>>(storage_);
   }
+  bool IsObject() const {
+    return std::holds_alternative<std::shared_ptr<RuntimeObject>>(storage_);
+  }
 
   bool AsBool() const { return std::get<bool>(storage_); }
   double AsNumber() const { return std::get<double>(storage_); }
   const std::string& AsString() const { return std::get<std::string>(storage_); }
   std::shared_ptr<Module> AsModule() const {
     return std::get<std::shared_ptr<Module>>(storage_);
+  }
+  std::shared_ptr<RuntimeObject> AsObject() const {
+    return std::get<std::shared_ptr<RuntimeObject>>(storage_);
   }
 
   std::string ToString() const {
@@ -52,6 +61,9 @@ class Value {
     if (IsString()) {
       return AsString();
     }
+    if (IsObject()) {
+      return AsObject() != nullptr ? AsObject()->ToString() : "<object:null>";
+    }
     return "<module>";
   }
 
@@ -64,4 +76,3 @@ class Value {
 };
 
 }  // namespace ms
-

@@ -23,6 +23,18 @@ std::vector<Token> Lexer::ScanAllTokens() {
       case ')':
         tokens.push_back(MakeToken(TokenType::kRightParen));
         break;
+      case '{':
+        tokens.push_back(MakeToken(TokenType::kLeftBrace));
+        break;
+      case '}':
+        tokens.push_back(MakeToken(TokenType::kRightBrace));
+        break;
+      case ',':
+        tokens.push_back(MakeToken(TokenType::kComma));
+        break;
+      case '<':
+        tokens.push_back(MakeToken(TokenType::kLess));
+        break;
       case '+':
         tokens.push_back(MakeToken(TokenType::kPlus));
         break;
@@ -160,6 +172,9 @@ TokenType Lexer::IdentifierType(const std::string& text) const {
       {"import", TokenType::kImport}, {"from", TokenType::kFrom},
       {"as", TokenType::kAs},         {"true", TokenType::kTrue},
       {"false", TokenType::kFalse},   {"nil", TokenType::kNil},
+      {"fun", TokenType::kFun},       {"return", TokenType::kReturn},
+      {"class", TokenType::kClass},   {"this", TokenType::kThis},
+      {"super", TokenType::kSuper},
   };
   const auto it = keywords.find(text);
   if (it == keywords.end()) {
@@ -169,4 +184,3 @@ TokenType Lexer::IdentifierType(const std::string& text) const {
 }
 
 }  // namespace ms
-

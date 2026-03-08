@@ -9,6 +9,7 @@ Repo: Maple (`mslang5`)
 - Subagent-B: `T04` `T07` + grammar bridge for `T08/T09`
 - Subagent-C: `T05` `T06` `T10` + runtime bridge for `T08/T09`
 - Subagent-D: `T11` `T12` `T13`
+- Subagent-E: `T08/T09` semantic-upgrade preparation + verification refresh
 
 ## Delivery Notes
 
@@ -43,3 +44,28 @@ Repo: Maple (`mslang5`)
 - `ctest --test-dir build --output-on-failure -C Debug`
 - Result: pass (`1/1` test suite)
 
+## Incremental Follow-up (Subagent-E)
+
+1. Task IDs
+- `T08` (in progress)
+- `T09` (in progress)
+
+2. Changed files
+- `src/frontend/token.hh`
+- `src/frontend/lexer.cc`
+- `src/runtime/object.hh`
+- `src/runtime/value.hh`
+- `PLAN.md`
+
+3. Behavior change
+- Added lexer-level syntax primitives required by closure/class work:
+  - symbols: `{`, `}`, `,`, `<`
+  - keywords: `fun`, `return`, `class`, `this`, `super`
+- Added generic runtime object carrier:
+  - introduced `RuntimeObject` base type
+  - extended `Value` to hold `std::shared_ptr<RuntimeObject>`
+
+4. Verification command and result
+- `cmake --build build --config Debug`
+- `ctest --test-dir build --output-on-failure -C Debug`
+- Result: pass (`1/1` test suite)

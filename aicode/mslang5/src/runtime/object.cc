@@ -7,4 +7,3 @@ std::shared_ptr<StringObject> MakeStringObject(const std::string& value) {
 }
 
 }  // namespace ms
-
