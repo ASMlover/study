@@ -1,0 +1,12 @@
+[
+  {
+    "phase": "runtime",
+    "code": "MS4002",
+    "message": "expected 2 arguments but got 1",
+    "span": {
+      "file": "tests/scripts/language/closure_arity_error.ms",
+      "line": 5
+    },
+    "notes": []
+  }
+]

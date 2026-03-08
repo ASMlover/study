@@ -531,3 +531,780 @@ flowchart TD
 - Verification: cmake --build build --config Debug; ctest --test-dir build --output-on-failure -C Debug.
 
 - 2026-03-08 update: T09 class/inheritance batch completed with class_* integration scripts and tests.
+
+---
+
+## 2026-03-08 Language Professionalization Iteration Plan (No Code Yet)
+
+### A. Current Implementation Assessment (Expert Review)
+
+- Runtime architecture is currently **dual-path**:
+  - `Vm::Execute` runs a minimal bytecode instruction set.
+  - `Vm::ExecuteSource` routes to `ScriptInterpreter` (tree-walk style with its own AST/parser/evaluator).
+  - This causes semantic drift risk and makes long-term optimization and correctness harder.
+- Frontend grammar is **not yet a full formal language grammar**:
+  - Token set and parser are still subset-level.
+  - Missing full operator lattice (`==`, `!=`, `>`, `>=`, logical `and/or`, etc.) and structured control flow (`if/else`, `while`, `for`, `break`, `continue`).
+- Semantic analysis is runtime-only for many rules:
+  - No resolver pass for lexical binding depth.
+  - `this/super` misuse is mostly diagnosed at runtime, not compile-time.
+- Object/value model is still transitional:
+  - `Value` is variant-based and mixes module/object primitives pragmatically.
+  - No finalized language-level object protocol and identity/equality model doc.
+- GC is currently threshold-counter behavior, not production tracing GC.
+- Module system works functionally, but language-level contract is under-specified:
+  - Export surface, visibility, and initialization contract need a formal definition.
+- Diagnostics and conformance are still engineering-oriented, not language-standard oriented:
+  - Error metadata (span, phase, code) and compatibility suite are insufficient for a “formal language” baseline.
+
+### B. Iteration Goal (Professional/Formal Language Baseline)
+
+Define Maple as a spec-driven language runtime with:
+
+1. Single canonical execution semantics (bytecode VM as source of truth).
+2. Versioned language specification (lexical/syntax/static semantics/runtime semantics).
+3. Deterministic diagnostics model (phase + span + stable message contract).
+4. Formal module boundary contract and testable conformance suite.
+5. Traceable release gates from feature design -> implementation -> verification.
+
+### C. New Task Set (Planning Only)
+
+#### T14 - Language Specification v0.1 (P0)
+- Goal: produce first formal spec package and freeze baseline semantics.
+- Status: draft completed (2026-03-08, docs-only; no runtime/compiler implementation changes)
+- Deliverables:
+  - `docs/spec/lexical.md` (tokens, literals, comments, escapes, reserved words)
+  - `docs/spec/grammar.ebnf` (complete grammar baseline)
+  - `docs/spec/semantics.md` (scope, closures, class/super, modules, truthiness, equality)
+  - `docs/spec/errors.md` (error taxonomy and diagnostic shape)
+- Acceptance:
+  - Every implemented syntax/semantic behavior maps to an explicit spec section.
+  - Ambiguities are listed as explicit TBD items (not implicit behavior).
+- Draft Completion Notes (2026-03-08):
+  - Added draft files:
+    - `docs/spec/lexical.md`
+    - `docs/spec/grammar.ebnf`
+    - `docs/spec/semantics.md`
+    - `docs/spec/errors.md`
+  - Scope of completion:
+    - Specification draft is complete for v0.1 planning.
+    - No compiler/VM/interpreter behavior was changed in this step.
+
+##### T14-GAP - Spec vs Implementation Delta (to be closed by T15/T16/T20)
+
+- `GAP-01` Execution-path divergence:
+  - Spec assumes unified normative semantics; current runtime uses dual-path (`Vm::Execute` vs `ScriptInterpreter`).
+- `GAP-02` Grammar overhang:
+  - Spec includes logical/comparison/control-flow grammar not fully present in current parser/compiler/interpreter path.
+- `GAP-03` Static semantic phase missing:
+  - Spec defines resolve-phase errors (`return/this/super` context rules); implementation is mostly runtime-checked.
+- `GAP-04` Diagnostic schema not yet enforced:
+  - Spec defines `phase/code/span/notes`; implementation currently uses free-form message strings.
+- `GAP-05` Conformance mapping absent:
+  - Spec requires rule-to-test traceability; current tests are feature-focused, not full conformance matrix driven.
+
+#### T15 - Execution Architecture Unification Plan (P0)
+- Goal: converge to one normative semantics path, with clear transition strategy.
+- Status: draft completed (2026-03-08, docs-only; no runtime/compiler implementation changes)
+- Deliverables:
+  - ADR: `docs/adr/ADR-001-execution-model.md`
+  - Explicit decision on `ScriptInterpreter` role:
+    - Option A: temporary bootstrap only, phased out.
+    - Option B: kept as reference interpreter with strict parity tests.
+  - Semantic parity matrix (`source case -> VM behavior == interpreter behavior`).
+- Acceptance:
+  - No newly added language feature may bypass the chosen normative path.
+- Draft Completion Notes (2026-03-08):
+  - Added ADR draft:
+    - `docs/adr/ADR-001-execution-model.md`
+  - Decision captured:
+    - Bytecode VM is the sole normative execution engine.
+    - `ScriptInterpreter` is transitional and non-normative during migration.
+  - Scope of completion:
+    - Architecture decision and migration strategy documented.
+    - No implementation switch was performed in this step.
+
+##### T15-GAP - ADR vs Current Runtime Delta (to be closed by T20 and implementation waves)
+
+- `GAP-01` Default source execution still routes through `ScriptInterpreter`.
+- `GAP-02` VM bytecode path does not yet cover full language semantics parity.
+- `GAP-03` Parity matrix and CI gate are not yet established.
+- `GAP-04` Interpreter retirement/reference-mode decision is documented but not enacted.
+
+#### T16 - Static Semantics & Resolver Design (P0)
+- Goal: move language rule enforcement to compile/resolution phase where appropriate.
+- Status: draft completed (2026-03-08, docs-only; no resolver/compiler implementation changes)
+- Deliverables:
+  - Resolver design doc (`docs/design/resolver.md`)
+  - Rule table:
+    - lexical depth resolution,
+    - local/global shadowing policy,
+    - `return` restrictions,
+    - `this/super` valid contexts,
+    - class inheritance legality checks.
+- Acceptance:
+  - Each rule defines: detection phase, error code, and canonical message template.
+- Draft Completion Notes (2026-03-08):
+  - Added resolver design draft:
+    - `docs/design/resolver.md`
+  - Scope of completion:
+    - Resolver data model, algorithm, and rule table documented.
+    - No resolver pass is implemented in parser/compiler in this step.
+
+##### T16-GAP - Resolver Spec vs Compiler Pipeline Delta
+
+- `GAP-01` No dedicated resolve phase exists in current frontend pipeline.
+- `GAP-02` Lexical depth metadata is not emitted for compiler backend.
+- `GAP-03` `MS3xxx` resolve diagnostics are not yet produced by implementation.
+- `GAP-04` Closure capture planning is runtime/interpreter-driven, not resolver-driven.
+
+#### T17 - Type/Value/Object Semantics Formalization (P1)
+- Goal: define runtime value algebra and object protocol precisely.
+- Status: draft completed (2026-03-08, docs-only; no value/object implementation changes)
+- Deliverables:
+  - `docs/spec/value-model.md`
+  - Decision records for:
+    - numeric model and coercion policy,
+    - equality and identity semantics,
+    - callable contract,
+    - method binding contract.
+- Acceptance:
+  - All operators and builtins have deterministic operand/result/error rules.
+- Draft Completion Notes (2026-03-08):
+  - Added value/object model draft:
+    - `docs/spec/value-model.md`
+  - Scope of completion:
+    - Numeric model, equality/identity, callable contract, and method binding semantics documented.
+    - No operator/runtime behavior changes in this step.
+
+##### T17-GAP - Value Spec vs Runtime Behavior Delta
+
+- `GAP-01` Equality operator semantics are specified but not fully implemented in language runtime path.
+- `GAP-02` Some error-code mappings (`MS400x`) are documented but not structurally emitted yet.
+- `GAP-03` Numeric edge-case policy is documented as draft and not yet conformance-locked.
+
+#### T18 - Module & Namespace Specification Upgrade (P1)
+- Goal: evolve module behavior from “works” to “specified”.
+- Status: draft completed (2026-03-08, docs-only; no module loader implementation changes)
+- Deliverables:
+  - `docs/spec/modules.md`:
+    - import resolution algorithm,
+    - cache and initialization state machine,
+    - circular dependency semantics,
+    - export visibility policy.
+  - Compatibility table for `import` and `from ... import ... as ...`.
+- Acceptance:
+  - Module errors are phase-specific and reproducible with script fixtures.
+- Draft Completion Notes (2026-03-08):
+  - Added module/namespace spec draft:
+    - `docs/spec/modules.md`
+  - Scope of completion:
+    - Module state machine, cache rules, import compatibility table documented.
+    - No loader/exports/runtime error payload changes in this step.
+
+##### T18-GAP - Module Spec vs Loader Implementation Delta
+
+- `GAP-01` Error payloads are currently free-form strings, not structured module diagnostics.
+- `GAP-02` Export visibility policy remains baseline-only (no explicit export controls).
+- `GAP-03` Conformance-grade module matrix cases are documented but not executable as standalone harness cases.
+
+#### T19 - Diagnostics Standardization (P1)
+- Goal: make diagnostics stable enough for tooling and formal tests.
+- Status: draft completed (2026-03-08, docs-only; no diagnostics pipeline implementation changes)
+- Deliverables:
+  - Diagnostic schema:
+    - `docs/spec/diagnostics.md`
+    - `phase` (`lex|parse|resolve|runtime|module`),
+    - `code` (`MSxxxx`),
+    - `span` (`file,line,column,length`),
+    - primary message + optional notes.
+  - `tests/diagnostics/` golden files with normalization rules.
+- Acceptance:
+  - Identical inputs produce stable structured diagnostics across platforms.
+- Draft Completion Notes (2026-03-08):
+  - Added diagnostics schema draft:
+    - `docs/spec/diagnostics.md`
+  - Added diagnostics golden guidance:
+    - `tests/diagnostics/README.md`
+    - `tests/diagnostics/NORMALIZATION.md`
+    - `tests/diagnostics/samples/runtime_arity_mismatch.golden.json`
+    - `tests/diagnostics/samples/module_not_found.golden.json`
+  - Scope of completion:
+    - Structured schema and normalization contract documented.
+    - No runtime diagnostic emitter or golden harness implementation in this step.
+
+##### T19-GAP - Diagnostics Spec vs Emission/Test Pipeline Delta
+
+- `GAP-01` Runtime currently does not emit canonical structured diagnostic records.
+- `GAP-02` Existing tests do not parse/compare diagnostics JSON goldens.
+- `GAP-03` Column/length span fields are not consistently available.
+- `GAP-04` CI has no diagnostics-golden stage yet.
+
+#### T20 - Conformance & Regression Test System (P0)
+- Goal: transition from feature demos to language conformance validation.
+- Status: draft completed (2026-03-08, docs-only; no test runner/runtime implementation changes)
+- Deliverables:
+  - `tests/conformance/` organized by spec chapter.
+  - Harness metadata (`expect: ok|compile_error|runtime_error`, output/error matching mode).
+  - Coverage matrix mapping T14 spec clauses -> concrete tests.
+- Acceptance:
+  - Each normative rule in T14 has at least one positive and one negative case.
+- Draft Completion Notes (2026-03-08):
+  - Added conformance docs:
+    - `tests/conformance/README.md`
+    - `tests/conformance/CASE_FORMAT.md`
+    - `tests/conformance/MATRIX.md`
+  - Scope of completion:
+    - Conformance structure, metadata contract, and initial spec mapping documented.
+    - No conformance test harness or CI wiring implementation in this step.
+
+##### T20-GAP - Conformance Plan vs Executable Pipeline Delta
+
+- `GAP-01` Conformance cases are not yet materialized as standalone `tests/conformance/*.ms` files.
+- `GAP-02` No parser/harness to read `@` metadata contract exists yet.
+- `GAP-03` CI does not yet include conformance-stage pass/fail gate.
+- `GAP-04` Diagnostics are not yet fully structured (`phase/code/span`) for strict matching.
+
+### D. Milestone & Gate Updates
+
+- New milestone `M5 (Formalization Baseline)`:
+  - Exit criteria:
+    - T14 + T15 + T20 completed.
+    - T16 design approved.
+    - Existing language features covered by conformance matrix.
+- New milestone `M6 (Spec-Driven Runtime)`:
+  - Exit criteria:
+    - T16~T19 completed.
+    - Diagnostic schema enforced in CI.
+    - Module/value/object semantics marked “normative” in docs.
+
+### E. Risks and Controls
+
+- Risk: dual execution paths continue to diverge.
+  - Control: introduce parity suite immediately after T15.
+- Risk: feature additions outpace specification.
+  - Control: “spec-first PR gate” for syntax/semantic changes.
+- Risk: diagnostics churn breaks tests.
+  - Control: stable error code policy + golden update protocol.
+
+### F. Priority Execution Order
+
+1. T14 (spec baseline)
+2. T15 (execution model decision + parity strategy)
+3. T20 (conformance harness baseline)
+4. T16 (resolver design freeze)
+5. T17 + T18 (value/object/module formalization)
+6. T19 (diagnostics standardization and CI locking)
+
+## 2026-03-08 Incremental Update (Spec Track)
+- T14 status updated to `draft completed (docs-only)`.
+- Added specification drafts:
+  - `docs/spec/lexical.md`
+  - `docs/spec/grammar.ebnf`
+  - `docs/spec/semantics.md`
+  - `docs/spec/errors.md`
+- Added `T14-GAP` list to track spec-to-implementation deltas for T15/T16/T20.
+- T15 status updated to `draft completed (docs-only)`.
+- Added ADR draft:
+  - `docs/adr/ADR-001-execution-model.md`
+- Added `T15-GAP` list to track architecture-decision deltas to implementation/CI.
+- T20 status updated to `draft completed (docs-only)`.
+- Added conformance planning docs:
+  - `tests/conformance/README.md`
+  - `tests/conformance/CASE_FORMAT.md`
+  - `tests/conformance/MATRIX.md`
+- Added `T20-GAP` list to track conformance-plan deltas to executable pipeline.
+- T16 status updated to `draft completed (docs-only)`.
+- Added resolver design draft:
+  - `docs/design/resolver.md`
+- Added `T16-GAP` list to track resolver-design deltas to compiler pipeline.
+- T17 status updated to `draft completed (docs-only)`.
+- Added value/object semantics draft:
+  - `docs/spec/value-model.md`
+- Added `T17-GAP` list to track value-spec deltas to runtime behavior.
+- T18 status updated to `draft completed (docs-only)`.
+- Added modules/namespace spec draft:
+  - `docs/spec/modules.md`
+- Added `T18-GAP` list to track module-spec deltas to loader behavior.
+- T19 status updated to `draft completed (docs-only)`.
+- Added diagnostics schema and golden-guideline drafts:
+  - `docs/spec/diagnostics.md`
+  - `tests/diagnostics/README.md`
+  - `tests/diagnostics/NORMALIZATION.md`
+  - `tests/diagnostics/samples/runtime_arity_mismatch.golden.json`
+  - `tests/diagnostics/samples/module_not_found.golden.json`
+- Added `T19-GAP` list to track diagnostics-spec deltas to emission/test/CI pipeline.
+
+## 2026-03-08 Implementation Mapping Package (W10~W13, Docs-Only)
+
+This section maps `T14~T20` GAP items to executable implementation waves.
+No code changes are included in this section; it is a build-ready execution blueprint.
+
+### W10 - Normative Execution Path Switch (T15/T14/T20 bridge)
+
+- Goal:
+  - make compiler+bytecode+VM the default normative path for `ExecuteSource`
+  - retain `ScriptInterpreter` only as temporary opt-in reference/debug path
+- Targets:
+  - `src/runtime/vm.cc`
+  - `src/runtime/vm.hh`
+  - `src/runtime/script_interpreter.cc`
+  - `src/runtime/script_interpreter.hh`
+  - `tests/unit/test_vm_compiler.cc`
+  - `tests/integration/test_language_closure.cc`
+  - `tests/integration/test_language_class.cc`
+- GAP Closure:
+  - T15-GAP `GAP-01`, `GAP-04`
+  - T14-GAP `GAP-01`
+- DoD:
+  - default source execution path is VM pipeline
+  - interpreter path is explicitly marked non-normative and guarded
+  - existing integration behavior remains unchanged (or documented deltas)
+- Verify:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+
+#### W10 Detailed Task List (D1~D5)
+
+- `W10-D1` Execution entry switch design and guard flags
+  - Scope:
+    - define normative/default `ExecuteSource` route as compile+VM
+    - define optional fallback/reference flag for `ScriptInterpreter`
+  - Primary files:
+    - `src/runtime/vm.hh`
+    - `src/runtime/vm.cc`
+  - Tests:
+    - add/adjust unit tests to assert default path selection behavior
+  - Acceptance:
+    - default invocation path no longer depends on interpreter-only semantics
+  - Commit suggestion:
+    - `:construction: refactor(maple): make VM pipeline default source execution path`
+  - Rollback point:
+    - keep one commit boundary before behavior switch.
+
+- `W10-D2` Bridge compatibility wrapper and error category parity
+  - Scope:
+    - preserve compile/runtime error category mapping consistency during switch
+    - keep interpreter mode explicitly non-normative
+  - Primary files:
+    - `src/runtime/vm.cc`
+    - `src/runtime/script_interpreter.hh`
+    - `src/runtime/script_interpreter.cc`
+  - Tests:
+    - `tests/unit/test_vm_compiler.cc` error category assertions
+  - Acceptance:
+    - compile errors and runtime errors remain stable at API boundary
+  - Commit suggestion:
+    - `:construction: chore(maple): normalize ExecuteSource error mapping during path migration`
+  - Rollback point:
+    - isolate mapping changes from path-switch commit.
+
+- `W10-D3` Regression lock for closure/class behavioral baseline
+  - Scope:
+    - ensure existing closure/class integration outputs remain stable
+  - Primary files:
+    - `tests/integration/test_language_closure.cc`
+    - `tests/integration/test_language_class.cc`
+  - Tests:
+    - extend assertions to include explicit route-independent behavior checks
+  - Acceptance:
+    - closure/class integration tests pass unchanged outputs
+  - Commit suggestion:
+    - `:white_check_mark: test(maple): lock closure/class baseline across execution path switch`
+  - Rollback point:
+    - tests-only commit can be reverted independently.
+
+- `W10-D4` Documentation and runtime mode policy alignment
+  - Scope:
+    - annotate interpreter as transitional/reference
+    - align internal comments/docs with ADR-001 decision
+  - Primary files:
+    - `src/runtime/script_interpreter.hh`
+    - `docs/adr/ADR-001-execution-model.md`
+    - `PLAN.md`
+  - Tests:
+    - none (docs/policy)
+  - Acceptance:
+    - no ambiguity on normative engine ownership
+  - Commit suggestion:
+    - `:memo: docs(maple): mark interpreter path transitional per ADR-001`
+  - Rollback point:
+    - docs-only commit.
+
+- `W10-D5` Wave closeout and evidence capture
+  - Scope:
+    - run build/test commands and capture pass evidence in plan increment note
+  - Primary files:
+    - `PLAN.md`
+  - Tests:
+    - `cmake --build build --config Debug`
+    - `ctest --test-dir build --output-on-failure -C Debug`
+  - Acceptance:
+    - W10 GAP items marked `closed|deferred` with evidence
+  - Commit suggestion:
+    - `:memo: docs(maple): record W10 verification and GAP closure status`
+  - Rollback point:
+    - closeout note is isolated.
+
+### W11 - Resolver + Static Semantics Integration (T16-driven)
+
+- Goal:
+  - introduce explicit resolve phase between parse and compile/runtime
+  - enforce `MS3xxx` class static semantic rules
+- Targets:
+  - `src/frontend/parser.hh`
+  - `src/frontend/parser.cc`
+  - `src/frontend/compiler.hh`
+  - `src/frontend/compiler.cc`
+  - `src/frontend/` (new resolver units, e.g. `resolver.hh/.cc`)
+  - `tests/conformance/semantics/*` (new)
+  - `tests/conformance/diagnostics/*` (new)
+- GAP Closure:
+  - T16-GAP `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04`
+  - T14-GAP `GAP-03`
+- DoD:
+  - resolver emits lexical-depth metadata consumable by compiler backend
+  - `return/this/super/self-inherit` violations fail in resolve phase
+  - resolve diagnostics carry stable `phase=resolve` and mapped codes
+- Verify:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - conformance subset: resolve semantic negatives pass
+
+#### W11 Detailed Task List (D1~D5)
+
+- `W11-D1` Resolver module skeleton and integration seam
+  - Scope:
+    - introduce resolver units and call seam after parse, before compile emit
+  - Primary files:
+    - `src/frontend/resolver.hh` (new)
+    - `src/frontend/resolver.cc` (new)
+    - `src/frontend/compiler.hh`
+    - `src/frontend/compiler.cc`
+  - Tests:
+    - compile pipeline smoke tests
+  - Acceptance:
+    - resolver phase executes and can return diagnostics list
+  - Commit suggestion:
+    - `:construction: feat(maple): add resolver phase skeleton to frontend pipeline`
+  - Rollback point:
+    - keep resolver skeleton in isolated commit.
+
+- `W11-D2` Lexical depth resolution and binding metadata emission
+  - Scope:
+    - resolve locals/upvalues with depth metadata for compiler backend
+  - Primary files:
+    - `src/frontend/resolver.hh`
+    - `src/frontend/resolver.cc`
+    - `src/frontend/compiler.cc`
+  - Tests:
+    - new targeted unit tests for lexical depth and capture marking
+  - Acceptance:
+    - resolver metadata consumed without runtime fallback for scoped references
+  - Commit suggestion:
+    - `:construction: feat(maple): emit lexical depth metadata from resolver`
+  - Rollback point:
+    - metadata commit isolated from diagnostics commit.
+
+- `W11-D3` Static semantic rules (`MS3xxx`) enforcement
+  - Scope:
+    - implement `return outside function`, `this/super misuse`, self-inherit checks
+  - Primary files:
+    - `src/frontend/resolver.cc`
+    - `docs/spec/errors.md` (if code mapping refinement needed)
+  - Tests:
+    - conformance negatives:
+      - `RES-RETURN-OUTSIDE-001`
+      - `RES-THIS-OUTSIDE-001`
+      - `RES-SUPER-OUTSIDE-001`
+      - `RES-SELF-INHERIT-001`
+  - Acceptance:
+    - violations fail at resolve phase (not delayed to runtime)
+  - Commit suggestion:
+    - `:construction: feat(maple): enforce resolve-phase MS3xxx semantic constraints`
+  - Rollback point:
+    - rules grouped by coherent semantic family.
+
+- `W11-D4` Conformance mapping for resolver rules
+  - Scope:
+    - add/convert conformance cases and matrix links for resolver clauses
+  - Primary files:
+    - `tests/conformance/semantics/*` (new cases)
+    - `tests/conformance/MATRIX.md`
+  - Tests:
+    - conformance subset runner for resolver-focused set
+  - Acceptance:
+    - each resolver rule has positive and negative traceable case
+  - Commit suggestion:
+    - `:white_check_mark: test(maple): add resolver conformance case family`
+  - Rollback point:
+    - cases and matrix update in tests-only commit.
+
+- `W11-D5` Wave closeout and GAP resolution log
+  - Scope:
+    - execute full test set + resolver subset and update plan status
+  - Primary files:
+    - `PLAN.md`
+  - Tests:
+    - `cmake --build build --config Debug`
+    - `ctest --test-dir build --output-on-failure -C Debug`
+  - Acceptance:
+    - `T16-GAP` entries moved to `closed|deferred` with evidence
+  - Commit suggestion:
+    - `:memo: docs(maple): record W11 verification and T16 gap disposition`
+  - Rollback point:
+    - closeout note isolated.
+
+### W12 - Value/Module Semantic Alignment (T17/T18-driven)
+
+- Goal:
+  - align runtime behavior to formal value-model and module-state specs
+  - stabilize operator/type/module error mapping to `MS4xxx/MS5xxx`
+- Targets:
+  - `src/runtime/value.hh`
+  - `src/runtime/object.hh`
+  - `src/runtime/object.cc`
+  - `src/runtime/module.hh`
+  - `src/runtime/module.cc`
+  - `src/runtime/vm.cc`
+  - `tests/scripts/language/*`
+  - `tests/scripts/module/*`
+  - `tests/conformance/semantics/*` (new/migrated)
+  - `tests/conformance/modules/*` (new/migrated)
+- GAP Closure:
+  - T17-GAP `GAP-01`, `GAP-02`, `GAP-03`
+  - T18-GAP `GAP-01`, `GAP-02`, `GAP-03`
+  - T14-GAP `GAP-02`
+- DoD:
+  - documented operator contracts match observable runtime behavior
+  - module loader state-machine errors map to stable error families
+  - conformance matrix entries for value/module rules are executable
+- Verify:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - module and class/closure regression suites pass
+
+#### W12 Detailed Task List (D1~D5)
+
+- `W12-D1` Operator/value contract alignment pass
+  - Scope:
+    - align runtime behavior to `value-model.md` for arithmetic/callability/type errors
+  - Primary files:
+    - `src/runtime/value.hh`
+    - `src/runtime/vm.cc`
+  - Tests:
+    - extend language scripts for operator/type edge cases
+  - Acceptance:
+    - operator behavior matches documented value algebra
+  - Commit suggestion:
+    - `:construction: feat(maple): align runtime operators with value-model spec`
+  - Rollback point:
+    - separate operator adjustments from module behavior changes.
+
+- `W12-D2` Equality/identity and callable consistency pass
+  - Scope:
+    - finalize equality and non-callable invocation error behavior
+  - Primary files:
+    - `src/runtime/value.hh`
+    - `src/runtime/object.hh`
+    - `src/runtime/object.cc`
+    - `src/runtime/vm.cc`
+  - Tests:
+    - new conformance cases for equality and callability errors
+  - Acceptance:
+    - documented `MS4001~MS4005` mapping consistently observable
+  - Commit suggestion:
+    - `:construction: feat(maple): stabilize equality and callable semantics`
+  - Rollback point:
+    - identity/equality changes isolated from module loader updates.
+
+- `W12-D3` Module lifecycle and cache-state alignment pass
+  - Scope:
+    - align loader transitions to documented state machine and error families
+  - Primary files:
+    - `src/runtime/module.hh`
+    - `src/runtime/module.cc`
+    - `src/runtime/vm.cc`
+  - Tests:
+    - module script cases: first-load, cached-load, symbol-missing, cycle
+  - Acceptance:
+    - module behaviors match `modules.md` compatibility table
+  - Commit suggestion:
+    - `:construction: feat(maple): align module loader state machine with spec`
+  - Rollback point:
+    - module loader pass can be rolled back without touching value semantics.
+
+- `W12-D4` Conformance migration for value/module clauses
+  - Scope:
+    - migrate mapped-existing cases into standalone conformance assets
+  - Primary files:
+    - `tests/conformance/semantics/*`
+    - `tests/conformance/modules/*`
+    - `tests/conformance/MATRIX.md`
+  - Tests:
+    - conformance run focused on value/module suites
+  - Acceptance:
+    - matrix entries for T17/T18 are executable and no longer docs-only
+  - Commit suggestion:
+    - `:white_check_mark: test(maple): migrate value/module behaviors into conformance suites`
+  - Rollback point:
+    - test migration isolated.
+
+- `W12-D5` Wave closeout and GAP resolution log
+  - Scope:
+    - run full regression and update T17/T18 GAP statuses
+  - Primary files:
+    - `PLAN.md`
+  - Tests:
+    - `cmake --build build --config Debug`
+    - `ctest --test-dir build --output-on-failure -C Debug`
+  - Acceptance:
+    - `T17-GAP` and `T18-GAP` marked `closed|deferred` with command evidence
+  - Commit suggestion:
+    - `:memo: docs(maple): record W12 verification and T17/T18 gap disposition`
+  - Rollback point:
+    - closeout note isolated.
+
+### W13 - Structured Diagnostics + Conformance Harness + CI Gate (T19/T20)
+
+- Goal:
+  - emit structured diagnostics records
+  - execute conformance cases with metadata contract
+  - enforce diagnostics/conformance in CI
+- Targets:
+  - `src/runtime/vm.cc`
+  - `src/support/source.hh`
+  - `src/support/source.cc`
+  - `src/cli/app.cc`
+  - `tests/conformance/*` (case files + runner)
+  - `tests/diagnostics/*` (goldens + checker)
+  - `CMakeLists.txt`
+  - `cmake/*` (ctest labels/stages as needed)
+- GAP Closure:
+  - T19-GAP `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04`
+  - T20-GAP `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04`
+  - T14-GAP `GAP-04`, `GAP-05`
+  - T15-GAP `GAP-03`
+- DoD:
+  - diagnostics include canonical `phase/code/span` payload
+  - conformance runner supports `@id/@spec/@expect/@diag.*`
+  - CI includes mandatory conformance + diagnostics golden stage
+- Verify:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - diagnostics golden comparisons stable across Windows/Linux
+
+#### W13 Detailed Task List (D1~D5)
+
+- `W13-D1` Structured diagnostic object and emission pipeline
+  - Scope:
+    - introduce canonical diagnostic record (`phase/code/span/notes`)
+    - route parse/resolve/runtime/module failures through unified emitter
+  - Primary files:
+    - `src/runtime/vm.cc`
+    - `src/support/source.hh`
+    - `src/support/source.cc`
+    - `src/cli/app.cc`
+  - Tests:
+    - diagnostics unit assertions for emitted structure
+  - Acceptance:
+    - failures produce structured diagnostics, not only free-form strings
+  - Commit suggestion:
+    - `:construction: feat(maple): introduce canonical diagnostics emission pipeline`
+  - Rollback point:
+    - emitter refactor isolated from conformance runner.
+
+- `W13-D2` Conformance harness parser for metadata headers
+  - Scope:
+    - implement parser for `@id/@spec/@expect/@diag.*`
+    - execute case files with mode-specific matching
+  - Primary files:
+    - `tests/conformance/*` (runner + parser)
+    - `CMakeLists.txt`
+  - Tests:
+    - harness self-tests using fixture cases
+  - Acceptance:
+    - conformance runner executes standalone `.ms` cases with metadata contract
+  - Commit suggestion:
+    - `:construction: feat(maple): add conformance runner with metadata-driven expectations`
+  - Rollback point:
+    - runner in isolated commit to avoid entangling runtime code.
+
+- `W13-D3` Diagnostics golden checker integration
+  - Scope:
+    - compare emitted diagnostics against JSON goldens with normalization rules
+  - Primary files:
+    - `tests/diagnostics/README.md` (if updates needed)
+    - `tests/diagnostics/NORMALIZATION.md` (if updates needed)
+    - `tests/diagnostics/samples/*`
+    - checker implementation under `tests/` (new)
+  - Tests:
+    - golden sample checks for arity and module-not-found scenarios
+  - Acceptance:
+    - golden checker passes deterministically on local platform
+  - Commit suggestion:
+    - `:white_check_mark: test(maple): integrate diagnostics golden checker with normalization`
+  - Rollback point:
+    - checker commit isolated from CI wiring.
+
+- `W13-D4` CI and CTest stage wiring
+  - Scope:
+    - add conformance + diagnostics stages to test pipeline and labels
+  - Primary files:
+    - `CMakeLists.txt`
+    - `cmake/*`
+  - Tests:
+    - local `ctest` includes new labeled stages
+  - Acceptance:
+    - CI-equivalent local run fails on conformance or diagnostics regression
+  - Commit suggestion:
+    - `:construction: chore(maple): wire conformance and diagnostics stages into test pipeline`
+  - Rollback point:
+    - CI wiring isolated to reduce risk.
+
+- `W13-D5` Wave closeout and M5/M6 gate accounting
+  - Scope:
+    - finalize GAP resolution bookkeeping and milestone readiness status
+  - Primary files:
+    - `PLAN.md`
+  - Tests:
+    - `cmake --build build --config Debug`
+    - `ctest --test-dir build --output-on-failure -C Debug`
+  - Acceptance:
+    - `T19-GAP` and `T20-GAP` marked `closed|deferred` with evidence
+    - `M5/M6` readiness line updated with objective status
+  - Commit suggestion:
+    - `:memo: docs(maple): record W13 verification and milestone gate status`
+  - Rollback point:
+    - bookkeeping commit isolated.
+
+### Cross-Wave Exit Criteria
+
+1. `M5` operationally closed when W10 + W11 baseline + W13 harness skeleton pass.
+2. `M6` operationally closed when W11~W13 fully pass and remaining GAP lists are empty or explicitly deferred.
+3. `PLAN.md` GAP entries must be updated after each wave with `closed | deferred` status and evidence command logs.
+
+### Recommended Commit Batching (Execution-Friendly)
+
+1. `W10`:
+   - Batch A: `W10-D1 + W10-D2`
+   - Batch B: `W10-D3`
+   - Batch C: `W10-D4 + W10-D5`
+2. `W11`:
+   - Batch A: `W11-D1`
+   - Batch B: `W11-D2 + W11-D3`
+   - Batch C: `W11-D4 + W11-D5`
+3. `W12`:
+   - Batch A: `W12-D1 + W12-D2`
+   - Batch B: `W12-D3`
+   - Batch C: `W12-D4 + W12-D5`
+4. `W13`:
+   - Batch A: `W13-D1`
+   - Batch B: `W13-D2 + W13-D3`
+   - Batch C: `W13-D4 + W13-D5`
+
+Commit message convention reminder:
+
+1. English message required.
+2. Gitmoji required.
+3. Keep one verification closeout commit per wave for traceability.

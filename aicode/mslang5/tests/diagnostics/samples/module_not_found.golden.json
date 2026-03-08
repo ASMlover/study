@@ -1,0 +1,12 @@
+[
+  {
+    "phase": "module",
+    "code": "MS5001",
+    "message": "module not found: foo.missing",
+    "span": {
+      "file": "script.ms",
+      "line": 1
+    },
+    "notes": []
+  }
+]

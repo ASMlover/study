@@ -1,0 +1,91 @@
+; Maple Language Grammar (Draft v0.1)
+; Status: Draft, specification-first.
+; Notes:
+; - This grammar is normative for T14 planning scope.
+; - Some productions are not fully implemented in runtime yet.
+
+program         = { declaration } EOF ;
+
+declaration     = classDecl
+                | funDecl
+                | varDecl
+                | statement ;
+
+classDecl       = "class" IDENTIFIER [ "<" IDENTIFIER ] "{" { methodDecl } "}" ;
+methodDecl      = IDENTIFIER functionBody ;
+
+funDecl         = "fun" IDENTIFIER functionBody ;
+functionExpr    = "fun" functionBody ;
+functionBody    = "(" [ parameters ] ")" block ;
+parameters      = IDENTIFIER { "," IDENTIFIER } ;
+
+varDecl         = "var" IDENTIFIER [ "=" expression ] ";" ;
+
+statement       = exprStmt
+                | printStmt
+                | returnStmt
+                | block
+                | ifStmt
+                | whileStmt
+                | forStmt
+                | importStmt
+                | fromImportStmt ;
+
+exprStmt        = expression ";" ;
+printStmt       = "print" expression ";" ;
+returnStmt      = "return" [ expression ] ";" ;
+block           = "{" { declaration } "}" ;
+
+ifStmt          = "if" "(" expression ")" statement [ "else" statement ] ;
+whileStmt       = "while" "(" expression ")" statement ;
+
+forStmt         = "for" "("
+                  ( varDecl
+                  | exprStmt
+                  | ";" )
+                  [ expression ] ";"
+                  [ expression ]
+                  ")" statement ;
+
+importStmt      = "import" dottedName ";" ;
+fromImportStmt  = "from" dottedName "import" IDENTIFIER [ "as" IDENTIFIER ] ";" ;
+
+expression      = assignment ;
+
+assignment      = ( call "." IDENTIFIER "=" assignment )
+                | ( IDENTIFIER "=" assignment )
+                | logicOr ;
+
+logicOr         = logicAnd { "or" logicAnd } ;
+logicAnd        = equality { "and" equality } ;
+
+equality        = comparison { ( "==" | "!=" ) comparison } ;
+comparison      = term { ( ">" | ">=" | "<" | "<=" ) term } ;
+term            = factor { ( "+" | "-" ) factor } ;
+factor          = unary { ( "*" | "/" ) unary } ;
+
+unary           = ( "!" | "-" ) unary
+                | call ;
+
+call            = primary { callSuffix } ;
+callSuffix      = "(" [ arguments ] ")"
+                | "." IDENTIFIER ;
+arguments       = expression { "," expression } ;
+
+primary         = NUMBER
+                | STRING
+                | "true"
+                | "false"
+                | "nil"
+                | "this"
+                | "super" "." IDENTIFIER
+                | IDENTIFIER
+                | functionExpr
+                | "(" expression ")" ;
+
+dottedName      = IDENTIFIER { "." IDENTIFIER } ;
+
+IDENTIFIER      = ? lexical identifier token ? ;
+NUMBER          = ? lexical number token ? ;
+STRING          = ? lexical string token ? ;
+EOF             = ? end-of-file token ? ;
