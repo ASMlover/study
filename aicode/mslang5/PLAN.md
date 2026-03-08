@@ -985,6 +985,14 @@ No code changes are included in this section; it is a build-ready execution blue
 - Verification commands:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
+- W11 test fixture expansion (2026-03-08):
+  - Added detailed resolver fixtures under `tests/scripts/language/`:
+    - success paths: `resolver_ok_return_in_function.ms`, `resolver_ok_this_in_nested_function.ms`,
+      `resolver_ok_super_in_subclass.ms`
+    - error variants: `error_resolve_top_level_return_in_block.ms`,
+      `error_resolve_this_in_free_function.ms`, `error_resolve_super_without_superclass_method.ms`
+  - Extended `tests/integration/test_language_resolver.cc` with success-path output checks and
+    additional `MS3001/MS3002/MS3003` failure assertions.
 - Verification result:
   - pass (`1/1` test, `maple_tests`)
 

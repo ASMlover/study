@@ -20,11 +20,17 @@ error-path examples.
 - `error_runtime_top_level_return.ms`: resolve error (`MS3001`) for top-level `return`.
 - `error_runtime_this_outside_class.ms`: resolve error (`MS3002`) for `this` outside class context.
 - `error_runtime_super_outside_subclass.ms`: resolve error (`MS3003`) for `super` outside subclass context.
+- `error_resolve_top_level_return_in_block.ms`: resolve error (`MS3001`) for `return` inside top-level block.
+- `error_resolve_this_in_free_function.ms`: resolve error (`MS3002`) for `this` inside a free function.
+- `error_resolve_super_without_superclass_method.ms`: resolve error (`MS3003`) for `super` inside class with no superclass.
 - `error_runtime_undefined_variable.ms`: runtime error for undefined variable lookup.
 - `error_runtime_call_non_callable.ms`: runtime error for calling non-callable values.
 - `error_runtime_property_on_non_instance.ms`: runtime error for property get on non-instance.
 - `error_runtime_set_on_non_instance.ms`: runtime error for property set on non-instance.
 - `error_runtime_superclass_not_class.ms`: runtime error for invalid superclass expression.
+- `resolver_ok_return_in_function.ms`: valid nested-function returns to verify resolver function context tracking.
+- `resolver_ok_this_in_nested_function.ms`: valid `this` capture from nested function inside class method.
+- `resolver_ok_super_in_subclass.ms`: valid multi-level `super` dispatch under subclass resolver context.
 
 ## Module Scripts (`tests/scripts/module`)
 

@@ -56,13 +56,38 @@ void ExpectResolveCompileFailure(const std::string& script_path, const std::stri
          "legacy-only mode should remain explicit");
 }
 
+void ExpectResolverSuccess(const std::string& script_path, const std::string& expected_output) {
+  const std::string src = ReadAll(script_path);
+  const ExecOutcome default_run =
+      RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
+  const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+
+  Expect(default_run.result == ms::InterpretResult::kOk, "resolver success script should execute");
+  Expect(legacy_run.result == ms::InterpretResult::kOk, "legacy route should execute resolver success script");
+  Expect(default_run.output == expected_output, "resolver success script output should match expectation");
+  Expect(default_run.output == legacy_run.output, "resolver success output should be route independent");
+  Expect(default_run.error.empty(), "resolver success script should not produce errors");
+  Expect(legacy_run.error.empty(), "legacy resolver success script should not produce errors");
+  Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
+         "resolver success scripts should run through compatibility fallback while VM frontend is partial");
+  Expect(legacy_run.route == ms::SourceExecutionRoute::kLegacyInterpreter,
+         "legacy-only mode should remain explicit");
+}
+
 }  // namespace
 
 int RunResolverIntegrationTests() {
   const std::string base = RepoRoot() + "/tests/scripts/language/";
+  ExpectResolverSuccess(base + "resolver_ok_return_in_function.ms", "42\n");
+  ExpectResolverSuccess(base + "resolver_ok_this_in_nested_function.ms", "9\n");
+  ExpectResolverSuccess(base + "resolver_ok_super_in_subclass.ms", "base-mid-leaf\n");
+
   ExpectResolveCompileFailure(base + "error_runtime_top_level_return.ms", "MS3001");
+  ExpectResolveCompileFailure(base + "error_resolve_top_level_return_in_block.ms", "MS3001");
   ExpectResolveCompileFailure(base + "error_runtime_this_outside_class.ms", "MS3002");
+  ExpectResolveCompileFailure(base + "error_resolve_this_in_free_function.ms", "MS3002");
   ExpectResolveCompileFailure(base + "error_runtime_super_outside_subclass.ms", "MS3003");
+  ExpectResolveCompileFailure(base + "error_resolve_super_without_superclass_method.ms", "MS3003");
   ExpectResolveCompileFailure(base + "error_parse_self_inherit.ms", "MS3004");
   return 0;
 }
