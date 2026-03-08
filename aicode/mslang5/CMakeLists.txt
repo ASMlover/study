@@ -21,6 +21,7 @@ add_library(maple_core
   src/runtime/table.cc
   src/runtime/gc.cc
   src/runtime/module.cc
+  src/runtime/script_interpreter.cc
   src/runtime/vm.cc
 )
 
@@ -65,6 +66,7 @@ if(MAPLE_BUILD_TESTS)
     tests/unit/test_vm_compiler.cc
     tests/unit/test_module.cc
     tests/integration/test_cli.cc
+    tests/integration/test_language_closure.cc
   )
   target_link_libraries(maple_tests PRIVATE maple_core)
   target_include_directories(maple_tests PRIVATE

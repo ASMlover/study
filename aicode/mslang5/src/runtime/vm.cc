@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "bytecode/opcode.hh"
-#include "frontend/compiler.hh"
+#include "runtime/script_interpreter.hh"
 
 namespace ms {
 
@@ -179,14 +179,13 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
 }
 
 InterpretResult Vm::ExecuteSource(const std::string& source, std::string* error) {
-  CompileResult compiled = CompileToChunk(source);
-  if (!compiled.errors.empty()) {
-    if (error != nullptr) {
-      *error = compiled.errors.front();
+  if (!ScriptInterpreter::Execute(*this, source, error)) {
+    if (error != nullptr && error->find("parse error:") != std::string::npos) {
+      return InterpretResult::kCompileError;
     }
-    return InterpretResult::kCompileError;
+    return InterpretResult::kRuntimeError;
   }
-  return Execute(compiled.chunk, error);
+  return InterpretResult::kOk;
 }
 
 InterpretResult Vm::ExecuteModule(const std::string& source,
@@ -292,4 +291,3 @@ std::string Vm::LastSegment(const std::string& dotted) const {
 }
 
 }  // namespace ms
-

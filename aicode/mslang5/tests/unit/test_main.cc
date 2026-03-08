@@ -9,6 +9,7 @@ int RunLexerTests();
 int RunVmCompilerTests();
 int RunModuleTests();
 int RunCliTests();
+int RunClosureIntegrationTests();
 
 int main() {
   RunLoggerTests();
@@ -18,6 +19,7 @@ int main() {
   RunVmCompilerTests();
   RunModuleTests();
   RunCliTests();
+  RunClosureIntegrationTests();
 
   if (g_failures != 0) {
     std::cerr << "Total failures: " << g_failures << "\n";
@@ -26,4 +28,3 @@ int main() {
   std::cout << "All tests passed\n";
   return 0;
 }
-

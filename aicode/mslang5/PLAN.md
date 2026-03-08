@@ -524,3 +524,9 @@ flowchart TD
 2. tests 目录具备单元、集成、脚本测试分层。
 3. `import` 与 `from ... import ... as ...` 覆盖正常与错误路径。
 4. VM + GC + logger + 跨平台构建均有可复现实证。
+
+## 2026-03-08 Incremental Update
+- T08 status: completed (closure batch, D1~D5).
+- T09 status: in_progress (class/inheritance batch pending).
+- Verification: cmake --build build --config Debug; ctest --test-dir build --output-on-failure -C Debug.
+
