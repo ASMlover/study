@@ -74,6 +74,7 @@ VM::VM() noexcept {
       case ObjectType::OBJ_BOUND_METHOD: type_str = "function"; break;
       case ObjectType::OBJ_CLASS:        type_str = "class"; break;
       case ObjectType::OBJ_INSTANCE:     type_str = "instance"; break;
+      case ObjectType::OBJ_LIST:         type_str = "list"; break;
       default:                           type_str = "object"; break;
       }
     }
@@ -470,6 +471,44 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
     }
     stack_top_[-arg_count - 1] = export_val;
     return call_value(export_val, arg_count);
+  }
+
+  if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
+    ObjList* list = as_list(receiver);
+    strv_t method_name = name->value();
+    if (method_name == "len") {
+      if (arg_count != 0) {
+        runtime_error("len() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(static_cast<double>(list->len()));
+      return true;
+    } else if (method_name == "push") {
+      if (arg_count != 1) {
+        runtime_error("push() takes exactly 1 argument.");
+        return false;
+      }
+      Value val = stack_top_[-1];
+      list->elements().push_back(val);
+      stack_top_ -= 2; // pop arg and receiver
+      push(Value());   // return nil
+      return true;
+    } else if (method_name == "pop") {
+      if (arg_count != 0) {
+        runtime_error("pop() takes no arguments.");
+        return false;
+      }
+      if (list->elements().empty()) {
+        runtime_error("Cannot pop from an empty list.");
+        return false;
+      }
+      Value val = list->elements().back();
+      list->elements().pop_back();
+      stack_top_[-1] = val;
+      return true;
+    }
+    runtime_error(std::format("Undefined list method '{}'.", method_name));
+    return false;
   }
 
   if (!is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
@@ -972,6 +1011,74 @@ InterpretResult VM::run() noexcept {
       ObjClass* klass = as_class(peek(1));
       klass->methods().set(name, method);
       pop();
+      break;
+    }
+
+    case OpCode::OP_BUILD_LIST: {
+      u8_t count = READ_BYTE();
+      ObjList* list = allocate<ObjList>();
+      list->elements().resize(count);
+      for (int i = count - 1; i >= 0; i--) {
+        list->elements()[static_cast<sz_t>(i)] = pop();
+      }
+      push(Value(static_cast<Object*>(list)));
+      break;
+    }
+
+    case OpCode::OP_INDEX_GET: {
+      Value index_val = pop();
+      Value receiver = pop();
+      if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
+        if (!index_val.is_number()) {
+          runtime_error("List index must be a number.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        ObjList* list = as_list(receiver);
+        int index = static_cast<int>(index_val.as_number());
+        if (index < 0 || index >= static_cast<int>(list->len())) {
+          runtime_error("List index out of bounds.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        push(list->elements()[static_cast<sz_t>(index)]);
+      } else if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
+        if (!index_val.is_number()) {
+          runtime_error("String index must be a number.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        ObjString* str = as_string(receiver);
+        int index = static_cast<int>(index_val.as_number());
+        if (index < 0 || index >= static_cast<int>(str->value().length())) {
+          runtime_error("String index out of bounds.");
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        push(Value(static_cast<Object*>(copy_string(&str->value()[static_cast<sz_t>(index)], 1))));
+      } else {
+        runtime_error("Only lists and strings can be indexed.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+      break;
+    }
+
+    case OpCode::OP_INDEX_SET: {
+      Value value = pop();
+      Value index_val = pop();
+      Value receiver = pop();
+      if (!is_obj_type(receiver, ObjectType::OBJ_LIST)) {
+        runtime_error("Only lists support index assignment.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+      if (!index_val.is_number()) {
+        runtime_error("List index must be a number.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+      ObjList* list = as_list(receiver);
+      int index = static_cast<int>(index_val.as_number());
+      if (index < 0 || index >= static_cast<int>(list->len())) {
+        runtime_error("List index out of bounds.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+      list->elements()[static_cast<sz_t>(index)] = value;
+      push(value);
       break;
     }
 

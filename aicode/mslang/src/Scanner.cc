@@ -235,6 +235,8 @@ Token Scanner::scan_token() noexcept {
   case ')': return make_token(TokenType::TOKEN_RIGHT_PAREN);
   case '{': return make_token(TokenType::TOKEN_LEFT_BRACE);
   case '}': return make_token(TokenType::TOKEN_RIGHT_BRACE);
+  case '[': return make_token(TokenType::TOKEN_LEFT_BRACKET);
+  case ']': return make_token(TokenType::TOKEN_RIGHT_BRACKET);
   case ';': return make_token(TokenType::TOKEN_SEMICOLON);
   case ',': return make_token(TokenType::TOKEN_COMMA);
   case '.': return make_token(TokenType::TOKEN_DOT);

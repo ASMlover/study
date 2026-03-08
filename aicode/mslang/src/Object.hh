@@ -43,6 +43,7 @@ enum class ObjectType : int {
   OBJ_CLASS,
   OBJ_INSTANCE,
   OBJ_BOUND_METHOD,
+  OBJ_LIST,
   OBJ_MODULE,
 };
 
@@ -218,6 +219,21 @@ public:
   ObjClosure* method() const noexcept { return method_; }
 };
 
+// --- ObjList ---
+class ObjList final : public Object {
+  std::vector<Value> elements_;
+
+public:
+  ObjList() noexcept;
+  str_t stringify() const noexcept override;
+  void trace_references() noexcept override;
+  sz_t size() const noexcept override;
+
+  std::vector<Value>& elements() noexcept { return elements_; }
+  const std::vector<Value>& elements() const noexcept { return elements_; }
+  sz_t len() const noexcept { return elements_.size(); }
+};
+
 // --- ObjModule ---
 class ObjModule final : public Object {
   ObjString* name_{nullptr};
@@ -261,6 +277,10 @@ inline ObjNative* as_native(const Value& v) noexcept {
 
 inline ObjBoundMethod* as_bound_method(const Value& v) noexcept {
   return as_obj<ObjBoundMethod>(v.as_object());
+}
+
+inline ObjList* as_list(const Value& v) noexcept {
+  return as_obj<ObjList>(v.as_object());
 }
 
 inline ObjModule* as_module(const Value& v) noexcept {

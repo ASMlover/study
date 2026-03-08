@@ -194,6 +194,36 @@ sz_t ObjBoundMethod::size() const noexcept {
   return sizeof(ObjBoundMethod);
 }
 
+// --- ObjList ---
+
+ObjList::ObjList() noexcept
+    : Object(ObjectType::OBJ_LIST) {
+}
+
+str_t ObjList::stringify() const noexcept {
+  str_t result = "[";
+  for (sz_t i = 0; i < elements_.size(); i++) {
+    if (i > 0) result += ", ";
+    if (is_obj_type(elements_[i], ObjectType::OBJ_STRING)) {
+      result += "\"" + elements_[i].stringify() + "\"";
+    } else {
+      result += elements_[i].stringify();
+    }
+  }
+  result += "]";
+  return result;
+}
+
+void ObjList::trace_references() noexcept {
+  for (auto& element : elements_) {
+    mark_value(element);
+  }
+}
+
+sz_t ObjList::size() const noexcept {
+  return sizeof(ObjList) + elements_.capacity() * sizeof(Value);
+}
+
 // --- ObjModule ---
 
 ObjModule::ObjModule(ObjString* name) noexcept

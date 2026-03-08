@@ -70,6 +70,9 @@ enum class OpCode : u8_t {
   OP_CLASS,
   OP_INHERIT,
   OP_METHOD,
+  OP_BUILD_LIST,
+  OP_INDEX_GET,
+  OP_INDEX_SET,
   OP_IMPORT,
   OP_IMPORT_FROM,
   OP_IMPORT_ALIAS,
@@ -116,6 +119,9 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_CLASS:          return "OP_CLASS";
   case OpCode::OP_INHERIT:        return "OP_INHERIT";
   case OpCode::OP_METHOD:         return "OP_METHOD";
+  case OpCode::OP_BUILD_LIST:     return "OP_BUILD_LIST";
+  case OpCode::OP_INDEX_GET:      return "OP_INDEX_GET";
+  case OpCode::OP_INDEX_SET:      return "OP_INDEX_SET";
   case OpCode::OP_IMPORT:         return "OP_IMPORT";
   case OpCode::OP_IMPORT_FROM:    return "OP_IMPORT_FROM";
   case OpCode::OP_IMPORT_ALIAS:   return "OP_IMPORT_ALIAS";

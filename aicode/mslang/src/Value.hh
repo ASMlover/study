@@ -67,6 +67,7 @@ public:
   bool is_closure() const noexcept;
   bool is_class() const noexcept;
   bool is_instance() const noexcept;
+  bool is_list() const noexcept;
 };
 
 // operator== for convenience

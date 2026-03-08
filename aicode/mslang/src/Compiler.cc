@@ -181,6 +181,8 @@ public:
   void dot(bool can_assign) noexcept;
   void this_(bool can_assign) noexcept;
   void super_(bool can_assign) noexcept;
+  void list_(bool can_assign) noexcept;
+  void subscript_(bool can_assign) noexcept;
   u8_t argument_list() noexcept;
 
   friend ObjFunction* compile(strv_t source) noexcept;
@@ -201,6 +203,10 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   // TOKEN_LEFT_BRACE
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_RIGHT_BRACE
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_LEFT_BRACKET
+  { &Compiler::list_,    &Compiler::subscript_, Precedence::PREC_CALL },
+  // TOKEN_RIGHT_BRACKET
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_COMMA
   { nullptr,             nullptr,            Precedence::PREC_NONE },
@@ -809,6 +815,33 @@ void Compiler::super_(bool /*can_assign*/) noexcept {
   } else {
     named_variable(Token{TokenType::TOKEN_SUPER, "super", ps_->previous.line}, false);
     emit_op_byte(OpCode::OP_GET_SUPER, name);
+  }
+}
+
+void Compiler::list_(bool /*can_assign*/) noexcept {
+  u8_t count = 0;
+  if (!check(TokenType::TOKEN_RIGHT_BRACKET)) {
+    do {
+      expression();
+      if (count == 255) {
+        error("Can't have more than 255 elements in a list literal.");
+      }
+      count++;
+    } while (match(TokenType::TOKEN_COMMA));
+  }
+  consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after list elements.");
+  emit_op_byte(OpCode::OP_BUILD_LIST, count);
+}
+
+void Compiler::subscript_(bool can_assign) noexcept {
+  expression();
+  consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after index.");
+
+  if (can_assign && match(TokenType::TOKEN_EQUAL)) {
+    expression();
+    emit_op(OpCode::OP_INDEX_SET);
+  } else {
+    emit_op(OpCode::OP_INDEX_GET);
   }
 }
 
