@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Model Marker
+
+- Current model: `gpt-*-codex`
+
 ## Project
 
 - Name: `Maple`
