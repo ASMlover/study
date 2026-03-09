@@ -1,106 +1,106 @@
-# Requirements.md
+﻿# Requirements.md
 
-## 1. 背景与目标
+## 1. Background and Goal
 
-Maple 是一个参考 Crafting Interpreters 中 clox 路线实现的脚本语言运行时项目，采用 C++23+ 构建。
-目标是在保持 clox 核心语义与执行模型的基础上，实现工程化、可测试、跨平台（Windows/MSVC 与 Linux/GCC）的现代版本，并新增模块导入能力（`import` 与 `from ... import ... as ...`）。
+Maple is a C++23+ scripting runtime inspired by the clox track in Crafting Interpreters.
+The goal is a modern, testable, cross-platform runtime (Windows/MSVC and Linux/GCC) that preserves clox core semantics/execution while adding module imports (`import` and `from ... import ... as ...`).
 
-核心目标：
-1. 完整的字节码编译与栈式 VM 执行能力。
-2. 可用的垃圾回收机制（GC），支持复杂对象图与闭包生命周期管理。
-3. 模块系统与导入语义扩展。
-4. 内部彩色分级日志系统。
-5. 清晰的多文件工程结构、CMake 构建体系与独立测试目录。
+Core goals:
+1. Full bytecode compilation and stack-VM execution.
+2. Practical garbage collection (GC) with complex object-graph and closure-lifecycle support.
+3. Module system and import-semantic extensions.
+4. Internal colorized, leveled logging.
+5. Clear multi-file project layout, CMake build system, and isolated test directories.
 
-## 2. 范围定义
+## 2. Scope
 
 ### 2.1 In Scope
 
-1. 词法分析、语法解析、字节码生成、虚拟机解释执行完整链路。
-2. clox 等价核心语言能力：表达式、语句、控制流、函数、闭包、类与继承、方法调用、原生函数桥接。
-3. GC（至少 mark-sweep，包含根集合追踪）。
-4. Maple 模块系统（`import` 与 `from ... import ... as ...`）。
-5. REPL 与脚本文件执行模式。
-6. 跨平台构建与测试基线（MSVC/GCC）。
-7. 内置 logger（分级、彩色、可配置）。
+1. End-to-end pipeline: lexing, parsing, bytecode generation, and VM execution.
+2. clox-equivalent core language: expressions, statements, control flow, functions, closures, classes/inheritance, method calls, and native-function bridge.
+3. GC (at least mark-sweep with root-set tracing).
+4. Maple module system (`import` and `from ... import ... as ...`).
+5. REPL and script-file execution modes.
+6. Cross-platform build/test baseline (MSVC/GCC).
+7. Built-in logger (levels, colors, configurable behavior).
 
 ### 2.2 Out of Scope
 
-1. JIT/AOT 编译。
-2. 多线程 VM 与并发 GC。
-3. 包管理器与远程模块仓库。
-4. GUI 调试器。
-5. 与 Python/JS 完全语义兼容。
+1. JIT/AOT compilation.
+2. Multi-threaded VM and concurrent GC.
+3. Package manager and remote module registry.
+4. GUI debugger.
+5. Full Python/JS semantic compatibility.
 
-## 3. 功能需求（按优先级）
+## 3. Functional Requirements (by Priority)
 
-### 3.1 P0（首版必须）
+### 3.1 P0 (Required for v1)
 
-1. 语言核心：变量、作用域、条件、循环、函数、闭包、类、继承、方法绑定。
-2. 字节码与 VM：指令执行、调用帧、栈管理、运行时错误报告。
-3. GC：对象分配追踪、可达性标记、清扫回收、字符串驻留支持。
-4. 文件执行与 REPL。
-5. `import module`：模块加载、缓存、一次初始化。
-6. `from module import name as alias`：符号导入与别名绑定。
-7. Logger：`TRACE/DEBUG/INFO/WARN/ERROR/FATAL` 级别与颜色映射。
-8. CMake 跨平台构建 + 基础测试集。
+1. Core language: variables, scopes, conditions, loops, functions, closures, classes, inheritance, method binding.
+2. Bytecode and VM: instruction execution, call frames, stack management, runtime error reporting.
+3. GC: allocation tracking, reachability marking, sweep reclamation, string interning support.
+4. File execution and REPL.
+5. `import module`: module loading, caching, one-time initialization.
+6. `from module import name as alias`: symbol import and alias binding.
+7. Logger: `TRACE/DEBUG/INFO/WARN/ERROR/FATAL` levels and color mapping.
+8. Cross-platform CMake build plus baseline tests.
 
-### 3.2 P1（首版后增强）
+### 3.2 P1 (Post-v1 Enhancements)
 
-1. 模块循环依赖的显式诊断与部分初始化策略优化。
-2. 更精确的报错定位（文件、行、列、调用栈）。
-3. 可配置 GC 阈值与调试统计输出。
-4. 快照测试与回归测试工具链统一。
+1. Explicit diagnostics for module cycles and improved partial-initialization strategy.
+2. More precise error location (file/line/column/call stack).
+3. Configurable GC thresholds and debug statistics output.
+4. Unified snapshot and regression test toolchain.
 
-### 3.3 P2（演进方向）
+### 3.3 P2 (Evolution Direction)
 
-1. 字节码优化（常量折叠、窥孔优化）。
-2. 增量 GC 预研接口。
-3. 可插拔模块加载器。
+1. Bytecode optimization (constant folding, peephole optimization).
+2. Incremental-GC pre-research interfaces.
+3. Pluggable module loader.
 
-## 4. 非功能需求
+## 4. Non-Functional Requirements
 
-1. 可移植性：Windows 10+/11 + MSVC（19.3x+），Linux + GCC（13+）可构建运行。
-2. 可维护性：模块化多文件结构，`.hh/.cc` 分离，`namespace ms` 统一。
-3. 可观测性：日志分级、过滤、关键路径埋点（编译/执行/GC/模块加载）。
-4. 性能：在教学可读性前提下保证线性可扩展。
-5. 稳定性：非法脚本不导致宿主进程崩溃（除不可恢复错误）。
+1. Portability: build/run on Windows 10+/11 + MSVC (19.3x+) and Linux + GCC (13+).
+2. Maintainability: modular multi-file layout, `.hh/.cc` split, unified `namespace ms`.
+3. Observability: log levels/filtering and key-path instrumentation (compile/execute/GC/module load).
+4. Performance: maintain linearly scalable behavior while preserving teaching-oriented readability.
+5. Stability: invalid scripts must not crash the host process (except unrecoverable errors).
 
-## 5. import 语义需求（精确定义）
+## 5. Import Semantics (Precise Definition)
 
 1. `import foo.bar`
-- 解析 `foo.bar` 为规范模块标识（可映射到路径）。
-- 首次导入执行模块顶层代码并缓存模块对象。
-- 重复导入返回缓存，不重复执行。
+- Resolve `foo.bar` as a canonical module identifier (mappable to file paths).
+- On first import, execute module top-level code and cache the module object.
+- On repeated import, return cache without re-execution.
 
 2. `from foo.bar import baz as qux`
-- 导入时校验 `baz` 存在。
-- 将 `baz` 绑定到当前作用域 `qux`。
-- 未指定 `as` 时默认原名绑定。
+- Validate that `baz` exists during import.
+- Bind `baz` into current scope as `qux`.
+- If `as` is omitted, bind with the original name.
 
-3. 错误情形
-- 模块不存在、符号不存在、循环依赖导致未初始化访问，均需明确错误类型与定位信息。
+3. Error cases
+- Module-not-found, symbol-not-found, and cycle-caused uninitialized access must report explicit error kind and location.
 
-## 6. 测试需求
+## 6. Test Requirements
 
-1. `tests/` 独立目录管理。
-2. 覆盖：词法/语法/编译单测、VM 指令行为、GC 生命周期、模块导入语义与错误路径、REPL/CLI 集成、跨平台冒烟测试。
-3. 测试脚本覆盖正常流、边界流、错误流、回归场景。
+1. Manage tests under an isolated `tests/` directory.
+2. Coverage: lexer/parser/compiler unit tests, VM instruction behavior, GC lifecycle, module import semantics and failure paths, REPL/CLI integration, and cross-platform smoke tests.
+3. Test scripts must cover normal flow, boundary flow, error flow, and regressions.
 
-## 7. 里程碑与验收（DoD）
+## 7. Milestones and Acceptance (DoD)
 
-| 里程碑 | 交付物 | 验收标准 |
+| Milestone | Deliverables | Acceptance Criteria |
 |---|---|---|
-| M1 | 基础前端 + 字节码 + VM | 基础语句与函数测试通过 |
-| M2 | 闭包/类/继承 + GC | 对象生命周期与闭包测试通过 |
-| M3 | 模块系统 | 模块缓存、别名导入、错误路径测试通过 |
-| M4 | Logger + 跨平台构建 + 测试完善 | Windows/Linux CI 通过 |
+| M1 | Basic frontend + bytecode + VM | Basic statement/function tests pass |
+| M2 | Closure/class/inheritance + GC | Object lifecycle and closure tests pass |
+| M3 | Module system | Module cache, alias import, and error-path tests pass |
+| M4 | Logger + cross-platform build + test completion | Windows/Linux CI passes |
 
 ---
 
 # Design.md
 
-## 1. 总体架构
+## 1. Overall Architecture
 
 ```mermaid
 flowchart LR
@@ -115,15 +115,15 @@ flowchart LR
   VM --> GC[Mark-Sweep GC]
 ```
 
-## 2. 关键设计决策
+## 2. Key Design Decisions
 
-1. 编译期与运行时职责分离，降低耦合。
-2. 采用 clox 风格单遍编译（Pratt + 直接生成字节码），首版不强依赖完整 AST。
-3. GC 首版采用 mark-sweep。
-4. 模块首版采用“源码级即时加载编译执行”，并引入模块缓存。
-5. logger 采用轻量接口 + 平台适配层（ANSI/Windows 控制台）。
+1. Separate compile-time and runtime responsibilities to reduce coupling.
+2. Use clox-style single-pass compilation (Pratt + direct bytecode emission); v1 does not strictly depend on a complete AST.
+3. Use mark-sweep for the initial GC.
+4. Use source-level on-demand load/compile/execute for v1 modules and add module caching.
+5. Use a lightweight logger API with platform adapters (ANSI/Windows console).
 
-## 3. 推荐目录结构
+## 3. Recommended Directory Layout
 
 ```text
 Maple/
@@ -179,15 +179,15 @@ Maple/
 
 # Task Decomposition (Multi-Agent Ready)
 
-## 1. 拆分原则
+## 1. Decomposition Principles
 
-1. 每个 Task 必须“单一目标 + 独立交付 + 可测试 + 可验证”。
-2. 每个 Task 明确输入、输出、依赖、验收标准。
-3. 支持并行：标注可并行组（Parallel Group）。
-4. 每个 Task 应可由独立 agent/subagent 执行，减少跨文件强耦合。
-5. 先搭骨架再填功能：基础设施 Task 优先。
+1. Each task must have one target, independent delivery, testability, and verifiability.
+2. Each task must define inputs, outputs, dependencies, and acceptance criteria.
+3. Support parallel work via explicit parallel groups.
+4. Each task should be executable by an independent agent/subagent with minimal cross-file coupling.
+5. Build skeleton first, then add features; infrastructure tasks come first.
 
-## 2. 任务总览与依赖图
+## 2. Task Overview and Dependency Graph
 
 ```mermaid
 flowchart TD
@@ -211,63 +211,63 @@ flowchart TD
   T12 --> T13
 ```
 
-## 3. Task 清单（可执行、可测试、可验证）
+## 3. Task List (Executable, Testable, Verifiable)
 
-### T00 - 工程初始化与约束落地（P0）
+### T00 - Project Bootstrap and Constraint Setup (P0)
 
-- Goal: 建立 CMake 工程骨架与目录结构，锁定 C++23、命名空间约束、文件后缀规范。
+- Goal: establish CMake skeleton and directory layout; lock C++23, namespace constraints, and file-suffix conventions.
 - Status: completed (2026-03-08)
-- Inputs: PLAN.md、AGENTS.md。
+- Inputs: PLAN.md, AGENTS.md.
 - Outputs:
   - `CMakeLists.txt`
-  - `src/`, `tests/`, `cmake/` 基础目录
-  - 最小可编译空 target（`maple_core`, `maple_cli`）
-- Depends On: 无
+  - base directories: `src/`, `tests/`, `cmake/`
+  - minimal compilable empty targets (`maple_core`, `maple_cli`)
+- Depends On: none
 - Parallel Group: G0
 - Test:
-  - CMake configure 成功
-  - 空程序可构建
+  - CMake configure succeeds
+  - empty program builds
 - Verify:
   - `cmake -S . -B build`
   - `cmake --build build`
 - DoD:
-  - Windows/Linux 均可通过基础构建。
+  - baseline build passes on both Windows/Linux.
 
-### T01 - 日志系统（P0）
+### T01 - Logging System (P0)
 
-- Goal: 实现 logger 等级、格式、颜色映射与平台适配接口。
+- Goal: implement logger levels, formatting, color mapping, and platform-adapter interfaces.
 - Status: completed (2026-03-08, subagent-A)
-- Inputs: T00 骨架。
+- Inputs: T00 skeleton.
 - Outputs:
   - `src/support/logger.hh/.cc`
-  - 日志等级配置入口
+  - log-level configuration entry
 - Depends On: T00
 - Parallel Group: G1
 - Test:
-  - 单元测试：等级过滤、格式化、颜色开关
+  - unit tests: level filtering, formatting, color toggle
 - Verify:
-  - 执行 logger 测试，人工核对颜色输出
+  - run logger tests and manually verify color output
 - DoD:
-  - TRACE/DEBUG/INFO/WARN/ERROR/FATAL 均可输出且可过滤。
+  - TRACE/DEBUG/INFO/WARN/ERROR/FATAL all emit and filter correctly.
 
-### T02 - 源文件与错误位置信息基础设施（P0）
+### T02 - Source File and Error-Location Infrastructure (P0)
 
-- Goal: 实现源码装载、行列映射、统一错误位置信息结构。
+- Goal: implement source loading, line/column mapping, and unified error-location data structures.
 - Status: completed (2026-03-08, subagent-A)
 - Outputs:
   - `src/support/source.hh/.cc`
-  - 统一错误位置数据结构
+  - unified error-location data structure
 - Depends On: T00
 - Parallel Group: G1
 - Test:
-  - 行列映射单测
-  - 文件读取错误路径单测
+  - line/column mapping unit tests
+  - file-read error-path unit tests
 - Verify:
-  - 测试覆盖正常/异常读取
+  - tests cover normal/abnormal reads
 
-### T03 - 字节码容器与反汇编器（P0）
+### T03 - Bytecode Container and Disassembler (P0)
 
-- Goal: 落地 opcode 定义、chunk 常量池、行号表、反汇编。
+- Goal: land opcode definitions, chunk constant pool, line table, and disassembler.
 - Status: completed (2026-03-08, subagent-A)
 - Outputs:
   - `src/bytecode/opcode.hh`
@@ -276,15 +276,15 @@ flowchart TD
 - Depends On: T01, T02
 - Parallel Group: G2
 - Test:
-  - 指令写入/读取一致性
-  - 常量池索引边界测试
-  - 反汇编快照测试
+  - instruction write/read consistency
+  - constant-pool index boundary tests
+  - disassembly snapshot tests
 - Verify:
-  - 对固定 chunk 生成稳定反汇编文本
+  - fixed chunks generate stable disassembly text
 
-### T04 - 词法分析器（P0）
+### T04 - Lexer (P0)
 
-- Goal: 完成 token 定义与 lexer（包含关键字、字符串、数字、注释）。
+- Goal: complete token definitions and lexer (keywords, strings, numbers, comments).
 - Status: completed (2026-03-08, subagent-B)
 - Outputs:
   - `src/frontend/token.hh`
@@ -292,13 +292,13 @@ flowchart TD
 - Depends On: T03
 - Parallel Group: G3
 - Test:
-  - token golden tests（正常与非法输入）
+  - token golden tests (valid and invalid input)
 - Verify:
   - `tests/unit/frontend/lexer_*`
 
-### T05 - 值类型与对象系统基座（P0）
+### T05 - Value Type and Object-System Foundation (P0)
 
-- Goal: 构建 `Value`、`Obj` 基类及字符串对象/哈希表基础。
+- Goal: build base `Value`/`Obj` and string-object/hash-table foundations.
 - Status: completed (2026-03-08, subagent-C)
 - Outputs:
   - `src/runtime/value.hh`
@@ -307,28 +307,28 @@ flowchart TD
 - Depends On: T03
 - Parallel Group: G3
 - Test:
-  - Value 判型与比较
-  - 字符串驻留与哈希表读写
+  - `Value` type checks and comparisons
+  - string interning and hash-table read/write
 - Verify:
-  - 单测覆盖对象创建、查找、驻留复用
+  - unit tests cover object create/find/intern-reuse
 
-### T06 - VM 栈机最小闭环（P0）
+### T06 - Minimal VM Loop Closure (P0)
 
-- Goal: 最小指令集执行（常量、算术、比较、跳转、打印、返回）与调用栈基础。
+- Goal: implement minimal instruction execution (constant, arithmetic, compare, jump, print, return) and call-stack basis.
 - Status: completed (2026-03-08, subagent-C)
 - Outputs:
   - `src/runtime/vm.hh/.cc`
 - Depends On: T04, T05
 - Parallel Group: G4
 - Test:
-  - 指令级单测
-  - 小脚本集成测试（表达式/分支/循环）
+  - instruction-level unit tests
+  - small-script integration tests (expression/branch/loop)
 - Verify:
-  - 测试脚本返回码与输出匹配
+  - script exit codes and outputs match expectations
 
-### T07 - 解析器（Pratt）与表达式编译（P0）
+### T07 - Parser (Pratt) and Expression Compilation (P0)
 
-- Goal: parser + compiler 完成表达式与基础语句到字节码生成。
+- Goal: parser + compiler generate bytecode for expressions and basic statements.
 - Status: completed (2026-03-08, subagent-B)
 - Outputs:
   - `src/frontend/parser.hh/.cc`
@@ -336,194 +336,194 @@ flowchart TD
 - Depends On: T06
 - Parallel Group: G5
 - Test:
-  - 编译产物字节码快照
-  - 语法错误诊断测试
+  - compiled-bytecode snapshots
+  - syntax-error diagnostic tests
 - Verify:
-  - 固定输入脚本输出固定反汇编
+  - fixed scripts produce fixed disassembly output
 
-### T08 - 函数/闭包/upvalue（P0）
+### T08 - Function/Closure/Upvalue (P0)
 
-- Goal: 实现函数对象、调用帧、闭包捕获与 upvalue 生命周期。
+- Goal: implement function objects, call frames, closure capture, and upvalue lifecycle.
 - Status: completed (2026-03-08, clox-full-semantics-upgrade, closure-batch)
 - Current State:
-  - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整闭包语义。
-  - 2026-03-08 补充了词法与运行时对象承载基础：`fun/return/class/this/super` 关键字和相关符号 token 已接入 lexer；`Value` 已支持通用运行时对象持有（`RuntimeObject`），为 closure/class 对象模型接入提供存储通道。
+  - minimal runnable bridge (baseline bridge) is done, but full clox closure semantics were pending at that point.
+  - 2026-03-08: lexical/runtime object carriers were added: `fun/return/class/this/super` tokens wired into lexer; `Value` now holds generic runtime objects (`RuntimeObject`) as storage channel for closure/class object-model integration.
 - Design & Implementation Tasks (No Code Yet):
-  - `T08-D1` 对象模型补全：`ObjFunction / ObjClosure / ObjUpvalue`、函数原型、常量池与闭包对象关系。
-  - `T08-D2` 编译器语义补全：局部变量解析、上值解析（递归向外层捕获）、函数声明/匿名函数、作用域深度与逃逸变量管理。
-  - `T08-D3` VM 执行链补全：`OP_CALL`、`OP_CLOSURE`、`OP_GET_UPVALUE`、`OP_SET_UPVALUE`、`OP_CLOSE_UPVALUE`、`OP_RETURN` 与调用帧窗口。
-  - `T08-D4` 运行时一致性：递归、闭包写回、循环捕获、返回后上值存活、错误栈追踪与消息格式。
-  - `T08-D5` 测试矩阵：闭包 golden 脚本、递归/高阶函数、边界错误（参数个数、未定义变量、非法调用）与回归集合。
+  - `T08-D1` complete object model: `ObjFunction / ObjClosure / ObjUpvalue`, function prototypes, constant-pool and closure-object relations.
+  - `T08-D2` complete compiler semantics: local resolution, upvalue resolution (recursive outer capture), function declarations/lambdas, scope-depth and escaping-variable management.
+  - `T08-D3` complete VM execution chain: `OP_CALL`, `OP_CLOSURE`, `OP_GET_UPVALUE`, `OP_SET_UPVALUE`, `OP_CLOSE_UPVALUE`, `OP_RETURN`, and call-frame windows.
+  - `T08-D4` runtime consistency: recursion, closure write-back, loop capture, post-return upvalue liveness, stack tracing and message formats.
+  - `T08-D5` test matrix: closure golden scripts, recursion/higher-order functions, boundary errors (arity, undefined variables, invalid call), and regression set.
 - Outputs:
-  - `src/runtime/object.hh/.cc`（函数/闭包/upvalue 对象）
-  - `src/runtime/vm.hh/.cc`（调用帧+upvalue 生命周期）
-  - `src/frontend/compiler.hh/.cc`（闭包编译路径）
+  - `src/runtime/object.hh/.cc` (function/closure/upvalue objects)
+  - `src/runtime/vm.hh/.cc` (call-frame + upvalue lifecycle)
+  - `src/frontend/compiler.hh/.cc` (closure compilation path)
   - `tests/scripts/language/closure_*`
   - `tests/integration/closure_*`
 - Depends On: T06
 - Parallel Group: G5
 - Test:
-  - 闭包捕获（读/写）语义测试
-  - 递归与高阶函数测试
-  - 上值关闭时机测试（离开作用域后仍可访问）
+  - closure capture semantics tests (read/write)
+  - recursion and higher-order function tests
+  - upvalue-close timing tests (still accessible after leaving scope)
 - Verify:
-  - 与 clox Chapter 24~26 同类样例行为一致（输出和错误路径一致）
+  - behavior matches clox Chapter 24~26 analogs (output and error paths).
 
-### T09 - 类/继承/方法绑定（P0）
+### T09 - Class/Inheritance/Method Binding (P0)
 
-- Goal: 实现 class、instance、method、super 调用链。
+- Goal: implement class, instance, method, and super-call chains.
 - Status: completed (2026-03-08, clox-full-semantics-upgrade, class-inheritance-batch)
 - Current State:
-  - 已完成最小可运行桥接实现（baseline bridge），但尚未达到 clox 完整 class/inheritance 语义。
-  - 2026-03-08 已完成类语义前置基础：新增 class 语法关键 token 与对象值通道，后续可在不破坏 `Value` ABI 的前提下落地 `ObjClass/ObjInstance/ObjBoundMethod` 与调用分派链。
+  - minimal runnable bridge (baseline bridge) is done, but full clox class/inheritance semantics were pending at that point.
+  - 2026-03-08: class-semantic prerequisites were added: class syntax tokens and object-value channel; this enabled later `ObjClass/ObjInstance/ObjBoundMethod` and dispatch-chain landing without breaking `Value` ABI.
 - Design & Implementation Tasks (No Code Yet):
-  - `T09-D1` 对象模型补全：`ObjClass / ObjInstance / ObjBoundMethod` 与字段表、方法表布局。
-  - `T09-D2` 编译器语义补全：`class` 声明、方法编译、`this` 绑定规则、`super` 解析与继承约束（禁止自继承）。
-  - `T09-D3` VM 指令链补全：`OP_CLASS`、`OP_INHERIT`、`OP_METHOD`、`OP_GET_PROPERTY`、`OP_SET_PROPERTY`、`OP_GET_SUPER`、`OP_INVOKE`、`OP_SUPER_INVOKE`。
-  - `T09-D4` 运行时一致性：构造器 `init`、方法分派、绑定方法对象生命周期、字段遮蔽与覆盖解析顺序。
-  - `T09-D5` 测试矩阵：类定义/实例字段/方法调用/继承覆盖/`super` 链/错误路径回归。
+  - `T09-D1` complete object model: `ObjClass / ObjInstance / ObjBoundMethod`, field-table and method-table layouts.
+  - `T09-D2` complete compiler semantics: `class` declarations, method compilation, `this` binding rules, `super` resolution and inheritance constraints (forbid self-inheritance).
+  - `T09-D3` complete VM op chain: `OP_CLASS`, `OP_INHERIT`, `OP_METHOD`, `OP_GET_PROPERTY`, `OP_SET_PROPERTY`, `OP_GET_SUPER`, `OP_INVOKE`, `OP_SUPER_INVOKE`.
+  - `T09-D4` runtime consistency: `init` constructor behavior, method dispatch, bound-method object lifecycle, and field shadow/override resolution order.
+  - `T09-D5` test matrix: class definition/instance fields/method calls/inheritance override/`super` chain/error-path regressions.
 - Outputs:
-  - `src/runtime/object.hh/.cc`（类/实例/绑定方法对象）
-  - `src/runtime/vm.hh/.cc`（属性访问与调用分派）
-  - `src/frontend/compiler.hh/.cc`（class/this/super 编译路径）
+  - `src/runtime/object.hh/.cc` (class/instance/bound-method objects)
+  - `src/runtime/vm.hh/.cc` (property access and call dispatch)
+  - `src/frontend/compiler.hh/.cc` (class/this/super compilation path)
   - `tests/scripts/language/class_*`
   - `tests/integration/class_*`
 - Depends On: T06
 - Parallel Group: G5
 - Test:
-  - 类定义、字段读写、方法调用、继承覆盖测试
-  - `this`/`super` 语义与错误路径测试
+  - class definition, field read/write, method call, inheritance override tests
+  - `this`/`super` semantics and error-path tests
 - Verify:
-  - 与 clox Chapter 27~29 同类样例行为一致（输出和错误路径一致）
+  - behavior matches clox Chapter 27~29 analogs (output and error paths).
 
-### T10 - GC（mark-sweep）接入（P0）
+### T10 - GC (mark-sweep) Integration (P0)
 
-- Goal: 完整 GC 根扫描、标记、清扫、触发阈值与统计日志。
+- Goal: complete GC root scan, mark, sweep, trigger thresholds, and statistics logs.
 - Status: completed (2026-03-08, subagent-C)
 - Outputs:
   - `src/runtime/gc.hh/.cc`
-  - VM/对象系统 GC 钩子接入
+  - VM/object-system GC hook integration
 - Depends On: T07, T08, T09
 - Parallel Group: G6
 - Test:
-  - 压力分配回收测试
-  - 闭包/类/字符串在回收中的存活测试
-  - 回归：无悬垂引用
+  - stress allocation/reclamation tests
+  - closure/class/string liveness tests during collection
+  - regression: no dangling references
 - Verify:
-  - GC 日志统计与对象数量变化符合预期
+  - GC log stats and object-count changes match expectations
 
-### T11 - 模块系统：import（P0）
+### T11 - Module System: import (P0)
 
-- Goal: 支持 `import module`，含路径解析、加载、编译执行、缓存。
+- Goal: support `import module`, including path resolution, loading, compile/execute, and cache.
 - Status: completed (2026-03-08, subagent-D)
 - Outputs:
   - `src/runtime/module.hh/.cc`
-  - 编译器与 VM 的导入指令/调用路径
+  - compiler and VM import instruction/call paths
 - Depends On: T10
 - Parallel Group: G7
 - Test:
-  - 首次导入执行、重复导入缓存复用
-  - 模块不存在错误
+  - first import execution and repeated import cache reuse
+  - module-not-found errors
 - Verify:
-  - 模块顶层副作用只执行一次
+  - module top-level side effects execute once
 
-### T12 - 模块系统：from import as（P0）
+### T12 - Module System: from import as (P0)
 
-- Goal: 支持 `from a.b import x as y` 语义与错误处理。
+- Goal: support `from a.b import x as y` semantics and error handling.
 - Status: completed (2026-03-08, subagent-D)
 - Outputs:
-  - parser/compiler/module/vm 对应扩展
+  - parser/compiler/module/vm corresponding extensions
 - Depends On: T10
 - Parallel Group: G7
 - Test:
-  - 导入符号绑定与别名绑定
-  - 符号不存在错误
-  - 循环依赖未初始化访问错误
+  - imported-symbol binding and alias binding
+  - symbol-not-found errors
+  - uninitialized-access errors in cyclic dependencies
 - Verify:
-  - 各语义脚本断言通过
+  - all semantic script assertions pass
 
-### T13 - CLI/REPL + 测试总装 + 跨平台 CI（P0）
+### T13 - CLI/REPL + Test Assembly + Cross-Platform CI (P0)
 
-- Goal: 完整交付入口程序、测试目录、ctest 集成、跨平台验证脚本。
+- Goal: fully deliver entry program, test directories, ctest integration, and cross-platform verification scripts.
 - Status: completed (2026-03-08, subagent-D)
 - Outputs:
   - `src/main.cc`, `src/cli/app.hh/.cc`
   - `tests/unit`, `tests/integration`, `tests/scripts`
-  - `CTest` 配置与最小 CI 脚本
+  - `CTest` configuration and minimal CI scripts
 - Depends On: T11, T12
 - Parallel Group: G8
 - Test:
-  - CLI 参数测试
-  - REPL 基本交互测试
-  - 端到端脚本测试
+  - CLI argument tests
+  - REPL basic interaction tests
+  - end-to-end script tests
 - Verify:
-  - `ctest --output-on-failure` 全通过
-  - Windows/Linux 双平台构建与测试通过
+  - `ctest --output-on-failure` passes
+  - Windows/Linux builds and tests both pass
 
-## 4. 子任务模板（供多 Agent 复用）
+## 4. Subtask Template (Reusable Across Agents)
 
-每个子 Agent 必须按以下模板提交结果：
+Each sub-agent must submit results with this template:
 
 1. Task ID
-2. 变更文件清单
-3. 行为变更说明
-4. 新增/更新测试
-5. 本地验证命令与结果
-6. 风险与后续建议
+2. Changed files list
+3. Behavior-change summary
+4. Added/updated tests
+5. Local verification commands and results
+6. Risks and follow-up recommendations
 
-## 5. 并行执行建议（Agent 编排）
+## 5. Parallel Execution Recommendations (Agent Orchestration)
 
 1. Wave 1: `T00`
-2. Wave 2: `T01 + T02`（并行）
+2. Wave 2: `T01 + T02` (parallel)
 3. Wave 3: `T03`
-4. Wave 4: `T04 + T05`（并行）
+4. Wave 4: `T04 + T05` (parallel)
 5. Wave 5: `T06`
-6. Wave 6: `T07 + T08 + T09`（baseline）
-7. Wave 6R: `T08-D1~D5 + T09-D1~D5`（clox 完整语义升级）
+6. Wave 6: `T07 + T08 + T09` (baseline)
+7. Wave 6R: `T08-D1~D5 + T09-D1~D5` (clox full-semantics upgrade)
 8. Wave 7: `T10`
-9. Wave 8: `T11 + T12`（并行）
+9. Wave 8: `T11 + T12` (parallel)
 10. Wave 9: `T13`
 
-## 6. 验收矩阵（Task -> 可验证产物）
+## 6. Acceptance Matrix (Task -> Verifiable Artifacts)
 
-| Task | 可执行 | 可测试 | 可验证 |
+| Task | Executable | Testable | Verifiable |
 |---|---|---|---|
-| T00 | CMake 可构建 | 构建冒烟 | configure/build 命令成功 |
-| T01 | logger demo | 单元测试 | 等级过滤与颜色输出 |
-| T02 | source loader demo | 单元测试 | 错误定位准确 |
-| T03 | chunk/disasm demo | 单元+快照 | 反汇编稳定 |
-| T04 | lexer CLI | 单元+golden | token 序列一致 |
-| T05 | object/table demo | 单元测试 | 驻留与哈希行为稳定 |
-| T06 | VM demo | 指令集成 | 脚本输出匹配 |
-| T07 | compile demo | 编译快照 | 字节码一致 |
-| T08 | closure demo | 集成测试 | 捕获语义正确 |
-| T09 | class demo | 集成测试 | 继承与方法解析正确 |
-| T10 | GC stress demo | 压测+回归 | 无泄漏/悬垂（以测试为准） |
-| T11 | import demo | 集成测试 | 缓存复用、一次初始化 |
-| T12 | from-import-as demo | 集成测试 | 别名绑定与错误路径正确 |
-| T13 | CLI/REPL executable | 全量测试 | ctest + 双平台通过 |
+| T00 | CMake buildable | build smoke test | configure/build commands succeed |
+| T01 | logger demo | unit tests | level filtering and color output |
+| T02 | source loader demo | unit tests | accurate error location |
+| T03 | chunk/disasm demo | unit + snapshot | stable disassembly |
+| T04 | lexer CLI | unit + golden | token sequence consistency |
+| T05 | object/table demo | unit tests | stable interning and hash behavior |
+| T06 | VM demo | instruction integration | script output matches |
+| T07 | compile demo | compile snapshot | bytecode consistency |
+| T08 | closure demo | integration tests | correct capture semantics |
+| T09 | class demo | integration tests | correct inheritance/method resolution |
+| T10 | GC stress demo | stress + regression | no leaks/dangling refs (test-defined) |
+| T11 | import demo | integration tests | cache reuse and one-time init |
+| T12 | from-import-as demo | integration tests | alias binding and correct error paths |
+| T13 | CLI/REPL executable | full test suite | ctest + dual-platform pass |
 
-## 7. 分支与提交策略（多 Agent）
+## 7. Branch and Commit Strategy (Multi-Agent)
 
-1. 每个 Task 使用独立分支：`task/Txx-short-name`。
-2. 每个 Task 至少一组“功能 commit + 测试 commit”（可合并为 1 个原子 commit）。
-3. 提交信息必须英文，且包含 gitmoji（遵循 AGENTS.md）。
-4. 合并顺序严格按依赖图，自底向上。
+1. Use one branch per task: `task/Txx-short-name`.
+2. Each task should have at least one pair of commits: feature + test (or one atomic commit).
+3. Commit messages must be English and include gitmoji (per AGENTS.md).
+4. Merge strictly by dependency graph, bottom-up.
 
-## 8. 风险控制点（执行期）
+## 8. Risk Control Points (Execution)
 
-1. T08/T09 与 T10 的接口冻结点必须提前定义（防止 GC 接入返工）。
-2. T11/T12 必须在 parser 语法与 VM 指令层对齐后再并行。
-3. 任一 Task 若修改公共对象布局，必须触发受影响 Task 回归测试。
+1. Define T08/T09 and T10 interface freeze points early (avoid GC-integration rework).
+2. Run T11/T12 in parallel only after parser syntax and VM op-layer alignment.
+3. If any task changes shared object layout, trigger affected task regression tests.
 
-## 9. 完整交付判定
+## 9. Full Delivery Criteria
 
-满足以下条件即视为 PLAN 对应功能“可实施且可验证”：
+The PLAN is considered implementable and verifiable when all conditions are met:
 
-1. T00-T13 全部完成并通过定义测试，且 T08/T09 达到 clox 完整语义（闭包 + 类继承）。
-2. tests 目录具备单元、集成、脚本测试分层。
-3. `import` 与 `from ... import ... as ...` 覆盖正常与错误路径。
-4. VM + GC + logger + 跨平台构建均有可复现实证。
+1. T00-T13 are complete and pass defined tests, and T08/T09 reach full clox semantics (closures + class inheritance).
+2. `tests` is layered into unit, integration, and script tests.
+3. `import` and `from ... import ... as ...` cover both normal and error paths.
+4. VM + GC + logger + cross-platform builds all have reproducible evidence.
 
 ## 2026-03-08 Incremental Update
 - T08 status: completed (closure batch, D1~D5).
@@ -870,15 +870,15 @@ Define Maple as a spec-driven language runtime with:
 ## 2026-03-08 Implementation Mapping Package (W10~W13, Docs-Only)
 
 This section maps `T14~T20` GAP items to executable implementation waves.
-No code changes are included in this section; it is a build-ready execution blueprint.
+No code change here; this is an execution blueprint.
 
 ### W10 - Normative Execution Path Switch (T15/T14/T20 bridge)
 
 - Status: completed (2026-03-08, subagents-mode; Batch A/B/C)
 
 - Goal:
-  - make compiler+bytecode+VM the default normative path for `ExecuteSource`
-  - retain `ScriptInterpreter` only as temporary opt-in reference/debug path
+  - make compiler+bytecode+VM the default `ExecuteSource` path
+  - keep `ScriptInterpreter` as temporary opt-in reference/debug path
 - Targets:
   - `src/runtime/vm.cc`
   - `src/runtime/vm.hh`
@@ -891,34 +891,34 @@ No code changes are included in this section; it is a build-ready execution blue
   - T15-GAP `GAP-01`, `GAP-04`
   - T14-GAP `GAP-01`
 - DoD:
-  - default source execution path is VM pipeline
-  - interpreter path is explicitly marked non-normative and guarded
-  - existing integration behavior remains unchanged (or documented deltas)
+  - default source path is VM pipeline
+  - interpreter path is explicitly non-normative and guarded
+  - integration behavior stays unchanged (or deltas are documented)
 - Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
 
 #### W10 Detailed Task List (D1~D5)
 
-- `W10-D1` Execution entry switch design and guard flags
+- `W10-D1` Execution entry switch and guard flags
   - Scope:
-    - define normative/default `ExecuteSource` route as compile+VM
-    - define optional fallback/reference flag for `ScriptInterpreter`
+    - set default `ExecuteSource` route to compile+VM
+    - add optional fallback/reference flag for `ScriptInterpreter`
   - Primary files:
     - `src/runtime/vm.hh`
     - `src/runtime/vm.cc`
   - Tests:
-    - add/adjust unit tests to assert default path selection behavior
+    - add/adjust unit tests for default path selection
   - Acceptance:
-    - default invocation path no longer depends on interpreter-only semantics
+    - default invocation no longer depends on interpreter-only semantics
   - Commit suggestion:
     - `:construction: refactor(maple): make VM pipeline default source execution path`
   - Rollback point:
     - keep one commit boundary before behavior switch.
 
-- `W10-D2` Bridge compatibility wrapper and error category parity
+- `W10-D2` Compatibility wrapper and error-category parity
   - Scope:
-    - preserve compile/runtime error category mapping consistency during switch
+    - keep compile/runtime error-category mapping stable during switch
     - keep interpreter mode explicitly non-normative
   - Primary files:
     - `src/runtime/vm.cc`
@@ -927,20 +927,20 @@ No code changes are included in this section; it is a build-ready execution blue
   - Tests:
     - `tests/unit/test_vm_compiler.cc` error category assertions
   - Acceptance:
-    - compile errors and runtime errors remain stable at API boundary
+    - compile/runtime error behavior stays stable at API boundary
   - Commit suggestion:
     - `:construction: chore(maple): normalize ExecuteSource error mapping during path migration`
   - Rollback point:
     - isolate mapping changes from path-switch commit.
 
-- `W10-D3` Regression lock for closure/class behavioral baseline
+- `W10-D3` Lock closure/class behavioral baseline
   - Scope:
-    - ensure existing closure/class integration outputs remain stable
+    - keep existing closure/class integration outputs stable
   - Primary files:
     - `tests/integration/test_language_closure.cc`
     - `tests/integration/test_language_class.cc`
   - Tests:
-    - extend assertions to include explicit route-independent behavior checks
+    - extend assertions with explicit route-independent checks
   - Acceptance:
     - closure/class integration tests pass unchanged outputs
   - Commit suggestion:
@@ -948,10 +948,10 @@ No code changes are included in this section; it is a build-ready execution blue
   - Rollback point:
     - tests-only commit can be reverted independently.
 
-- `W10-D4` Documentation and runtime mode policy alignment
+- `W10-D4` Docs and runtime mode policy alignment
   - Scope:
-    - annotate interpreter as transitional/reference
-    - align internal comments/docs with ADR-001 decision
+    - mark interpreter as transitional/reference
+    - align internal comments/docs with ADR-001
   - Primary files:
     - `src/runtime/script_interpreter.hh`
     - `docs/adr/ADR-001-execution-model.md`
@@ -965,9 +965,9 @@ No code changes are included in this section; it is a build-ready execution blue
   - Rollback point:
     - docs-only commit.
 
-- `W10-D5` Wave closeout and evidence capture
+- `W10-D5` Wave closeout and evidence
   - Scope:
-    - run build/test commands and capture pass evidence in plan increment note
+    - run build/tests and record pass evidence in plan note
   - Primary files:
     - `PLAN.md`
   - Tests:
@@ -978,16 +978,16 @@ No code changes are included in this section; it is a build-ready execution blue
   - Commit suggestion:
     - `:memo: docs(maple): record W10 verification and GAP closure status`
   - Rollback point:
-    - closeout note is isolated.
+    - keep closeout note isolated.
 
 #### W10 Closeout Note (2026-03-08)
 
 - Delivered:
-  - `W10-D1`: added execution mode and route guard in `Vm` with VM-first default.
+  - `W10-D1`: added execution mode and route guard in `Vm`, VM-first by default.
   - `W10-D2`: normalized compile/runtime category mapping for VM and legacy compatibility path.
   - `W10-D3`: locked closure/class regression behavior with route-independent assertions.
   - `W10-D4`: marked interpreter as transitional in runtime header and ADR-aligned policy.
-  - `W10-D5`: build/test verification captured below.
+  - `W10-D5`: recorded build/test verification.
 - Verification commands:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
@@ -1007,8 +1007,8 @@ No code changes are included in this section; it is a build-ready execution blue
 - Status: completed (2026-03-08, subagents-mode; Batch A/B/C)
 
 - Goal:
-  - introduce explicit resolve phase between parse and compile/runtime
-  - enforce `MS3xxx` class static semantic rules
+  - add explicit resolve phase between parse and compile/runtime
+  - enforce `MS3xxx` static semantic rules
 - Targets:
   - `src/frontend/parser.hh`
   - `src/frontend/parser.cc`
@@ -1021,9 +1021,9 @@ No code changes are included in this section; it is a build-ready execution blue
   - T16-GAP `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04`
   - T14-GAP `GAP-03`
 - DoD:
-  - resolver emits lexical-depth metadata consumable by compiler backend
+  - resolver emits lexical-depth metadata for compiler backend
   - `return/this/super/self-inherit` violations fail in resolve phase
-  - resolve diagnostics carry stable `phase=resolve` and mapped codes
+  - resolve diagnostics keep stable `phase=resolve` and mapped codes
 - Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
@@ -1031,9 +1031,9 @@ No code changes are included in this section; it is a build-ready execution blue
 
 #### W11 Detailed Task List (D1~D5)
 
-- `W11-D1` Resolver module skeleton and integration seam
+- `W11-D1` Resolver skeleton and integration seam
   - Scope:
-    - introduce resolver units and call seam after parse, before compile emit
+    - add resolver units and call seam after parse, before compile emit
   - Primary files:
     - `src/frontend/resolver.hh` (new)
     - `src/frontend/resolver.cc` (new)
@@ -1042,13 +1042,13 @@ No code changes are included in this section; it is a build-ready execution blue
   - Tests:
     - compile pipeline smoke tests
   - Acceptance:
-    - resolver phase executes and can return diagnostics list
+    - resolver phase runs and can return diagnostics
   - Commit suggestion:
     - `:construction: feat(maple): add resolver phase skeleton to frontend pipeline`
   - Rollback point:
     - keep resolver skeleton in isolated commit.
 
-- `W11-D2` Lexical depth resolution and binding metadata emission
+- `W11-D2` Lexical-depth resolution and binding metadata emission
   - Scope:
     - resolve locals/upvalues with depth metadata for compiler backend
   - Primary files:
@@ -1056,17 +1056,17 @@ No code changes are included in this section; it is a build-ready execution blue
     - `src/frontend/resolver.cc`
     - `src/frontend/compiler.cc`
   - Tests:
-    - new targeted unit tests for lexical depth and capture marking
+    - new unit tests for lexical depth and capture marking
   - Acceptance:
-    - resolver metadata consumed without runtime fallback for scoped references
+    - resolver metadata is consumed without runtime fallback for scoped references
   - Commit suggestion:
     - `:construction: feat(maple): emit lexical depth metadata from resolver`
   - Rollback point:
     - metadata commit isolated from diagnostics commit.
 
-- `W11-D3` Static semantic rules (`MS3xxx`) enforcement
+- `W11-D3` Enforce static semantic rules (`MS3xxx`)
   - Scope:
-    - implement `return outside function`, `this/super misuse`, self-inherit checks
+    - implement checks for `return outside function`, `this/super misuse`, and self-inherit
   - Primary files:
     - `src/frontend/resolver.cc`
     - `docs/spec/errors.md` (if code mapping refinement needed)
@@ -1077,30 +1077,30 @@ No code changes are included in this section; it is a build-ready execution blue
       - `RES-SUPER-OUTSIDE-001`
       - `RES-SELF-INHERIT-001`
   - Acceptance:
-    - violations fail at resolve phase (not delayed to runtime)
+    - violations fail in resolve phase (not runtime)
   - Commit suggestion:
     - `:construction: feat(maple): enforce resolve-phase MS3xxx semantic constraints`
   - Rollback point:
     - rules grouped by coherent semantic family.
 
-- `W11-D4` Conformance mapping for resolver rules
+- `W11-D4` Resolver-rule conformance mapping
   - Scope:
-    - add/convert conformance cases and matrix links for resolver clauses
+    - add/convert resolver conformance cases and matrix links
   - Primary files:
     - `tests/conformance/semantics/*` (new cases)
     - `tests/conformance/MATRIX.md`
   - Tests:
     - conformance subset runner for resolver-focused set
   - Acceptance:
-    - each resolver rule has positive and negative traceable case
+    - each resolver rule has traceable positive and negative cases
   - Commit suggestion:
     - `:white_check_mark: test(maple): add resolver conformance case family`
   - Rollback point:
     - cases and matrix update in tests-only commit.
 
-- `W11-D5` Wave closeout and GAP resolution log
+- `W11-D5` Wave closeout and GAP log
   - Scope:
-    - execute full test set + resolver subset and update plan status
+    - run full tests + resolver subset and update plan status
   - Primary files:
     - `PLAN.md`
   - Tests:
@@ -1116,11 +1116,11 @@ No code changes are included in this section; it is a build-ready execution blue
 #### W11 Closeout Note (2026-03-08)
 
 - Delivered:
-  - `W11-D1`: inserted resolver seam in legacy parse->execute pipeline and blocked runtime on resolve failure.
-  - `W11-D2`: emitted lexical-depth metadata and consumed it in executor via depth-aware environment access.
+  - `W11-D1`: added resolver seam in legacy parse->execute and blocked runtime on resolve failure.
+  - `W11-D2`: emitted lexical-depth metadata and consumed it via depth-aware environment access.
   - `W11-D3`: enforced `MS3001/MS3002/MS3003/MS3004` (`return/this/super/self-inherit`) at resolve phase.
   - `W11-D4`: added resolver conformance cases and updated matrix mappings.
-  - `W11-D5`: captured build/test evidence and updated T14/T16 GAP status.
+  - `W11-D5`: recorded build/test evidence and updated T14/T16 GAP status.
 - Verification commands:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
@@ -1130,7 +1130,7 @@ No code changes are included in this section; it is a build-ready execution blue
 - Status: completed (2026-03-09, subagents-mode; Batch A/B/C)
 
 - Goal:
-  - align runtime behavior to formal value-model and module-state specs
+  - align runtime behavior with value-model and module-state specs
   - stabilize operator/type/module error mapping to `MS4xxx/MS5xxx`
 - Targets:
   - `src/runtime/value.hh`
@@ -1148,8 +1148,8 @@ No code changes are included in this section; it is a build-ready execution blue
   - T18-GAP `GAP-01`, `GAP-02`, `GAP-03`
   - T14-GAP `GAP-02`
 - DoD:
-  - documented operator contracts match observable runtime behavior
-  - module loader state-machine errors map to stable error families
+  - operator contracts match observable runtime behavior
+  - module loader state-machine errors map to stable families
   - conformance matrix entries for value/module rules are executable
 - Verify:
   - `cmake --build build --config Debug`
@@ -1158,9 +1158,9 @@ No code changes are included in this section; it is a build-ready execution blue
 
 #### W12 Detailed Task List (D1~D5)
 
-- `W12-D1` Operator/value contract alignment pass
+- `W12-D1` Operator/value contract alignment
   - Scope:
-    - align runtime behavior to `value-model.md` for arithmetic/callability/type errors
+    - align runtime to `value-model.md` for arithmetic/callability/type errors
   - Primary files:
     - `src/runtime/value.hh`
     - `src/runtime/vm.cc`
@@ -1173,7 +1173,7 @@ No code changes are included in this section; it is a build-ready execution blue
   - Rollback point:
     - separate operator adjustments from module behavior changes.
 
-- `W12-D2` Equality/identity and callable consistency pass
+- `W12-D2` Equality/identity and callable consistency
   - Scope:
     - finalize equality and non-callable invocation error behavior
   - Primary files:
@@ -1184,15 +1184,15 @@ No code changes are included in this section; it is a build-ready execution blue
   - Tests:
     - new conformance cases for equality and callability errors
   - Acceptance:
-    - documented `MS4001~MS4005` mapping consistently observable
+    - `MS4001~MS4005` mapping is consistently observable
   - Commit suggestion:
     - `:construction: feat(maple): stabilize equality and callable semantics`
   - Rollback point:
     - identity/equality changes isolated from module loader updates.
 
-- `W12-D3` Module lifecycle and cache-state alignment pass
+- `W12-D3` Module lifecycle and cache-state alignment
   - Scope:
-    - align loader transitions to documented state machine and error families
+    - align loader transitions with documented state machine and error families
   - Primary files:
     - `src/runtime/module.hh`
     - `src/runtime/module.cc`
@@ -1208,7 +1208,7 @@ No code changes are included in this section; it is a build-ready execution blue
 
 - `W12-D4` Conformance migration for value/module clauses
   - Scope:
-    - migrate mapped-existing cases into standalone conformance assets
+    - migrate mapped cases into standalone conformance assets
   - Primary files:
     - `tests/conformance/semantics/*`
     - `tests/conformance/modules/*`
@@ -1216,13 +1216,13 @@ No code changes are included in this section; it is a build-ready execution blue
   - Tests:
     - conformance run focused on value/module suites
   - Acceptance:
-    - matrix entries for T17/T18 are executable and no longer docs-only
+    - T17/T18 matrix entries are executable, not docs-only
   - Commit suggestion:
     - `:white_check_mark: test(maple): migrate value/module behaviors into conformance suites`
   - Rollback point:
     - test migration isolated.
 
-- `W12-D5` Wave closeout and GAP resolution log
+- `W12-D5` Wave closeout and GAP log
   - Scope:
     - run full regression and update T17/T18 GAP statuses
   - Primary files:
@@ -1254,8 +1254,8 @@ No code changes are included in this section; it is a build-ready execution blue
 ### W13 - Structured Diagnostics + Conformance Harness + CI Gate (T19/T20)
 
 - Goal:
-  - emit structured diagnostics records
-  - execute conformance cases with metadata contract
+  - emit structured diagnostics
+  - run conformance cases with metadata contract
   - enforce diagnostics/conformance in CI
 - Targets:
   - `src/runtime/vm.cc`
@@ -1274,18 +1274,18 @@ No code changes are included in this section; it is a build-ready execution blue
 - DoD:
   - diagnostics include canonical `phase/code/span` payload
   - conformance runner supports `@id/@spec/@expect/@diag.*`
-  - CI includes mandatory conformance + diagnostics golden stage
+  - CI includes required conformance + diagnostics-golden stage
 - Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
-  - diagnostics golden comparisons stable across Windows/Linux
+  - diagnostics golden comparisons are stable across Windows/Linux
 
 #### W13 Detailed Task List (D1~D5)
 
-- `W13-D1` Structured diagnostic object and emission pipeline
+- `W13-D1` Structured diagnostics object and emission pipeline
   - Scope:
-    - introduce canonical diagnostic record (`phase/code/span/notes`)
-    - route parse/resolve/runtime/module failures through unified emitter
+    - add canonical diagnostic record (`phase/code/span/notes`)
+    - route parse/resolve/runtime/module failures through one emitter
   - Primary files:
     - `src/runtime/vm.cc`
     - `src/support/source.hh`
@@ -1294,13 +1294,13 @@ No code changes are included in this section; it is a build-ready execution blue
   - Tests:
     - diagnostics unit assertions for emitted structure
   - Acceptance:
-    - failures produce structured diagnostics, not only free-form strings
+    - failures produce structured diagnostics, not only free-form text
   - Commit suggestion:
     - `:construction: feat(maple): introduce canonical diagnostics emission pipeline`
   - Rollback point:
     - emitter refactor isolated from conformance runner.
 
-- `W13-D2` Conformance harness parser for metadata headers
+- `W13-D2` Conformance-harness parser for metadata headers
   - Scope:
     - implement parser for `@id/@spec/@expect/@diag.*`
     - execute case files with mode-specific matching
@@ -1316,9 +1316,9 @@ No code changes are included in this section; it is a build-ready execution blue
   - Rollback point:
     - runner in isolated commit to avoid entangling runtime code.
 
-- `W13-D3` Diagnostics golden checker integration
+- `W13-D3` Diagnostics-golden checker integration
   - Scope:
-    - compare emitted diagnostics against JSON goldens with normalization rules
+    - compare emitted diagnostics against JSON goldens with normalization
   - Primary files:
     - `tests/diagnostics/README.md` (if updates needed)
     - `tests/diagnostics/NORMALIZATION.md` (if updates needed)
@@ -1335,14 +1335,14 @@ No code changes are included in this section; it is a build-ready execution blue
 
 - `W13-D4` CI and CTest stage wiring
   - Scope:
-    - add conformance + diagnostics stages to test pipeline and labels
+    - add conformance + diagnostics stages and labels to test pipeline
   - Primary files:
     - `CMakeLists.txt`
     - `cmake/*`
   - Tests:
     - local `ctest` includes new labeled stages
   - Acceptance:
-    - CI-equivalent local run fails on conformance or diagnostics regression
+    - CI-equivalent local run fails on conformance/diagnostics regression
   - Commit suggestion:
     - `:construction: chore(maple): wire conformance and diagnostics stages into test pipeline`
   - Rollback point:
@@ -1350,7 +1350,7 @@ No code changes are included in this section; it is a build-ready execution blue
 
 - `W13-D5` Wave closeout and M5/M6 gate accounting
   - Scope:
-    - finalize GAP resolution bookkeeping and milestone readiness status
+    - finalize GAP bookkeeping and milestone readiness status
   - Primary files:
     - `PLAN.md`
   - Tests:
@@ -1366,9 +1366,9 @@ No code changes are included in this section; it is a build-ready execution blue
 
 ### Cross-Wave Exit Criteria
 
-1. `M5` operationally closed when W10 + W11 baseline + W13 harness skeleton pass.
-2. `M6` operationally closed when W11~W13 fully pass and remaining GAP lists are empty or explicitly deferred.
-3. `PLAN.md` GAP entries must be updated after each wave with `closed | deferred` status and evidence command logs.
+1. `M5` closes when W10 + W11 baseline + W13 harness skeleton pass.
+2. `M6` closes when W11~W13 fully pass and remaining GAP lists are empty or deferred.
+3. Update `PLAN.md` GAP entries after each wave with `closed | deferred` and evidence command logs.
 
 ### Recommended Commit Batching (Execution-Friendly)
 
@@ -1391,7 +1391,7 @@ No code changes are included in this section; it is a build-ready execution blue
 
 Commit message convention reminder:
 
-1. English message required.
+1. English required.
 2. Gitmoji required.
 3. Keep one verification closeout commit per wave for traceability.
 
@@ -1419,3 +1419,4 @@ Commit message convention reminder:
 - Verification result:
   - pass (`5/5` tests: `maple_tests_all`, `maple_tests_unit`,
     `maple_tests_integration`, `maple_tests_conformance`, `maple_tests_diagnostics`)
+
