@@ -58,10 +58,10 @@ Repo: Maple (`mslang5`)
 - `PLAN.md`
 
 3. Behavior change
-- Added lexer-level syntax primitives required by closure/class work:
+- Added lexer primitives for closure/class work:
   - symbols: `{`, `}`, `,`, `<`
   - keywords: `fun`, `return`, `class`, `this`, `super`
-- Added generic runtime object carrier:
+- Added a generic runtime object carrier:
   - introduced `RuntimeObject` base type
   - extended `Value` to hold `std::shared_ptr<RuntimeObject>`
 
@@ -76,8 +76,8 @@ Date: 2026-03-09
 
 1. Subagent-A (Batch A: W13-D1)
 - Scope:
-  - introduced canonical structured diagnostics model (`phase/code/span/notes`)
-  - unified VM error emission path and made CLI prefer structured rendering
+  - introduced a canonical structured diagnostics model (`phase/code/span/notes`)
+  - unified VM error emission and made CLI prefer structured rendering
 - Changed files:
   - `src/support/source.hh`
   - `src/support/source.cc`
@@ -88,8 +88,8 @@ Date: 2026-03-09
 
 2. Subagent-B (Batch B: W13-D2 + W13-D3)
 - Scope:
-  - implemented conformance metadata parser/runner for `@id/@spec/@expect/@diag.*`
-  - implemented diagnostics golden checker for structured diagnostic fields
+  - added conformance metadata parser/runner for `@id/@spec/@expect/@diag.*`
+  - added a diagnostics golden checker for structured diagnostic fields
 - Changed files:
   - `tests/integration/test_conformance.cc`
   - `tests/integration/test_diagnostics_golden.cc`
@@ -101,7 +101,7 @@ Date: 2026-03-09
 3. Subagent-C (Batch C: W13-D4 + W13-D5)
 - Scope:
   - wired staged CTest gates and labels (`all/unit/integration/conformance/diagnostics`)
-  - updated wave closeout bookkeeping and gap status
+  - updated wave closeout bookkeeping and GAP status
 - Changed files:
   - `CMakeLists.txt`
   - `PLAN.md`
@@ -118,15 +118,15 @@ Date: 2026-03-08
 
 1. Subagent-A (Batch A: W11-D1)
 - Scope:
-  - added explicit resolver phase seam in `ScriptInterpreter::Execute` after parse and before runtime execution
-  - switched self-inheritance check from parse-time to resolve-time policy path
+  - added an explicit resolver phase seam in `ScriptInterpreter::Execute` between parse and runtime
+  - moved self-inheritance checks from parse-time to resolve-time policy
 - Changed files:
   - `src/runtime/script_interpreter.cc`
 
 2. Subagent-B (Batch B: W11-D2 + W11-D3)
 - Scope:
-  - implemented lexical depth metadata (`local_depths`) and environment depth-aware lookup/update (`GetAt/AssignAt`)
-  - enforced resolve-phase diagnostics for `return/this/super/self-inherit` with `MS3001~MS3004`
+  - implemented lexical depth metadata (`local_depths`) and depth-aware environment lookup/update (`GetAt/AssignAt`)
+  - enforced resolve diagnostics for `return/this/super/self-inherit` with `MS3001~MS3004`
   - aligned compile/runtime category mapping by classifying resolve errors as compile-like
 - Changed files:
   - `src/runtime/script_interpreter.cc`
@@ -137,7 +137,7 @@ Date: 2026-03-08
 3. Subagent-C (Batch C: W11-D4 + W11-D5)
 - Scope:
   - added resolver conformance fixtures and matrix mapping
-  - updated plan GAP status and wave closeout notes
+  - updated PLAN GAP status and wave closeout notes
 - Changed files:
   - `tests/conformance/semantics/resolver_return_outside_001.ms`
   - `tests/conformance/semantics/resolver_this_outside_001.ms`
@@ -177,7 +177,7 @@ Date: 2026-03-08
 
 3. Subagent-C (Batch C: W10-D4 + W10-D5)
 - Scope:
-  - aligned execution-mode policy docs with ADR and plan GAP closure tracking
+  - aligned execution-mode policy docs with ADR and PLAN GAP closure tracking
   - captured verification evidence
 - Changed files:
   - `docs/adr/ADR-001-execution-model.md`
@@ -195,7 +195,7 @@ Date: 2026-03-09
 
 1. Subagent-A (Batch A: W12-D1 + W12-D2)
 - Scope:
-  - aligned runtime error-family emission for value/operator/callability contracts (`MS4001~MS4005`) across VM path and compatibility interpreter path
+  - aligned runtime error-family emission for value/operator/callability contracts (`MS4001~MS4005`) across VM and compatibility interpreter paths
   - updated integration/unit assertions to lock code-bearing diagnostics for arity/property/undefined-variable failures
 - Changed files:
   - `src/runtime/vm.cc`
@@ -207,7 +207,7 @@ Date: 2026-03-09
 2. Subagent-B (Batch B: W12-D3)
 - Scope:
   - aligned module loader lifecycle diagnostics and cache-state handling to `MS5001~MS5004`
-  - added module failure memory to represent failed state behavior without treating it as successful cache
+  - added module failure memory to represent failed-state behavior without treating it as successful cache
 - Changed files:
   - `src/runtime/module.hh`
   - `src/runtime/module.cc`
@@ -217,7 +217,7 @@ Date: 2026-03-09
 3. Subagent-C (Batch C: W12-D4 + W12-D5)
 - Scope:
   - migrated value/module error clauses into standalone conformance assets and refreshed matrix mappings
-  - updated wave closeout + GAP status bookkeeping
+  - updated wave closeout and GAP status bookkeeping
 - Changed files:
   - `tests/conformance/MATRIX.md`
   - `tests/conformance/semantics/runtime_arity_001.ms`

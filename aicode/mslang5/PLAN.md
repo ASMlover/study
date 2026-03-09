@@ -1,11 +1,11 @@
-﻿# Requirements.md
+# Requirements.md
 
 ## 1. Background and Goal
 
 Maple is a C++23+ scripting runtime inspired by the clox track in Crafting Interpreters.
-The goal is a modern, testable, cross-platform runtime (Windows/MSVC and Linux/GCC) that preserves clox core semantics/execution while adding module imports (`import` and `from ... import ... as ...`).
+Goal: build a modern, testable, cross-platform runtime (Windows/MSVC, Linux/GCC) that preserves clox core semantics/execution and adds module imports (`import` and `from ... import ... as ...`).
 
-Core goals:
+Goals:
 1. Full bytecode compilation and stack-VM execution.
 2. Practical garbage collection (GC) with complex object-graph and closure-lifecycle support.
 3. Module system and import-semantic extensions.
@@ -78,14 +78,14 @@ Core goals:
 - Bind `baz` into current scope as `qux`.
 - If `as` is omitted, bind with the original name.
 
-3. Error cases
+3. Errors
 - Module-not-found, symbol-not-found, and cycle-caused uninitialized access must report explicit error kind and location.
 
 ## 6. Test Requirements
 
-1. Manage tests under an isolated `tests/` directory.
+1. Keep tests under an isolated `tests/` directory.
 2. Coverage: lexer/parser/compiler unit tests, VM instruction behavior, GC lifecycle, module import semantics and failure paths, REPL/CLI integration, and cross-platform smoke tests.
-3. Test scripts must cover normal flow, boundary flow, error flow, and regressions.
+3. Test scripts must cover normal, boundary, error, and regression flows.
 
 ## 7. Milestones and Acceptance (DoD)
 
@@ -348,7 +348,7 @@ flowchart TD
 - Current State:
   - minimal runnable bridge (baseline bridge) is done, but full clox closure semantics were pending at that point.
   - 2026-03-08: lexical/runtime object carriers were added: `fun/return/class/this/super` tokens wired into lexer; `Value` now holds generic runtime objects (`RuntimeObject`) as storage channel for closure/class object-model integration.
-- Design & Implementation Tasks (No Code Yet):
+- Design & Implementation Tasks:
   - `T08-D1` complete object model: `ObjFunction / ObjClosure / ObjUpvalue`, function prototypes, constant-pool and closure-object relations.
   - `T08-D2` complete compiler semantics: local resolution, upvalue resolution (recursive outer capture), function declarations/lambdas, scope-depth and escaping-variable management.
   - `T08-D3` complete VM execution chain: `OP_CALL`, `OP_CLOSURE`, `OP_GET_UPVALUE`, `OP_SET_UPVALUE`, `OP_CLOSE_UPVALUE`, `OP_RETURN`, and call-frame windows.
@@ -376,7 +376,7 @@ flowchart TD
 - Current State:
   - minimal runnable bridge (baseline bridge) is done, but full clox class/inheritance semantics were pending at that point.
   - 2026-03-08: class-semantic prerequisites were added: class syntax tokens and object-value channel; this enabled later `ObjClass/ObjInstance/ObjBoundMethod` and dispatch-chain landing without breaking `Value` ABI.
-- Design & Implementation Tasks (No Code Yet):
+- Design & Implementation Tasks:
   - `T09-D1` complete object model: `ObjClass / ObjInstance / ObjBoundMethod`, field-table and method-table layouts.
   - `T09-D2` complete compiler semantics: `class` declarations, method compilation, `this` binding rules, `super` resolution and inheritance constraints (forbid self-inheritance).
   - `T09-D3` complete VM op chain: `OP_CLASS`, `OP_INHERIT`, `OP_METHOD`, `OP_GET_PROPERTY`, `OP_SET_PROPERTY`, `OP_GET_SUPER`, `OP_INVOKE`, `OP_SUPER_INVOKE`.
@@ -518,7 +518,7 @@ Each sub-agent must submit results with this template:
 
 ## 9. Full Delivery Criteria
 
-The PLAN is considered implementable and verifiable when all conditions are met:
+PLAN is implementable and verifiable when all conditions are met:
 
 1. T00-T13 are complete and pass defined tests, and T08/T09 reach full clox semantics (closures + class inheritance).
 2. `tests` is layered into unit, integration, and script tests.
@@ -534,7 +534,7 @@ The PLAN is considered implementable and verifiable when all conditions are met:
 
 ---
 
-## 2026-03-08 Language Professionalization Iteration Plan (No Code Yet)
+## 2026-03-08 Language Professionalization Iteration Plan (Planning Only)
 
 ### A. Current Implementation Assessment (Expert Review)
 
@@ -898,7 +898,7 @@ No code change here; this is an execution blueprint.
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
 
-#### W10 Detailed Task List (D1~D5)
+#### W10 Tasks (D1~D5)
 
 - `W10-D1` Execution entry switch and guard flags
   - Scope:
@@ -988,7 +988,7 @@ No code change here; this is an execution blueprint.
   - `W10-D3`: locked closure/class regression behavior with route-independent assertions.
   - `W10-D4`: marked interpreter as transitional in runtime header and ADR-aligned policy.
   - `W10-D5`: recorded build/test verification.
-- Verification commands:
+- Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
 - W11 test fixture expansion (2026-03-08):
@@ -1029,7 +1029,7 @@ No code change here; this is an execution blueprint.
   - `ctest --test-dir build --output-on-failure -C Debug`
   - conformance subset: resolve semantic negatives pass
 
-#### W11 Detailed Task List (D1~D5)
+#### W11 Tasks (D1~D5)
 
 - `W11-D1` Resolver skeleton and integration seam
   - Scope:
@@ -1121,7 +1121,7 @@ No code change here; this is an execution blueprint.
   - `W11-D3`: enforced `MS3001/MS3002/MS3003/MS3004` (`return/this/super/self-inherit`) at resolve phase.
   - `W11-D4`: added resolver conformance cases and updated matrix mappings.
   - `W11-D5`: recorded build/test evidence and updated T14/T16 GAP status.
-- Verification commands:
+- Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
 
@@ -1156,7 +1156,7 @@ No code change here; this is an execution blueprint.
   - `ctest --test-dir build --output-on-failure -C Debug`
   - module and class/closure regression suites pass
 
-#### W12 Detailed Task List (D1~D5)
+#### W12 Tasks (D1~D5)
 
 - `W12-D1` Operator/value contract alignment
   - Scope:
@@ -1245,7 +1245,7 @@ No code change here; this is an execution blueprint.
   - `W12-D3`: aligned module loader lifecycle errors to `MS5001/MS5002/MS5003/MS5004` with failed-initialization memory and cache-state checks.
   - `W12-D4`: added standalone value/module conformance cases and migrated matrix mappings.
   - `W12-D5`: updated `T17-GAP`/`T18-GAP` dispositions with verification evidence.
-- Verification commands:
+- Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
 - Verification result:
@@ -1280,7 +1280,7 @@ No code change here; this is an execution blueprint.
   - `ctest --test-dir build --output-on-failure -C Debug`
   - diagnostics golden comparisons are stable across Windows/Linux
 
-#### W13 Detailed Task List (D1~D5)
+#### W13 Tasks (D1~D5)
 
 - `W13-D1` Structured diagnostics object and emission pipeline
   - Scope:
@@ -1413,7 +1413,7 @@ Commit message convention reminder:
   - `T20-GAP`: `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04` => `closed`
   - `T14-GAP`: `GAP-04`, `GAP-05` => `closed`
   - `T15-GAP`: `GAP-03` => `closed`
-- Verification commands:
+- Verify:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
 - Verification result:
