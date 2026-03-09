@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <bit>
 #include <cmath>
 #include <iostream>
 #include <format>
@@ -31,6 +32,68 @@
 #include "Object.hh"
 
 namespace ms {
+
+#ifdef MAPLE_NAN_BOXING
+
+// --- NaN-boxing constructors & accessors ---
+
+Value::Value(double d) noexcept
+    : bits_(std::bit_cast<u64_t>(d)) {}
+
+Value::Value(Object* obj) noexcept
+    : bits_(kSIGN_BIT | kQNAN | static_cast<u64_t>(reinterpret_cast<uintptr_t>(obj))) {}
+
+double Value::as_number() const noexcept {
+  return std::bit_cast<double>(bits_);
+}
+
+Object* Value::as_object() const noexcept {
+  return reinterpret_cast<Object*>(static_cast<uintptr_t>(bits_ & ~(kSIGN_BIT | kQNAN)));
+}
+
+bool Value::is_truthy() const noexcept {
+  if (is_nil()) return false;
+  if (is_boolean()) return as_boolean();
+  return true;
+}
+
+bool Value::is_equal(const Value& other) const noexcept {
+  // Fast path: bitwise equality covers nil, bools, objects (identity), and
+  // most numbers.  Only NaN != NaN needs special handling, but IEEE 754 NaN
+  // is never equal to itself, and our QNAN sentinel is distinct from any
+  // "real" double, so bitwise compare is correct for all encoded types.
+  if (is_number() && other.is_number()) {
+    return as_number() == other.as_number();
+  }
+  return bits_ == other.bits_;
+}
+
+str_t Value::stringify() const noexcept {
+  if (is_nil()) return "nil";
+  if (is_boolean()) return as_boolean() ? "true" : "false";
+  if (is_number()) {
+    double val = as_number();
+    if (val == std::floor(val) && !std::isinf(val) && !std::isnan(val)) {
+      return std::format("{}", static_cast<long long>(val));
+    }
+    return std::format("{:g}", val);
+  }
+  if (is_object()) {
+    return as_object()->stringify();
+  }
+  return "nil";
+}
+
+// Convenience object type checks
+bool Value::is_string() const noexcept { return is_obj_type(*this, ObjectType::OBJ_STRING); }
+bool Value::is_function() const noexcept { return is_obj_type(*this, ObjectType::OBJ_FUNCTION); }
+bool Value::is_closure() const noexcept { return is_obj_type(*this, ObjectType::OBJ_CLOSURE); }
+bool Value::is_class() const noexcept { return is_obj_type(*this, ObjectType::OBJ_CLASS); }
+bool Value::is_instance() const noexcept { return is_obj_type(*this, ObjectType::OBJ_INSTANCE); }
+bool Value::is_list() const noexcept { return is_obj_type(*this, ObjectType::OBJ_LIST); }
+bool Value::is_map() const noexcept { return is_obj_type(*this, ObjectType::OBJ_MAP); }
+
+#else // !MAPLE_NAN_BOXING
 
 bool Value::is_nil() const noexcept {
   return std::holds_alternative<std::monostate>(storage_);
@@ -103,6 +166,8 @@ bool Value::is_class() const noexcept { return is_obj_type(*this, ObjectType::OB
 bool Value::is_instance() const noexcept { return is_obj_type(*this, ObjectType::OBJ_INSTANCE); }
 bool Value::is_list() const noexcept { return is_obj_type(*this, ObjectType::OBJ_LIST); }
 bool Value::is_map() const noexcept { return is_obj_type(*this, ObjectType::OBJ_MAP); }
+
+#endif // MAPLE_NAN_BOXING
 
 std::ostream& operator<<(std::ostream& os, const Value& value) {
   os << value.stringify();

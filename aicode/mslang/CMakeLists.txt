@@ -35,6 +35,7 @@ option(MAPLE_DEBUG_TRACE     "Trace VM execution"          OFF)
 option(MAPLE_DEBUG_PRINT     "Print compiled bytecode"     OFF)
 option(MAPLE_DEBUG_STRESS_GC "GC on every allocation"      OFF)
 option(MAPLE_DEBUG_LOG_GC    "Log GC activity"             OFF)
+option(MAPLE_NAN_BOXING      "Use NaN-boxing for Value"    ON)
 
 # -----------------------------------------------------------------------------
 # Compiler flags per toolchain
@@ -145,6 +146,9 @@ if(MAPLE_DEBUG_STRESS_GC)
 endif()
 if(MAPLE_DEBUG_LOG_GC)
   target_compile_definitions(${PROJECT_NAME} PRIVATE MAPLE_DEBUG_LOG_GC)
+endif()
+if(MAPLE_NAN_BOXING)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE MAPLE_NAN_BOXING)
 endif()
 
 # -----------------------------------------------------------------------------

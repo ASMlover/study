@@ -26,13 +26,72 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <variant>
 #include <vector>
 #include "Types.hh"
 
 namespace ms {
 
 class Object;  // forward declare
+
+#ifdef MAPLE_NAN_BOXING
+
+// NaN-boxing: encode nil, bool, and Object* inside IEEE 754 quiet NaN payload.
+// Layout (64 bits):
+//   Number  : raw IEEE 754 double (any bit pattern where (bits & QNAN) != QNAN)
+//   nil     : QNAN | TAG_NIL
+//   true    : QNAN | TAG_TRUE
+//   false   : QNAN | TAG_FALSE
+//   Object* : SIGN_BIT | QNAN | 48-bit pointer
+//
+// This shrinks Value from 16 bytes (std::variant) to 8 bytes and replaces
+// branching type checks with bitwise operations.
+
+inline constexpr u64_t kSIGN_BIT = static_cast<u64_t>(0x8000000000000000);
+inline constexpr u64_t kQNAN     = static_cast<u64_t>(0x7FFC000000000000);
+inline constexpr u64_t kTAG_NIL   = 1;
+inline constexpr u64_t kTAG_FALSE = 2;
+inline constexpr u64_t kTAG_TRUE  = 3;
+
+class Value {
+  u64_t bits_;
+
+  explicit Value(u64_t bits) noexcept : bits_(bits) {}
+public:
+  // Constructors
+  Value() noexcept : bits_(kQNAN | kTAG_NIL) {}
+  Value(bool b) noexcept : bits_(kQNAN | (b ? kTAG_TRUE : kTAG_FALSE)) {}
+  Value(double d) noexcept;
+  Value(Object* obj) noexcept;
+
+  // Type checks
+  bool is_nil() const noexcept { return bits_ == (kQNAN | kTAG_NIL); }
+  bool is_boolean() const noexcept { return (bits_ | 1) == (kQNAN | kTAG_TRUE); }
+  bool is_number() const noexcept { return (bits_ & kQNAN) != kQNAN; }
+  bool is_object() const noexcept { return (bits_ & (kQNAN | kSIGN_BIT)) == (kQNAN | kSIGN_BIT); }
+
+  // Value extraction
+  bool as_boolean() const noexcept { return bits_ == (kQNAN | kTAG_TRUE); }
+  double as_number() const noexcept;
+  Object* as_object() const noexcept;
+
+  // Semantic operations
+  bool is_truthy() const noexcept;
+  bool is_equal(const Value& other) const noexcept;
+  str_t stringify() const noexcept;
+
+  // Convenience object type checks
+  bool is_string() const noexcept;
+  bool is_function() const noexcept;
+  bool is_closure() const noexcept;
+  bool is_class() const noexcept;
+  bool is_instance() const noexcept;
+  bool is_list() const noexcept;
+  bool is_map() const noexcept;
+};
+
+#else // !MAPLE_NAN_BOXING
+
+#include <variant>
 
 using ValueStorage = std::variant<std::monostate, bool, double, Object*>;
 
@@ -61,7 +120,7 @@ public:
   bool is_equal(const Value& other) const noexcept;
   str_t stringify() const noexcept;
 
-  // Convenience object type checks (forward-declared, to be implemented when Object is available)
+  // Convenience object type checks
   bool is_string() const noexcept;
   bool is_function() const noexcept;
   bool is_closure() const noexcept;
@@ -70,6 +129,8 @@ public:
   bool is_list() const noexcept;
   bool is_map() const noexcept;
 };
+
+#endif // MAPLE_NAN_BOXING
 
 // operator== for convenience
 inline bool operator==(const Value& a, const Value& b) noexcept {
