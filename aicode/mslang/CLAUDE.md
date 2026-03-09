@@ -1,27 +1,18 @@
-# CLAUDE.md — Maple Language (mslang) Project Guide
+# CLAUDE.md — Maple Language (mslang)
 
 ## Project Overview
 
-Maple 是一门基于 clox (Crafting Interpreters) 的字节码虚拟机脚本语言，使用 C++23 实现。
-核心组件：单遍编译器 (Pratt Parser) → 栈式 VM → Mark-and-Sweep GC。
+Maple is a bytecode VM scripting language based on clox (Crafting Interpreters), implemented in C++23.
+Core pipeline: single-pass compiler (Pratt Parser) → stack-based VM → Mark-and-Sweep GC.
 
 ## Build Commands
 
 ```bash
-# Configure (from project root)
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-
-# Build
-cmake --build build
-
-# Run script
-./build/mslang tests/arithmetic.ms
-
-# Run REPL
-./build/mslang
-
-# Run tests
-ctest --test-dir build --output-on-failure
+cmake -B build -DCMAKE_BUILD_TYPE=Debug   # Configure
+cmake --build build                        # Build
+./build/mslang tests/arithmetic.ms         # Run script
+./build/mslang                             # Run REPL
+ctest --test-dir build --output-on-failure # Run tests
 
 # Debug options (append to cmake configure)
 -DMAPLE_DEBUG_TRACE=ON        # Trace VM execution
@@ -42,14 +33,14 @@ ctest --test-dir build --output-on-failure
 - Minimize `#if`/`#define`/`#endif` in headers (platform macros in `Macros.hh` only)
 
 ### Naming Conventions
-- Classes/Structs: `PascalCase` — `ObjString`, `CallFrame`, `Scanner`
-- Methods/Functions: `snake_case` — `scan_token()`, `emit_byte()`, `is_truthy()`
-- Member variables: `snake_case_` with trailing underscore — `stack_top_`, `frame_count_`
-- Constants: `kPascalCase` — `kSTACK_MAX`, `kFRAMES_MAX`, `kGC_HEAP_GROW`
+- Classes/Structs: `PascalCase` — `ObjString`, `CallFrame`
+- Methods/Functions: `snake_case` — `scan_token()`, `emit_byte()`
+- Member variables: `snake_case_` trailing underscore — `stack_top_`, `frame_count_`
+- Constants: `kPascalCase` — `kSTACK_MAX`, `kFRAMES_MAX`
 - Enum values: `kPascalCase` or `OP_UPPER_CASE` for opcodes
 - Type aliases: `snake_t` — `u8_t`, `str_t`, `sz_t`, `cstr_t`
 
-### Type Aliases (defined in Types.hh)
+### Type Aliases (Types.hh)
 ```cpp
 nil_t = std::nullptr_t;   byte_t/u8_t = std::uint8_t;
 i32_t = std::int32_t;     u32_t = std::uint32_t;
@@ -58,18 +49,17 @@ strv_t = std::string_view; cstr_t = const char*;
 ss_t = std::stringstream;
 ```
 
-### Base Classes (defined in Common.hh)
-- `Copyable` — default copy/move semantics
+### Base Classes (Common.hh)
+- `Copyable` — default copy/move
 - `UnCopyable` — deleted copy/move
-- `Singleton<T>` — `T::get_instance()` pattern
+- `Singleton<T>` — `T::get_instance()`
 
 ### C++ Style
-- Prefer `noexcept` on all methods unless they intentionally throw
-- Use `std::variant` for Value type, `std::vector` for dynamic arrays
-- Use `std::array` for fixed-size arrays (VM stack, frames)
-- Use `std::format` / `std::print` where available (C++23)
-- Use `static_cast` for object downcasts in hot paths, `as_obj<T>()` helper
-- Raw `Object*` pointers for GC-managed objects — never `shared_ptr`
+- Prefer `noexcept` unless intentionally throwing
+- `std::variant` for Value, `std::vector` for dynamic arrays, `std::array` for fixed-size (stack, frames)
+- `std::format` / `std::print` where available (C++23)
+- `static_cast` for object downcasts in hot paths, `as_obj<T>()` helper
+- Raw `Object*` for GC-managed objects — never `shared_ptr`
 - Mark GC roots properly when allocating during compilation
 
 ### Copyright Header
@@ -102,7 +92,7 @@ ss_t = std::stringstream;
 // POSSIBILITY OF SUCH DAMAGE.
 ```
 
-## Architecture Quick Reference
+## Architecture
 
 ```
 Source → Scanner → Compiler (Pratt) → Chunk (bytecode) → VM (stack) → Output
@@ -113,22 +103,22 @@ Source → Scanner → Compiler (Pratt) → Chunk (bytecode) → VM (stack) → 
 ### Key Files
 | File | Role |
 |------|------|
-| `VM.hh/cc` | Core execution engine, stack, dispatch loop |
-| `Compiler.hh/cc` | Single-pass compiler, Pratt parser (largest file) |
-| `Object.hh/cc` | GC-managed object hierarchy (ObjString, ObjClosure, ...) |
-| `Value.hh/cc` | Runtime value type (`std::variant<monostate, bool, double, Object*>`) |
-| `Memory.hh/cc` | Mark-and-Sweep garbage collector |
-| `Table.hh/cc` | Custom hash table for string interning |
-| `Scanner.hh/cc` | Lexer, returns one token at a time |
+| `VM.hh/cc` | Execution engine, stack, dispatch loop |
+| `Compiler.hh/cc` | Single-pass Pratt parser (largest file) |
+| `Object.hh/cc` | GC-managed object hierarchy |
+| `Value.hh/cc` | Runtime value (`std::variant<monostate, bool, double, Object*>`) |
+| `Memory.hh/cc` | Mark-and-Sweep GC |
+| `Table.hh/cc` | Hash table for string interning |
+| `Scanner.hh/cc` | Lexer, one token at a time |
 | `Chunk.hh/cc` | Bytecode container (code + constants + lines) |
-| `Module.hh/cc` | Import system, module loading and caching |
-| `Logger.hh/cc` | Colored debug logger (TRACE/DEBUG/INFO/WARN/ERROR) |
+| `Module.hh/cc` | Import system, module loading/caching |
+| `Logger.hh/cc` | Colored logger (TRACE/DEBUG/INFO/WARN/ERROR) |
 | `Debug.hh/cc` | Bytecode disassembler |
 
 ### GC Rules
 - All `Object*` linked via intrusive `Object::next` list
-- GC roots: VM stack, globals table, call frames, open upvalues, compiler state
-- Trigger: when `bytes_allocated_ > next_gc_`
+- Roots: VM stack, globals, call frames, open upvalues, compiler state
+- Triggers when `bytes_allocated_ > next_gc_`
 - After any allocation that might trigger GC, ensure new objects are reachable from a root
 
 ## Test Format
@@ -141,19 +131,14 @@ print "hello";  // expect: hello
 
 ## Git Commit Convention
 
-- Commit messages MUST be written in English
-- Each commit message MUST start with a [gitmoji](https://gitmoji.dev/) emoji prefix
-- Format: `<gitmoji> <description>`
-- Examples:
-  - `:sparkles: add string interpolation support`
-  - `:bug: fix stack overflow in recursive calls`
-  - `:memo: update architecture documentation`
-  - `:recycle: refactor compiler parse rules`
-  - `:white_check_mark: add tests for closure upvalues`
+- English only, prefixed with [gitmoji](https://gitmoji.dev/): `<gitmoji> <description>`
+- Examples: `:sparkles: add string interpolation` · `:bug: fix recursive stack overflow` · `:recycle: refactor parse rules`
 
 ## Workflow
 
-- 当一个 PLAN.md 中的 Task 实现并验证完毕后，自动将该 Task 在 PLAN.md 进度表中的状态从 `[ ]` 更新为 `[x]`，无需用户额外指示。
+- When a PLAN.md task is implemented and verified, automatically update its status from `[ ]` to `[x]` without further user instruction.
+- When the user types `精简 xxx.md`, streamline the source document **without adding or removing any designs or rules**: compress redundant wording, merge duplicate sections, remove filler text, while preserving the original structure and semantics.
+- When the user types `git`, stage all changes in the current directory and create a git commit following the Git Commit Convention above.
 
 ## Reference
 - [Crafting Interpreters — clox](https://github.com/munificent/craftinginterpreters) (c/ directory)

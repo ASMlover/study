@@ -725,53 +725,96 @@ InterpretResult VM::run() noexcept {
 
   using u16_t = std::uint16_t;
 
-  for (;;) {
 #ifdef MAPLE_DEBUG_TRACE
-    // Print stack
-    std::cout << "          ";
-    for (Value* slot = frame->slots; slot < stack_top_; slot++) {
-      std::cout << "[ " << slot->stringify() << " ]";
-    }
-    std::cout << std::endl;
-    disassemble_instruction(frame->closure->function()->chunk(),
-        static_cast<sz_t>(frame->ip - frame->closure->function()->chunk().code_data()));
+#define TRACE_INSTRUCTION() \
+    do { \
+      std::cout << "          "; \
+      for (Value* slot = frame->slots; slot < stack_top_; slot++) { \
+        std::cout << "[ " << slot->stringify() << " ]"; \
+      } \
+      std::cout << std::endl; \
+      disassemble_instruction(frame->closure->function()->chunk(), \
+          static_cast<sz_t>(frame->ip - frame->closure->function()->chunk().code_data())); \
+    } while (false)
+#else
+#define TRACE_INSTRUCTION() ((void)0)
 #endif
 
-    u8_t instruction = READ_BYTE();
-    switch (static_cast<OpCode>(instruction)) {
-    case OpCode::OP_CONSTANT: {
+#ifdef MAPLE_GNUC
+  // Computed goto (threaded dispatch) — GCC/Clang only.
+  // Each opcode jumps directly to the next handler via a label address table,
+  // eliminating the overhead of the switch indirect branch.
+  static void* dispatch_table[] = {
+    &&op_OP_CONSTANT,      &&op_OP_CONSTANT_LONG,
+    &&op_OP_NIL,           &&op_OP_TRUE,          &&op_OP_FALSE,
+    &&op_OP_POP,
+    &&op_OP_GET_LOCAL,     &&op_OP_SET_LOCAL,
+    &&op_OP_GET_GLOBAL,    &&op_OP_DEFINE_GLOBAL, &&op_OP_SET_GLOBAL,
+    &&op_OP_GET_UPVALUE,   &&op_OP_SET_UPVALUE,
+    &&op_OP_GET_PROPERTY,  &&op_OP_SET_PROPERTY,
+    &&op_OP_GET_SUPER,
+    &&op_OP_EQUAL,         &&op_OP_GREATER,       &&op_OP_LESS,
+    &&op_OP_ADD,           &&op_OP_SUBTRACT,
+    &&op_OP_MULTIPLY,      &&op_OP_DIVIDE,        &&op_OP_MODULO,
+    &&op_OP_NOT,           &&op_OP_NEGATE,
+    &&op_OP_PRINT,
+    &&op_OP_JUMP,          &&op_OP_JUMP_IF_FALSE, &&op_OP_LOOP,
+    &&op_OP_CALL,          &&op_OP_INVOKE,        &&op_OP_SUPER_INVOKE,
+    &&op_OP_CLOSURE,       &&op_OP_CLOSE_UPVALUE, &&op_OP_RETURN,
+    &&op_OP_CLASS,         &&op_OP_INHERIT,       &&op_OP_METHOD,
+    &&op_OP_BUILD_LIST,    &&op_OP_BUILD_MAP,
+    &&op_OP_INDEX_GET,     &&op_OP_INDEX_SET,
+    &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
+  };
+
+#define VM_DISPATCH() do { TRACE_INSTRUCTION(); goto *dispatch_table[READ_BYTE()]; } while (false)
+#define VM_CASE(name) op_##name:
+#else // !MAPLE_GNUC — MSVC fallback: standard switch dispatch
+#define VM_DISPATCH() continue
+#define VM_CASE(name) case OpCode::name:
+#endif
+
+#ifdef MAPLE_GNUC
+  VM_DISPATCH();
+#else
+  for (;;) {
+    TRACE_INSTRUCTION();
+    switch (static_cast<OpCode>(READ_BYTE())) {
+#endif
+
+    VM_CASE(OP_CONSTANT) {
       Value constant = READ_CONSTANT();
       push(constant);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_CONSTANT_LONG: {
+    VM_CASE(OP_CONSTANT_LONG) {
       u32_t index = READ_BYTE();
       index |= static_cast<u32_t>(READ_BYTE()) << 8;
       index |= static_cast<u32_t>(READ_BYTE()) << 16;
       push(frame->closure->function()->chunk().constant_at(index));
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_NIL:   push(Value()); break;
-    case OpCode::OP_TRUE:  push(Value(true)); break;
-    case OpCode::OP_FALSE: push(Value(false)); break;
+    VM_CASE(OP_NIL)   { push(Value()); VM_DISPATCH(); }
+    VM_CASE(OP_TRUE)  { push(Value(true)); VM_DISPATCH(); }
+    VM_CASE(OP_FALSE) { push(Value(false)); VM_DISPATCH(); }
 
-    case OpCode::OP_POP: pop(); break;
+    VM_CASE(OP_POP) { pop(); VM_DISPATCH(); }
 
-    case OpCode::OP_GET_LOCAL: {
+    VM_CASE(OP_GET_LOCAL) {
       u8_t slot = READ_BYTE();
       push(frame->slots[slot]);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_SET_LOCAL: {
+    VM_CASE(OP_SET_LOCAL) {
       u8_t slot = READ_BYTE();
       frame->slots[slot] = peek(0);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_GET_GLOBAL: {
+    VM_CASE(OP_GET_GLOBAL) {
       ObjString* name = READ_STRING();
       Value value;
       if (!globals_.get(name, &value)) {
@@ -779,39 +822,39 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       push(value);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_DEFINE_GLOBAL: {
+    VM_CASE(OP_DEFINE_GLOBAL) {
       ObjString* name = READ_STRING();
       globals_.set(name, peek(0));
       pop();
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_SET_GLOBAL: {
+    VM_CASE(OP_SET_GLOBAL) {
       ObjString* name = READ_STRING();
       if (globals_.set(name, peek(0))) {
         globals_.remove(name);
         runtime_error(std::format("Undefined variable '{}'.", name->value()));
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_GET_UPVALUE: {
+    VM_CASE(OP_GET_UPVALUE) {
       u8_t slot = READ_BYTE();
       push(*frame->closure->upvalue_at(slot)->location());
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_SET_UPVALUE: {
+    VM_CASE(OP_SET_UPVALUE) {
       u8_t slot = READ_BYTE();
       *frame->closure->upvalue_at(slot)->location() = peek(0);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_GET_PROPERTY: {
+    VM_CASE(OP_GET_PROPERTY) {
       if (is_obj_type(peek(0), ObjectType::OBJ_MODULE)) {
         ObjModule* module = as_module(peek(0));
         ObjString* name = READ_STRING();
@@ -819,7 +862,7 @@ InterpretResult VM::run() noexcept {
         if (module->exports().get(name, &export_val)) {
           pop(); // Module
           push(export_val);
-          break;
+          VM_DISPATCH();
         }
         runtime_error(std::format("Undefined export '{}'.", name->value()));
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -837,14 +880,14 @@ InterpretResult VM::run() noexcept {
       if (instance->fields().get(name, &field_val)) {
         pop(); // Instance
         push(field_val);
-        break;
+        VM_DISPATCH();
       }
 
       bind_method(instance->klass(), name);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_SET_PROPERTY: {
+    VM_CASE(OP_SET_PROPERTY) {
       if (!is_obj_type(peek(1), ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have fields.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -856,27 +899,27 @@ InterpretResult VM::run() noexcept {
       Value value = pop();
       pop();
       push(value);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_GET_SUPER: {
+    VM_CASE(OP_GET_SUPER) {
       ObjString* name = READ_STRING();
       ObjClass* superclass = as_class(pop());
       bind_method(superclass, name);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_EQUAL: {
+    VM_CASE(OP_EQUAL) {
       Value b = pop();
       Value a = pop();
       push(Value(a.is_equal(b)));
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_GREATER: BINARY_OP(Value, >); break;
-    case OpCode::OP_LESS:    BINARY_OP(Value, <); break;
+    VM_CASE(OP_GREATER) { BINARY_OP(Value, >); VM_DISPATCH(); }
+    VM_CASE(OP_LESS)    { BINARY_OP(Value, <); VM_DISPATCH(); }
 
-    case OpCode::OP_ADD: {
+    VM_CASE(OP_ADD) {
       if (is_obj_type(peek(0), ObjectType::OBJ_STRING) &&
           is_obj_type(peek(1), ObjectType::OBJ_STRING)) {
         concatenate();
@@ -888,14 +931,14 @@ InterpretResult VM::run() noexcept {
         runtime_error("Operands must be two numbers or two strings.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_SUBTRACT: BINARY_OP(Value, -); break;
-    case OpCode::OP_MULTIPLY: BINARY_OP(Value, *); break;
-    case OpCode::OP_DIVIDE:   BINARY_OP(Value, /); break;
+    VM_CASE(OP_SUBTRACT) { BINARY_OP(Value, -); VM_DISPATCH(); }
+    VM_CASE(OP_MULTIPLY) { BINARY_OP(Value, *); VM_DISPATCH(); }
+    VM_CASE(OP_DIVIDE)   { BINARY_OP(Value, /); VM_DISPATCH(); }
 
-    case OpCode::OP_MODULO: {
+    VM_CASE(OP_MODULO) {
       if (!peek(0).is_number() || !peek(1).is_number()) {
         runtime_error("Operands must be numbers.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -903,65 +946,66 @@ InterpretResult VM::run() noexcept {
       double b = pop().as_number();
       double a = pop().as_number();
       push(Value(std::fmod(a, b)));
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_NOT:
+    VM_CASE(OP_NOT) {
       push(Value(!pop().is_truthy()));
-      break;
+      VM_DISPATCH();
+    }
 
-    case OpCode::OP_NEGATE: {
+    VM_CASE(OP_NEGATE) {
       if (!peek(0).is_number()) {
         runtime_error("Operand must be a number.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       push(Value(-pop().as_number()));
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_PRINT: {
+    VM_CASE(OP_PRINT) {
       std::cout << pop().stringify() << std::endl;
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_JUMP: {
+    VM_CASE(OP_JUMP) {
       u16_t offset = READ_SHORT();
       frame->ip += offset;
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_JUMP_IF_FALSE: {
+    VM_CASE(OP_JUMP_IF_FALSE) {
       u16_t offset = READ_SHORT();
       if (!peek(0).is_truthy()) frame->ip += offset;
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_LOOP: {
+    VM_CASE(OP_LOOP) {
       u16_t offset = READ_SHORT();
       frame->ip -= offset;
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_CALL: {
+    VM_CASE(OP_CALL) {
       int arg_count = READ_BYTE();
       if (!call_value(peek(arg_count), arg_count)) {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       frame = &frames_[frame_count_ - 1];
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_INVOKE: {
+    VM_CASE(OP_INVOKE) {
       ObjString* method = READ_STRING();
       int arg_count = READ_BYTE();
       if (!invoke(method, arg_count)) {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       frame = &frames_[frame_count_ - 1];
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_SUPER_INVOKE: {
+    VM_CASE(OP_SUPER_INVOKE) {
       ObjString* method = READ_STRING();
       int arg_count = READ_BYTE();
       ObjClass* superclass = as_class(pop());
@@ -969,10 +1013,10 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       frame = &frames_[frame_count_ - 1];
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_CLOSURE: {
+    VM_CASE(OP_CLOSURE) {
       ObjFunction* function = as_function(READ_CONSTANT());
       ObjClosure* closure = allocate<ObjClosure>(function);
       push(Value(static_cast<Object*>(closure)));
@@ -986,15 +1030,16 @@ InterpretResult VM::run() noexcept {
           closure->set_upvalue_at(static_cast<sz_t>(i), frame->closure->upvalue_at(index));
         }
       }
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_CLOSE_UPVALUE:
+    VM_CASE(OP_CLOSE_UPVALUE) {
       close_upvalues(stack_top_ - 1);
       pop();
-      break;
+      VM_DISPATCH();
+    }
 
-    case OpCode::OP_RETURN: {
+    VM_CASE(OP_RETURN) {
       Value result = pop();
       close_upvalues(frame->slots);
       frame_count_--;
@@ -1042,14 +1087,15 @@ InterpretResult VM::run() noexcept {
           }
         }
       }
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_CLASS:
+    VM_CASE(OP_CLASS) {
       push(Value(static_cast<Object*>(allocate<ObjClass>(READ_STRING()))));
-      break;
+      VM_DISPATCH();
+    }
 
-    case OpCode::OP_INHERIT: {
+    VM_CASE(OP_INHERIT) {
       Value superclass = peek(1);
       if (!is_obj_type(superclass, ObjectType::OBJ_CLASS)) {
         runtime_error("Superclass must be a class.");
@@ -1060,19 +1106,19 @@ InterpretResult VM::run() noexcept {
       // Copy methods from superclass
       subclass->methods().add_all(as_class(superclass)->methods());
       pop(); // Subclass
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_METHOD: {
+    VM_CASE(OP_METHOD) {
       ObjString* name = READ_STRING();
       Value method = peek(0);
       ObjClass* klass = as_class(peek(1));
       klass->methods().set(name, method);
       pop();
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_BUILD_LIST: {
+    VM_CASE(OP_BUILD_LIST) {
       u8_t count = READ_BYTE();
       ObjList* list = allocate<ObjList>();
       list->elements().resize(count);
@@ -1080,10 +1126,10 @@ InterpretResult VM::run() noexcept {
         list->elements()[static_cast<sz_t>(i)] = pop();
       }
       push(Value(static_cast<Object*>(list)));
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_BUILD_MAP: {
+    VM_CASE(OP_BUILD_MAP) {
       u8_t count = READ_BYTE();
       ObjMap* map = allocate<ObjMap>();
       for (int i = count - 1; i >= 0; i--) {
@@ -1092,10 +1138,10 @@ InterpretResult VM::run() noexcept {
         map->entries()[key] = val;
       }
       push(Value(static_cast<Object*>(map)));
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_INDEX_GET: {
+    VM_CASE(OP_INDEX_GET) {
       Value index_val = pop();
       Value receiver = pop();
       if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
@@ -1134,10 +1180,10 @@ InterpretResult VM::run() noexcept {
         runtime_error("Only lists and strings can be indexed.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_INDEX_SET: {
+    VM_CASE(OP_INDEX_SET) {
       Value value = pop();
       Value index_val = pop();
       Value receiver = pop();
@@ -1161,10 +1207,10 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       push(value);
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_IMPORT: {
+    VM_CASE(OP_IMPORT) {
       Value path_val = pop();
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
@@ -1172,10 +1218,10 @@ InterpretResult VM::run() noexcept {
       }
       import_module(as_string(path_val));
       frame = &frames_[frame_count_ - 1];
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_IMPORT_FROM: {
+    VM_CASE(OP_IMPORT_FROM) {
       // Stack: [path, name]
       Value name_val = pop();
       Value path_val = pop();
@@ -1203,10 +1249,10 @@ InterpretResult VM::run() noexcept {
         // Module not yet executed, defer lookup
         pending_imports_.back().from_imports.push_back({name, nullptr});
       }
-      break;
+      VM_DISPATCH();
     }
 
-    case OpCode::OP_IMPORT_ALIAS: {
+    VM_CASE(OP_IMPORT_ALIAS) {
       // Stack: [path, name, alias]
       Value alias_val = pop();
       Value name_val = pop();
@@ -1234,12 +1280,17 @@ InterpretResult VM::run() noexcept {
       } else if (!pending_imports_.empty()) {
         pending_imports_.back().from_imports.push_back({name, alias});
       }
-      break;
+      VM_DISPATCH();
     }
 
+#ifndef MAPLE_GNUC
     } // switch
   } // for
+#endif
 
+#undef VM_CASE
+#undef VM_DISPATCH
+#undef TRACE_INSTRUCTION
 #undef READ_BYTE
 #undef READ_SHORT
 #undef READ_CONSTANT

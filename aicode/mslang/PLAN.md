@@ -807,4 +807,4 @@ Phase 8: Phase 7 → 8.1, 8.2, 8.3, 8.4, 8.5 (parallel)
 | 9 | 9.3.7 列表数据类型 | [x] |
 | 9 | 9.3.8 Map 数据类型 | [x] |
 | 9 | 9.4.1 NaN-boxing | [x] |
-| 9 | 9.4.2 computed goto | [ ] |
+| 9 | 9.4.2 computed goto | [x] |
