@@ -70,6 +70,48 @@ Repo: Maple (`mslang5`)
 - `ctest --test-dir build --output-on-failure -C Debug`
 - Result: pass (`1/1` test suite)
 
+## W13 Execution (Subagents Mode)
+
+Date: 2026-03-09
+
+1. Subagent-A (Batch A: W13-D1)
+- Scope:
+  - introduced canonical structured diagnostics model (`phase/code/span/notes`)
+  - unified VM error emission path and made CLI prefer structured rendering
+- Changed files:
+  - `src/support/source.hh`
+  - `src/support/source.cc`
+  - `src/runtime/vm.hh`
+  - `src/runtime/vm.cc`
+  - `src/cli/app.cc`
+  - `src/runtime/module.cc`
+
+2. Subagent-B (Batch B: W13-D2 + W13-D3)
+- Scope:
+  - implemented conformance metadata parser/runner for `@id/@spec/@expect/@diag.*`
+  - implemented diagnostics golden checker for structured diagnostic fields
+- Changed files:
+  - `tests/integration/test_conformance.cc`
+  - `tests/integration/test_diagnostics_golden.cc`
+  - `tests/unit/test_main.cc`
+  - `tests/diagnostics/samples/runtime_arity_mismatch.golden.json`
+  - `tests/diagnostics/samples/module_not_found.golden.json`
+  - `tests/integration/test_language_resolver.cc`
+
+3. Subagent-C (Batch C: W13-D4 + W13-D5)
+- Scope:
+  - wired staged CTest gates and labels (`all/unit/integration/conformance/diagnostics`)
+  - updated wave closeout bookkeeping and gap status
+- Changed files:
+  - `CMakeLists.txt`
+  - `PLAN.md`
+  - `SUBAGENTS.md`
+
+4. Verification command and result
+- `cmake --build build --config Debug`
+- `ctest --test-dir build --output-on-failure -C Debug`
+- Result: pass (`5/5` tests)
+
 ## W11 Execution (Subagents Mode)
 
 Date: 2026-03-08

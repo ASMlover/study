@@ -2,7 +2,7 @@
   {
     "phase": "module",
     "code": "MS5001",
-    "message": "module not found: foo.missing",
+    "message": "module not found: no_such_module",
     "span": {
       "file": "script.ms",
       "line": 1

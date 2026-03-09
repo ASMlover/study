@@ -45,7 +45,7 @@ void ExpectResolveCompileFailure(const std::string& script_path, const std::stri
          "default route should classify resolver violation as compile error");
   Expect(legacy_run.result == ms::InterpretResult::kCompileError,
          "legacy route should classify resolver violation as compile error");
-  Expect(default_run.error.find("resolve error") != std::string::npos,
+  Expect(default_run.error.find("[resolve ") != std::string::npos,
          "resolver violation should report resolve-phase diagnostics");
   Expect(default_run.error.find(code) != std::string::npos, "resolver violation should expose MS3xxx code");
   Expect(default_run.error == legacy_run.error, "resolver diagnostics should be route independent");

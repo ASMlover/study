@@ -1394,3 +1394,28 @@ Commit message convention reminder:
 1. English message required.
 2. Gitmoji required.
 3. Keep one verification closeout commit per wave for traceability.
+
+#### W13 Closeout Note (2026-03-09)
+
+- Status: completed (2026-03-09, subagents-mode; Batch A/B/C)
+- Delivered:
+  - `W13-D1`: added canonical structured diagnostics (`phase/code/span/notes`) and unified
+    parse/resolve/runtime/module error emission in `Vm` with backward-compatible text rendering.
+  - `W13-D2`: added conformance harness parser/executor for metadata headers
+    (`@id/@spec/@expect/@diag.*`) and wired all conformance `.ms` cases into executable checks.
+  - `W13-D3`: added diagnostics golden checker and validated sample goldens for
+    arity mismatch and module-not-found scenarios.
+  - `W13-D4`: split CTest into staged gates (`unit/integration/conformance/diagnostics/all`)
+    with labels for CI-style selective execution.
+  - `W13-D5`: recorded verification evidence and GAP disposition.
+- GAP disposition:
+  - `T19-GAP`: `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04` => `closed`
+  - `T20-GAP`: `GAP-01`, `GAP-02`, `GAP-03`, `GAP-04` => `closed`
+  - `T14-GAP`: `GAP-04`, `GAP-05` => `closed`
+  - `T15-GAP`: `GAP-03` => `closed`
+- Verification commands:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+- Verification result:
+  - pass (`5/5` tests: `maple_tests_all`, `maple_tests_unit`,
+    `maple_tests_integration`, `maple_tests_conformance`, `maple_tests_diagnostics`)

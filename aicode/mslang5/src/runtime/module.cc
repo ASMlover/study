@@ -87,8 +87,14 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
     cache_.erase(module_name);
     failed_[module_name] = runtime_error;
     if (error != nullptr) {
-      *error = ModuleError("MS5004", "failed to initialize module '" + module_name +
-                                         "': " + runtime_error);
+      const Diagnostic cause =
+          ParseDiagnosticText(runtime_error, "module", "MS5004", module_name);
+      if (cause.code == "MS5003" || runtime_error.find("MS5003") != std::string::npos) {
+        *error = ModuleError("MS5003", "circular module dependency detected: " + module_name);
+      } else {
+        *error = ModuleError("MS5004", "failed to initialize module '" + module_name +
+                                           "': " + runtime_error);
+      }
     }
     return nullptr;
   }

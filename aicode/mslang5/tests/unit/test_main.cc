@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "test_common.hh"
 
@@ -12,18 +13,56 @@ int RunCliTests();
 int RunClosureIntegrationTests();
 int RunClassIntegrationTests();
 int RunResolverIntegrationTests();
+int RunConformanceIntegrationTests();
+int RunDiagnosticsGoldenTests();
 
-int main() {
+namespace {
+
+void RunUnitSuite() {
   RunLoggerTests();
   RunSourceTests();
   RunChunkDisasmTests();
   RunLexerTests();
   RunVmCompilerTests();
   RunModuleTests();
+}
+
+void RunIntegrationSuite() {
   RunCliTests();
   RunClosureIntegrationTests();
   RunClassIntegrationTests();
   RunResolverIntegrationTests();
+}
+
+void RunConformanceSuite() { RunConformanceIntegrationTests(); }
+
+void RunDiagnosticsSuite() { RunDiagnosticsGoldenTests(); }
+
+}  // namespace
+
+int main(int argc, char** argv) {
+  std::string suite = "all";
+  if (argc > 1) {
+    suite = argv[1];
+  }
+
+  if (suite == "--suite=all" || suite == "all") {
+    RunUnitSuite();
+    RunIntegrationSuite();
+    RunConformanceSuite();
+    RunDiagnosticsSuite();
+  } else if (suite == "--suite=unit" || suite == "unit") {
+    RunUnitSuite();
+  } else if (suite == "--suite=integration" || suite == "integration") {
+    RunIntegrationSuite();
+  } else if (suite == "--suite=conformance" || suite == "conformance") {
+    RunConformanceSuite();
+  } else if (suite == "--suite=diagnostics" || suite == "diagnostics") {
+    RunDiagnosticsSuite();
+  } else {
+    std::cerr << "Unknown suite argument: " << suite << "\n";
+    return 2;
+  }
 
   if (g_failures != 0) {
     std::cerr << "Total failures: " << g_failures << "\n";

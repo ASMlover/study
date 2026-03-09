@@ -69,6 +69,8 @@ if(MAPLE_BUILD_TESTS)
     tests/integration/test_language_closure.cc
     tests/integration/test_language_class.cc
     tests/integration/test_language_resolver.cc
+    tests/integration/test_conformance.cc
+    tests/integration/test_diagnostics_golden.cc
   )
   target_link_libraries(maple_tests PRIVATE maple_core)
   target_include_directories(maple_tests PRIVATE
@@ -80,5 +82,18 @@ if(MAPLE_BUILD_TESTS)
   else()
     target_compile_options(maple_tests PRIVATE -Wall -Wextra -Wpedantic)
   endif()
-  add_test(NAME maple_tests COMMAND maple_tests)
+  add_test(NAME maple_tests_all COMMAND maple_tests --suite=all)
+  set_tests_properties(maple_tests_all PROPERTIES LABELS "all")
+
+  add_test(NAME maple_tests_unit COMMAND maple_tests --suite=unit)
+  set_tests_properties(maple_tests_unit PROPERTIES LABELS "unit")
+
+  add_test(NAME maple_tests_integration COMMAND maple_tests --suite=integration)
+  set_tests_properties(maple_tests_integration PROPERTIES LABELS "integration")
+
+  add_test(NAME maple_tests_conformance COMMAND maple_tests --suite=conformance)
+  set_tests_properties(maple_tests_conformance PROPERTIES LABELS "conformance")
+
+  add_test(NAME maple_tests_diagnostics COMMAND maple_tests --suite=diagnostics)
+  set_tests_properties(maple_tests_diagnostics PROPERTIES LABELS "diagnostics")
 endif()
