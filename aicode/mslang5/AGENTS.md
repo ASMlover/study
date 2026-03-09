@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 ## Model Marker
 
@@ -7,39 +7,41 @@
 ## Project
 
 - Name: `Maple`
-- Language runtime namespace: `ms`
-- Goal: implement a clox-style scripting language runtime in modern C++.
+- Runtime namespace: `ms`
+- Goal: implement a clox-style scripting runtime in modern C++.
 
 ## Implementation Rules
 
-- Use `C++23` or newer.
-- Keep code multi-file. Do not collapse the runtime into a single file.
-- Use `.hh` for headers and `.cc` for source files.
+- Use `C++23+`.
+- Keep a multi-file codebase; do not merge runtime into one file.
+- Use `.hh` headers and `.cc` sources.
 - Prefer `#pragma once` in headers.
-- Prefer the C++ standard library; minimize third-party dependencies.
-- Keep the project cross-platform for:
+- Prefer the standard library; minimize third-party deps.
+- Follow the Google C++ Style Guide as baseline.
+- Use `lower_snake_case` for function names.
+- Keep cross-platform support for:
   - Windows (MSVC)
   - Linux (GCC)
-- Use `CMake` as the build system.
+- Use `CMake`.
 
 ## Language Scope
 
-- Baseline should align with `clox` capabilities from Crafting Interpreters.
-- Include VM and garbage collection.
-- Add Maple module import features:
+- Align baseline with `clox` in Crafting Interpreters.
+- Include VM and GC.
+- Add Maple module imports:
   - `import <module>`
   - `from <module> import <name> as <alias>`
 
 ## Logging
 
-- Provide an internal logger with log levels.
-- Use different colors per log level.
-- Ensure color behavior works on both Windows terminals and Linux terminals.
+- Provide an internal logger with levels.
+- Use distinct colors by level.
+- Ensure colors work on Windows and Linux terminals.
 
 ## Testing
 
-- Keep tests in a dedicated `tests/` directory.
-- Include detailed test scripts for:
+- Keep tests under `tests/`.
+- Include detailed scripts for:
   - core language behavior
   - VM execution
   - GC behavior
@@ -48,23 +50,37 @@
 
 ## Documentation-First Workflow
 
-- Before major implementation changes, update planning/design docs first.
-- Keep requirement/design decisions in Markdown documents in the repo root.
+- Update planning/design docs before major implementation changes.
+- Keep requirement/design decisions in root Markdown docs.
 
 ## Git Commit Convention
 
-- Commit messages must be written in English.
-- Every commit message must include a gitmoji marker.
+- Commit messages must be English.
+- Every commit message must include a gitmoji.
 - Recommended format:
   - `:<gitmoji>: <type>(<scope>): <short english summary>`
 
 ## File Formatting Convention
 
-- All implementation code files must be encoded as UTF-8.
+- Encode all implementation code files as UTF-8.
 - Use LF (`\n`) line endings for implementation code files.
-- Automatically remove trailing whitespace at the end of lines.
+- Auto-remove trailing whitespace.
 
 ## Task Progress Convention
 
-- After each functional task is implemented, update task status in `PLAN.md` immediately.
-- Task status updates in `PLAN.md` must be accurate and traceable to the delivered changes/tests.
+- Update `PLAN.md` status immediately after each functional task.
+- `PLAN.md` status updates must be accurate and traceable to delivered changes/tests.
+
+## Document Simplification Command
+
+- Trigger: user input matches `精简 xxx.md`.
+- Requirement: simplify wording as much as possible without changing the original item set.
+- Hard constraints:
+  - Do not add items.
+  - Do not remove items.
+  - Do not change the intent of design/rule/specification statements.
+
+## Git Commit Command
+
+- Trigger: user input is `git`.
+- Action: commit all changes in the current directory.
