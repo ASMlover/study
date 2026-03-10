@@ -181,6 +181,7 @@ public:
   void dot(bool can_assign) noexcept;
   void this_(bool can_assign) noexcept;
   void super_(bool can_assign) noexcept;
+  void fun_expression(bool can_assign) noexcept;
   void list_(bool can_assign) noexcept;
   void map_(bool can_assign) noexcept;
   void subscript_(bool can_assign) noexcept;
@@ -264,7 +265,7 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   // TOKEN_FOR
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_FUN
-  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  { &Compiler::fun_expression, nullptr,      Precedence::PREC_NONE },
   // TOKEN_IF
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_IMPORT
@@ -914,6 +915,12 @@ void Compiler::function(FunctionType type) noexcept {
     emit_byte(compiler.upvalues_[i].is_local ? 1 : 0);
     emit_byte(compiler.upvalues_[i].index);
   }
+}
+
+void Compiler::fun_expression([[maybe_unused]] bool can_assign) noexcept {
+  // Synthesize a name token so the Compiler constructor picks it up.
+  ps_->previous = Token{TokenType::TOKEN_IDENTIFIER, "<lambda>", ps_->previous.line};
+  function(FunctionType::TYPE_FUNCTION);
 }
 
 void Compiler::fun_declaration() noexcept {
