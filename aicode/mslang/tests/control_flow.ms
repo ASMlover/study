@@ -52,3 +52,29 @@ print x;                 // expect: ok
 
 true or (x = "bad");
 print x;                 // expect: ok
+
+// else if chain
+var n = 5;
+if (n < 0) {
+  print "negative";
+} else if (n == 0) {
+  print "zero";
+} else if (n < 10) {
+  print "small";         // expect: small
+} else {
+  print "big";
+}
+
+// nested else if
+var grade = 85;
+if (grade >= 90) {
+  print "A";
+} else if (grade >= 80) {
+  print "B";             // expect: B
+} else if (grade >= 70) {
+  print "C";
+} else if (grade >= 60) {
+  print "D";
+} else {
+  print "F";
+}

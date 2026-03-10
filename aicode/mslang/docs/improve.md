@@ -264,7 +264,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 
 | Sprint | Task | Description | Status |
 |--------|------|-------------|--------|
-| **1 — Quick Wins** | 10.6 | `else if` chain | [ ] |
+| **1 — Quick Wins** | 10.6 | `else if` chain | [x] |
 | | 10.5 | Block comments `/* */` | [ ] |
 | | 10.2 | Anonymous functions (lambdas) | [ ] |
 | | 10.3 | Compound assignment `+= -= *= /= %=` | [ ] |
