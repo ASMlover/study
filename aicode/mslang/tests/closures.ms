@@ -1,4 +1,5 @@
 // Basic closure: capture outer variable
+print "--- capture outer variable ---"; // expect: --- capture outer variable ---
 fun makeGreeter(greeting) {
   fun greet(name) {
     print greeting + ", " + name + "!";
@@ -10,6 +11,7 @@ hello("World");              // expect: Hello, World!
 hello("Maple");              // expect: Hello, Maple!
 
 // Counter pattern
+print "--- counter pattern ---"; // expect: --- counter pattern ---
 fun makeCounter() {
   var count = 0;
   fun increment() {
@@ -24,6 +26,7 @@ print counter();             // expect: 2
 print counter();             // expect: 3
 
 // Independent counters
+print "--- independent counters ---"; // expect: --- independent counters ---
 var c1 = makeCounter();
 var c2 = makeCounter();
 print c1();                  // expect: 1
@@ -32,6 +35,7 @@ print c1();                  // expect: 2
 print c2();                  // expect: 2
 
 // Closed-over variable persists after outer returns
+print "--- upvalue persists after return ---"; // expect: --- upvalue persists after return ---
 fun makeAdder(x) {
   fun adder(y) {
     return x + y;
@@ -43,6 +47,7 @@ print add5(10);              // expect: 15
 print add5(20);              // expect: 25
 
 // Shared upvalues: two closures capture the same variable
+print "--- shared upvalues ---"; // expect: --- shared upvalues ---
 fun shared() {
   var value = "original";
   fun getter() {
@@ -58,6 +63,7 @@ fun shared() {
 shared();
 
 // Nested closures
+print "--- nested closures ---"; // expect: --- nested closures ---
 fun outer() {
   var x = "outer";
   fun middle() {
@@ -71,6 +77,7 @@ fun outer() {
 outer();                     // expect: outer
 
 // Closure captures variable, not value
+print "--- capture variable not value ---"; // expect: --- capture variable not value ---
 fun captureLoop() {
   var fns = nil;
   var i = 0;
@@ -89,6 +96,7 @@ fun captureLoop() {
 captureLoop();               // expect: 2
 
 // Upvalue in deeply nested function
+print "--- deeply nested upvalue ---"; // expect: --- deeply nested upvalue ---
 fun a() {
   var x = "a";
   fun b() {

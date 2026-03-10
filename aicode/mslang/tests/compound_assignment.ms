@@ -1,4 +1,5 @@
 // Compound assignment on locals
+print "--- compound assignment on locals ---"; // expect: --- compound assignment on locals ---
 var x = 10;
 x += 5;
 print x;           // expect: 15
@@ -12,6 +13,7 @@ x %= 4;
 print x;           // expect: 2
 
 // Compound assignment on globals
+print "--- compound assignment on globals ---"; // expect: --- compound assignment on globals ---
 var g = 100;
 fun modify() {
   g += 50;
@@ -20,6 +22,7 @@ modify();
 print g;            // expect: 150
 
 // Compound assignment on upvalues
+print "--- compound assignment on upvalues ---"; // expect: --- compound assignment on upvalues ---
 fun make_counter() {
   var count = 0;
   return fun() {
@@ -33,6 +36,7 @@ print counter();    // expect: 2
 print counter();    // expect: 3
 
 // String concatenation with +=
+print "--- string concatenation with += ---"; // expect: --- string concatenation with += ---
 var s = "hello";
 s += " world";
 print s;            // expect: hello world
