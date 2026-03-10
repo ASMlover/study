@@ -12,7 +12,7 @@ struct CompileResult {
   std::vector<std::string> errors;
 };
 
-CompileResult CompileToChunk(const std::string& source);
+CompileResult compile_to_chunk(const std::string& source);
 
 }  // namespace ms
 

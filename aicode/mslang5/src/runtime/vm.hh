@@ -37,36 +37,36 @@ class Vm {
  public:
   Vm();
 
-  void SetOutput(std::ostream& out);
-  std::ostream& Output() const;
+  void set_output(std::ostream& out);
+  std::ostream& output() const;
 
-  InterpretResult Execute(const Chunk& chunk, std::string* error);
-  InterpretResult ExecuteSource(const std::string& source, std::string* error);
-  InterpretResult ExecuteSourceNamed(const std::string& source, const std::string& source_name,
+  InterpretResult execute(const Chunk& chunk, std::string* error);
+  InterpretResult execute_source(const std::string& source, std::string* error);
+  InterpretResult execute_source_named(const std::string& source, const std::string& source_name,
                                      std::string* error);
-  InterpretResult ExecuteModule(const std::string& source, std::shared_ptr<Module> module,
+  InterpretResult execute_module(const std::string& source, std::shared_ptr<Module> module,
                                 std::string* error);
-  void SetSourceExecutionMode(SourceExecutionMode mode);
-  SourceExecutionMode GetSourceExecutionMode() const;
-  SourceExecutionRoute LastSourceExecutionRoute() const;
-  const std::vector<Diagnostic>& LastDiagnostics() const;
+  void set_source_execution_mode(SourceExecutionMode mode);
+  SourceExecutionMode get_source_execution_mode() const;
+  SourceExecutionRoute last_source_execution_route() const;
+  const std::vector<Diagnostic>& last_diagnostics() const;
 
-  bool DefineGlobal(const std::string& name, Value value);
-  bool GetGlobal(const std::string& name, Value* out) const;
-  bool SetGlobal(const std::string& name, Value value);
+  bool define_global(const std::string& name, Value value);
+  bool get_global(const std::string& name, Value* out) const;
+  bool set_global(const std::string& name, Value value);
 
-  ModuleLoader& Modules();
-  GcController& Gc();
+  ModuleLoader& modules();
+  GcController& gc();
 
  private:
-  bool Push(Value value);
-  bool Pop(Value* out);
-  bool Peek(Value* out) const;
-  bool ReadConstant(const Chunk& chunk, std::size_t ip, Constant* out) const;
-  Value ConstantToValue(const Constant& constant) const;
-  std::string LastSegment(const std::string& dotted) const;
-  void SetDiagnostics(std::vector<Diagnostic> diagnostics, std::string* error);
-  void SetSingleDiagnostic(const Diagnostic& diagnostic, std::string* error);
+  bool push(Value value);
+  bool pop(Value* out);
+  bool peek(Value* out) const;
+  bool read_constant(const Chunk& chunk, std::size_t ip, Constant* out) const;
+  Value constant_to_value(const Constant& constant) const;
+  std::string last_segment(const std::string& dotted) const;
+  void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);
+  void set_single_diagnostic(const Diagnostic& diagnostic, std::string* error);
 
   std::vector<Value> stack_;
   Table globals_;

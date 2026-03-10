@@ -14,63 +14,63 @@ constexpr std::string_view kColorReset = "\x1b[0m";
 
 }  // namespace
 
-Logger& Logger::Instance() {
+Logger& Logger::instance() {
   static Logger logger;
   return logger;
 }
 
 Logger::Logger()
     : min_level_(LogLevel::kInfo), color_enabled_(true), sink_(&std::cout) {
-  TryEnableAnsiOnWindows();
+  try_enable_ansi_on_windows();
 }
 
-void Logger::SetMinLevel(const LogLevel level) {
+void Logger::set_min_level(const LogLevel level) {
   std::lock_guard<std::mutex> lock(mutex_);
   min_level_ = level;
 }
 
-LogLevel Logger::MinLevel() const {
+LogLevel Logger::min_level() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return min_level_;
 }
 
-void Logger::SetColorEnabled(const bool enabled) {
+void Logger::set_color_enabled(const bool enabled) {
   std::lock_guard<std::mutex> lock(mutex_);
   color_enabled_ = enabled;
 }
 
-bool Logger::ColorEnabled() const {
+bool Logger::color_enabled() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return color_enabled_;
 }
 
-void Logger::SetSink(std::ostream& sink) {
+void Logger::set_sink(std::ostream& sink) {
   std::lock_guard<std::mutex> lock(mutex_);
   sink_ = &sink;
 }
 
-bool Logger::ShouldLog(const LogLevel level) const {
+bool Logger::should_log(const LogLevel level) const {
   std::lock_guard<std::mutex> lock(mutex_);
   return static_cast<int>(level) >= static_cast<int>(min_level_);
 }
 
-void Logger::Log(const LogLevel level, const std::string_view message) {
+void Logger::log(const LogLevel level, const std::string_view message) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (static_cast<int>(level) < static_cast<int>(min_level_)) {
     return;
   }
 
   if (color_enabled_) {
-    (*sink_) << LevelColor(level);
+    (*sink_) << level_color(level);
   }
-  (*sink_) << "[" << LevelTag(level) << "] " << message;
+  (*sink_) << "[" << level_tag(level) << "] " << message;
   if (color_enabled_) {
     (*sink_) << kColorReset;
   }
   (*sink_) << '\n';
 }
 
-std::string_view Logger::LevelTag(const LogLevel level) const {
+std::string_view Logger::level_tag(const LogLevel level) const {
   switch (level) {
     case LogLevel::kTrace:
       return "TRACE";
@@ -88,7 +88,7 @@ std::string_view Logger::LevelTag(const LogLevel level) const {
   return "UNKNOWN";
 }
 
-std::string_view Logger::LevelColor(const LogLevel level) const {
+std::string_view Logger::level_color(const LogLevel level) const {
   switch (level) {
     case LogLevel::kTrace:
       return "\x1b[90m";
@@ -106,7 +106,7 @@ std::string_view Logger::LevelColor(const LogLevel level) const {
   return "";
 }
 
-void Logger::TryEnableAnsiOnWindows() {
+void Logger::try_enable_ansi_on_windows() {
 #if defined(_WIN32)
   HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
   if (out == INVALID_HANDLE_VALUE) {
@@ -122,4 +122,3 @@ void Logger::TryEnableAnsiOnWindows() {
 }
 
 }  // namespace ms
-

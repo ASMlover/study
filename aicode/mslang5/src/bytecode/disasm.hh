@@ -6,7 +6,7 @@
 
 namespace ms {
 
-std::string DisassembleChunk(const Chunk& chunk, const std::string& name);
+std::string disassemble_chunk(const Chunk& chunk, const std::string& name);
 
 }  // namespace ms
 

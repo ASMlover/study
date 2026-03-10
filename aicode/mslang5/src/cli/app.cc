@@ -35,10 +35,10 @@ int RunFile(const std::string& path) {
   }
   Vm vm;
   const std::filesystem::path p(path);
-  vm.Modules().AddSearchPath(p.parent_path().string());
-  const InterpretResult r = vm.ExecuteSourceNamed(source, path, &error);
+  vm.modules().add_search_path(p.parent_path().string());
+  const InterpretResult r = vm.execute_source_named(source, path, &error);
   if (r != InterpretResult::kOk) {
-    const std::string rendered = ms::RenderDiagnostics(vm.LastDiagnostics());
+    const std::string rendered = ms::render_diagnostics(vm.last_diagnostics());
     std::cerr << (rendered.empty() ? error : rendered) << '\n';
     return static_cast<int>(r);
   }
@@ -57,9 +57,9 @@ int RunRepl() {
       break;
     }
     std::string error;
-    const InterpretResult r = vm.ExecuteSourceNamed(line + "\n", "<repl>", &error);
+    const InterpretResult r = vm.execute_source_named(line + "\n", "<repl>", &error);
     if (r != InterpretResult::kOk) {
-      const std::string rendered = ms::RenderDiagnostics(vm.LastDiagnostics());
+      const std::string rendered = ms::render_diagnostics(vm.last_diagnostics());
       std::cerr << (rendered.empty() ? error : rendered) << '\n';
     }
   }

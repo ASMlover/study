@@ -23,10 +23,10 @@ class ModuleLoader {
  public:
   ModuleLoader();
 
-  void AddSearchPath(std::string path);
-  std::optional<std::string> ResolvePath(const std::string& module_name) const;
+  void add_search_path(std::string path);
+  std::optional<std::string> resolve_path(const std::string& module_name) const;
 
-  std::shared_ptr<Module> Load(const std::string& module_name, Vm& vm,
+  std::shared_ptr<Module> load(const std::string& module_name, Vm& vm,
                                std::string* error);
 
  private:

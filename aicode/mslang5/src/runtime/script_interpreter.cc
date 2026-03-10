@@ -168,7 +168,7 @@ class Parser {
 
   std::vector<StmtPtr> ParseProgram() {
     std::vector<StmtPtr> statements;
-    while (!IsAtEnd()) {
+    while (!is_at_end()) {
       auto decl = Declaration();
       if (decl != nullptr) {
         statements.push_back(std::move(decl));
@@ -179,27 +179,27 @@ class Parser {
     return statements;
   }
 
-  const std::vector<std::string>& Errors() const { return errors_; }
+  const std::vector<std::string>& errors() const { return errors_; }
 
  private:
   StmtPtr Declaration() {
-    if (Match(TokenType::kClass)) {
+    if (match(TokenType::kClass)) {
       return ClassDeclaration();
     }
-    if (Match(TokenType::kFun)) {
+    if (match(TokenType::kFun)) {
       return FunctionDeclaration("function");
     }
-    if (Match(TokenType::kVar)) {
+    if (match(TokenType::kVar)) {
       return VarDeclaration();
     }
     return StatementNode();
   }
 
   StmtPtr FunctionDeclaration(const std::string& kind) {
-    if (!Consume(TokenType::kIdentifier, "expected " + kind + " name")) {
+    if (!consume(TokenType::kIdentifier, "expected " + kind + " name")) {
       return nullptr;
     }
-    const std::string name = Previous().lexeme;
+    const std::string name = previous().lexeme;
     auto body = ParseFunctionBody(kind);
     if (!body.has_value()) {
       return nullptr;
@@ -208,27 +208,27 @@ class Parser {
   }
 
   StmtPtr ClassDeclaration() {
-    if (!Consume(TokenType::kIdentifier, "expected class name")) {
+    if (!consume(TokenType::kIdentifier, "expected class name")) {
       return nullptr;
     }
-    const std::string class_name = Previous().lexeme;
-    const std::size_t class_line = Previous().line;
+    const std::string class_name = previous().lexeme;
+    const std::size_t class_line = previous().line;
 
     std::string superclass;
     std::size_t superclass_line = 0;
-    if (Match(TokenType::kLess)) {
-      if (!Consume(TokenType::kIdentifier, "expected superclass name")) {
+    if (match(TokenType::kLess)) {
+      if (!consume(TokenType::kIdentifier, "expected superclass name")) {
         return nullptr;
       }
-      superclass = Previous().lexeme;
-      superclass_line = Previous().line;
+      superclass = previous().lexeme;
+      superclass_line = previous().line;
     }
 
-    if (!Consume(TokenType::kLeftBrace, "expected '{' before class body")) {
+    if (!consume(TokenType::kLeftBrace, "expected '{' before class body")) {
       return nullptr;
     }
     std::vector<std::shared_ptr<FunctionStmt>> methods;
-    while (!Check(TokenType::kRightBrace) && !IsAtEnd()) {
+    while (!check(TokenType::kRightBrace) && !is_at_end()) {
       auto method = ParseMethod();
       if (method != nullptr) {
         methods.push_back(method);
@@ -236,16 +236,16 @@ class Parser {
         Synchronize();
       }
     }
-    Consume(TokenType::kRightBrace, "expected '}' after class body");
+    consume(TokenType::kRightBrace, "expected '}' after class body");
     return std::make_shared<ClassStmt>(class_name, class_line, superclass, superclass_line,
                                        std::move(methods));
   }
 
   std::shared_ptr<FunctionStmt> ParseMethod() {
-    if (!Consume(TokenType::kIdentifier, "expected method name")) {
+    if (!consume(TokenType::kIdentifier, "expected method name")) {
       return nullptr;
     }
-    const std::string name = Previous().lexeme;
+    const std::string name = previous().lexeme;
     auto body = ParseFunctionBody("method");
     if (!body.has_value()) {
       return nullptr;
@@ -255,86 +255,86 @@ class Parser {
 
   std::optional<std::pair<std::vector<std::string>, std::vector<StmtPtr>>> ParseFunctionBody(
       const std::string& kind) {
-    if (!Consume(TokenType::kLeftParen, "expected '(' after " + kind + " name")) {
+    if (!consume(TokenType::kLeftParen, "expected '(' after " + kind + " name")) {
       return std::nullopt;
     }
     std::vector<std::string> params;
-    if (!Check(TokenType::kRightParen)) {
+    if (!check(TokenType::kRightParen)) {
       do {
-        if (!Consume(TokenType::kIdentifier, "expected parameter name")) {
+        if (!consume(TokenType::kIdentifier, "expected parameter name")) {
           return std::nullopt;
         }
-        params.push_back(Previous().lexeme);
-      } while (Match(TokenType::kComma));
+        params.push_back(previous().lexeme);
+      } while (match(TokenType::kComma));
     }
-    if (!Consume(TokenType::kRightParen, "expected ')' after parameters")) {
+    if (!consume(TokenType::kRightParen, "expected ')' after parameters")) {
       return std::nullopt;
     }
-    if (!Consume(TokenType::kLeftBrace, "expected '{' before " + kind + " body")) {
+    if (!consume(TokenType::kLeftBrace, "expected '{' before " + kind + " body")) {
       return std::nullopt;
     }
     return std::make_pair(params, ParseBlockStatements());
   }
 
   StmtPtr VarDeclaration() {
-    if (!Consume(TokenType::kIdentifier, "expected variable name")) {
+    if (!consume(TokenType::kIdentifier, "expected variable name")) {
       return nullptr;
     }
-    const std::string name = Previous().lexeme;
+    const std::string name = previous().lexeme;
     ExprPtr initializer = nullptr;
-    if (Match(TokenType::kEqual)) {
+    if (match(TokenType::kEqual)) {
       initializer = ExpressionNode();
     }
-    if (!Consume(TokenType::kSemicolon, "expected ';' after variable declaration")) {
+    if (!consume(TokenType::kSemicolon, "expected ';' after variable declaration")) {
       return nullptr;
     }
     return std::make_shared<VarStmt>(name, std::move(initializer));
   }
 
   StmtPtr StatementNode() {
-    if (Match(TokenType::kPrint)) {
+    if (match(TokenType::kPrint)) {
       auto value = ExpressionNode();
-      Consume(TokenType::kSemicolon, "expected ';' after print value");
+      consume(TokenType::kSemicolon, "expected ';' after print value");
       return std::make_shared<PrintStmt>(std::move(value));
     }
-    if (Match(TokenType::kReturn)) {
-      const std::size_t line = Previous().line;
+    if (match(TokenType::kReturn)) {
+      const std::size_t line = previous().line;
       ExprPtr value = nullptr;
-      if (!Check(TokenType::kSemicolon)) {
+      if (!check(TokenType::kSemicolon)) {
         value = ExpressionNode();
       }
-      Consume(TokenType::kSemicolon, "expected ';' after return value");
+      consume(TokenType::kSemicolon, "expected ';' after return value");
       return std::make_shared<ReturnStmt>(std::move(value), line);
     }
-    if (Match(TokenType::kImport)) {
-      const std::string module = ParseDottedName();
-      Consume(TokenType::kSemicolon, "expected ';' after import statement");
+    if (match(TokenType::kImport)) {
+      const std::string module = parse_dotted_name();
+      consume(TokenType::kSemicolon, "expected ';' after import statement");
       return std::make_shared<ImportStmt>(module);
     }
-    if (Match(TokenType::kFrom)) {
-      const std::string module = ParseDottedName();
-      Consume(TokenType::kImport, "expected 'import' keyword");
-      Consume(TokenType::kIdentifier, "expected imported symbol name");
-      const std::string symbol = Previous().lexeme;
+    if (match(TokenType::kFrom)) {
+      const std::string module = parse_dotted_name();
+      consume(TokenType::kImport, "expected 'import' keyword");
+      consume(TokenType::kIdentifier, "expected imported symbol name");
+      const std::string symbol = previous().lexeme;
       std::string alias = symbol;
-      if (Match(TokenType::kAs)) {
-        Consume(TokenType::kIdentifier, "expected alias name after 'as'");
-        alias = Previous().lexeme;
+      if (match(TokenType::kAs)) {
+        consume(TokenType::kIdentifier, "expected alias name after 'as'");
+        alias = previous().lexeme;
       }
-      Consume(TokenType::kSemicolon, "expected ';' after from-import statement");
+      consume(TokenType::kSemicolon, "expected ';' after from-import statement");
       return std::make_shared<FromImportStmt>(module, symbol, alias);
     }
-    if (Match(TokenType::kLeftBrace)) {
+    if (match(TokenType::kLeftBrace)) {
       return std::make_shared<BlockStmt>(ParseBlockStatements());
     }
     auto expr = ExpressionNode();
-    Consume(TokenType::kSemicolon, "expected ';' after expression");
+    consume(TokenType::kSemicolon, "expected ';' after expression");
     return std::make_shared<ExprStmt>(std::move(expr));
   }
 
   std::vector<StmtPtr> ParseBlockStatements() {
     std::vector<StmtPtr> statements;
-    while (!Check(TokenType::kRightBrace) && !IsAtEnd()) {
+    while (!check(TokenType::kRightBrace) && !is_at_end()) {
       auto decl = Declaration();
       if (decl != nullptr) {
         statements.push_back(std::move(decl));
@@ -342,7 +342,7 @@ class Parser {
         Synchronize();
       }
     }
-    Consume(TokenType::kRightBrace, "expected '}' after block");
+    consume(TokenType::kRightBrace, "expected '}' after block");
     return statements;
   }
 
@@ -350,8 +350,8 @@ class Parser {
 
   ExprPtr Assignment() {
     ExprPtr expr = Term();
-    if (Match(TokenType::kEqual)) {
-      const Token equals = Previous();
+    if (match(TokenType::kEqual)) {
+      const Token equals = previous();
       ExprPtr value = Assignment();
       if (auto var = std::dynamic_pointer_cast<VariableExpr>(expr); var != nullptr) {
         return std::make_shared<AssignExpr>(var->name, value, equals.line);
@@ -359,15 +359,15 @@ class Parser {
       if (auto object = std::dynamic_pointer_cast<GetExpr>(expr); object != nullptr) {
         return std::make_shared<SetExpr>(object->object, object->name, value);
       }
-      ReportError(Previous(), "invalid assignment target");
+      report_error(previous(), "invalid assignment target");
     }
     return expr;
   }
 
   ExprPtr Term() {
     ExprPtr expr = Factor();
-    while (Match(TokenType::kPlus) || Match(TokenType::kMinus)) {
-      TokenType op = Previous().type;
+    while (match(TokenType::kPlus) || match(TokenType::kMinus)) {
+      TokenType op = previous().type;
       ExprPtr right = Factor();
       expr = std::make_shared<BinaryExpr>(expr, op, right);
     }
@@ -376,8 +376,8 @@ class Parser {
 
   ExprPtr Factor() {
     ExprPtr expr = Unary();
-    while (Match(TokenType::kStar) || Match(TokenType::kSlash)) {
-      TokenType op = Previous().type;
+    while (match(TokenType::kStar) || match(TokenType::kSlash)) {
+      TokenType op = previous().type;
       ExprPtr right = Unary();
       expr = std::make_shared<BinaryExpr>(expr, op, right);
     }
@@ -385,29 +385,29 @@ class Parser {
   }
 
   ExprPtr Unary() {
-    if (Match(TokenType::kMinus)) {
-      return std::make_shared<UnaryExpr>(Previous().type, Unary());
+    if (match(TokenType::kMinus)) {
+      return std::make_shared<UnaryExpr>(previous().type, Unary());
     }
-    return Call();
+    return call();
   }
 
-  ExprPtr Call() {
+  ExprPtr call() {
     ExprPtr expr = Primary();
     while (true) {
-      if (Match(TokenType::kLeftParen)) {
+      if (match(TokenType::kLeftParen)) {
         std::vector<ExprPtr> args;
-        if (!Check(TokenType::kRightParen)) {
+        if (!check(TokenType::kRightParen)) {
           do {
             args.push_back(ExpressionNode());
-          } while (Match(TokenType::kComma));
+          } while (match(TokenType::kComma));
         }
-        Consume(TokenType::kRightParen, "expected ')' after arguments");
+        consume(TokenType::kRightParen, "expected ')' after arguments");
         expr = std::make_shared<CallExpr>(expr, std::move(args));
         continue;
       }
-      if (Match(TokenType::kDot)) {
-        Consume(TokenType::kIdentifier, "expected property name after '.'");
-        expr = std::make_shared<GetExpr>(expr, Previous().lexeme);
+      if (match(TokenType::kDot)) {
+        consume(TokenType::kIdentifier, "expected property name after '.'");
+        expr = std::make_shared<GetExpr>(expr, previous().lexeme);
         continue;
       }
       break;
@@ -416,90 +416,90 @@ class Parser {
   }
 
   ExprPtr Primary() {
-    if (Match(TokenType::kNumber)) {
-      return std::make_shared<LiteralExpr>(Value(std::strtod(Previous().lexeme.c_str(), nullptr)));
+    if (match(TokenType::kNumber)) {
+      return std::make_shared<LiteralExpr>(Value(std::strtod(previous().lexeme.c_str(), nullptr)));
     }
-    if (Match(TokenType::kString)) {
-      return std::make_shared<LiteralExpr>(Value(Previous().lexeme));
+    if (match(TokenType::kString)) {
+      return std::make_shared<LiteralExpr>(Value(previous().lexeme));
     }
-    if (Match(TokenType::kTrue)) {
+    if (match(TokenType::kTrue)) {
       return std::make_shared<LiteralExpr>(Value(true));
     }
-    if (Match(TokenType::kFalse)) {
+    if (match(TokenType::kFalse)) {
       return std::make_shared<LiteralExpr>(Value(false));
     }
-    if (Match(TokenType::kNil)) {
-      return std::make_shared<LiteralExpr>(Value::Nil());
+    if (match(TokenType::kNil)) {
+      return std::make_shared<LiteralExpr>(Value::nil());
     }
-    if (Match(TokenType::kIdentifier)) {
-      return std::make_shared<VariableExpr>(Previous().lexeme, Previous().line);
+    if (match(TokenType::kIdentifier)) {
+      return std::make_shared<VariableExpr>(previous().lexeme, previous().line);
     }
-    if (Match(TokenType::kFun)) {
+    if (match(TokenType::kFun)) {
       auto body = ParseFunctionBody("anonymous function");
       if (!body.has_value()) {
         return nullptr;
       }
       return std::make_shared<FunctionExpr>(std::move(body->first), std::move(body->second));
     }
-    if (Match(TokenType::kThis)) {
-      return std::make_shared<ThisExpr>("this", Previous().line);
+    if (match(TokenType::kThis)) {
+      return std::make_shared<ThisExpr>("this", previous().line);
     }
-    if (Match(TokenType::kSuper)) {
-      const std::size_t line = Previous().line;
-      Consume(TokenType::kDot, "expected '.' after 'super'");
-      Consume(TokenType::kIdentifier, "expected superclass method name");
-      return std::make_shared<SuperExpr>(Previous().lexeme, line);
+    if (match(TokenType::kSuper)) {
+      const std::size_t line = previous().line;
+      consume(TokenType::kDot, "expected '.' after 'super'");
+      consume(TokenType::kIdentifier, "expected superclass method name");
+      return std::make_shared<SuperExpr>(previous().lexeme, line);
     }
-    if (Match(TokenType::kLeftParen)) {
+    if (match(TokenType::kLeftParen)) {
       ExprPtr expr = ExpressionNode();
-      Consume(TokenType::kRightParen, "expected ')' after expression");
+      consume(TokenType::kRightParen, "expected ')' after expression");
       return std::make_shared<GroupingExpr>(expr);
     }
-    ReportError(Current(), "expected expression");
+    report_error(current(), "expected expression");
     return nullptr;
   }
 
-  bool Match(TokenType type) {
-    if (!Check(type)) {
+  bool match(TokenType type) {
+    if (!check(type)) {
       return false;
     }
-    Advance();
+    advance();
     return true;
   }
-  bool Check(TokenType type) const { return !IsAtEnd() ? Current().type == type : type == TokenType::kEof; }
-  bool Consume(TokenType type, const std::string& message) {
-    if (Check(type)) {
-      Advance();
+  bool check(TokenType type) const { return !is_at_end() ? current().type == type : type == TokenType::kEof; }
+  bool consume(TokenType type, const std::string& message) {
+    if (check(type)) {
+      advance();
       return true;
     }
-    ReportError(Current(), message);
+    report_error(current(), message);
     return false;
   }
-  std::string ParseDottedName() {
-    Consume(TokenType::kIdentifier, "expected identifier");
-    std::string name = Previous().lexeme;
-    while (Match(TokenType::kDot)) {
-      Consume(TokenType::kIdentifier, "expected identifier after '.'");
+  std::string parse_dotted_name() {
+    consume(TokenType::kIdentifier, "expected identifier");
+    std::string name = previous().lexeme;
+    while (match(TokenType::kDot)) {
+      consume(TokenType::kIdentifier, "expected identifier after '.'");
       name += ".";
-      name += Previous().lexeme;
+      name += previous().lexeme;
     }
     return name;
   }
-  const Token& Advance() {
-    if (!IsAtEnd()) ++current_;
-    return Previous();
+  const Token& advance() {
+    if (!is_at_end()) ++current_;
+    return previous();
   }
-  bool IsAtEnd() const { return Current().type == TokenType::kEof; }
-  const Token& Current() const { return tokens_[current_]; }
-  const Token& Previous() const { return tokens_[current_ - 1]; }
-  void ReportError(const Token& token, const std::string& message) {
+  bool is_at_end() const { return current().type == TokenType::kEof; }
+  const Token& current() const { return tokens_[current_]; }
+  const Token& previous() const { return tokens_[current_ - 1]; }
+  void report_error(const Token& token, const std::string& message) {
     errors_.push_back("[line " + std::to_string(token.line) + "] parse error: " + message);
   }
   void Synchronize() {
-    Advance();
-    while (!IsAtEnd()) {
-      if (Previous().type == TokenType::kSemicolon) return;
-      switch (Current().type) {
+    advance();
+    while (!is_at_end()) {
+      if (previous().type == TokenType::kSemicolon) return;
+      switch (current().type) {
         case TokenType::kClass:
         case TokenType::kFun:
         case TokenType::kVar:
@@ -511,7 +511,7 @@ class Parser {
         default:
           break;
       }
-      Advance();
+      advance();
     }
   }
 
@@ -787,7 +787,7 @@ class Environment {
 
   void Define(const std::string& name, const Value& value) {
     if (global_) {
-      vm_.DefineGlobal(name, value);
+      vm_.define_global(name, value);
       return;
     }
     values_[name] = value;
@@ -802,10 +802,10 @@ class Environment {
       }
     }
     if (enclosing_ != nullptr) return enclosing_->Assign(name, value);
-    return vm_.SetGlobal(name, value);
+    return vm_.set_global(name, value);
   }
 
-  bool Get(const std::string& name, Value* out) const {
+  bool get(const std::string& name, Value* out) const {
     if (!global_) {
       auto it = values_.find(name);
       if (it != values_.end()) {
@@ -813,8 +813,8 @@ class Environment {
         return true;
       }
     }
-    if (enclosing_ != nullptr) return enclosing_->Get(name, out);
-    return vm_.GetGlobal(name, out);
+    if (enclosing_ != nullptr) return enclosing_->get(name, out);
+    return vm_.get_global(name, out);
   }
 
   bool AssignAt(const std::size_t depth, const std::string& name, const Value& value) {
@@ -826,7 +826,7 @@ class Environment {
       scope = scope->enclosing_.get();
     }
     if (scope->global_) {
-      return scope->vm_.SetGlobal(name, value);
+      return scope->vm_.set_global(name, value);
     }
     auto it = scope->values_.find(name);
     if (it == scope->values_.end()) {
@@ -845,7 +845,7 @@ class Environment {
       scope = scope->enclosing_.get();
     }
     if (scope->global_) {
-      return scope->vm_.GetGlobal(name, out);
+      return scope->vm_.get_global(name, out);
     }
     auto it = scope->values_.find(name);
     if (it == scope->values_.end()) {
@@ -867,8 +867,8 @@ class Environment {
 class RuntimeCallable : public RuntimeObject {
  public:
   ~RuntimeCallable() override = default;
-  virtual std::size_t Arity() const = 0;
-  virtual bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) = 0;
+  virtual std::size_t arity() const = 0;
+  virtual bool call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) = 0;
 };
 
 struct ReturnSignal {
@@ -885,9 +885,9 @@ class RuntimeFunction final : public RuntimeCallable {
         closure_(std::move(closure)),
         is_initializer_(is_initializer) {}
 
-  std::size_t Arity() const override { return params_.size(); }
-  std::string ToString() const override { return name_.empty() ? "<fn anonymous>" : "<fn " + name_ + ">"; }
-  bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
+  std::size_t arity() const override { return params_.size(); }
+  std::string to_string() const override { return name_.empty() ? "<fn anonymous>" : "<fn " + name_ + ">"; }
+  bool call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
   std::shared_ptr<RuntimeFunction> Bind(const Value& instance, Vm& vm) const;
   bool IsInitializer() const { return is_initializer_; }
 
@@ -905,9 +905,9 @@ class RuntimeClass final : public RuntimeCallable, public std::enable_shared_fro
                std::unordered_map<std::string, std::shared_ptr<RuntimeFunction>> methods)
       : name_(std::move(name)), superclass_(std::move(superclass)), methods_(std::move(methods)) {}
 
-  std::string ToString() const override { return "<class " + name_ + ">"; }
-  std::size_t Arity() const override;
-  bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
+  std::string to_string() const override { return "<class " + name_ + ">"; }
+  std::size_t arity() const override;
+  bool call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
   std::shared_ptr<RuntimeFunction> FindMethod(const std::string& name) const;
   const std::string& Name() const { return name_; }
 
@@ -921,9 +921,9 @@ class RuntimeInstance final : public RuntimeObject, public std::enable_shared_fr
  public:
   explicit RuntimeInstance(std::shared_ptr<RuntimeClass> klass) : klass_(std::move(klass)) {}
 
-  std::string ToString() const override { return "<" + klass_->Name() + " instance>"; }
-  bool Get(const std::string& name, Value* out);
-  void Set(const std::string& name, const Value& value) { fields_[name] = value; }
+  std::string to_string() const override { return "<" + klass_->Name() + " instance>"; }
+  bool get(const std::string& name, Value* out);
+  void set(const std::string& name, const Value& value) { fields_[name] = value; }
 
  private:
   std::shared_ptr<RuntimeClass> klass_;
@@ -935,9 +935,9 @@ class RuntimeBoundMethod final : public RuntimeCallable {
   RuntimeBoundMethod(Value receiver, std::shared_ptr<RuntimeFunction> method)
       : receiver_(std::move(receiver)), method_(std::move(method)) {}
 
-  std::string ToString() const override { return method_->ToString(); }
-  std::size_t Arity() const override { return method_->Arity(); }
-  bool Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
+  std::string to_string() const override { return method_->to_string(); }
+  std::size_t arity() const override { return method_->arity(); }
+  bool call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) override;
 
  private:
   Value receiver_;
@@ -971,7 +971,7 @@ class Executor {
     try {
       for (const auto& s : stmts) ExecStmt(s);
       env_ = prev;
-      if (out != nullptr) *out = Value::Nil();
+      if (out != nullptr) *out = Value::nil();
       return true;
     } catch (const ReturnSignal& signal) {
       env_ = prev;
@@ -985,7 +985,7 @@ class Executor {
   }
 
  private:
-  static std::string LastSegment(const std::string& dotted) {
+  static std::string last_segment(const std::string& dotted) {
     auto pos = dotted.find_last_of('.');
     return pos == std::string::npos ? dotted : dotted.substr(pos + 1);
   }
@@ -996,11 +996,11 @@ class Executor {
       return;
     }
     if (auto s = std::dynamic_pointer_cast<PrintStmt>(stmt); s != nullptr) {
-      vm_.Output() << Eval(s->expression).ToString() << '\n';
+      vm_.output() << Eval(s->expression).to_string() << '\n';
       return;
     }
     if (auto s = std::dynamic_pointer_cast<VarStmt>(stmt); s != nullptr) {
-      Value v = s->initializer ? Eval(s->initializer) : Value::Nil();
+      Value v = s->initializer ? Eval(s->initializer) : Value::nil();
       env_->Define(s->name, v);
       return;
     }
@@ -1017,19 +1017,19 @@ class Executor {
       std::shared_ptr<RuntimeClass> superclass = nullptr;
       if (!s->superclass.empty()) {
         Value super_value;
-        if (!env_->Get(s->superclass, &super_value)) {
+        if (!env_->get(s->superclass, &super_value)) {
           throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + s->superclass));
         }
-        if (!super_value.IsObject() || super_value.AsObject() == nullptr) {
+        if (!super_value.is_object() || super_value.as_object() == nullptr) {
           throw RuntimeSignal(RuntimeError("MS4003", "superclass must be a class"));
         }
-        superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
+        superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.as_object());
         if (superclass == nullptr) {
           throw RuntimeSignal(RuntimeError("MS4003", "superclass must be a class"));
         }
       }
 
-      env_->Define(s->name, Value::Nil());
+      env_->Define(s->name, Value::nil());
 
       auto method_env = env_;
       if (superclass != nullptr) {
@@ -1051,21 +1051,21 @@ class Executor {
       return;
     }
     if (auto s = std::dynamic_pointer_cast<ReturnStmt>(stmt); s != nullptr) {
-      throw ReturnSignal{s->value ? Eval(s->value) : Value::Nil()};
+      throw ReturnSignal{s->value ? Eval(s->value) : Value::nil()};
     }
     if (auto s = std::dynamic_pointer_cast<ImportStmt>(stmt); s != nullptr) {
       std::string load_error;
-      auto module = vm_.Modules().Load(s->module, vm_, &load_error);
+      auto module = vm_.modules().load(s->module, vm_, &load_error);
       if (!module) throw RuntimeSignal(load_error);
-      env_->Define(LastSegment(s->module), Value(module));
+      env_->Define(last_segment(s->module), Value(module));
       return;
     }
     if (auto s = std::dynamic_pointer_cast<FromImportStmt>(stmt); s != nullptr) {
       std::string load_error;
-      auto module = vm_.Modules().Load(s->module, vm_, &load_error);
+      auto module = vm_.modules().load(s->module, vm_, &load_error);
       if (!module) throw RuntimeSignal(load_error);
       Value exported;
-      if (!module->exports.Get(s->symbol, &exported)) {
+      if (!module->exports.get(s->symbol, &exported)) {
         throw RuntimeSignal("module error (MS5002): module '" + s->module + "' has no symbol '" +
                             s->symbol + "'");
       }
@@ -1088,7 +1088,7 @@ class Executor {
   }
 
   Value Eval(const ExprPtr& expr) {
-    if (expr == nullptr) return Value::Nil();
+    if (expr == nullptr) return Value::nil();
     if (auto e = std::dynamic_pointer_cast<LiteralExpr>(expr); e != nullptr) return e->value;
     if (auto e = std::dynamic_pointer_cast<VariableExpr>(expr); e != nullptr) {
       Value v;
@@ -1097,7 +1097,7 @@ class Executor {
           throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + e->name));
         }
       } else {
-        if (!env_->Get(e->name, &v)) {
+        if (!env_->get(e->name, &v)) {
           throw RuntimeSignal(RuntimeError("MS4001", "undefined variable: " + e->name));
         }
       }
@@ -1119,23 +1119,23 @@ class Executor {
     if (auto e = std::dynamic_pointer_cast<GroupingExpr>(expr); e != nullptr) return Eval(e->expression);
     if (auto e = std::dynamic_pointer_cast<UnaryExpr>(expr); e != nullptr) {
       Value r = Eval(e->right);
-      if (!r.IsNumber()) throw RuntimeSignal(RuntimeError("MS4003", "operand must be number"));
-      return Value(-r.AsNumber());
+      if (!r.is_number()) throw RuntimeSignal(RuntimeError("MS4003", "operand must be number"));
+      return Value(-r.as_number());
     }
     if (auto e = std::dynamic_pointer_cast<BinaryExpr>(expr); e != nullptr) {
       Value l = Eval(e->left);
       Value r = Eval(e->right);
       if (e->op == TokenType::kPlus) {
-        if (l.IsNumber() && r.IsNumber()) return Value(l.AsNumber() + r.AsNumber());
-        if (l.IsString() && r.IsString()) return Value(l.AsString() + r.AsString());
+        if (l.is_number() && r.is_number()) return Value(l.as_number() + r.as_number());
+        if (l.is_string() && r.is_string()) return Value(l.as_string() + r.as_string());
         throw RuntimeSignal(RuntimeError("MS4003", "operands must be two numbers or two strings"));
       }
-      if (!l.IsNumber() || !r.IsNumber()) {
+      if (!l.is_number() || !r.is_number()) {
         throw RuntimeSignal(RuntimeError("MS4003", "operands must be numbers"));
       }
-      if (e->op == TokenType::kMinus) return Value(l.AsNumber() - r.AsNumber());
-      if (e->op == TokenType::kStar) return Value(l.AsNumber() * r.AsNumber());
-      return Value(l.AsNumber() / r.AsNumber());
+      if (e->op == TokenType::kMinus) return Value(l.as_number() - r.as_number());
+      if (e->op == TokenType::kStar) return Value(l.as_number() * r.as_number());
+      return Value(l.as_number() / r.as_number());
     }
     if (auto e = std::dynamic_pointer_cast<FunctionExpr>(expr); e != nullptr) {
       auto fn = std::make_shared<RuntimeFunction>("", e->params, e->body, env_, false);
@@ -1143,30 +1143,30 @@ class Executor {
     }
     if (auto e = std::dynamic_pointer_cast<GetExpr>(expr); e != nullptr) {
       Value object = Eval(e->object);
-      if (!object.IsObject() || object.AsObject() == nullptr) {
+      if (!object.is_object() || object.as_object() == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4003", "only instances have properties"));
       }
-      auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.AsObject());
+      auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.as_object());
       if (instance == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4003", "only instances have properties"));
       }
       Value out;
-      if (!instance->Get(e->name, &out)) {
+      if (!instance->get(e->name, &out)) {
         throw RuntimeSignal(RuntimeError("MS4004", "undefined property: " + e->name));
       }
       return out;
     }
     if (auto e = std::dynamic_pointer_cast<SetExpr>(expr); e != nullptr) {
       Value object = Eval(e->object);
-      if (!object.IsObject() || object.AsObject() == nullptr) {
+      if (!object.is_object() || object.as_object() == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4003", "only instances have fields"));
       }
-      auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.AsObject());
+      auto instance = std::dynamic_pointer_cast<RuntimeInstance>(object.as_object());
       if (instance == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4003", "only instances have fields"));
       }
       Value value = Eval(e->value);
-      instance->Set(e->name, value);
+      instance->set(e->name, value);
       return value;
     }
     if (auto e = std::dynamic_pointer_cast<ThisExpr>(expr); e != nullptr) {
@@ -1181,12 +1181,12 @@ class Executor {
       if (!ResolveScopedRead(expr, "super", &super_value)) {
         throw RuntimeSignal(RuntimeError("MS4003", "cannot use 'super' outside of a subclass"));
       }
-      auto superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.AsObject());
+      auto superclass = std::dynamic_pointer_cast<RuntimeClass>(super_value.as_object());
       if (superclass == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4003", "invalid superclass reference"));
       }
       Value this_value;
-      if (!env_->Get("this", &this_value)) {
+      if (!env_->get("this", &this_value)) {
         throw RuntimeSignal(RuntimeError("MS4003", "missing receiver for 'super' call"));
       }
       auto method = superclass->FindMethod(e->method);
@@ -1198,23 +1198,23 @@ class Executor {
     }
     if (auto e = std::dynamic_pointer_cast<CallExpr>(expr); e != nullptr) {
       Value callee = Eval(e->callee);
-      if (!callee.IsObject() || callee.AsObject() == nullptr) {
+      if (!callee.is_object() || callee.as_object() == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4005", "can only call functions and classes"));
       }
-      auto callable = std::dynamic_pointer_cast<RuntimeCallable>(callee.AsObject());
+      auto callable = std::dynamic_pointer_cast<RuntimeCallable>(callee.as_object());
       if (callable == nullptr) {
         throw RuntimeSignal(RuntimeError("MS4005", "can only call functions and classes"));
       }
       std::vector<Value> args;
       for (const auto& arg : e->arguments) args.push_back(Eval(arg));
-      if (args.size() != callable->Arity()) {
-        throw RuntimeSignal(RuntimeError("MS4002", "expected " + std::to_string(callable->Arity()) +
+      if (args.size() != callable->arity()) {
+        throw RuntimeSignal(RuntimeError("MS4002", "expected " + std::to_string(callable->arity()) +
                                                        " arguments but got " +
                                                        std::to_string(args.size())));
       }
-      Value out = Value::Nil();
+      Value out = Value::nil();
       std::string call_error;
-      if (!callable->Call(*this, args, &out, &call_error)) throw RuntimeSignal(call_error);
+      if (!callable->call(*this, args, &out, &call_error)) throw RuntimeSignal(call_error);
       return out;
     }
     throw RuntimeSignal(RuntimeError("MS4003", "unsupported expression"));
@@ -1235,7 +1235,7 @@ class Executor {
     if (const auto depth = LookupDepth(expr); depth.has_value()) {
       return env_->GetAt(*depth, name, out);
     }
-    return env_->Get(name, out);
+    return env_->get(name, out);
   }
 
   Vm& vm_;
@@ -1248,16 +1248,16 @@ class Executor {
   friend class RuntimeBoundMethod;
 };
 
-bool RuntimeFunction::Call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) {
+bool RuntimeFunction::call(Executor& executor, const std::vector<Value>& args, Value* out, std::string* error) {
   auto scope = std::make_shared<Environment>(executor.vm_, closure_);
   for (std::size_t i = 0; i < params_.size(); ++i) scope->Define(params_[i], args[i]);
-  Value call_result = Value::Nil();
+  Value call_result = Value::nil();
   if (!executor.RunFunction(body_, scope, &call_result, error)) {
     return false;
   }
   if (is_initializer_) {
     Value receiver;
-    if (!closure_->Get("this", &receiver)) {
+    if (!closure_->get("this", &receiver)) {
       if (error != nullptr) {
         *error = "initializer is missing receiver";
       }
@@ -1291,12 +1291,12 @@ std::shared_ptr<RuntimeFunction> RuntimeClass::FindMethod(const std::string& nam
   return nullptr;
 }
 
-std::size_t RuntimeClass::Arity() const {
+std::size_t RuntimeClass::arity() const {
   auto init = FindMethod("init");
-  return init != nullptr ? init->Arity() : 0;
+  return init != nullptr ? init->arity() : 0;
 }
 
-bool RuntimeClass::Call(Executor& executor, const std::vector<Value>& args, Value* out,
+bool RuntimeClass::call(Executor& executor, const std::vector<Value>& args, Value* out,
                         std::string* error) {
   auto instance = std::make_shared<RuntimeInstance>(shared_from_this());
   Value receiver(std::static_pointer_cast<RuntimeObject>(instance));
@@ -1304,8 +1304,8 @@ bool RuntimeClass::Call(Executor& executor, const std::vector<Value>& args, Valu
   auto init = FindMethod("init");
   if (init != nullptr) {
     auto bound = init->Bind(receiver, executor.vm_);
-    Value ignored = Value::Nil();
-    if (!bound->Call(executor, args, &ignored, error)) {
+    Value ignored = Value::nil();
+    if (!bound->call(executor, args, &ignored, error)) {
       return false;
     }
   }
@@ -1316,7 +1316,7 @@ bool RuntimeClass::Call(Executor& executor, const std::vector<Value>& args, Valu
   return true;
 }
 
-bool RuntimeInstance::Get(const std::string& name, Value* out) {
+bool RuntimeInstance::get(const std::string& name, Value* out) {
   const auto field = fields_.find(name);
   if (field != fields_.end()) {
     if (out != nullptr) {
@@ -1336,20 +1336,20 @@ bool RuntimeInstance::Get(const std::string& name, Value* out) {
   return true;
 }
 
-bool RuntimeBoundMethod::Call(Executor& executor, const std::vector<Value>& args, Value* out,
+bool RuntimeBoundMethod::call(Executor& executor, const std::vector<Value>& args, Value* out,
                               std::string* error) {
-  return method_->Bind(receiver_, executor.vm_)->Call(executor, args, out, error);
+  return method_->Bind(receiver_, executor.vm_)->call(executor, args, out, error);
 }
 
 }  // namespace
 
-bool ScriptInterpreter::Execute(Vm& vm, const std::string& source, std::string* error) {
+bool ScriptInterpreter::execute(Vm& vm, const std::string& source, std::string* error) {
   Lexer lexer(source);
-  Parser parser(lexer.ScanAllTokens());
+  Parser parser(lexer.scan_all_tokens());
   auto program = parser.ParseProgram();
-  if (!parser.Errors().empty()) {
+  if (!parser.errors().empty()) {
     if (error != nullptr) {
-      *error = parser.Errors().front();
+      *error = parser.errors().front();
     }
     return false;
   }
@@ -1365,7 +1365,7 @@ bool ScriptInterpreter::Execute(Vm& vm, const std::string& source, std::string* 
   return executor.Run(program, error);
 }
 
-bool ScriptInterpreter::IsCompileLikeError(const std::string& error) {
+bool ScriptInterpreter::is_compile_like_error(const std::string& error) {
   return error.find("parse error:") != std::string::npos ||
          error.find("lexer error:") != std::string::npos ||
          error.find("resolve error") != std::string::npos;

@@ -58,20 +58,20 @@ const char* OpName(const OpCode op) {
 
 }  // namespace
 
-std::string DisassembleChunk(const Chunk& chunk, const std::string& name) {
+std::string disassemble_chunk(const Chunk& chunk, const std::string& name) {
   std::ostringstream out;
   out << "== " << name << " ==\n";
 
   std::size_t offset = 0;
-  while (offset < chunk.Code().size()) {
-    const auto op = static_cast<OpCode>(chunk.Code()[offset]);
+  while (offset < chunk.code().size()) {
+    const auto op = static_cast<OpCode>(chunk.code()[offset]);
     out << std::setw(4) << offset << " " << OpName(op);
 
     auto print_const_operand = [&](const std::size_t i) {
-      const std::size_t idx = chunk.Code()[i];
+      const std::size_t idx = chunk.code()[i];
       out << " " << idx;
-      if (idx < chunk.Constants().size()) {
-        out << " (" << ConstantToString(chunk.Constants()[idx]) << ")";
+      if (idx < chunk.constants().size()) {
+        out << " (" << ConstantToString(chunk.constants()[idx]) << ")";
       }
     };
 
@@ -81,13 +81,13 @@ std::string DisassembleChunk(const Chunk& chunk, const std::string& name) {
       case OpCode::kGetGlobal:
       case OpCode::kSetGlobal:
       case OpCode::kImportModule:
-        if (offset + 1 < chunk.Code().size()) {
+        if (offset + 1 < chunk.code().size()) {
           print_const_operand(offset + 1);
         }
         offset += 2;
         break;
       case OpCode::kImportSymbol:
-        if (offset + 3 < chunk.Code().size()) {
+        if (offset + 3 < chunk.code().size()) {
           print_const_operand(offset + 1);
           print_const_operand(offset + 2);
           print_const_operand(offset + 3);

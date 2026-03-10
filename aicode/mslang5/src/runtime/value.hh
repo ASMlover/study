@@ -23,46 +23,46 @@ class Value {
   explicit Value(std::shared_ptr<Module> module) : storage_(std::move(module)) {}
   explicit Value(std::shared_ptr<RuntimeObject> object) : storage_(std::move(object)) {}
 
-  static Value Nil() { return Value(); }
+  static Value nil() { return Value(); }
 
-  bool IsNil() const { return std::holds_alternative<std::monostate>(storage_); }
-  bool IsBool() const { return std::holds_alternative<bool>(storage_); }
-  bool IsNumber() const { return std::holds_alternative<double>(storage_); }
-  bool IsString() const { return std::holds_alternative<std::string>(storage_); }
-  bool IsModule() const {
+  bool is_nil() const { return std::holds_alternative<std::monostate>(storage_); }
+  bool is_bool() const { return std::holds_alternative<bool>(storage_); }
+  bool is_number() const { return std::holds_alternative<double>(storage_); }
+  bool is_string() const { return std::holds_alternative<std::string>(storage_); }
+  bool is_module() const {
     return std::holds_alternative<std::shared_ptr<Module>>(storage_);
   }
-  bool IsObject() const {
+  bool is_object() const {
     return std::holds_alternative<std::shared_ptr<RuntimeObject>>(storage_);
   }
 
-  bool AsBool() const { return std::get<bool>(storage_); }
-  double AsNumber() const { return std::get<double>(storage_); }
-  const std::string& AsString() const { return std::get<std::string>(storage_); }
-  std::shared_ptr<Module> AsModule() const {
+  bool as_bool() const { return std::get<bool>(storage_); }
+  double as_number() const { return std::get<double>(storage_); }
+  const std::string& as_string() const { return std::get<std::string>(storage_); }
+  std::shared_ptr<Module> as_module() const {
     return std::get<std::shared_ptr<Module>>(storage_);
   }
-  std::shared_ptr<RuntimeObject> AsObject() const {
+  std::shared_ptr<RuntimeObject> as_object() const {
     return std::get<std::shared_ptr<RuntimeObject>>(storage_);
   }
 
-  std::string ToString() const {
-    if (IsNil()) {
+  std::string to_string() const {
+    if (is_nil()) {
       return "nil";
     }
-    if (IsBool()) {
-      return AsBool() ? "true" : "false";
+    if (is_bool()) {
+      return as_bool() ? "true" : "false";
     }
-    if (IsNumber()) {
+    if (is_number()) {
       std::ostringstream out;
-      out << AsNumber();
+      out << as_number();
       return out.str();
     }
-    if (IsString()) {
-      return AsString();
+    if (is_string()) {
+      return as_string();
     }
-    if (IsObject()) {
-      return AsObject() != nullptr ? AsObject()->ToString() : "<object:null>";
+    if (is_object()) {
+      return as_object() != nullptr ? as_object()->to_string() : "<object:null>";
     }
     return "<module>";
   }

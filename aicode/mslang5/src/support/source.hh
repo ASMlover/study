@@ -32,15 +32,15 @@ struct Diagnostic {
 
 class SourceFile {
  public:
-  static std::expected<SourceFile, std::string> LoadFromPath(
+  static std::expected<SourceFile, std::string> load_from_path(
       const std::string& path);
 
   SourceFile(std::string path, std::string text);
 
-  const std::string& Path() const;
-  const std::string& Text() const;
+  const std::string& path() const;
+  const std::string& text() const;
 
-  SourceLocation Locate(std::size_t offset) const;
+  SourceLocation locate(std::size_t offset) const;
 
  private:
   std::string path_;
@@ -48,13 +48,13 @@ class SourceFile {
   std::vector<std::size_t> line_starts_;
 };
 
-Diagnostic MakeDiagnostic(std::string phase, std::string code, std::string message,
+Diagnostic make_diagnostic(std::string phase, std::string code, std::string message,
                           DiagnosticSpan span,
                           std::vector<std::string> notes = {});
-Diagnostic ParseDiagnosticText(const std::string& text, const std::string& default_phase,
+Diagnostic parse_diagnostic_text(const std::string& text, const std::string& default_phase,
                                const std::string& default_code,
                                const std::string& default_file);
-std::string RenderDiagnostic(const Diagnostic& diagnostic);
-std::string RenderDiagnostics(const std::vector<Diagnostic>& diagnostics);
+std::string render_diagnostic(const Diagnostic& diagnostic);
+std::string render_diagnostics(const std::vector<Diagnostic>& diagnostics);
 
 }  // namespace ms

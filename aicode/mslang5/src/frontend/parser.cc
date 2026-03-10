@@ -6,59 +6,59 @@ namespace ms {
 
 Parser::Parser(std::vector<Token> tokens) : tokens_(std::move(tokens)) {}
 
-bool Parser::Match(const TokenType type) {
-  if (!Check(type)) {
+bool Parser::match(const TokenType type) {
+  if (!check(type)) {
     return false;
   }
-  Advance();
+  advance();
   return true;
 }
 
-bool Parser::Check(const TokenType type) const {
-  if (IsAtEnd()) {
+bool Parser::check(const TokenType type) const {
+  if (is_at_end()) {
     return type == TokenType::kEof;
   }
   return tokens_[current_].type == type;
 }
 
-const Token& Parser::Advance() {
-  if (!IsAtEnd()) {
+const Token& Parser::advance() {
+  if (!is_at_end()) {
     ++current_;
   }
-  return Previous();
+  return previous();
 }
 
-const Token& Parser::Previous() const { return tokens_[current_ - 1]; }
+const Token& Parser::previous() const { return tokens_[current_ - 1]; }
 
-bool Parser::IsAtEnd() const { return tokens_[current_].type == TokenType::kEof; }
+bool Parser::is_at_end() const { return tokens_[current_].type == TokenType::kEof; }
 
-bool Parser::Consume(const TokenType type, const std::string& message) {
-  if (Check(type)) {
-    Advance();
+bool Parser::consume(const TokenType type, const std::string& message) {
+  if (check(type)) {
+    advance();
     return true;
   }
-  ReportError(tokens_[current_], message);
+  report_error(tokens_[current_], message);
   return false;
 }
 
-std::string Parser::ParseDottedName() {
-  if (!Consume(TokenType::kIdentifier, "expected identifier")) {
+std::string Parser::parse_dotted_name() {
+  if (!consume(TokenType::kIdentifier, "expected identifier")) {
     return {};
   }
-  std::string name = Previous().lexeme;
-  while (Match(TokenType::kDot)) {
-    if (!Consume(TokenType::kIdentifier, "expected identifier after '.'")) {
+  std::string name = previous().lexeme;
+  while (match(TokenType::kDot)) {
+    if (!consume(TokenType::kIdentifier, "expected identifier after '.'")) {
       return {};
     }
     name += ".";
-    name += Previous().lexeme;
+    name += previous().lexeme;
   }
   return name;
 }
 
-const Token& Parser::Current() const { return tokens_[current_]; }
+const Token& Parser::current() const { return tokens_[current_]; }
 
-const Token& Parser::Peek(const std::size_t offset) const {
+const Token& Parser::peek(const std::size_t offset) const {
   const std::size_t idx = current_ + offset;
   if (idx >= tokens_.size()) {
     return tokens_.back();
@@ -66,9 +66,9 @@ const Token& Parser::Peek(const std::size_t offset) const {
   return tokens_[idx];
 }
 
-const std::vector<std::string>& Parser::Errors() const { return errors_; }
+const std::vector<std::string>& Parser::errors() const { return errors_; }
 
-void Parser::ReportError(const Token& token, const std::string& message) {
+void Parser::report_error(const Token& token, const std::string& message) {
   std::ostringstream out;
   out << "[line " << token.line << "] parse error: " << message;
   errors_.push_back(out.str());

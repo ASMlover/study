@@ -147,11 +147,11 @@ std::vector<ConformanceCase> LoadAllCases() {
 void RunConformanceCase(const ConformanceCase& c) {
   ms::Vm vm;
   std::ostringstream output;
-  vm.SetOutput(output);
-  vm.Modules().AddSearchPath(RepoRoot() + "/tests/scripts/module");
+  vm.set_output(output);
+  vm.modules().add_search_path(RepoRoot() + "/tests/scripts/module");
 
   std::string error;
-  const ms::InterpretResult result = vm.ExecuteSourceNamed(c.source, c.path, &error);
+  const ms::InterpretResult result = vm.execute_source_named(c.source, c.path, &error);
   const std::string out = NormalizeNewline(output.str());
 
   if (c.expect == "ok") {
@@ -171,7 +171,7 @@ void RunConformanceCase(const ConformanceCase& c) {
     return;
   }
 
-  const auto& diagnostics = vm.LastDiagnostics();
+  const auto& diagnostics = vm.last_diagnostics();
   Expect(!diagnostics.empty(), c.id + " should expose diagnostics");
   if (diagnostics.empty()) {
     return;

@@ -18,25 +18,25 @@ enum class LogLevel {
 
 class Logger {
  public:
-  static Logger& Instance();
+  static Logger& instance();
 
-  void SetMinLevel(LogLevel level);
-  LogLevel MinLevel() const;
+  void set_min_level(LogLevel level);
+  LogLevel min_level() const;
 
-  void SetColorEnabled(bool enabled);
-  bool ColorEnabled() const;
+  void set_color_enabled(bool enabled);
+  bool color_enabled() const;
 
-  void SetSink(std::ostream& sink);
+  void set_sink(std::ostream& sink);
 
-  bool ShouldLog(LogLevel level) const;
-  void Log(LogLevel level, std::string_view message);
+  bool should_log(LogLevel level) const;
+  void log(LogLevel level, std::string_view message);
 
  private:
   Logger();
 
-  std::string_view LevelTag(LogLevel level) const;
-  std::string_view LevelColor(LogLevel level) const;
-  void TryEnableAnsiOnWindows();
+  std::string_view level_tag(LogLevel level) const;
+  std::string_view level_color(LogLevel level) const;
+  void try_enable_ansi_on_windows();
 
   mutable std::mutex mutex_;
   LogLevel min_level_;
@@ -45,4 +45,3 @@ class Logger {
 };
 
 }  // namespace ms
-

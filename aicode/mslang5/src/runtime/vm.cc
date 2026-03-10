@@ -12,7 +12,7 @@ namespace ms {
 namespace {
 
 InterpretResult LegacyResultFromError(const std::string& error) {
-  if (ScriptInterpreter::IsCompileLikeError(error)) {
+  if (ScriptInterpreter::is_compile_like_error(error)) {
     return InterpretResult::kCompileError;
   }
   return InterpretResult::kRuntimeError;
@@ -24,33 +24,33 @@ std::string RuntimeError(const std::string& code, const std::string& message) {
 
 Diagnostic ParseWithFallback(const std::string& text, const std::string& phase,
                              const std::string& code, const std::string& file) {
-  return ParseDiagnosticText(text, phase, code, file);
+  return parse_diagnostic_text(text, phase, code, file);
 }
 
 }  // namespace
 
 Vm::Vm() : out_(&std::cout), gc_(1024 * 64) {}
 
-void Vm::SetOutput(std::ostream& out) { out_ = &out; }
+void Vm::set_output(std::ostream& out) { out_ = &out; }
 
-std::ostream& Vm::Output() const { return *out_; }
+std::ostream& Vm::output() const { return *out_; }
 
-InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
+InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
   last_diagnostics_.clear();
   stack_.clear();
   std::size_t ip = 0;
-  while (ip < chunk.Code().size()) {
-    const auto op = static_cast<OpCode>(chunk.Code()[ip++]);
+  while (ip < chunk.code().size()) {
+    const auto op = static_cast<OpCode>(chunk.code()[ip++]);
     switch (op) {
       case OpCode::kConstant: {
         Constant c;
-        if (!ReadConstant(chunk, ip++, &c)) {
-          SetSingleDiagnostic(MakeDiagnostic("runtime", "MS4003", "invalid constant index",
+        if (!read_constant(chunk, ip++, &c)) {
+          set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid constant index",
                                              DiagnosticSpan{current_source_name_, 1}),
                               error);
           return InterpretResult::kRuntimeError;
         }
-        Push(ConstantToValue(c));
+        push(constant_to_value(c));
         break;
       }
       case OpCode::kAdd:
@@ -59,52 +59,52 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
       case OpCode::kDivide: {
         Value b;
         Value a;
-        Pop(&b);
-        Pop(&a);
-        if (op == OpCode::kAdd && a.IsString() && b.IsString()) {
-          Push(Value(a.AsString() + b.AsString()));
+        pop(&b);
+        pop(&a);
+        if (op == OpCode::kAdd && a.is_string() && b.is_string()) {
+          push(Value(a.as_string() + b.as_string()));
           break;
         }
-        if (!a.IsNumber() || !b.IsNumber()) {
-          SetSingleDiagnostic(
+        if (!a.is_number() || !b.is_number()) {
+          set_single_diagnostic(
               ParseWithFallback(RuntimeError("MS4003", "operands must be numbers"), "runtime",
                                 "MS4003", current_source_name_),
               error);
           return InterpretResult::kRuntimeError;
         }
         if (op == OpCode::kAdd) {
-          Push(Value(a.AsNumber() + b.AsNumber()));
+          push(Value(a.as_number() + b.as_number()));
         } else if (op == OpCode::kSubtract) {
-          Push(Value(a.AsNumber() - b.AsNumber()));
+          push(Value(a.as_number() - b.as_number()));
         } else if (op == OpCode::kMultiply) {
-          Push(Value(a.AsNumber() * b.AsNumber()));
+          push(Value(a.as_number() * b.as_number()));
         } else {
-          Push(Value(a.AsNumber() / b.AsNumber()));
+          push(Value(a.as_number() / b.as_number()));
         }
         break;
       }
       case OpCode::kNegate: {
         Value v;
-        Pop(&v);
-        if (!v.IsNumber()) {
-          SetSingleDiagnostic(
+        pop(&v);
+        if (!v.is_number()) {
+          set_single_diagnostic(
               ParseWithFallback(RuntimeError("MS4003", "operand must be number"), "runtime",
                                 "MS4003", current_source_name_),
               error);
           return InterpretResult::kRuntimeError;
         }
-        Push(Value(-v.AsNumber()));
+        push(Value(-v.as_number()));
         break;
       }
       case OpCode::kPrint: {
         Value v;
-        Pop(&v);
-        Output() << v.ToString() << '\n';
+        pop(&v);
+        output() << v.to_string() << '\n';
         break;
       }
       case OpCode::kPop: {
         Value v;
-        Pop(&v);
+        pop(&v);
         break;
       }
       case OpCode::kDefineGlobal:
@@ -112,8 +112,8 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
       case OpCode::kSetGlobal:
       case OpCode::kImportModule: {
         Constant c;
-        if (!ReadConstant(chunk, ip++, &c) || !std::holds_alternative<std::string>(c)) {
-          SetSingleDiagnostic(MakeDiagnostic("runtime", "MS4003",
+        if (!read_constant(chunk, ip++, &c) || !std::holds_alternative<std::string>(c)) {
+          set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                              "global name must be string constant",
                                              DiagnosticSpan{current_source_name_, 1}),
                               error);
@@ -122,27 +122,27 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
         const std::string name = std::get<std::string>(c);
         if (op == OpCode::kDefineGlobal) {
           Value v;
-          Pop(&v);
-          DefineGlobal(name, v);
+          pop(&v);
+          define_global(name, v);
           break;
         }
         if (op == OpCode::kGetGlobal) {
           Value v;
-          if (!GetGlobal(name, &v)) {
-            SetSingleDiagnostic(ParseWithFallback(
+          if (!get_global(name, &v)) {
+            set_single_diagnostic(ParseWithFallback(
                                     RuntimeError("MS4001", "undefined variable: " + name),
                                     "runtime", "MS4001", current_source_name_),
                                 error);
             return InterpretResult::kRuntimeError;
           }
-          Push(v);
+          push(v);
           break;
         }
         if (op == OpCode::kSetGlobal) {
           Value v;
-          Pop(&v);
-          if (!SetGlobal(name, v)) {
-            SetSingleDiagnostic(ParseWithFallback(
+          pop(&v);
+          if (!set_global(name, v)) {
+            set_single_diagnostic(ParseWithFallback(
                                     RuntimeError("MS4001", "undefined variable: " + name),
                                     "runtime", "MS4001", current_source_name_),
                                 error);
@@ -151,28 +151,28 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
           break;
         }
         std::string module_error;
-        auto module = modules_.Load(name, *this, &module_error);
+        auto module = modules_.load(name, *this, &module_error);
         if (!module) {
-          SetSingleDiagnostic(ParseWithFallback(module_error, "module", "MS5004",
+          set_single_diagnostic(ParseWithFallback(module_error, "module", "MS5004",
                                                 current_source_name_),
                               error);
           return InterpretResult::kRuntimeError;
         }
-        DefineGlobal(LastSegment(name), Value(module));
+        define_global(last_segment(name), Value(module));
         break;
       }
       case OpCode::kImportSymbol: {
         Constant module_name;
         Constant symbol_name;
         Constant alias_name;
-        if (!ReadConstant(chunk, ip++, &module_name) ||
-            !ReadConstant(chunk, ip++, &symbol_name) ||
-            !ReadConstant(chunk, ip++, &alias_name) ||
+        if (!read_constant(chunk, ip++, &module_name) ||
+            !read_constant(chunk, ip++, &symbol_name) ||
+            !read_constant(chunk, ip++, &alias_name) ||
             !std::holds_alternative<std::string>(module_name) ||
             !std::holds_alternative<std::string>(symbol_name) ||
             !std::holds_alternative<std::string>(alias_name)) {
-          SetSingleDiagnostic(
-              MakeDiagnostic("runtime", "MS4003", "invalid from-import operand",
+          set_single_diagnostic(
+              make_diagnostic("runtime", "MS4003", "invalid from-import operand",
                              DiagnosticSpan{current_source_name_, 1}),
               error);
           return InterpretResult::kRuntimeError;
@@ -182,23 +182,23 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
         const std::string alias = std::get<std::string>(alias_name);
 
         std::string module_error;
-        auto loaded = modules_.Load(module, *this, &module_error);
+        auto loaded = modules_.load(module, *this, &module_error);
         if (!loaded) {
-          SetSingleDiagnostic(ParseWithFallback(module_error, "module", "MS5004",
+          set_single_diagnostic(ParseWithFallback(module_error, "module", "MS5004",
                                                 current_source_name_),
                               error);
           return InterpretResult::kRuntimeError;
         }
         Value exported;
-        if (!loaded->exports.Get(symbol, &exported)) {
-          SetSingleDiagnostic(
+        if (!loaded->exports.get(symbol, &exported)) {
+          set_single_diagnostic(
               ParseWithFallback("module error (MS5002): module '" + module + "' has no symbol '" +
                                     symbol + "'",
                                 "module", "MS5002", current_source_name_),
               error);
           return InterpretResult::kRuntimeError;
         }
-        DefineGlobal(alias, exported);
+        define_global(alias, exported);
         break;
       }
       case OpCode::kReturn:
@@ -208,11 +208,11 @@ InterpretResult Vm::Execute(const Chunk& chunk, std::string* error) {
   return InterpretResult::kOk;
 }
 
-InterpretResult Vm::ExecuteSource(const std::string& source, std::string* error) {
-  return ExecuteSourceNamed(source, "script.ms", error);
+InterpretResult Vm::execute_source(const std::string& source, std::string* error) {
+  return execute_source_named(source, "script.ms", error);
 }
 
-InterpretResult Vm::ExecuteSourceNamed(const std::string& source, const std::string& source_name,
+InterpretResult Vm::execute_source_named(const std::string& source, const std::string& source_name,
                                        std::string* error) {
   current_source_name_ = source_name;
   last_diagnostics_.clear();
@@ -221,7 +221,7 @@ InterpretResult Vm::ExecuteSourceNamed(const std::string& source, const std::str
   auto execute_legacy = [&]() -> InterpretResult {
     last_source_route_ = SourceExecutionRoute::kLegacyInterpreter;
     std::string legacy_error;
-    const bool ok = ScriptInterpreter::Execute(*this, source, &legacy_error);
+    const bool ok = ScriptInterpreter::execute(*this, source, &legacy_error);
     if (ok) {
       if (error != nullptr) {
         error->clear();
@@ -229,7 +229,7 @@ InterpretResult Vm::ExecuteSourceNamed(const std::string& source, const std::str
       last_diagnostics_.clear();
       return InterpretResult::kOk;
     }
-    SetSingleDiagnostic(ParseWithFallback(legacy_error, "runtime", "MS4003", source_name), error);
+    set_single_diagnostic(ParseWithFallback(legacy_error, "runtime", "MS4003", source_name), error);
     return LegacyResultFromError(legacy_error);
   };
 
@@ -237,17 +237,17 @@ InterpretResult Vm::ExecuteSourceNamed(const std::string& source, const std::str
     return execute_legacy();
   }
 
-  CompileResult compiled = CompileToChunk(source);
+  CompileResult compiled = compile_to_chunk(source);
   if (!compiled.errors.empty()) {
     std::vector<Diagnostic> diagnostics;
     diagnostics.reserve(compiled.errors.size());
     for (const auto& item : compiled.errors) {
       diagnostics.push_back(ParseWithFallback(item, "parse", "MS2001", source_name));
     }
-    SetDiagnostics(std::move(diagnostics), error);
+    set_diagnostics(std::move(diagnostics), error);
     if (source_mode_ == SourceExecutionMode::kVmPreferredWithLegacyFallback) {
       std::string legacy_error;
-      if (ScriptInterpreter::Execute(*this, source, &legacy_error)) {
+      if (ScriptInterpreter::execute(*this, source, &legacy_error)) {
         last_source_route_ = SourceExecutionRoute::kVmCompileFailedThenLegacy;
         if (error != nullptr) {
           error->clear();
@@ -256,7 +256,7 @@ InterpretResult Vm::ExecuteSourceNamed(const std::string& source, const std::str
         return InterpretResult::kOk;
       }
       last_source_route_ = SourceExecutionRoute::kVmCompileFailedThenLegacy;
-      SetSingleDiagnostic(ParseWithFallback(legacy_error, "runtime", "MS4003", source_name), error);
+      set_single_diagnostic(ParseWithFallback(legacy_error, "runtime", "MS4003", source_name), error);
       return LegacyResultFromError(legacy_error);
     }
     last_source_route_ = SourceExecutionRoute::kVmPipeline;
@@ -264,71 +264,71 @@ InterpretResult Vm::ExecuteSourceNamed(const std::string& source, const std::str
   }
 
   last_source_route_ = SourceExecutionRoute::kVmPipeline;
-  const InterpretResult vm_result = Execute(compiled.chunk, error);
+  const InterpretResult vm_result = execute(compiled.chunk, error);
   if (vm_result != InterpretResult::kOk) {
     return vm_result;
   }
   return InterpretResult::kOk;
 }
 
-InterpretResult Vm::ExecuteModule(const std::string& source,
+InterpretResult Vm::execute_module(const std::string& source,
                                   std::shared_ptr<Module> module,
                                   std::string* error) {
   auto prev = current_module_;
   current_module_ = std::move(module);
   const std::string previous_source_name = current_source_name_;
   const std::string module_name = current_module_ != nullptr ? current_module_->name : "module.ms";
-  const InterpretResult r = ExecuteSourceNamed(source, module_name, error);
+  const InterpretResult r = execute_source_named(source, module_name, error);
   current_source_name_ = previous_source_name;
   current_module_ = prev;
   return r;
 }
 
-bool Vm::DefineGlobal(const std::string& name, Value value) {
-  gc_.OnAllocation(name.size() + value.ToString().size());
-  if (gc_.ShouldCollect()) {
-    gc_.Collect();
+bool Vm::define_global(const std::string& name, Value value) {
+  gc_.on_allocation(name.size() + value.to_string().size());
+  if (gc_.should_collect()) {
+    gc_.collect();
   }
-  globals_.Set(name, value);
+  globals_.set(name, value);
   if (current_module_ != nullptr) {
-    current_module_->exports.Set(name, value);
+    current_module_->exports.set(name, value);
   }
   return true;
 }
 
-bool Vm::GetGlobal(const std::string& name, Value* out) const {
-  return globals_.Get(name, out);
+bool Vm::get_global(const std::string& name, Value* out) const {
+  return globals_.get(name, out);
 }
 
-bool Vm::SetGlobal(const std::string& name, Value value) {
-  if (!globals_.Contains(name)) {
+bool Vm::set_global(const std::string& name, Value value) {
+  if (!globals_.contains(name)) {
     return false;
   }
-  globals_.Set(name, value);
+  globals_.set(name, value);
   if (current_module_ != nullptr) {
-    current_module_->exports.Set(name, value);
+    current_module_->exports.set(name, value);
   }
   return true;
 }
 
-ModuleLoader& Vm::Modules() { return modules_; }
+ModuleLoader& Vm::modules() { return modules_; }
 
-GcController& Vm::Gc() { return gc_; }
+GcController& Vm::gc() { return gc_; }
 
-void Vm::SetSourceExecutionMode(const SourceExecutionMode mode) { source_mode_ = mode; }
+void Vm::set_source_execution_mode(const SourceExecutionMode mode) { source_mode_ = mode; }
 
-SourceExecutionMode Vm::GetSourceExecutionMode() const { return source_mode_; }
+SourceExecutionMode Vm::get_source_execution_mode() const { return source_mode_; }
 
-SourceExecutionRoute Vm::LastSourceExecutionRoute() const { return last_source_route_; }
+SourceExecutionRoute Vm::last_source_execution_route() const { return last_source_route_; }
 
-const std::vector<Diagnostic>& Vm::LastDiagnostics() const { return last_diagnostics_; }
+const std::vector<Diagnostic>& Vm::last_diagnostics() const { return last_diagnostics_; }
 
-bool Vm::Push(Value value) {
+bool Vm::push(Value value) {
   stack_.push_back(std::move(value));
   return true;
 }
 
-bool Vm::Pop(Value* out) {
+bool Vm::pop(Value* out) {
   if (stack_.empty()) {
     return false;
   }
@@ -339,7 +339,7 @@ bool Vm::Pop(Value* out) {
   return true;
 }
 
-bool Vm::Peek(Value* out) const {
+bool Vm::peek(Value* out) const {
   if (stack_.empty()) {
     return false;
   }
@@ -349,23 +349,23 @@ bool Vm::Peek(Value* out) const {
   return true;
 }
 
-bool Vm::ReadConstant(const Chunk& chunk, const std::size_t ip, Constant* out) const {
-  if (ip >= chunk.Code().size()) {
+bool Vm::read_constant(const Chunk& chunk, const std::size_t ip, Constant* out) const {
+  if (ip >= chunk.code().size()) {
     return false;
   }
-  const std::size_t index = chunk.Code()[ip];
-  if (index >= chunk.Constants().size()) {
+  const std::size_t index = chunk.code()[ip];
+  if (index >= chunk.constants().size()) {
     return false;
   }
   if (out != nullptr) {
-    *out = chunk.Constants()[index];
+    *out = chunk.constants()[index];
   }
   return true;
 }
 
-Value Vm::ConstantToValue(const Constant& constant) const {
+Value Vm::constant_to_value(const Constant& constant) const {
   if (std::holds_alternative<std::monostate>(constant)) {
-    return Value::Nil();
+    return Value::nil();
   }
   if (std::holds_alternative<bool>(constant)) {
     return Value(std::get<bool>(constant));
@@ -376,7 +376,7 @@ Value Vm::ConstantToValue(const Constant& constant) const {
   return Value(std::get<std::string>(constant));
 }
 
-std::string Vm::LastSegment(const std::string& dotted) const {
+std::string Vm::last_segment(const std::string& dotted) const {
   const auto pos = dotted.find_last_of('.');
   if (pos == std::string::npos) {
     return dotted;
@@ -384,17 +384,17 @@ std::string Vm::LastSegment(const std::string& dotted) const {
   return dotted.substr(pos + 1);
 }
 
-void Vm::SetDiagnostics(std::vector<Diagnostic> diagnostics, std::string* error) {
+void Vm::set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error) {
   last_diagnostics_ = std::move(diagnostics);
   if (error != nullptr) {
-    *error = RenderDiagnostics(last_diagnostics_);
+    *error = render_diagnostics(last_diagnostics_);
   }
 }
 
-void Vm::SetSingleDiagnostic(const Diagnostic& diagnostic, std::string* error) {
+void Vm::set_single_diagnostic(const Diagnostic& diagnostic, std::string* error) {
   std::vector<Diagnostic> diagnostics;
   diagnostics.push_back(diagnostic);
-  SetDiagnostics(std::move(diagnostics), error);
+  set_diagnostics(std::move(diagnostics), error);
 }
 
 }  // namespace ms

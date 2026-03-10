@@ -81,15 +81,15 @@ void RunGoldenCase(const std::string& id, const std::string& script_path,
 
   const std::string source = ReadAll(script_path);
   ms::Vm vm;
-  vm.Modules().AddSearchPath(RepoRoot() + "/tests/scripts/module");
+  vm.modules().add_search_path(RepoRoot() + "/tests/scripts/module");
   std::ostringstream output;
-  vm.SetOutput(output);
+  vm.set_output(output);
 
   std::string error;
   const ms::InterpretResult result =
-      vm.ExecuteSourceNamed(source, NormalizePath(expected->file), &error);
+      vm.execute_source_named(source, NormalizePath(expected->file), &error);
   Expect(result == expected_result, id + " result mismatch");
-  const auto& diagnostics = vm.LastDiagnostics();
+  const auto& diagnostics = vm.last_diagnostics();
   Expect(!diagnostics.empty(), id + " should expose diagnostics");
   if (diagnostics.empty()) {
     return;

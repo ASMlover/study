@@ -13,12 +13,12 @@ class GcController {
  public:
   explicit GcController(std::size_t threshold_bytes = 1024 * 1024);
 
-  void OnAllocation(std::size_t bytes);
-  bool ShouldCollect() const;
-  void Collect();
+  void on_allocation(std::size_t bytes);
+  bool should_collect() const;
+  void collect();
 
-  const GcStats& Stats() const;
-  void SetThreshold(std::size_t bytes);
+  const GcStats& stats() const;
+  void set_threshold(std::size_t bytes);
 
  private:
   GcStats stats_;

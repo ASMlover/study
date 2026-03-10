@@ -1420,3 +1420,18 @@ Commit message convention reminder:
   - pass (`5/5` tests: `maple_tests_all`, `maple_tests_unit`,
     `maple_tests_integration`, `maple_tests_conformance`, `maple_tests_diagnostics`)
 
+
+#### 2026-03-11 Incremental Update
+
+- Scope: normalize existing C++ API/method naming to `lower_snake_case` per `AGENTS.md` coding rules.
+- Updated modules:
+  - `src/bytecode`: chunk/disasm APIs (`add_constant`, `write_op`, `disassemble_chunk`, etc.)
+  - `src/frontend`: lexer/parser/compiler public and internal method naming (`scan_all_tokens`, `parse_dotted_name`, `compile_to_chunk`, etc.)
+  - `src/runtime`: VM/GC/module/table/value/object/script-interpreter APIs (`execute_source_named`, `set_source_execution_mode`, `define_global`, `on_allocation`, `to_string`, `is_compile_like_error`, etc.)
+  - `src/support`: logger/source APIs (`instance`, `set_min_level`, `log`, `load_from_path`, `render_diagnostics`, etc.)
+  - `tests/`: synchronized all affected call sites.
+- Verification:
+  - `cmake --build build --config Debug` (pass)
+  - `ctest --test-dir build --output-on-failure -C Debug` (pass, 5/5)
+- Notes:
+  - constructors/type names keep C++ conventional PascalCase; function and method names were normalized to `lower_snake_case`.

@@ -4,9 +4,9 @@
 
 namespace ms {
 
-int RunScript(const std::string& source, std::string* error) {
+int run_script(const std::string& source, std::string* error) {
   Vm vm;
-  const InterpretResult r = vm.ExecuteSource(source, error);
+  const InterpretResult r = vm.execute_source(source, error);
   return static_cast<int>(r);
 }
 

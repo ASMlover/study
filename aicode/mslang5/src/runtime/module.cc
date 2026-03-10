@@ -17,11 +17,11 @@ std::string ModuleError(const std::string& code, const std::string& message) {
 
 ModuleLoader::ModuleLoader() { search_paths_.push_back("."); }
 
-void ModuleLoader::AddSearchPath(std::string path) {
+void ModuleLoader::add_search_path(std::string path) {
   search_paths_.push_back(std::move(path));
 }
 
-std::optional<std::string> ModuleLoader::ResolvePath(
+std::optional<std::string> ModuleLoader::resolve_path(
     const std::string& module_name) const {
   std::string relative = module_name;
   for (char& c : relative) {
@@ -40,7 +40,7 @@ std::optional<std::string> ModuleLoader::ResolvePath(
   return std::nullopt;
 }
 
-std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& vm,
+std::shared_ptr<Module> ModuleLoader::load(const std::string& module_name, Vm& vm,
                                            std::string* error) {
   if (const auto it = cache_.find(module_name); it != cache_.end()) {
     if (it->second->initializing) {
@@ -59,7 +59,7 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
     return nullptr;
   }
 
-  auto path = ResolvePath(module_name);
+  auto path = resolve_path(module_name);
   if (!path) {
     if (error != nullptr) {
       *error = ModuleError("MS5001", "module not found: " + module_name);
@@ -67,7 +67,7 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
     return nullptr;
   }
 
-  auto source = SourceFile::LoadFromPath(*path);
+  auto source = SourceFile::load_from_path(*path);
   if (!source) {
     if (error != nullptr) {
       *error = ModuleError("MS5004", "failed to read module '" + module_name + "': " + source.error());
@@ -82,13 +82,13 @@ std::shared_ptr<Module> ModuleLoader::Load(const std::string& module_name, Vm& v
   cache_[module_name] = module;
 
   std::string runtime_error;
-  const InterpretResult r = vm.ExecuteModule(source->Text(), module, &runtime_error);
+  const InterpretResult r = vm.execute_module(source->text(), module, &runtime_error);
   if (r != InterpretResult::kOk) {
     cache_.erase(module_name);
     failed_[module_name] = runtime_error;
     if (error != nullptr) {
       const Diagnostic cause =
-          ParseDiagnosticText(runtime_error, "module", "MS5004", module_name);
+          parse_diagnostic_text(runtime_error, "module", "MS5004", module_name);
       if (cause.code == "MS5003" || runtime_error.find("MS5003") != std::string::npos) {
         *error = ModuleError("MS5003", "circular module dependency detected: " + module_name);
       } else {

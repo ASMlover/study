@@ -19,12 +19,12 @@ std::string ReadAll(const std::string& path) {
 
 int RunModuleTests() {
   ms::Vm vm;
-  vm.Modules().AddSearchPath(RepoRoot() + "/tests/scripts/module");
+  vm.modules().add_search_path(RepoRoot() + "/tests/scripts/module");
   std::ostringstream out;
-  vm.SetOutput(out);
+  vm.set_output(out);
 
   std::string error;
-  ms::InterpretResult r = vm.ExecuteSource(
+  ms::InterpretResult r = vm.execute_source(
       "import side;\nimport side;\nfrom util import value as v;\nprint v;\n", &error);
   Expect(r == ms::InterpretResult::kOk, "module script should run");
   const std::string text = out.str();
@@ -35,7 +35,7 @@ int RunModuleTests() {
   Expect(text.find("7") != std::string::npos, "from-import alias should bind symbol");
 
   std::string missing_error;
-  r = vm.ExecuteSource("import no_such_module;\n", &missing_error);
+  r = vm.execute_source("import no_such_module;\n", &missing_error);
   Expect(r == ms::InterpretResult::kRuntimeError, "missing module should fail");
   Expect(missing_error.find("MS5001") != std::string::npos,
          "missing module should expose MS5001");
@@ -43,13 +43,13 @@ int RunModuleTests() {
          "missing module should report clear error");
 
   std::string missing_symbol_error;
-  r = vm.ExecuteSource("from util import not_exported as x;\n", &missing_symbol_error);
+  r = vm.execute_source("from util import not_exported as x;\n", &missing_symbol_error);
   Expect(r == ms::InterpretResult::kRuntimeError, "missing module symbol should fail");
   Expect(missing_symbol_error.find("MS5002") != std::string::npos,
          "missing module symbol should expose MS5002");
 
   std::string cycle_error;
-  r = vm.ExecuteSource(ReadAll(RepoRoot() + "/tests/scripts/module/error_cycle_entry.ms"),
+  r = vm.execute_source(ReadAll(RepoRoot() + "/tests/scripts/module/error_cycle_entry.ms"),
                        &cycle_error);
   Expect(r == ms::InterpretResult::kRuntimeError, "cycle import should fail");
   Expect(cycle_error.find("MS5003") != std::string::npos, "cycle import should expose MS5003");

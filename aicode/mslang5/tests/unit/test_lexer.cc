@@ -6,7 +6,7 @@
 
 int RunLexerTests() {
   ms::Lexer lexer("var x = 1; // c\nprint x;\nimport a.b;\nfrom a.b import c as d;");
-  const std::vector<ms::Token> tokens = lexer.ScanAllTokens();
+  const std::vector<ms::Token> tokens = lexer.scan_all_tokens();
   Expect(!tokens.empty(), "lexer should emit tokens");
   Expect(tokens[0].type == ms::TokenType::kVar, "first token should be 'var'");
 

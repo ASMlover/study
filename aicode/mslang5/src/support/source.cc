@@ -8,7 +8,7 @@
 
 namespace ms {
 
-std::expected<SourceFile, std::string> SourceFile::LoadFromPath(
+std::expected<SourceFile, std::string> SourceFile::load_from_path(
     const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   if (!in.is_open()) {
@@ -29,11 +29,11 @@ SourceFile::SourceFile(std::string path, std::string text)
   }
 }
 
-const std::string& SourceFile::Path() const { return path_; }
+const std::string& SourceFile::path() const { return path_; }
 
-const std::string& SourceFile::Text() const { return text_; }
+const std::string& SourceFile::text() const { return text_; }
 
-SourceLocation SourceFile::Locate(const std::size_t offset) const {
+SourceLocation SourceFile::locate(const std::size_t offset) const {
   const std::size_t bounded = std::min(offset, text_.size());
   const auto it =
       std::upper_bound(line_starts_.begin(), line_starts_.end(), bounded);
@@ -43,7 +43,7 @@ SourceLocation SourceFile::Locate(const std::size_t offset) const {
   return SourceLocation{path_, line_index + 1, bounded - line_start + 1};
 }
 
-Diagnostic MakeDiagnostic(std::string phase, std::string code, std::string message,
+Diagnostic make_diagnostic(std::string phase, std::string code, std::string message,
                           DiagnosticSpan span, std::vector<std::string> notes) {
   return Diagnostic{
       std::move(phase),
@@ -70,7 +70,7 @@ std::string Trim(const std::string& value) {
 
 }  // namespace
 
-Diagnostic ParseDiagnosticText(const std::string& text, const std::string& default_phase,
+Diagnostic parse_diagnostic_text(const std::string& text, const std::string& default_phase,
                                const std::string& default_code,
                                const std::string& default_file) {
   std::string primary = text;
@@ -86,7 +86,7 @@ Diagnostic ParseDiagnosticText(const std::string& text, const std::string& defau
   if (std::regex_match(primary, match, with_line_and_code)) {
     DiagnosticSpan span{default_file, static_cast<std::size_t>(std::stoul(match[1].str())),
                         std::nullopt, std::nullopt};
-    return MakeDiagnostic(match[2].str(), match[3].str(), Trim(match[4].str()), span);
+    return make_diagnostic(match[2].str(), match[3].str(), Trim(match[4].str()), span);
   }
 
   const std::regex with_line_without_code(
@@ -94,27 +94,27 @@ Diagnostic ParseDiagnosticText(const std::string& text, const std::string& defau
   if (std::regex_match(primary, match, with_line_without_code)) {
     DiagnosticSpan span{default_file, static_cast<std::size_t>(std::stoul(match[1].str())),
                         std::nullopt, std::nullopt};
-    return MakeDiagnostic(match[2].str(), default_code, Trim(match[3].str()), span);
+    return make_diagnostic(match[2].str(), default_code, Trim(match[3].str()), span);
   }
 
   const std::regex without_line_with_code(
       R"(^\s*([a-zA-Z]+)\s+error\s+\((MS[0-9]{4})\):\s*(.+)\s*$)");
   if (std::regex_match(primary, match, without_line_with_code)) {
     DiagnosticSpan span{default_file, 1, std::nullopt, std::nullopt};
-    return MakeDiagnostic(match[1].str(), match[2].str(), Trim(match[3].str()), span);
+    return make_diagnostic(match[1].str(), match[2].str(), Trim(match[3].str()), span);
   }
 
   const std::regex module_prefix(R"(^\s*module\s+error\s+\((MS[0-9]{4})\):\s*(.+)\s*$)");
   if (std::regex_match(primary, match, module_prefix)) {
     DiagnosticSpan span{default_file, 1, std::nullopt, std::nullopt};
-    return MakeDiagnostic("module", match[1].str(), Trim(match[2].str()), span);
+    return make_diagnostic("module", match[1].str(), Trim(match[2].str()), span);
   }
 
   DiagnosticSpan span{default_file, 1, std::nullopt, std::nullopt};
-  return MakeDiagnostic(default_phase, default_code, primary, span);
+  return make_diagnostic(default_phase, default_code, primary, span);
 }
 
-std::string RenderDiagnostic(const Diagnostic& diagnostic) {
+std::string render_diagnostic(const Diagnostic& diagnostic) {
   std::ostringstream out;
   out << "[" << diagnostic.phase << " " << diagnostic.code << "] " << diagnostic.message << "\n";
   out << diagnostic.span.file << ":" << diagnostic.span.line;
@@ -127,13 +127,13 @@ std::string RenderDiagnostic(const Diagnostic& diagnostic) {
   return out.str();
 }
 
-std::string RenderDiagnostics(const std::vector<Diagnostic>& diagnostics) {
+std::string render_diagnostics(const std::vector<Diagnostic>& diagnostics) {
   std::ostringstream out;
   for (std::size_t i = 0; i < diagnostics.size(); ++i) {
     if (i != 0) {
       out << "\n";
     }
-    out << RenderDiagnostic(diagnostics[i]);
+    out << render_diagnostic(diagnostics[i]);
   }
   return out.str();
 }

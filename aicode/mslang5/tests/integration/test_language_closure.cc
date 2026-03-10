@@ -25,13 +25,13 @@ struct ExecOutcome {
 ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mode) {
   ms::Vm vm;
   std::ostringstream out;
-  vm.SetOutput(out);
-  vm.SetSourceExecutionMode(mode);
+  vm.set_output(out);
+  vm.set_source_execution_mode(mode);
 
   ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kNone};
-  outcome.result = vm.ExecuteSource(src, &outcome.error);
+  outcome.result = vm.execute_source(src, &outcome.error);
   outcome.output = out.str();
-  outcome.route = vm.LastSourceExecutionRoute();
+  outcome.route = vm.last_source_execution_route();
   return outcome;
 }
 

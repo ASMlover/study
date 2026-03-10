@@ -7,65 +7,65 @@ namespace ms {
 
 Lexer::Lexer(std::string source) : source_(std::move(source)) {}
 
-std::vector<Token> Lexer::ScanAllTokens() {
+std::vector<Token> Lexer::scan_all_tokens() {
   std::vector<Token> tokens;
-  while (!IsAtEnd()) {
-    SkipWhitespaceAndComments();
+  while (!is_at_end()) {
+    skip_whitespace_and_comments();
     start_ = current_;
-    if (IsAtEnd()) {
+    if (is_at_end()) {
       break;
     }
-    const char c = Advance();
+    const char c = advance();
     switch (c) {
       case '(':
-        tokens.push_back(MakeToken(TokenType::kLeftParen));
+        tokens.push_back(make_token(TokenType::kLeftParen));
         break;
       case ')':
-        tokens.push_back(MakeToken(TokenType::kRightParen));
+        tokens.push_back(make_token(TokenType::kRightParen));
         break;
       case '{':
-        tokens.push_back(MakeToken(TokenType::kLeftBrace));
+        tokens.push_back(make_token(TokenType::kLeftBrace));
         break;
       case '}':
-        tokens.push_back(MakeToken(TokenType::kRightBrace));
+        tokens.push_back(make_token(TokenType::kRightBrace));
         break;
       case ',':
-        tokens.push_back(MakeToken(TokenType::kComma));
+        tokens.push_back(make_token(TokenType::kComma));
         break;
       case '<':
-        tokens.push_back(MakeToken(TokenType::kLess));
+        tokens.push_back(make_token(TokenType::kLess));
         break;
       case '+':
-        tokens.push_back(MakeToken(TokenType::kPlus));
+        tokens.push_back(make_token(TokenType::kPlus));
         break;
       case '-':
-        tokens.push_back(MakeToken(TokenType::kMinus));
+        tokens.push_back(make_token(TokenType::kMinus));
         break;
       case '*':
-        tokens.push_back(MakeToken(TokenType::kStar));
+        tokens.push_back(make_token(TokenType::kStar));
         break;
       case '/':
-        tokens.push_back(MakeToken(TokenType::kSlash));
+        tokens.push_back(make_token(TokenType::kSlash));
         break;
       case ';':
-        tokens.push_back(MakeToken(TokenType::kSemicolon));
+        tokens.push_back(make_token(TokenType::kSemicolon));
         break;
       case '.':
-        tokens.push_back(MakeToken(TokenType::kDot));
+        tokens.push_back(make_token(TokenType::kDot));
         break;
       case '=':
-        tokens.push_back(MakeToken(TokenType::kEqual));
+        tokens.push_back(make_token(TokenType::kEqual));
         break;
       case '"':
-        tokens.push_back(StringToken());
+        tokens.push_back(string_token());
         break;
       default:
         if (std::isdigit(static_cast<unsigned char>(c))) {
-          tokens.push_back(NumberToken());
+          tokens.push_back(number_token());
         } else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
-          tokens.push_back(IdentifierToken());
+          tokens.push_back(identifier_token());
         } else {
-          tokens.push_back(ErrorToken("unexpected character"));
+          tokens.push_back(error_token("unexpected character"));
         }
         break;
     }
@@ -74,47 +74,47 @@ std::vector<Token> Lexer::ScanAllTokens() {
   return tokens;
 }
 
-char Lexer::Advance() { return source_[current_++]; }
+char Lexer::advance() { return source_[current_++]; }
 
-bool Lexer::Match(const char expected) {
-  if (IsAtEnd() || source_[current_] != expected) {
+bool Lexer::match(const char expected) {
+  if (is_at_end() || source_[current_] != expected) {
     return false;
   }
   ++current_;
   return true;
 }
 
-char Lexer::Peek() const {
-  if (IsAtEnd()) {
+char Lexer::peek() const {
+  if (is_at_end()) {
     return '\0';
   }
   return source_[current_];
 }
 
-char Lexer::PeekNext() const {
+char Lexer::peek_next() const {
   if (current_ + 1 >= source_.size()) {
     return '\0';
   }
   return source_[current_ + 1];
 }
 
-bool Lexer::IsAtEnd() const { return current_ >= source_.size(); }
+bool Lexer::is_at_end() const { return current_ >= source_.size(); }
 
-void Lexer::SkipWhitespaceAndComments() {
-  while (!IsAtEnd()) {
-    const char c = Peek();
+void Lexer::skip_whitespace_and_comments() {
+  while (!is_at_end()) {
+    const char c = peek();
     if (c == ' ' || c == '\r' || c == '\t') {
-      Advance();
+      advance();
       continue;
     }
     if (c == '\n') {
       ++line_;
-      Advance();
+      advance();
       continue;
     }
-    if (c == '/' && PeekNext() == '/') {
-      while (!IsAtEnd() && Peek() != '\n') {
-        Advance();
+    if (c == '/' && peek_next() == '/') {
+      while (!is_at_end() && peek() != '\n') {
+        advance();
       }
       continue;
     }
@@ -122,51 +122,51 @@ void Lexer::SkipWhitespaceAndComments() {
   }
 }
 
-Token Lexer::MakeToken(const TokenType type) const {
+Token Lexer::make_token(const TokenType type) const {
   return Token{type, source_.substr(start_, current_ - start_), line_};
 }
 
-Token Lexer::ErrorToken(const std::string& message) const {
+Token Lexer::error_token(const std::string& message) const {
   return Token{TokenType::kError, message, line_};
 }
 
-Token Lexer::StringToken() {
-  while (!IsAtEnd() && Peek() != '"') {
-    if (Peek() == '\n') {
+Token Lexer::string_token() {
+  while (!is_at_end() && peek() != '"') {
+    if (peek() == '\n') {
       ++line_;
     }
-    Advance();
+    advance();
   }
-  if (IsAtEnd()) {
-    return ErrorToken("unterminated string");
+  if (is_at_end()) {
+    return error_token("unterminated string");
   }
-  Advance();
+  advance();
   const std::string quoted = source_.substr(start_ + 1, current_ - start_ - 2);
   return Token{TokenType::kString, quoted, line_};
 }
 
-Token Lexer::NumberToken() {
-  while (std::isdigit(static_cast<unsigned char>(Peek()))) {
-    Advance();
+Token Lexer::number_token() {
+  while (std::isdigit(static_cast<unsigned char>(peek()))) {
+    advance();
   }
-  if (Peek() == '.' && std::isdigit(static_cast<unsigned char>(PeekNext()))) {
-    Advance();
-    while (std::isdigit(static_cast<unsigned char>(Peek()))) {
-      Advance();
+  if (peek() == '.' && std::isdigit(static_cast<unsigned char>(peek_next()))) {
+    advance();
+    while (std::isdigit(static_cast<unsigned char>(peek()))) {
+      advance();
     }
   }
-  return MakeToken(TokenType::kNumber);
+  return make_token(TokenType::kNumber);
 }
 
-Token Lexer::IdentifierToken() {
-  while (std::isalnum(static_cast<unsigned char>(Peek())) || Peek() == '_') {
-    Advance();
+Token Lexer::identifier_token() {
+  while (std::isalnum(static_cast<unsigned char>(peek())) || peek() == '_') {
+    advance();
   }
   const std::string text = source_.substr(start_, current_ - start_);
-  return Token{IdentifierType(text), text, line_};
+  return Token{identifier_type(text), text, line_};
 }
 
-TokenType Lexer::IdentifierType(const std::string& text) const {
+TokenType Lexer::identifier_type(const std::string& text) const {
   static const std::unordered_map<std::string, TokenType> keywords = {
       {"print", TokenType::kPrint},   {"var", TokenType::kVar},
       {"import", TokenType::kImport}, {"from", TokenType::kFrom},
