@@ -244,6 +244,16 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { nullptr,             &Compiler::binary,  Precedence::PREC_COMPARISON },
   // TOKEN_COLON
   { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_PLUS_EQUAL
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_MINUS_EQUAL
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_STAR_EQUAL
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_SLASH_EQUAL
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_PERCENT_EQUAL
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_IDENTIFIER
   { &Compiler::variable, nullptr,            Precedence::PREC_NONE },
   // TOKEN_STRING
@@ -570,6 +580,23 @@ int Compiler::resolve_upvalue(const Token& name) noexcept {
   return -1;
 }
 
+// Returns the arithmetic opcode for a compound assignment token type.
+// Returns OP_RETURN as a sentinel when the token is not a compound assignment.
+static OpCode compound_op(TokenType type) noexcept {
+  switch (type) {
+  case TokenType::TOKEN_PLUS_EQUAL:    return OpCode::OP_ADD;
+  case TokenType::TOKEN_MINUS_EQUAL:   return OpCode::OP_SUBTRACT;
+  case TokenType::TOKEN_STAR_EQUAL:    return OpCode::OP_MULTIPLY;
+  case TokenType::TOKEN_SLASH_EQUAL:   return OpCode::OP_DIVIDE;
+  case TokenType::TOKEN_PERCENT_EQUAL: return OpCode::OP_MODULO;
+  default: return OpCode::OP_RETURN; // sentinel: not a compound op
+  }
+}
+
+static bool is_compound_op(TokenType type) noexcept {
+  return compound_op(type) != OpCode::OP_RETURN;
+}
+
 void Compiler::named_variable(const Token& name, bool can_assign) noexcept {
   OpCode get_op, set_op;
   int arg = resolve_local(name);
@@ -587,6 +614,13 @@ void Compiler::named_variable(const Token& name, bool can_assign) noexcept {
 
   if (can_assign && match(TokenType::TOKEN_EQUAL)) {
     expression();
+    emit_op_byte(set_op, static_cast<u8_t>(arg));
+  } else if (can_assign && is_compound_op(ps_->current.type)) {
+    OpCode op = compound_op(ps_->current.type);
+    advance();
+    emit_op_byte(get_op, static_cast<u8_t>(arg));
+    expression();
+    emit_op(op);
     emit_op_byte(set_op, static_cast<u8_t>(arg));
   } else {
     emit_op_byte(get_op, static_cast<u8_t>(arg));

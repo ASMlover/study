@@ -256,11 +256,11 @@ Token Scanner::scan_token() noexcept {
   case ';': return make_token(TokenType::TOKEN_SEMICOLON);
   case ',': return make_token(TokenType::TOKEN_COMMA);
   case '.': return make_token(TokenType::TOKEN_DOT);
-  case '-': return make_token(TokenType::TOKEN_MINUS);
-  case '+': return make_token(TokenType::TOKEN_PLUS);
-  case '/': return make_token(TokenType::TOKEN_SLASH);
-  case '*': return make_token(TokenType::TOKEN_STAR);
-  case '%': return make_token(TokenType::TOKEN_PERCENT);
+  case '-': return make_token(match('=') ? TokenType::TOKEN_MINUS_EQUAL : TokenType::TOKEN_MINUS);
+  case '+': return make_token(match('=') ? TokenType::TOKEN_PLUS_EQUAL : TokenType::TOKEN_PLUS);
+  case '/': return make_token(match('=') ? TokenType::TOKEN_SLASH_EQUAL : TokenType::TOKEN_SLASH);
+  case '*': return make_token(match('=') ? TokenType::TOKEN_STAR_EQUAL : TokenType::TOKEN_STAR);
+  case '%': return make_token(match('=') ? TokenType::TOKEN_PERCENT_EQUAL : TokenType::TOKEN_PERCENT);
   case ':': return make_token(TokenType::TOKEN_COLON);
   case '!': return make_token(match('=') ? TokenType::TOKEN_BANG_EQUAL : TokenType::TOKEN_BANG);
   case '=': return make_token(match('=') ? TokenType::TOKEN_EQUAL_EQUAL : TokenType::TOKEN_EQUAL);
