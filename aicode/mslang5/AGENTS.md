@@ -20,6 +20,7 @@
 - Follow the Google C++ Style Guide.
 - Use `lower_snake_case` for function names.
 - Prefer using `noexcept` whenever it is semantically safe and can be verified.
+- Prefer using `inline` whenever it is semantically safe and improves small-function call overhead/readability.
 - Keep cross-platform support:
   - Windows (MSVC)
   - Linux (GCC)

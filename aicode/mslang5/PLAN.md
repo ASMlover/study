@@ -1449,3 +1449,23 @@ Commit message convention reminder:
 - Verification:
   - `cmake --build build --config Debug` (pass)
   - `ctest --test-dir build --output-on-failure -C Debug` (pass, 5/5)
+
+#### 2026-03-11 Incremental Update (inline preference)
+
+- Added C++ rule in `AGENTS.md`: prefer `inline` whenever semantically safe and beneficial for small-function overhead/readability.
+- Applied inline-oriented refactor for low-risk small functions:
+  - `src/bytecode/chunk.hh/.cc`:
+    - moved `write_op`, `code`, `lines`, `constants` to header inline definitions.
+  - `src/support/source.hh/.cc`:
+    - moved `SourceFile::path/text` to header inline definitions.
+  - `src/runtime/table.hh/.cc`:
+    - moved `size/data` to header inline definitions.
+  - `src/runtime/object.hh/.cc`:
+    - marked `StringObject` tiny methods inline;
+    - moved `make_string_object` to header inline definition.
+  - `src/runtime/value.hh`:
+    - explicitly marked small header-defined constructors/predicates/accessors/operator as inline.
+- Verification:
+  - `cmake --build build --config Debug` initially hit transient linker object corruption (`LNK1236` on `chunk.obj`), resolved by clean rebuild.
+  - `cmake --build build --config Debug --clean-first` (pass)
+  - `ctest --test-dir build --output-on-failure -C Debug` (pass, 5/5)

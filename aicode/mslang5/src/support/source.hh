@@ -37,8 +37,8 @@ class SourceFile {
 
   SourceFile(std::string path, std::string text);
 
-  const std::string& path() const noexcept;
-  const std::string& text() const noexcept;
+  inline const std::string& path() const noexcept { return path_; }
+  inline const std::string& text() const noexcept { return text_; }
 
   SourceLocation locate(std::size_t offset) const;
 

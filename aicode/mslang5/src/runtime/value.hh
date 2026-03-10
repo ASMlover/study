@@ -17,32 +17,32 @@ class Value {
                                std::shared_ptr<Module>, std::shared_ptr<RuntimeObject>>;
 
   Value() = default;
-  explicit Value(bool v) : storage_(v) {}
-  explicit Value(double v) : storage_(v) {}
-  explicit Value(std::string v) : storage_(std::move(v)) {}
-  explicit Value(std::shared_ptr<Module> module) : storage_(std::move(module)) {}
-  explicit Value(std::shared_ptr<RuntimeObject> object) : storage_(std::move(object)) {}
+  inline explicit Value(bool v) : storage_(v) {}
+  inline explicit Value(double v) : storage_(v) {}
+  inline explicit Value(std::string v) : storage_(std::move(v)) {}
+  inline explicit Value(std::shared_ptr<Module> module) : storage_(std::move(module)) {}
+  inline explicit Value(std::shared_ptr<RuntimeObject> object) : storage_(std::move(object)) {}
 
-  static Value nil() noexcept { return Value(); }
+  inline static Value nil() noexcept { return Value(); }
 
-  bool is_nil() const noexcept { return std::holds_alternative<std::monostate>(storage_); }
-  bool is_bool() const noexcept { return std::holds_alternative<bool>(storage_); }
-  bool is_number() const noexcept { return std::holds_alternative<double>(storage_); }
-  bool is_string() const noexcept { return std::holds_alternative<std::string>(storage_); }
-  bool is_module() const noexcept {
+  inline bool is_nil() const noexcept { return std::holds_alternative<std::monostate>(storage_); }
+  inline bool is_bool() const noexcept { return std::holds_alternative<bool>(storage_); }
+  inline bool is_number() const noexcept { return std::holds_alternative<double>(storage_); }
+  inline bool is_string() const noexcept { return std::holds_alternative<std::string>(storage_); }
+  inline bool is_module() const noexcept {
     return std::holds_alternative<std::shared_ptr<Module>>(storage_);
   }
-  bool is_object() const noexcept {
+  inline bool is_object() const noexcept {
     return std::holds_alternative<std::shared_ptr<RuntimeObject>>(storage_);
   }
 
-  bool as_bool() const { return std::get<bool>(storage_); }
-  double as_number() const { return std::get<double>(storage_); }
-  const std::string& as_string() const { return std::get<std::string>(storage_); }
-  std::shared_ptr<Module> as_module() const {
+  inline bool as_bool() const { return std::get<bool>(storage_); }
+  inline double as_number() const { return std::get<double>(storage_); }
+  inline const std::string& as_string() const { return std::get<std::string>(storage_); }
+  inline std::shared_ptr<Module> as_module() const {
     return std::get<std::shared_ptr<Module>>(storage_);
   }
-  std::shared_ptr<RuntimeObject> as_object() const {
+  inline std::shared_ptr<RuntimeObject> as_object() const {
     return std::get<std::shared_ptr<RuntimeObject>>(storage_);
   }
 
@@ -67,7 +67,7 @@ class Value {
     return "<module>";
   }
 
-  friend bool operator==(const Value& lhs, const Value& rhs) {
+  friend inline bool operator==(const Value& lhs, const Value& rhs) {
     return lhs.storage_ == rhs.storage_;
   }
 

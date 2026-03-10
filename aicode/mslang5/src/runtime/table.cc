@@ -23,10 +23,4 @@ bool Table::contains(const std::string& key) const {
   return data_.contains(key);
 }
 
-std::size_t Table::size() const noexcept { return data_.size(); }
-
-const std::unordered_map<std::string, Value>& Table::data() const noexcept {
-  return data_;
-}
-
 }  // namespace ms
