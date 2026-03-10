@@ -23,42 +23,40 @@ ctest --test-dir build --output-on-failure # Run tests
 
 ## Code Conventions
 
-### File Organization
+### C++ Style Guide
+- Based on [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html), with project-specific overrides below
 - Headers: `.hh`, Implementation: `.cc`, Scripts: `.ms`
-- All source in `src/`, tests in `tests/`, examples in `examples/`
-- Namespace: `ms` for all code
-
-### Header Style
-- Use `#pragma once` exclusively — no `#ifndef` guards
+- Source in `src/`, tests in `tests/`, examples in `examples/`, namespace: `ms`
+- `#pragma once` exclusively — no `#ifndef` guards
 - Minimize `#if`/`#define`/`#endif` in headers (platform macros in `Macros.hh` only)
 
-### Naming Conventions
-- Classes/Structs: `PascalCase` — `ObjString`, `CallFrame`
-- Methods/Functions: `snake_case` — `scan_token()`, `emit_byte()`
-- Member variables: `snake_case_` trailing underscore — `stack_top_`, `frame_count_`
-- Constants: `kPascalCase` — `kSTACK_MAX`, `kFRAMES_MAX`
-- Enum values: `kPascalCase` or `OP_UPPER_CASE` for opcodes
-- Type aliases: `snake_t` — `u8_t`, `str_t`, `sz_t`, `cstr_t`
+### Naming
+
+| Category | Style | Examples |
+|----------|-------|---------|
+| Classes/Structs | `PascalCase` | `ObjString`, `CallFrame` |
+| Functions/Methods | `lower_snake_case` | `scan_token()`, `emit_byte()` |
+| Member variables | `snake_case_` (trailing `_`) | `stack_top_`, `frame_count_` |
+| Constants | `kPascalCase` | `kSTACK_MAX`, `kFRAMES_MAX` |
+| Enum values | `kPascalCase` / `OP_UPPER_CASE` | opcodes use `OP_` prefix |
+| Type aliases | `snake_t` | `u8_t`, `str_t`, `sz_t`, `cstr_t` |
 
 ### Type Aliases (Types.hh)
 ```cpp
-nil_t = std::nullptr_t;   byte_t/u8_t = std::uint8_t;
-i32_t = std::int32_t;     u32_t = std::uint32_t;
-sz_t = std::size_t;       str_t = std::string;
+nil_t = std::nullptr_t;    byte_t/u8_t = std::uint8_t;
+i32_t = std::int32_t;      u32_t = std::uint32_t;
+sz_t = std::size_t;        str_t = std::string;
 strv_t = std::string_view; cstr_t = const char*;
 ss_t = std::stringstream;
 ```
 
 ### Base Classes (Common.hh)
-- `Copyable` — default copy/move
-- `UnCopyable` — deleted copy/move
-- `Singleton<T>` — `T::get_instance()`
+`Copyable` (default copy/move) · `UnCopyable` (deleted copy/move) · `Singleton<T>` (`T::get_instance()`)
 
-### C++ Style
-- Prefer `noexcept` unless intentionally throwing
-- `std::variant` for Value, `std::vector` for dynamic arrays, `std::array` for fixed-size (stack, frames)
+### C++ Idioms
+- Prefer `noexcept`; `std::variant` for Value, `std::vector` for dynamic arrays, `std::array` for fixed-size
 - `std::format` / `std::print` where available (C++23)
-- `static_cast` for object downcasts in hot paths, `as_obj<T>()` helper
+- `static_cast` for hot-path downcasts, `as_obj<T>()` helper
 - Raw `Object*` for GC-managed objects — never `shared_ptr`
 - Mark GC roots properly when allocating during compilation
 
@@ -106,7 +104,7 @@ Source → Scanner → Compiler (Pratt) → Chunk (bytecode) → VM (stack) → 
 | `VM.hh/cc` | Execution engine, stack, dispatch loop |
 | `Compiler.hh/cc` | Single-pass Pratt parser (largest file) |
 | `Object.hh/cc` | GC-managed object hierarchy |
-| `Value.hh/cc` | Runtime value (`std::variant<monostate, bool, double, Object*>`) |
+| `Value.hh/cc` | Runtime value (`std::variant` or NaN-boxing) |
 | `Memory.hh/cc` | Mark-and-Sweep GC |
 | `Table.hh/cc` | Hash table for string interning |
 | `Scanner.hh/cc` | Lexer, one token at a time |
@@ -136,7 +134,8 @@ print "hello";  // expect: hello
 
 ## Workflow
 
-- When a PLAN.md task is implemented and verified, automatically update its status from `[ ]` to `[x]` without further user instruction.
+- When a task from any `.md` document is implemented and verified, automatically update its status from `[ ]` to `[x]` without further user instruction.
+- When the user types `实现 xxx.md a.b`, implement and verify the feature described in section `a.b` of `xxx.md`, then update its status.
 - When the user types `精简 xxx.md`, streamline the source document **without adding or removing any designs or rules**: compress redundant wording, merge duplicate sections, remove filler text, while preserving the original structure and semantics.
 - When the user types `git`, stage all changes in the current directory and create a git commit following the Git Commit Convention above.
 
