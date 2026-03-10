@@ -67,11 +67,14 @@
 - Use UTF-8 for all implementation code files.
 - Use LF (`\n`) line endings in implementation code files.
 - Auto-remove trailing whitespace.
+- All Markdown (`.md`) documents must be written in English; if any content is not English, automatically convert it to English.
 
 ## Task Progress Convention
 
-- Update `PLAN.md` immediately after each functional task.
-- `PLAN.md` updates must be accurate and traceable to delivered changes and tests.
+- Trigger: user input matches `实现 xxx.md yy`.
+- Action:
+  - implement and verify task/milestone `yy` defined in `xxx.md`
+  - after implementation and verification are OK, automatically update status in `xxx.md`
 
 ## Document Simplification Command
 
