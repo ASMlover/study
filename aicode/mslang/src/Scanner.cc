@@ -109,6 +109,22 @@ void Scanner::skip_whitespace() noexcept {
     case '/':
       if (peek_next() == '/') {
         while (peek() != '\n' && !is_at_end()) advance();
+      } else if (peek_next() == '*') {
+        advance(); // skip '/'
+        advance(); // skip '*'
+        int depth = 1;
+        while (depth > 0 && !is_at_end()) {
+          if (peek() == '/' && peek_next() == '*') {
+            advance(); advance();
+            depth++;
+          } else if (peek() == '*' && peek_next() == '/') {
+            advance(); advance();
+            depth--;
+          } else {
+            if (peek() == '\n') line_++;
+            advance();
+          }
+        }
       } else {
         return;
       }
