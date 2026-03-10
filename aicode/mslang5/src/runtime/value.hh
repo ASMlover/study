@@ -23,16 +23,16 @@ class Value {
   explicit Value(std::shared_ptr<Module> module) : storage_(std::move(module)) {}
   explicit Value(std::shared_ptr<RuntimeObject> object) : storage_(std::move(object)) {}
 
-  static Value nil() { return Value(); }
+  static Value nil() noexcept { return Value(); }
 
-  bool is_nil() const { return std::holds_alternative<std::monostate>(storage_); }
-  bool is_bool() const { return std::holds_alternative<bool>(storage_); }
-  bool is_number() const { return std::holds_alternative<double>(storage_); }
-  bool is_string() const { return std::holds_alternative<std::string>(storage_); }
-  bool is_module() const {
+  bool is_nil() const noexcept { return std::holds_alternative<std::monostate>(storage_); }
+  bool is_bool() const noexcept { return std::holds_alternative<bool>(storage_); }
+  bool is_number() const noexcept { return std::holds_alternative<double>(storage_); }
+  bool is_string() const noexcept { return std::holds_alternative<std::string>(storage_); }
+  bool is_module() const noexcept {
     return std::holds_alternative<std::shared_ptr<Module>>(storage_);
   }
-  bool is_object() const {
+  bool is_object() const noexcept {
     return std::holds_alternative<std::shared_ptr<RuntimeObject>>(storage_);
   }
 

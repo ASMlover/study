@@ -31,9 +31,9 @@ Diagnostic ParseWithFallback(const std::string& text, const std::string& phase,
 
 Vm::Vm() : out_(&std::cout), gc_(1024 * 64) {}
 
-void Vm::set_output(std::ostream& out) { out_ = &out; }
+void Vm::set_output(std::ostream& out) noexcept { out_ = &out; }
 
-std::ostream& Vm::output() const { return *out_; }
+std::ostream& Vm::output() const noexcept { return *out_; }
 
 InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
   last_diagnostics_.clear();
@@ -311,17 +311,25 @@ bool Vm::set_global(const std::string& name, Value value) {
   return true;
 }
 
-ModuleLoader& Vm::modules() { return modules_; }
+ModuleLoader& Vm::modules() noexcept { return modules_; }
 
-GcController& Vm::gc() { return gc_; }
+GcController& Vm::gc() noexcept { return gc_; }
 
-void Vm::set_source_execution_mode(const SourceExecutionMode mode) { source_mode_ = mode; }
+void Vm::set_source_execution_mode(const SourceExecutionMode mode) noexcept {
+  source_mode_ = mode;
+}
 
-SourceExecutionMode Vm::get_source_execution_mode() const { return source_mode_; }
+SourceExecutionMode Vm::get_source_execution_mode() const noexcept {
+  return source_mode_;
+}
 
-SourceExecutionRoute Vm::last_source_execution_route() const { return last_source_route_; }
+SourceExecutionRoute Vm::last_source_execution_route() const noexcept {
+  return last_source_route_;
+}
 
-const std::vector<Diagnostic>& Vm::last_diagnostics() const { return last_diagnostics_; }
+const std::vector<Diagnostic>& Vm::last_diagnostics() const noexcept {
+  return last_diagnostics_;
+}
 
 bool Vm::push(Value value) {
   stack_.push_back(std::move(value));
@@ -339,7 +347,7 @@ bool Vm::pop(Value* out) {
   return true;
 }
 
-bool Vm::peek(Value* out) const {
+bool Vm::peek(Value* out) const noexcept {
   if (stack_.empty()) {
     return false;
   }
@@ -349,7 +357,7 @@ bool Vm::peek(Value* out) const {
   return true;
 }
 
-bool Vm::read_constant(const Chunk& chunk, const std::size_t ip, Constant* out) const {
+bool Vm::read_constant(const Chunk& chunk, const std::size_t ip, Constant* out) const noexcept {
   if (ip >= chunk.code().size()) {
     return false;
   }

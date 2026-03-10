@@ -12,8 +12,8 @@ class Table {
   bool set(const std::string& key, Value value);
   bool get(const std::string& key, Value* out) const;
   bool contains(const std::string& key) const;
-  std::size_t size() const;
-  const std::unordered_map<std::string, Value>& data() const;
+  std::size_t size() const noexcept;
+  const std::unordered_map<std::string, Value>& data() const noexcept;
 
  private:
   std::unordered_map<std::string, Value> data_;

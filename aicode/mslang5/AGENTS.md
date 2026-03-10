@@ -19,6 +19,7 @@
 - Prefer the standard library; minimize third-party dependencies.
 - Follow the Google C++ Style Guide.
 - Use `lower_snake_case` for function names.
+- Prefer using `noexcept` whenever it is semantically safe and can be verified.
 - Keep cross-platform support:
   - Windows (MSVC)
   - Linux (GCC)

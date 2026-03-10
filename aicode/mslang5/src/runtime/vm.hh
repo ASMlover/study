@@ -37,8 +37,8 @@ class Vm {
  public:
   Vm();
 
-  void set_output(std::ostream& out);
-  std::ostream& output() const;
+  void set_output(std::ostream& out) noexcept;
+  std::ostream& output() const noexcept;
 
   InterpretResult execute(const Chunk& chunk, std::string* error);
   InterpretResult execute_source(const std::string& source, std::string* error);
@@ -46,23 +46,23 @@ class Vm {
                                      std::string* error);
   InterpretResult execute_module(const std::string& source, std::shared_ptr<Module> module,
                                 std::string* error);
-  void set_source_execution_mode(SourceExecutionMode mode);
-  SourceExecutionMode get_source_execution_mode() const;
-  SourceExecutionRoute last_source_execution_route() const;
-  const std::vector<Diagnostic>& last_diagnostics() const;
+  void set_source_execution_mode(SourceExecutionMode mode) noexcept;
+  SourceExecutionMode get_source_execution_mode() const noexcept;
+  SourceExecutionRoute last_source_execution_route() const noexcept;
+  const std::vector<Diagnostic>& last_diagnostics() const noexcept;
 
   bool define_global(const std::string& name, Value value);
   bool get_global(const std::string& name, Value* out) const;
   bool set_global(const std::string& name, Value value);
 
-  ModuleLoader& modules();
-  GcController& gc();
+  ModuleLoader& modules() noexcept;
+  GcController& gc() noexcept;
 
  private:
   bool push(Value value);
   bool pop(Value* out);
-  bool peek(Value* out) const;
-  bool read_constant(const Chunk& chunk, std::size_t ip, Constant* out) const;
+  bool peek(Value* out) const noexcept;
+  bool read_constant(const Chunk& chunk, std::size_t ip, Constant* out) const noexcept;
   Value constant_to_value(const Constant& constant) const;
   std::string last_segment(const std::string& dotted) const;
   void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);

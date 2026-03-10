@@ -11,14 +11,14 @@ struct GcStats {
 
 class GcController {
  public:
-  explicit GcController(std::size_t threshold_bytes = 1024 * 1024);
+  explicit GcController(std::size_t threshold_bytes = 1024 * 1024) noexcept;
 
-  void on_allocation(std::size_t bytes);
-  bool should_collect() const;
-  void collect();
+  void on_allocation(std::size_t bytes) noexcept;
+  bool should_collect() const noexcept;
+  void collect() noexcept;
 
-  const GcStats& stats() const;
-  void set_threshold(std::size_t bytes);
+  const GcStats& stats() const noexcept;
+  void set_threshold(std::size_t bytes) noexcept;
 
  private:
   GcStats stats_;
@@ -26,4 +26,3 @@ class GcController {
 };
 
 }  // namespace ms
-

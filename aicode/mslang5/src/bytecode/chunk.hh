@@ -18,9 +18,9 @@ class Chunk {
   void write(std::uint8_t byte, std::size_t line);
   void write_op(OpCode op, std::size_t line);
 
-  const std::vector<std::uint8_t>& code() const;
-  const std::vector<std::size_t>& lines() const;
-  const std::vector<Constant>& constants() const;
+  const std::vector<std::uint8_t>& code() const noexcept;
+  const std::vector<std::size_t>& lines() const noexcept;
+  const std::vector<Constant>& constants() const noexcept;
 
  private:
   std::vector<std::uint8_t> code_;

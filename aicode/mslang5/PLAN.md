@@ -1435,3 +1435,17 @@ Commit message convention reminder:
   - `ctest --test-dir build --output-on-failure -C Debug` (pass, 5/5)
 - Notes:
   - constructors/type names keep C++ conventional PascalCase; function and method names were normalized to `lower_snake_case`.
+
+#### 2026-03-11 Incremental Update (noexcept preference)
+
+- Added C++ rule in `AGENTS.md`: prefer `noexcept` whenever semantically safe and verifiable.
+- Applied `noexcept` to low-risk API surfaces:
+  - `src/runtime/gc.hh/.cc`: controller ctor and lightweight state methods.
+  - `src/bytecode/chunk.hh/.cc`: read-only container accessors (`code/lines/constants`).
+  - `src/support/source.hh/.cc`: `SourceFile` trivial getters (`path/text`).
+  - `src/runtime/table.hh/.cc`: read-only size/data accessors.
+  - `src/runtime/vm.hh/.cc`: lightweight VM accessors/state readers (`set_output/output`, mode/route/diagnostics getters, `modules/gc`, `peek/read_constant`).
+  - `src/runtime/value.hh`: `nil` and type predicate helpers (`is_*`).
+- Verification:
+  - `cmake --build build --config Debug` (pass)
+  - `ctest --test-dir build --output-on-failure -C Debug` (pass, 5/5)
