@@ -53,6 +53,34 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         push(constant_to_value(c));
         break;
       }
+      case OpCode::kEqual: {
+        Value b;
+        Value a;
+        pop(&b);
+        pop(&a);
+        push(Value(a == b));
+        break;
+      }
+      case OpCode::kGreater:
+      case OpCode::kLess: {
+        Value b;
+        Value a;
+        pop(&b);
+        pop(&a);
+        if (!a.is_number() || !b.is_number()) {
+          set_single_diagnostic(
+              ParseWithFallback(RuntimeError("MS4003", "operands must be numbers"), "runtime",
+                                "MS4003", current_source_name_),
+              error);
+          return InterpretResult::kRuntimeError;
+        }
+        if (op == OpCode::kGreater) {
+          push(Value(a.as_number() > b.as_number()));
+        } else {
+          push(Value(a.as_number() < b.as_number()));
+        }
+        break;
+      }
       case OpCode::kAdd:
       case OpCode::kSubtract:
       case OpCode::kMultiply:
@@ -96,6 +124,12 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         push(Value(-v.as_number()));
         break;
       }
+      case OpCode::kNot: {
+        Value v;
+        pop(&v);
+        push(Value(is_falsey(v)));
+        break;
+      }
       case OpCode::kPrint: {
         Value v;
         pop(&v);
@@ -105,6 +139,32 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
       case OpCode::kPop: {
         Value v;
         pop(&v);
+        break;
+      }
+      case OpCode::kGetLocal:
+      case OpCode::kSetLocal: {
+        if (ip >= chunk.code().size()) {
+          set_single_diagnostic(
+              make_diagnostic("runtime", "MS4003", "invalid local slot operand",
+                             DiagnosticSpan{current_source_name_, 1}),
+              error);
+          return InterpretResult::kRuntimeError;
+        }
+        const std::size_t slot = chunk.code()[ip++];
+        if (slot >= stack_.size()) {
+          set_single_diagnostic(
+              ParseWithFallback(RuntimeError("MS4001", "undefined local slot"), "runtime",
+                                "MS4001", current_source_name_),
+              error);
+          return InterpretResult::kRuntimeError;
+        }
+        if (op == OpCode::kGetLocal) {
+          push(stack_[slot]);
+        } else {
+          Value value;
+          pop(&value);
+          stack_[slot] = value;
+        }
         break;
       }
       case OpCode::kDefineGlobal:
@@ -199,6 +259,39 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           return InterpretResult::kRuntimeError;
         }
         define_global(alias, exported);
+        break;
+      }
+      case OpCode::kJump:
+      case OpCode::kJumpIfFalse:
+      case OpCode::kLoop: {
+        std::uint16_t offset = 0;
+        if (!read_jump_offset(chunk, ip, &offset)) {
+          set_single_diagnostic(
+              make_diagnostic("runtime", "MS4003", "invalid jump operand",
+                             DiagnosticSpan{current_source_name_, 1}),
+              error);
+          return InterpretResult::kRuntimeError;
+        }
+        ip += 2;
+        if (op == OpCode::kJump) {
+          ip += offset;
+          break;
+        }
+        if (op == OpCode::kJumpIfFalse) {
+          Value condition;
+          if (!peek(&condition)) {
+            set_single_diagnostic(
+                make_diagnostic("runtime", "MS4003", "empty stack for conditional jump",
+                               DiagnosticSpan{current_source_name_, 1}),
+                error);
+            return InterpretResult::kRuntimeError;
+          }
+          if (is_falsey(condition)) {
+            ip += offset;
+          }
+          break;
+        }
+        ip -= offset;
         break;
       }
       case OpCode::kReturn:
@@ -369,6 +462,29 @@ bool Vm::read_constant(const Chunk& chunk, const std::size_t ip, Constant* out) 
     *out = chunk.constants()[index];
   }
   return true;
+}
+
+bool Vm::read_jump_offset(const Chunk& chunk, const std::size_t ip,
+                          std::uint16_t* out) const noexcept {
+  if (ip + 1 >= chunk.code().size()) {
+    return false;
+  }
+  const std::uint16_t high = chunk.code()[ip];
+  const std::uint16_t low = chunk.code()[ip + 1];
+  if (out != nullptr) {
+    *out = static_cast<std::uint16_t>((high << 8) | low);
+  }
+  return true;
+}
+
+bool Vm::is_falsey(const Value& value) const noexcept {
+  if (value.is_nil()) {
+    return true;
+  }
+  if (value.is_bool()) {
+    return !value.as_bool();
+  }
+  return false;
 }
 
 Value Vm::constant_to_value(const Constant& constant) const {

@@ -1491,3 +1491,37 @@ Commit message convention reminder:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
   - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt`
+
+#### 2026-03-12 Incremental Update (M1 frontend capability completion)
+
+- Scope: execute `docs/improve.md` milestone `M1` on VM pipeline.
+- Delivered:
+  - Extended VM-facing token/operator surface:
+    - `src/frontend/token.hh`
+    - `src/frontend/lexer.cc`
+  - Extended opcode layer for control flow, locals, and logic/comparison:
+    - `src/bytecode/opcode.hh`
+    - `src/bytecode/disasm.cc`
+    - `src/bytecode/chunk.hh` (`mutable_code` for jump patching)
+  - Completed compiler support for:
+    - block scope and local slot/depth resolution
+    - `if/while/for` bytecode emission
+    - short-circuit `and/or`, comparison/equality/unary-not
+    - files: `src/frontend/compiler.cc`
+  - Completed VM runtime support for:
+    - `kEqual/kGreater/kLess/kNot`
+    - `kGetLocal/kSetLocal`
+    - `kJump/kJumpIfFalse/kLoop`
+    - files: `src/runtime/vm.hh`, `src/runtime/vm.cc`
+  - Added/updated tests:
+    - `tests/unit/test_vm_compiler.cc`
+    - `tests/unit/test_lexer.cc`
+    - `tests/conformance/semantics/control_if_else_001.ms`
+    - `tests/conformance/semantics/control_while_for_001.ms`
+    - `tests/conformance/MATRIX.md`
+  - Synced milestone status in `docs/improve.md`:
+    - `M1`, `M1-01`, `M1-02`, `M1-03`, `M1-04` => `done`
+- Verification:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt`

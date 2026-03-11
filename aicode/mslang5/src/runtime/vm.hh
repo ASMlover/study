@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -63,6 +64,8 @@ class Vm {
   bool pop(Value* out);
   bool peek(Value* out) const noexcept;
   bool read_constant(const Chunk& chunk, std::size_t ip, Constant* out) const noexcept;
+  bool read_jump_offset(const Chunk& chunk, std::size_t ip, std::uint16_t* out) const noexcept;
+  bool is_falsey(const Value& value) const noexcept;
   Value constant_to_value(const Constant& constant) const;
   std::string last_segment(const std::string& dotted) const;
   void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);

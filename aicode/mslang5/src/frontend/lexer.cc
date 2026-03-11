@@ -32,8 +32,14 @@ std::vector<Token> Lexer::scan_all_tokens() {
       case ',':
         tokens.push_back(make_token(TokenType::kComma));
         break;
+      case '!':
+        tokens.push_back(make_token(match('=') ? TokenType::kBangEqual : TokenType::kBang));
+        break;
       case '<':
-        tokens.push_back(make_token(TokenType::kLess));
+        tokens.push_back(make_token(match('=') ? TokenType::kLessEqual : TokenType::kLess));
+        break;
+      case '>':
+        tokens.push_back(make_token(match('=') ? TokenType::kGreaterEqual : TokenType::kGreater));
         break;
       case '+':
         tokens.push_back(make_token(TokenType::kPlus));
@@ -54,7 +60,7 @@ std::vector<Token> Lexer::scan_all_tokens() {
         tokens.push_back(make_token(TokenType::kDot));
         break;
       case '=':
-        tokens.push_back(make_token(TokenType::kEqual));
+        tokens.push_back(make_token(match('=') ? TokenType::kEqualEqual : TokenType::kEqual));
         break;
       case '"':
         tokens.push_back(string_token());
@@ -172,6 +178,9 @@ TokenType Lexer::identifier_type(const std::string& text) const {
       {"import", TokenType::kImport}, {"from", TokenType::kFrom},
       {"as", TokenType::kAs},         {"true", TokenType::kTrue},
       {"false", TokenType::kFalse},   {"nil", TokenType::kNil},
+      {"if", TokenType::kIf},         {"else", TokenType::kElse},
+      {"while", TokenType::kWhile},   {"for", TokenType::kFor},
+      {"and", TokenType::kAnd},       {"or", TokenType::kOr},
       {"fun", TokenType::kFun},       {"return", TokenType::kReturn},
       {"class", TokenType::kClass},   {"this", TokenType::kThis},
       {"super", TokenType::kSuper},

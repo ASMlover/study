@@ -26,6 +26,12 @@ const char* OpName(const OpCode op) {
   switch (op) {
     case OpCode::kConstant:
       return "OP_CONSTANT";
+    case OpCode::kEqual:
+      return "OP_EQUAL";
+    case OpCode::kGreater:
+      return "OP_GREATER";
+    case OpCode::kLess:
+      return "OP_LESS";
     case OpCode::kAdd:
       return "OP_ADD";
     case OpCode::kSubtract:
@@ -34,18 +40,30 @@ const char* OpName(const OpCode op) {
       return "OP_MULTIPLY";
     case OpCode::kDivide:
       return "OP_DIVIDE";
+    case OpCode::kNot:
+      return "OP_NOT";
     case OpCode::kNegate:
       return "OP_NEGATE";
     case OpCode::kPrint:
       return "OP_PRINT";
     case OpCode::kPop:
       return "OP_POP";
+    case OpCode::kGetLocal:
+      return "OP_GET_LOCAL";
+    case OpCode::kSetLocal:
+      return "OP_SET_LOCAL";
     case OpCode::kDefineGlobal:
       return "OP_DEFINE_GLOBAL";
     case OpCode::kGetGlobal:
       return "OP_GET_GLOBAL";
     case OpCode::kSetGlobal:
       return "OP_SET_GLOBAL";
+    case OpCode::kJump:
+      return "OP_JUMP";
+    case OpCode::kJumpIfFalse:
+      return "OP_JUMP_IF_FALSE";
+    case OpCode::kLoop:
+      return "OP_LOOP";
     case OpCode::kImportModule:
       return "OP_IMPORT_MODULE";
     case OpCode::kImportSymbol:
@@ -74,6 +92,7 @@ std::string disassemble_chunk(const Chunk& chunk, const std::string& name) {
         out << " (" << ConstantToString(chunk.constants()[idx]) << ")";
       }
     };
+    auto print_raw_operand = [&](const std::size_t i) { out << " " << chunk.code()[i]; };
 
     switch (op) {
       case OpCode::kConstant:
@@ -85,6 +104,23 @@ std::string disassemble_chunk(const Chunk& chunk, const std::string& name) {
           print_const_operand(offset + 1);
         }
         offset += 2;
+        break;
+      case OpCode::kGetLocal:
+      case OpCode::kSetLocal:
+        if (offset + 1 < chunk.code().size()) {
+          print_raw_operand(offset + 1);
+        }
+        offset += 2;
+        break;
+      case OpCode::kJump:
+      case OpCode::kJumpIfFalse:
+      case OpCode::kLoop:
+        if (offset + 2 < chunk.code().size()) {
+          const std::size_t jump = (static_cast<std::size_t>(chunk.code()[offset + 1]) << 8) |
+                                   static_cast<std::size_t>(chunk.code()[offset + 2]);
+          out << " " << jump;
+        }
+        offset += 3;
         break;
       case OpCode::kImportSymbol:
         if (offset + 3 < chunk.code().size()) {

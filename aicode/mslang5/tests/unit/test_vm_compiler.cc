@@ -17,7 +17,27 @@ int RunVmCompilerTests() {
       "var x = 2 + 3 * 4;\n"
       "print x;\n"
       "x = x + 1;\n"
-      "print x;\n";
+      "print x;\n"
+      "{\n"
+      "  var x = 3;\n"
+      "  if (x < 5 and x != 4) {\n"
+      "    print x;\n"
+      "  } else {\n"
+      "    print 999;\n"
+      "  }\n"
+      "}\n"
+      "var sum = 0;\n"
+      "for (var i = 0; i < 5; i = i + 1) {\n"
+      "  if (i == 2 or i == 4) {\n"
+      "    sum = sum + 10;\n"
+      "  } else {\n"
+      "    sum = sum + i;\n"
+      "  }\n"
+      "}\n"
+      "while (sum < 30) {\n"
+      "  sum = sum + 1;\n"
+      "}\n"
+      "print sum;\n";
 
   const ms::InterpretResult r = vm.execute_source(script, &error);
   Expect(r == ms::InterpretResult::kOk, "vm should execute arithmetic script");
@@ -25,6 +45,8 @@ int RunVmCompilerTests() {
          "arithmetic script should execute on VM pipeline");
   Expect(out.str().find("14") != std::string::npos, "first print should be 14");
   Expect(out.str().find("15") != std::string::npos, "second print should be 15");
+  Expect(out.str().find("3") != std::string::npos, "if/and/!= branch should print 3");
+  Expect(out.str().find("30") != std::string::npos, "for/while control flow should print 30");
 
   error.clear();
   const ms::InterpretResult compile_error = vm.execute_source("var x = ;\n", &error);

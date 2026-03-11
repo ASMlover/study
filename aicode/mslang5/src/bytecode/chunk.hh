@@ -21,6 +21,7 @@ class Chunk {
   }
 
   inline const std::vector<std::uint8_t>& code() const noexcept { return code_; }
+  inline std::vector<std::uint8_t>& mutable_code() noexcept { return code_; }
   inline const std::vector<std::size_t>& lines() const noexcept { return lines_; }
   inline const std::vector<Constant>& constants() const noexcept { return constants_; }
 

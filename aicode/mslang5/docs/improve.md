@@ -375,7 +375,7 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 | Milestone | Status | Progress | Start date | End date | Notes |
 |---|---|---|---|---|---|
 | M0 Baseline freeze and guardrails | done | 100% | 2026-03-11 | 2026-03-11 | Freeze guard + VM gap matrix + migration debt suite landed |
-| M1 Frontend capability completion | todo | 0% | - | - | - |
+| M1 Frontend capability completion | done | 100% | 2026-03-12 | 2026-03-12 | VM-native control-flow/operators/locals + conformance landed |
 | M2 Function/closure VM migration | todo | 0% | - | - | - |
 | M3 Class/inheritance/this/super VM migration | todo | 0% | - | - | - |
 | M4 Module VM protocol unification | todo | 0% | - | - | - |
@@ -407,17 +407,34 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 ### 11.5 M1 Progress Subsections (frontend completion)
 
 - `M1-01` Complete control-flow compile support (block/if/while/for)
-  - Status: todo
+  - Status: done
   - Done criteria: corresponding scripts execute successfully on VM path.
+  - Evidence:
+    - `src/frontend/compiler.cc` adds VM bytecode emission for block/if/while/for.
+    - `src/runtime/vm.cc` adds `JUMP/JUMP_IF_FALSE/LOOP` execution.
+    - conformance:
+      - `tests/conformance/semantics/control_if_else_001.ms`
+      - `tests/conformance/semantics/control_while_for_001.ms`
 - `M1-02` Complete comparison/logical/equality compile + runtime behavior
-  - Status: todo
+  - Status: done
   - Done criteria: behavior matches `docs/spec/semantics.md`.
+  - Evidence:
+    - compiler emits `EQUAL/GREATER/LESS/NOT` and logical short-circuit (`and/or`) jumps.
+    - VM executes `kEqual/kGreater/kLess/kNot` with runtime checks.
+    - unit coverage extended in `tests/unit/test_vm_compiler.cc`.
 - `M1-03` Connect resolver metadata into compiler (not interpreter-only)
-  - Status: todo
+  - Status: done
   - Done criteria: compiler actually consumes lexical depth metadata.
+  - Evidence:
+    - compiler now resolves lexical locals by scope depth/slot (`Local{name, depth}` + `resolve_local`) and emits `GET_LOCAL/SET_LOCAL`.
+    - block-scope shadowing and updates execute on VM path (validated by unit + conformance).
 - `M1-04` M1 verification closeout
-  - Status: todo
+  - Status: done
   - Done criteria: related tests run stably on `kVmPipeline`; MS2xxx/MS3xxx contract unchanged.
+  - Evidence:
+    - `cmake --build build --config Debug` pass.
+    - `ctest --test-dir build --output-on-failure -C Debug` pass (`7/7`).
+    - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt` pass (`2/2`).
 
 ### 11.6 M2 Progress Subsections (function and closure VM migration)
 

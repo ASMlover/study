@@ -18,6 +18,10 @@ Coverage state:
 | Spec Clause | Case ID(s) | Current Source | State | Notes |
 |---|---|---|---|---|
 | `semantics.scope.lexical` | `SEM-SCOPE-BLOCK-001`, `SEM-CLOSURE-INDEPENDENT-001`, `RUN-UNDEF-VAR-001` | `tests/conformance/semantics/scope_block_shadowing_001.ms`, `tests/conformance/semantics/closure_independent_001.ms`, `tests/conformance/semantics/runtime_undefined_variable_001.ms` | mapped-conformance | block shadowing, lexical capture, undefined name |
+| `semantics.control.if` | `SEM-CTRL-IF-001` | `tests/conformance/semantics/control_if_else_001.ms` | mapped-conformance | branch execution with boolean and comparison operators |
+| `semantics.control.while` | `SEM-CTRL-LOOP-001` | `tests/conformance/semantics/control_while_for_001.ms` | mapped-conformance | while loop condition and mutation semantics |
+| `semantics.control.for` | `SEM-CTRL-LOOP-001` | `tests/conformance/semantics/control_while_for_001.ms` | mapped-conformance | for initializer/condition/increment semantics |
+| `semantics.operators.comparison` | `SEM-CTRL-IF-001` | `tests/conformance/semantics/control_if_else_001.ms` | mapped-conformance | `<`, `>`, `!=` contracts in VM path |
 | `semantics.scope.assignment` | `SEM-SCOPE-BLOCK-001` | `tests/conformance/semantics/scope_block_shadowing_001.ms` | mapped-conformance | assignment updates nearest lexical binding |
 | `semantics.closure.capture` | `SEM-CLOSURE-CAPTURE-001`, `SEM-CLOSURE-INDEPENDENT-001`, `RES-THIS-NESTED-OK-001` | `tests/conformance/semantics/closure_capture_001.ms`, `tests/conformance/semantics/closure_independent_001.ms`, `tests/conformance/semantics/resolver_this_in_nested_function_ok_001.ms` | mapped-conformance | mutation persistence and nested capture |
 | `semantics.functions.arity` | `RUN-ARITY-001` | `tests/conformance/semantics/runtime_arity_001.ms` | mapped-existing | runtime arity mismatch |
@@ -60,7 +64,7 @@ Priority order for next conformance-file migration:
 2. parse code normalization to align invalid-assignment with `MS2003`
 3. diagnostics-structured matcher rollout (`phase+code+span`)
 4. cross-platform deterministic span checks (line/column)
-5. optional control-flow (`if/while/for`) conformance once parser/VM parity is complete
+5. optional diagnostics edge cases for nested control-flow parse failures
 
 ## 4. Gaps Requiring T16/T19 Prerequisites
 
