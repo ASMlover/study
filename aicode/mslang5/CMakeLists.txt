@@ -69,6 +69,7 @@ if(MAPLE_BUILD_TESTS)
     tests/integration/test_language_closure.cc
     tests/integration/test_language_class.cc
     tests/integration/test_language_resolver.cc
+    tests/integration/test_migration_debt.cc
     tests/integration/test_conformance.cc
     tests/integration/test_diagnostics_golden.cc
   )
@@ -96,4 +97,16 @@ if(MAPLE_BUILD_TESTS)
 
   add_test(NAME maple_tests_diagnostics COMMAND maple_tests --suite=diagnostics)
   set_tests_properties(maple_tests_diagnostics PROPERTIES LABELS "diagnostics")
+
+  add_test(NAME maple_tests_migration_debt COMMAND maple_tests --suite=migration_debt)
+  set_tests_properties(maple_tests_migration_debt PROPERTIES LABELS "migration_debt")
+
+  add_test(
+    NAME maple_guard_interpreter_freeze
+    COMMAND ${CMAKE_COMMAND}
+      -DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/script_interpreter.cc
+      -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/docs/migration/interpreter_freeze.sha256
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_interpreter_freeze.cmake
+  )
+  set_tests_properties(maple_guard_interpreter_freeze PROPERTIES LABELS "migration_debt;guardrail")
 endif()

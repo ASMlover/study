@@ -374,7 +374,7 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 
 | Milestone | Status | Progress | Start date | End date | Notes |
 |---|---|---|---|---|---|
-| M0 Baseline freeze and guardrails | todo | 0% | - | - | - |
+| M0 Baseline freeze and guardrails | done | 100% | 2026-03-11 | 2026-03-11 | Freeze guard + VM gap matrix + migration debt suite landed |
 | M1 Frontend capability completion | todo | 0% | - | - | - |
 | M2 Function/closure VM migration | todo | 0% | - | - | - |
 | M3 Class/inheritance/this/super VM migration | todo | 0% | - | - | - |
@@ -387,14 +387,22 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 ### 11.4 M0 Progress Subsections (baseline freeze and guardrails)
 
 - `M0-01` Define interpreter freeze policy (no new capabilities in interpreter path)
-  - Status: todo
+  - Status: done
   - Done criteria: docs/review rules explicitly enforce "new language features only in VM pipeline".
+  - Evidence:
+    - `docs/migration/m0-baseline-freeze.md` defines freeze policy and PR checklist.
+    - `cmake/check_interpreter_freeze.cmake` + `docs/migration/interpreter_freeze.sha256` enforce interpreter freeze in CI.
 - `M0-02` Build VM gap matrix (syntax item -> VM support -> fallback trigger)
-  - Status: todo
+  - Status: done
   - Done criteria: maintainable matrix exists and maps to test cases.
+  - Evidence:
+    - `docs/migration/m0-baseline-freeze.md` Section 2 provides a maintainable capability matrix with representative test mappings.
 - `M0-03` Mark migration debt in CI (fallback-related case classification)
-  - Status: todo
+  - Status: done
   - Done criteria: fallback cases have independent labels or metrics output.
+  - Evidence:
+    - `tests/integration/test_migration_debt.cc` tracks fallback debt cases and emits `fallback_rate`.
+    - `CMakeLists.txt` adds dedicated `maple_tests_migration_debt` and `maple_guard_interpreter_freeze` with `migration_debt` label.
 
 ### 11.5 M1 Progress Subsections (frontend completion)
 

@@ -13,6 +13,7 @@ int RunCliTests();
 int RunClosureIntegrationTests();
 int RunClassIntegrationTests();
 int RunResolverIntegrationTests();
+int RunMigrationDebtTests();
 int RunConformanceIntegrationTests();
 int RunDiagnosticsGoldenTests();
 
@@ -34,6 +35,8 @@ void RunIntegrationSuite() {
   RunResolverIntegrationTests();
 }
 
+void RunMigrationDebtSuite() { RunMigrationDebtTests(); }
+
 void RunConformanceSuite() { RunConformanceIntegrationTests(); }
 
 void RunDiagnosticsSuite() { RunDiagnosticsGoldenTests(); }
@@ -49,12 +52,15 @@ int main(int argc, char** argv) {
   if (suite == "--suite=all" || suite == "all") {
     RunUnitSuite();
     RunIntegrationSuite();
+    RunMigrationDebtSuite();
     RunConformanceSuite();
     RunDiagnosticsSuite();
   } else if (suite == "--suite=unit" || suite == "unit") {
     RunUnitSuite();
   } else if (suite == "--suite=integration" || suite == "integration") {
     RunIntegrationSuite();
+  } else if (suite == "--suite=migration_debt" || suite == "migration_debt") {
+    RunMigrationDebtSuite();
   } else if (suite == "--suite=conformance" || suite == "conformance") {
     RunConformanceSuite();
   } else if (suite == "--suite=diagnostics" || suite == "diagnostics") {

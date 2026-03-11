@@ -1469,3 +1469,25 @@ Commit message convention reminder:
   - `cmake --build build --config Debug` initially hit transient linker object corruption (`LNK1236` on `chunk.obj`), resolved by clean rebuild.
   - `cmake --build build --config Debug --clean-first` (pass)
   - `ctest --test-dir build --output-on-failure -C Debug` (pass, 5/5)
+
+#### 2026-03-11 Incremental Update (M0 baseline freeze and guardrails)
+
+- Scope: execute `docs/improve.md` milestone `M0` with enforceable migration guardrails.
+- Delivered:
+  - Added unified M0 checklist and VM gap matrix:
+    - `docs/migration/m0-baseline-freeze.md`
+  - Added interpreter freeze baseline artifact:
+    - `docs/migration/interpreter_freeze.sha256`
+  - Added CI/runtime freeze guard script:
+    - `cmake/check_interpreter_freeze.cmake`
+  - Added migration debt integration suite with fallback-rate output:
+    - `tests/integration/test_migration_debt.cc`
+  - Added dedicated CTest entries/labels:
+    - `maple_tests_migration_debt` (`migration_debt`)
+    - `maple_guard_interpreter_freeze` (`migration_debt`, `guardrail`)
+  - Synced milestone status in:
+    - `docs/improve.md` (`M0`, `M0-01`, `M0-02`, `M0-03` => `done`)
+- Verification:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt`
