@@ -61,6 +61,9 @@ public:
   // For patching (jump offsets etc.)
   u8_t& operator[](sz_t offset) noexcept;
 
+  // Truncate bytecode to given size (for constant folding)
+  void truncate(sz_t new_count) noexcept;
+
   // Access underlying data (for VM ip pointer)
   const u8_t* code_data() const noexcept;
   u8_t* code_data() noexcept;

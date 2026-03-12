@@ -69,6 +69,19 @@ sz_t Chunk::count() const noexcept {
   return code_.size();
 }
 
+void Chunk::truncate(sz_t new_count) noexcept {
+  // Shrink the line-run table to match the new code size
+  sz_t to_remove = code_.size() - new_count;
+  while (to_remove > 0 && !lines_.empty()) {
+    auto& back = lines_.back();
+    sz_t take = std::min(to_remove, static_cast<sz_t>(back.count));
+    back.count -= static_cast<int>(take);
+    to_remove -= take;
+    if (back.count == 0) lines_.pop_back();
+  }
+  code_.resize(new_count);
+}
+
 u8_t& Chunk::operator[](sz_t offset) noexcept {
   return code_[offset];
 }

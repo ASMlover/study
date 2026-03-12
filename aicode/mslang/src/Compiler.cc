@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <array>
 #include <charconv>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <format>
@@ -97,6 +98,20 @@ class Compiler {
   Upvalue upvalues_[kUINT8_COUNT];
   int scope_depth_{0};
   LoopContext* current_loop_{nullptr};
+
+  // Constant folding: track last two emitted constant positions
+  struct ConstRecord {
+    sz_t code_offset{0};   // where OP_CONSTANT/OP_CONSTANT_LONG starts
+    sz_t const_index{0};   // index into constants array
+    bool valid{false};
+  };
+  ConstRecord last_const_;
+  ConstRecord prev_const_;
+
+  void record_constant(sz_t code_offset, sz_t const_index) noexcept;
+  void invalidate_constants() noexcept;
+  bool try_fold_unary(OpCode op) noexcept;
+  bool try_fold_binary(OpCode op) noexcept;
 
   // Error reporting
   void error_at(const Token& token, strv_t message) noexcept;
@@ -343,6 +358,80 @@ Compiler::Compiler(ParseState& ps, FunctionType type) noexcept
   }
 }
 
+void Compiler::record_constant(sz_t code_offset, sz_t const_index) noexcept {
+  prev_const_ = last_const_;
+  last_const_ = {code_offset, const_index, true};
+}
+
+void Compiler::invalidate_constants() noexcept {
+  last_const_.valid = false;
+  prev_const_.valid = false;
+}
+
+bool Compiler::try_fold_unary(OpCode op) noexcept {
+  if (!last_const_.valid) return false;
+
+  const Value& operand = current_chunk().constant_at(last_const_.const_index);
+
+  if (op == OpCode::OP_NEGATE) {
+    if (!operand.is_number()) return false;
+    double result = -operand.as_number();
+    // Roll back the OP_CONSTANT + OP_NEGATE (current_chunk already has OP_NEGATE)
+    current_chunk().truncate(last_const_.code_offset);
+    last_const_.valid = false;
+    emit_constant(Value(result));
+    return true;
+  }
+  return false;
+}
+
+bool Compiler::try_fold_binary(OpCode op) noexcept {
+  if (!last_const_.valid || !prev_const_.valid) return false;
+
+  const Value& right = current_chunk().constant_at(last_const_.const_index);
+  const Value& left = current_chunk().constant_at(prev_const_.const_index);
+
+  // Number folding
+  if (left.is_number() && right.is_number()) {
+    double a = left.as_number();
+    double b = right.as_number();
+    double result;
+
+    switch (op) {
+    case OpCode::OP_ADD:      result = a + b; break;
+    case OpCode::OP_SUBTRACT: result = a - b; break;
+    case OpCode::OP_MULTIPLY: result = a * b; break;
+    case OpCode::OP_DIVIDE:
+      if (b == 0.0) return false;  // let VM handle division by zero
+      result = a / b;
+      break;
+    case OpCode::OP_MODULO:
+      if (b == 0.0) return false;
+      result = std::fmod(a, b);
+      break;
+    default: return false;
+    }
+
+    // Roll back both constants + the binary op
+    current_chunk().truncate(prev_const_.code_offset);
+    invalidate_constants();
+    emit_constant(Value(result));
+    return true;
+  }
+
+  // String concatenation folding
+  if (op == OpCode::OP_ADD && left.is_string() && right.is_string()) {
+    str_t result = as_string(left)->value() + as_string(right)->value();
+    current_chunk().truncate(prev_const_.code_offset);
+    invalidate_constants();
+    emit_constant(Value(static_cast<Object*>(
+        VM::get_instance().copy_string(result.data(), result.length()))));
+    return true;
+  }
+
+  return false;
+}
+
 void Compiler::error_at(const Token& token, strv_t message) noexcept {
   if (ps_->panic_mode) return;
   ps_->panic_mode = true;
@@ -437,6 +526,7 @@ sz_t Compiler::make_constant(Value value) noexcept {
 }
 
 void Compiler::emit_constant(Value value) noexcept {
+  sz_t code_offset = current_chunk().count();
   sz_t index = make_constant(value);
   if (index <= 255) {
     emit_op_byte(OpCode::OP_CONSTANT, static_cast<u8_t>(index));
@@ -446,6 +536,7 @@ void Compiler::emit_constant(Value value) noexcept {
     emit_byte(static_cast<u8_t>((index >> 8) & 0xFF));
     emit_byte(static_cast<u8_t>((index >> 16) & 0xFF));
   }
+  record_constant(code_offset, index);
 }
 
 sz_t Compiler::emit_jump(OpCode op) noexcept {
@@ -802,10 +893,12 @@ void Compiler::string_interpolation(bool /*can_assign*/) noexcept {
       break;
     }
   }
+  invalidate_constants();
 }
 
 void Compiler::variable(bool can_assign) noexcept {
   named_variable(ps_->previous, can_assign);
+  invalidate_constants();
 }
 
 void Compiler::unary(bool /*can_assign*/) noexcept {
@@ -814,8 +907,16 @@ void Compiler::unary(bool /*can_assign*/) noexcept {
   parse_precedence(Precedence::PREC_UNARY);
 
   switch (operator_type) {
-  case TokenType::TOKEN_BANG:  emit_op(OpCode::OP_NOT); break;
-  case TokenType::TOKEN_MINUS: emit_op(OpCode::OP_NEGATE); break;
+  case TokenType::TOKEN_BANG:
+    emit_op(OpCode::OP_NOT);
+    invalidate_constants();
+    break;
+  case TokenType::TOKEN_MINUS:
+    emit_op(OpCode::OP_NEGATE);
+    if (!try_fold_unary(OpCode::OP_NEGATE)) {
+      invalidate_constants();
+    }
+    break;
   default: return;
   }
 }
@@ -823,8 +924,17 @@ void Compiler::unary(bool /*can_assign*/) noexcept {
 void Compiler::binary(bool /*can_assign*/) noexcept {
   TokenType operator_type = ps_->previous.type;
   const ParseRule& rule = get_rule(operator_type);
+
+  // Save the left operand's constant record before parsing the right side,
+  // since parse_precedence may overwrite prev_const_ during sub-expression folding.
+  ConstRecord left_const = last_const_;
+
   parse_precedence(static_cast<Precedence>(static_cast<int>(rule.precedence) + 1));
 
+  // Restore: right operand is now in last_const_, set left as prev_const_
+  prev_const_ = left_const;
+
+  OpCode folded_op = OpCode::OP_RETURN; // sentinel: not foldable
   switch (operator_type) {
   case TokenType::TOKEN_BANG_EQUAL:    emit_bytes(static_cast<u8_t>(OpCode::OP_EQUAL), static_cast<u8_t>(OpCode::OP_NOT)); break;
   case TokenType::TOKEN_EQUAL_EQUAL:   emit_op(OpCode::OP_EQUAL); break;
@@ -832,12 +942,20 @@ void Compiler::binary(bool /*can_assign*/) noexcept {
   case TokenType::TOKEN_GREATER_EQUAL: emit_bytes(static_cast<u8_t>(OpCode::OP_LESS), static_cast<u8_t>(OpCode::OP_NOT)); break;
   case TokenType::TOKEN_LESS:          emit_op(OpCode::OP_LESS); break;
   case TokenType::TOKEN_LESS_EQUAL:    emit_bytes(static_cast<u8_t>(OpCode::OP_GREATER), static_cast<u8_t>(OpCode::OP_NOT)); break;
-  case TokenType::TOKEN_PLUS:          emit_op(OpCode::OP_ADD); break;
-  case TokenType::TOKEN_MINUS:         emit_op(OpCode::OP_SUBTRACT); break;
-  case TokenType::TOKEN_STAR:          emit_op(OpCode::OP_MULTIPLY); break;
-  case TokenType::TOKEN_SLASH:         emit_op(OpCode::OP_DIVIDE); break;
-  case TokenType::TOKEN_PERCENT:       emit_op(OpCode::OP_MODULO); break;
+  case TokenType::TOKEN_PLUS:          emit_op(OpCode::OP_ADD);      folded_op = OpCode::OP_ADD; break;
+  case TokenType::TOKEN_MINUS:         emit_op(OpCode::OP_SUBTRACT); folded_op = OpCode::OP_SUBTRACT; break;
+  case TokenType::TOKEN_STAR:          emit_op(OpCode::OP_MULTIPLY); folded_op = OpCode::OP_MULTIPLY; break;
+  case TokenType::TOKEN_SLASH:         emit_op(OpCode::OP_DIVIDE);   folded_op = OpCode::OP_DIVIDE; break;
+  case TokenType::TOKEN_PERCENT:       emit_op(OpCode::OP_MODULO);   folded_op = OpCode::OP_MODULO; break;
   default: return;
+  }
+
+  if (folded_op != OpCode::OP_RETURN) {
+    if (!try_fold_binary(folded_op)) {
+      invalidate_constants();
+    }
+  } else {
+    invalidate_constants();
   }
 }
 
@@ -848,6 +966,7 @@ void Compiler::literal(bool /*can_assign*/) noexcept {
   case TokenType::TOKEN_TRUE:  emit_op(OpCode::OP_TRUE); break;
   default: return;
   }
+  invalidate_constants();
 }
 
 void Compiler::and_(bool /*can_assign*/) noexcept {
@@ -857,6 +976,7 @@ void Compiler::and_(bool /*can_assign*/) noexcept {
   parse_precedence(Precedence::PREC_AND);
 
   patch_jump(end_jump);
+  invalidate_constants();
 }
 
 void Compiler::or_(bool /*can_assign*/) noexcept {
@@ -868,6 +988,7 @@ void Compiler::or_(bool /*can_assign*/) noexcept {
 
   parse_precedence(Precedence::PREC_OR);
   patch_jump(end_jump);
+  invalidate_constants();
 }
 
 void Compiler::ternary(bool /*can_assign*/) noexcept {
@@ -887,6 +1008,7 @@ void Compiler::ternary(bool /*can_assign*/) noexcept {
   // else branch: parse expression for the falsy value
   parse_precedence(Precedence::PREC_TERNARY);
   patch_jump(else_jump);
+  invalidate_constants();
 }
 
 u8_t Compiler::argument_list() noexcept {
@@ -907,6 +1029,7 @@ u8_t Compiler::argument_list() noexcept {
 void Compiler::call(bool /*can_assign*/) noexcept {
   u8_t arg_count = argument_list();
   emit_op_byte(OpCode::OP_CALL, arg_count);
+  invalidate_constants();
 }
 
 void Compiler::dot(bool can_assign) noexcept {
@@ -923,6 +1046,7 @@ void Compiler::dot(bool can_assign) noexcept {
   } else {
     emit_op_byte(OpCode::OP_GET_PROPERTY, name);
   }
+  invalidate_constants();
 }
 
 void Compiler::this_(bool /*can_assign*/) noexcept {
@@ -955,6 +1079,7 @@ void Compiler::super_(bool /*can_assign*/) noexcept {
     named_variable(Token{TokenType::TOKEN_SUPER, "super", ps_->previous.line}, false);
     emit_op_byte(OpCode::OP_GET_SUPER, name);
   }
+  invalidate_constants();
 }
 
 void Compiler::list_(bool /*can_assign*/) noexcept {
@@ -970,6 +1095,7 @@ void Compiler::list_(bool /*can_assign*/) noexcept {
   }
   consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after list elements.");
   emit_op_byte(OpCode::OP_BUILD_LIST, count);
+  invalidate_constants();
 }
 
 void Compiler::map_(bool /*can_assign*/) noexcept {
@@ -987,6 +1113,7 @@ void Compiler::map_(bool /*can_assign*/) noexcept {
   }
   consume(TokenType::TOKEN_RIGHT_BRACE, "Expect '}' after map entries.");
   emit_op_byte(OpCode::OP_BUILD_MAP, count);
+  invalidate_constants();
 }
 
 void Compiler::subscript_(bool can_assign) noexcept {
@@ -999,6 +1126,7 @@ void Compiler::subscript_(bool can_assign) noexcept {
   } else {
     emit_op(OpCode::OP_INDEX_GET);
   }
+  invalidate_constants();
 }
 
 void Compiler::block() noexcept {
@@ -1058,6 +1186,7 @@ void Compiler::fun_expression([[maybe_unused]] bool can_assign) noexcept {
   // Synthesize a name token so the Compiler constructor picks it up.
   ps_->previous = Token{TokenType::TOKEN_IDENTIFIER, "<lambda>", ps_->previous.line};
   function(FunctionType::TYPE_FUNCTION);
+  invalidate_constants();
 }
 
 void Compiler::fun_declaration() noexcept {

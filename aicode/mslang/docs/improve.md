@@ -270,7 +270,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 10.3 | Compound assignment `+= -= *= /= %=` | [x] |
 | **2 — Expressiveness** | 10.1 | String interpolation `"${expr}"` | [x] |
 | | 10.4 | Ternary operator `? :` | [x] |
-| | 14.1 | Constant folding | [ ] |
+| | 14.1 | Constant folding | [x] |
 | **3 — Built-in Types** | 11.2 | String methods (len/slice/find/replace/split/...) | [ ] |
 | | 15.1 | Core natives (math/convert/assert/file I/O) | [ ] |
 | | 15.3 | `range()` function | [ ] |
