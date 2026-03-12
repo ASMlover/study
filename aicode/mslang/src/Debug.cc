@@ -140,6 +140,7 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_MODULO:
   case OpCode::OP_NOT:
   case OpCode::OP_NEGATE:
+  case OpCode::OP_STR:
   case OpCode::OP_PRINT:
   case OpCode::OP_INDEX_GET:
   case OpCode::OP_INDEX_SET:

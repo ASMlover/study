@@ -31,9 +31,13 @@
 namespace ms {
 
 class Scanner {
+  static constexpr int kMAX_INTERPOLATION_NESTING = 8;
+
   cstr_t start_{};
   cstr_t current_{};
   int line_{1};
+  int interp_braces_[kMAX_INTERPOLATION_NESTING]{};
+  int interp_count_{0};
 
   bool is_at_end() const noexcept;
   char advance() noexcept;
@@ -45,6 +49,7 @@ class Scanner {
   Token make_token(TokenType type) const noexcept;
   Token error_token(cstr_t message) const noexcept;
   Token scan_string() noexcept;
+  Token scan_string_continuation() noexcept;
   Token scan_number() noexcept;
   Token scan_identifier() noexcept;
   TokenType identifier_type() const noexcept;

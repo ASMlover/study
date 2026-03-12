@@ -756,7 +756,7 @@ InterpretResult VM::run() noexcept {
     &&op_OP_EQUAL,         &&op_OP_GREATER,       &&op_OP_LESS,
     &&op_OP_ADD,           &&op_OP_SUBTRACT,
     &&op_OP_MULTIPLY,      &&op_OP_DIVIDE,        &&op_OP_MODULO,
-    &&op_OP_NOT,           &&op_OP_NEGATE,
+    &&op_OP_NOT,           &&op_OP_NEGATE,        &&op_OP_STR,
     &&op_OP_PRINT,
     &&op_OP_JUMP,          &&op_OP_JUMP_IF_FALSE, &&op_OP_LOOP,
     &&op_OP_CALL,          &&op_OP_INVOKE,        &&op_OP_SUPER_INVOKE,
@@ -960,6 +960,17 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       push(Value(-pop().as_number()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_STR) {
+      Value val = pop();
+      if (val.is_string()) {
+        push(val);
+      } else {
+        str_t s = val.stringify();
+        push(Value(static_cast<Object*>(copy_string(s.data(), s.length()))));
+      }
       VM_DISPATCH();
     }
 

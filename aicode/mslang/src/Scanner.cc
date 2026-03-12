@@ -51,6 +51,7 @@ void Scanner::init(strv_t source) noexcept {
   start_ = source.data();
   current_ = source.data();
   line_ = 1;
+  interp_count_ = 0;
 }
 
 bool Scanner::is_at_end() const noexcept {
@@ -137,11 +138,23 @@ void Scanner::skip_whitespace() noexcept {
 
 Token Scanner::scan_string() noexcept {
   while (peek() != '"' && !is_at_end()) {
-    if (peek() == '\\' && !is_at_end()) {
+    if (peek() == '\\') {
       advance(); // skip the backslash
       if (peek() == '\n') line_++;
-      advance(); // skip the escaped character
+      if (!is_at_end()) advance(); // skip the escaped character
       continue;
+    }
+    // Check for string interpolation: ${
+    if (peek() == '$' && peek_next() == '{') {
+      Token token = make_token(TokenType::TOKEN_STRING_INTERP);
+      advance(); // skip '$'
+      advance(); // skip '{'
+      if (interp_count_ >= kMAX_INTERPOLATION_NESTING) {
+        return error_token("String interpolation nesting too deep.");
+      }
+      interp_braces_[interp_count_] = 1;
+      interp_count_++;
+      return token;
     }
     if (peek() == '\n') line_++;
     advance();
@@ -151,6 +164,39 @@ Token Scanner::scan_string() noexcept {
 
   advance(); // closing quote
   return make_token(TokenType::TOKEN_STRING);
+}
+
+Token Scanner::scan_string_continuation() noexcept {
+  start_ = current_;
+
+  while (peek() != '"' && !is_at_end()) {
+    if (peek() == '\\') {
+      advance();
+      if (peek() == '\n') line_++;
+      if (!is_at_end()) advance();
+      continue;
+    }
+    if (peek() == '$' && peek_next() == '{') {
+      Token token = make_token(TokenType::TOKEN_STRING_INTERP);
+      advance(); // skip '$'
+      advance(); // skip '{'
+      if (interp_count_ >= kMAX_INTERPOLATION_NESTING) {
+        return error_token("String interpolation nesting too deep.");
+      }
+      interp_braces_[interp_count_] = 1;
+      interp_count_++;
+      return token;
+    }
+    if (peek() == '\n') line_++;
+    advance();
+  }
+
+  if (is_at_end()) return error_token("Unterminated string.");
+
+  // current_ is at '"', make token BEFORE advancing past it
+  Token token = make_token(TokenType::TOKEN_STRING);
+  advance(); // skip closing '"'
+  return token;
 }
 
 Token Scanner::scan_number() noexcept {
@@ -249,8 +295,18 @@ Token Scanner::scan_token() noexcept {
   switch (c) {
   case '(': return make_token(TokenType::TOKEN_LEFT_PAREN);
   case ')': return make_token(TokenType::TOKEN_RIGHT_PAREN);
-  case '{': return make_token(TokenType::TOKEN_LEFT_BRACE);
-  case '}': return make_token(TokenType::TOKEN_RIGHT_BRACE);
+  case '{':
+    if (interp_count_ > 0) interp_braces_[interp_count_ - 1]++;
+    return make_token(TokenType::TOKEN_LEFT_BRACE);
+  case '}':
+    if (interp_count_ > 0) {
+      interp_braces_[interp_count_ - 1]--;
+      if (interp_braces_[interp_count_ - 1] == 0) {
+        interp_count_--;
+        return scan_string_continuation();
+      }
+    }
+    return make_token(TokenType::TOKEN_RIGHT_BRACE);
   case '[': return make_token(TokenType::TOKEN_LEFT_BRACKET);
   case ']': return make_token(TokenType::TOKEN_RIGHT_BRACKET);
   case ';': return make_token(TokenType::TOKEN_SEMICOLON);
@@ -261,6 +317,7 @@ Token Scanner::scan_token() noexcept {
   case '/': return make_token(match('=') ? TokenType::TOKEN_SLASH_EQUAL : TokenType::TOKEN_SLASH);
   case '*': return make_token(match('=') ? TokenType::TOKEN_STAR_EQUAL : TokenType::TOKEN_STAR);
   case '%': return make_token(match('=') ? TokenType::TOKEN_PERCENT_EQUAL : TokenType::TOKEN_PERCENT);
+  case '?': return make_token(TokenType::TOKEN_QUESTION);
   case ':': return make_token(TokenType::TOKEN_COLON);
   case '!': return make_token(match('=') ? TokenType::TOKEN_BANG_EQUAL : TokenType::TOKEN_BANG);
   case '=': return make_token(match('=') ? TokenType::TOKEN_EQUAL_EQUAL : TokenType::TOKEN_EQUAL);

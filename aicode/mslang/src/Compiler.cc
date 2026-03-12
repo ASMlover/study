@@ -39,6 +39,7 @@ namespace ms {
 enum class Precedence : int {
   PREC_NONE,
   PREC_ASSIGNMENT,  // =
+  PREC_TERNARY,     // ?:
   PREC_OR,          // or
   PREC_AND,         // and
   PREC_EQUALITY,    // == !=
@@ -171,6 +172,7 @@ public:
   void grouping(bool can_assign) noexcept;
   void number(bool can_assign) noexcept;
   void string(bool can_assign) noexcept;
+  void string_interpolation(bool can_assign) noexcept;
   void variable(bool can_assign) noexcept;
   void unary(bool can_assign) noexcept;
   void binary(bool can_assign) noexcept;
@@ -185,6 +187,7 @@ public:
   void list_(bool can_assign) noexcept;
   void map_(bool can_assign) noexcept;
   void subscript_(bool can_assign) noexcept;
+  void ternary(bool can_assign) noexcept;
   u8_t argument_list() noexcept;
 
   friend ObjFunction* compile(strv_t source) noexcept;
@@ -242,6 +245,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { nullptr,             &Compiler::binary,  Precedence::PREC_COMPARISON },
   // TOKEN_LESS_EQUAL
   { nullptr,             &Compiler::binary,  Precedence::PREC_COMPARISON },
+  // TOKEN_QUESTION
+  { nullptr,             &Compiler::ternary, Precedence::PREC_TERNARY },
   // TOKEN_COLON
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_PLUS_EQUAL
@@ -258,6 +263,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { &Compiler::variable, nullptr,            Precedence::PREC_NONE },
   // TOKEN_STRING
   { &Compiler::string,   nullptr,            Precedence::PREC_NONE },
+  // TOKEN_STRING_INTERP
+  { &Compiler::string_interpolation, nullptr, Precedence::PREC_NONE },
   // TOKEN_NUMBER
   { &Compiler::number,   nullptr,            Precedence::PREC_NONE },
   // TOKEN_AND
@@ -709,6 +716,7 @@ void Compiler::string(bool /*can_assign*/) noexcept {
       case '\\': result += '\\'; break;
       case '"':  result += '"';  break;
       case '0':  result += '\0'; break;
+      case '$':  result += '$';  break;
       default:   result += '\\'; result += start[i]; break;
       }
     } else {
@@ -718,6 +726,82 @@ void Compiler::string(bool /*can_assign*/) noexcept {
 
   emit_constant(Value(static_cast<Object*>(
       VM::get_instance().copy_string(result.data(), result.length()))));
+}
+
+void Compiler::string_interpolation(bool /*can_assign*/) noexcept {
+  // Helper lambda: process escape sequences in a raw segment
+  auto process_escapes = [](const char* src, sz_t len) -> str_t {
+    str_t result;
+    result.reserve(len);
+    for (sz_t i = 0; i < len; ++i) {
+      if (src[i] == '\\' && i + 1 < len) {
+        ++i;
+        switch (src[i]) {
+        case 'n':  result += '\n'; break;
+        case 't':  result += '\t'; break;
+        case 'r':  result += '\r'; break;
+        case '\\': result += '\\'; break;
+        case '"':  result += '"';  break;
+        case '0':  result += '\0'; break;
+        case '$':  result += '$';  break;
+        default:   result += '\\'; result += src[i]; break;
+        }
+      } else {
+        result += src[i];
+      }
+    }
+    return result;
+  };
+
+  // Helper lambda: emit a string constant for a segment
+  auto emit_segment = [&](const char* src, sz_t len) {
+    str_t seg = process_escapes(src, len);
+    emit_constant(Value(static_cast<Object*>(
+        VM::get_instance().copy_string(seg.data(), seg.length()))));
+  };
+
+  // First segment: lexeme starts with '"', strip it
+  const char* first_start = ps_->previous.lexeme.data() + 1;
+  sz_t first_len = ps_->previous.lexeme.length() - 1;
+
+  bool has_prev = (first_len > 0);
+  if (has_prev) {
+    emit_segment(first_start, first_len);
+  }
+
+  for (;;) {
+    // Parse the interpolated expression
+    expression();
+    // Convert expression result to string
+    emit_op(OpCode::OP_STR);
+    if (has_prev) {
+      emit_op(OpCode::OP_ADD);
+    }
+    has_prev = true;
+
+    if (match(TokenType::TOKEN_STRING_INTERP)) {
+      // Intermediate segment: no quotes in lexeme
+      const char* seg_start = ps_->previous.lexeme.data();
+      sz_t seg_len = ps_->previous.lexeme.length();
+      if (seg_len > 0) {
+        emit_segment(seg_start, seg_len);
+        emit_op(OpCode::OP_ADD);
+      }
+    } else if (match(TokenType::TOKEN_STRING)) {
+      // Final segment: no quotes in lexeme (scan_string_continuation
+      // produces lexeme from after '}' to before '"')
+      const char* seg_start = ps_->previous.lexeme.data();
+      sz_t seg_len = ps_->previous.lexeme.length();
+      if (seg_len > 0) {
+        emit_segment(seg_start, seg_len);
+        emit_op(OpCode::OP_ADD);
+      }
+      break;
+    } else {
+      error("Unterminated string interpolation.");
+      break;
+    }
+  }
 }
 
 void Compiler::variable(bool can_assign) noexcept {
@@ -784,6 +868,25 @@ void Compiler::or_(bool /*can_assign*/) noexcept {
 
   parse_precedence(Precedence::PREC_OR);
   patch_jump(end_jump);
+}
+
+void Compiler::ternary(bool /*can_assign*/) noexcept {
+  // condition already on the stack
+  sz_t then_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+  emit_op(OpCode::OP_POP);
+
+  // then branch: parse expression for the truthy value
+  parse_precedence(Precedence::PREC_TERNARY);
+  sz_t else_jump = emit_jump(OpCode::OP_JUMP);
+
+  patch_jump(then_jump);
+  emit_op(OpCode::OP_POP);
+
+  consume(TokenType::TOKEN_COLON, "Expect ':' after ternary then branch.");
+
+  // else branch: parse expression for the falsy value
+  parse_precedence(Precedence::PREC_TERNARY);
+  patch_jump(else_jump);
 }
 
 u8_t Compiler::argument_list() noexcept {

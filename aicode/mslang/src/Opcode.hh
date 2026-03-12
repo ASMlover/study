@@ -57,6 +57,7 @@ enum class OpCode : u8_t {
   OP_MODULO,
   OP_NOT,
   OP_NEGATE,
+  OP_STR,
   OP_PRINT,
   OP_JUMP,
   OP_JUMP_IF_FALSE,
@@ -107,6 +108,7 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_MODULO:        return "OP_MODULO";
   case OpCode::OP_NOT:            return "OP_NOT";
   case OpCode::OP_NEGATE:         return "OP_NEGATE";
+  case OpCode::OP_STR:            return "OP_STR";
   case OpCode::OP_PRINT:          return "OP_PRINT";
   case OpCode::OP_JUMP:           return "OP_JUMP";
   case OpCode::OP_JUMP_IF_FALSE:  return "OP_JUMP_IF_FALSE";
