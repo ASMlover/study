@@ -49,13 +49,9 @@ struct DebtCase {
 
 int RunMigrationDebtTests() {
   const std::vector<DebtCase> debt_cases = {
-      {"closure_capture", "tests/scripts/language/closure_capture.ms", ms::InterpretResult::kOk, ""},
-      {"closure_lexical", "tests/scripts/language/closure_lexical.ms", ms::InterpretResult::kOk, ""},
       {"class_fields", "tests/scripts/language/class_fields.ms", ms::InterpretResult::kOk, ""},
       {"class_inherit", "tests/scripts/language/class_inherit.ms", ms::InterpretResult::kOk, ""},
-      {"resolver_ok_return_in_function", "tests/scripts/language/resolver_ok_return_in_function.ms",
-       ms::InterpretResult::kOk, ""},
-      {"resolver_ok_this_in_nested_function",
+            {"resolver_ok_this_in_nested_function",
        "tests/scripts/language/resolver_ok_this_in_nested_function.ms", ms::InterpretResult::kOk, ""},
       {"resolver_ok_super_in_subclass", "tests/scripts/language/resolver_ok_super_in_subclass.ms",
        ms::InterpretResult::kOk, ""},

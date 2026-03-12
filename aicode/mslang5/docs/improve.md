@@ -376,7 +376,7 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 |---|---|---|---|---|---|
 | M0 Baseline freeze and guardrails | done | 100% | 2026-03-11 | 2026-03-11 | Freeze guard + VM gap matrix + migration debt suite landed |
 | M1 Frontend capability completion | done | 100% | 2026-03-12 | 2026-03-12 | VM-native control-flow/operators/locals + conformance landed |
-| M2 Function/closure VM migration | todo | 0% | - | - | - |
+| M2 Function/closure VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native function/closure/upvalue + callframe landed; closure fallback debt removed |
 | M3 Class/inheritance/this/super VM migration | todo | 0% | - | - | - |
 | M4 Module VM protocol unification | todo | 0% | - | - | - |
 | M5 Real GC integration | todo | 0% | - | - | - |
@@ -439,17 +439,32 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 ### 11.6 M2 Progress Subsections (function and closure VM migration)
 
 - `M2-01` Complete object model for Function/Closure/Upvalue
-  - Status: todo
+  - Status: done
   - Done criteria: runtime object structure/lifecycle covered by tests.
+  - Evidence:
+    - `src/runtime/object.hh` adds `FunctionObject/ClosureObject/UpvalueObject`.
+    - `src/runtime/value.hh` + `src/runtime/value.cc` split runtime value implementation to support object lifecycle cleanly.
 - `M2-02` Land instruction chain (CLOSURE/GET_UPVALUE/SET_UPVALUE/CLOSE_UPVALUE/CALL/RETURN)
-  - Status: todo
+  - Status: done
   - Done criteria: compiler emit + VM execute full chain.
+  - Evidence:
+    - `src/bytecode/opcode.hh` adds `kClosure/kGetUpvalue/kSetUpvalue/kCloseUpvalue/kCall`.
+    - `src/frontend/compiler.cc` emits closure metadata, call operands, and upvalue access bytecode.
+    - `src/runtime/vm.cc` executes closure creation, call dispatch, upvalue read/write, and close-on-scope-exit/return.
 - `M2-03` Stabilize callframe and slot windows (recursion/higher-order functions)
-  - Status: todo
+  - Status: done
   - Done criteria: recursion, closure capture, and write-back semantics are stable.
+  - Evidence:
+    - `src/runtime/vm.hh` introduces `CallFrame{closure, ip, slot_base}` and open-upvalue tracking.
+    - function arity mismatch now reports `MS4002` from VM path (validated by `tests/scripts/language/closure_arity_error.ms`).
+    - higher-order closure capture/write-back validated by `tests/scripts/language/closure_capture.ms` and `closure_independent_counters.ms`.
 - `M2-04` Remove fallback usage (closure cases)
-  - Status: todo
+  - Status: done
   - Done criteria: closure integration/parity cases no longer trigger fallback.
+  - Evidence:
+    - `tests/integration/test_language_closure.cc` now asserts `kVmPipeline` for closure scenarios.
+    - `tests/integration/test_migration_debt.cc` removes closure cases from fallback debt registry.
+    - verification: `cmake --build build --config Debug` + `ctest --test-dir build --output-on-failure -C Debug` pass (`7/7`).
 
 ### 11.7 M3 Progress Subsections (class and inheritance VM migration)
 

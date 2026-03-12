@@ -18,6 +18,7 @@ add_library(maple_core
   src/frontend/parser.cc
   src/frontend/compiler.cc
   src/runtime/object.cc
+  src/runtime/value.cc
   src/runtime/table.cc
   src/runtime/gc.cc
   src/runtime/module.cc

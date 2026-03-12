@@ -6,6 +6,7 @@ namespace ms {
 
 enum class OpCode : std::uint8_t {
   kConstant,
+  kClosure,
   kEqual,
   kGreater,
   kLess,
@@ -19,6 +20,10 @@ enum class OpCode : std::uint8_t {
   kPop,
   kGetLocal,
   kSetLocal,
+  kGetUpvalue,
+  kSetUpvalue,
+  kCall,
+  kCloseUpvalue,
   kDefineGlobal,
   kGetGlobal,
   kSetGlobal,

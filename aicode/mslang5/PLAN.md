@@ -1525,3 +1525,34 @@ Commit message convention reminder:
   - `cmake --build build --config Debug`
   - `ctest --test-dir build --output-on-failure -C Debug`
   - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt`
+
+#### 2026-03-13 Incremental Update (M2 function/closure VM migration)
+
+- Scope: execute `docs/improve.md` milestone `M2` (function/closure/upvalue VM migration).
+- Delivered:
+  - Added VM-native function/closure/upvalue object model:
+    - `src/runtime/object.hh`
+    - `src/runtime/value.hh`
+    - `src/runtime/value.cc`
+  - Added bytecode instructions and disassembly support:
+    - `src/bytecode/opcode.hh`
+    - `src/bytecode/chunk.hh`
+    - `src/bytecode/disasm.cc`
+  - Completed compiler support for function declarations, anonymous functions, call expressions, returns, lexical upvalue resolution and closure metadata emission:
+    - `src/frontend/compiler.cc`
+  - Completed VM callframe + slot-window + upvalue lifecycle runtime:
+    - `src/runtime/vm.hh`
+    - `src/runtime/vm.cc`
+  - Updated migration tests and debt tracking:
+    - `tests/integration/test_language_closure.cc` (closure path now requires `kVmPipeline`)
+    - `tests/integration/test_migration_debt.cc` (closure debt removed)
+    - `tests/integration/test_language_resolver.cc` (resolver success-route split: return-in-function now VM pipeline)
+    - `tests/unit/test_vm_compiler.cc` (closure VM-path coverage)
+  - Synced migration guard artifacts due include-only interpreter refactor required by value implementation split:
+    - `docs/migration/interpreter_freeze.sha256`
+    - `docs/migration/m0-baseline-freeze.md`
+- Verification:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+- Verification result:
+  - pass (`7/7`)

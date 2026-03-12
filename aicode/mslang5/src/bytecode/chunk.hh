@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
@@ -10,7 +11,17 @@
 
 namespace ms {
 
-using Constant = std::variant<std::monostate, bool, double, std::string>;
+class Chunk;
+
+struct FunctionPrototype {
+  std::string name;
+  int arity = 0;
+  int upvalue_count = 0;
+  std::shared_ptr<Chunk> chunk;
+};
+
+using Constant =
+    std::variant<std::monostate, bool, double, std::string, std::shared_ptr<FunctionPrototype>>;
 
 class Chunk {
  public:

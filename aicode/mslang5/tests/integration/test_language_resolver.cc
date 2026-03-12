@@ -56,7 +56,8 @@ void ExpectResolveCompileFailure(const std::string& script_path, const std::stri
          "legacy-only mode should remain explicit");
 }
 
-void ExpectResolverSuccess(const std::string& script_path, const std::string& expected_output) {
+void ExpectResolverSuccess(const std::string& script_path, const std::string& expected_output,
+                           const ms::SourceExecutionRoute expected_route) {
   const std::string src = ReadAll(script_path);
   const ExecOutcome default_run =
       RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
@@ -68,8 +69,8 @@ void ExpectResolverSuccess(const std::string& script_path, const std::string& ex
   Expect(default_run.output == legacy_run.output, "resolver success output should be route independent");
   Expect(default_run.error.empty(), "resolver success script should not produce errors");
   Expect(legacy_run.error.empty(), "legacy resolver success script should not produce errors");
-  Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-         "resolver success scripts should run through compatibility fallback while VM frontend is partial");
+  Expect(default_run.route == expected_route,
+         "resolver success scripts should run on expected execution route");
   Expect(legacy_run.route == ms::SourceExecutionRoute::kLegacyInterpreter,
          "legacy-only mode should remain explicit");
 }
@@ -78,9 +79,12 @@ void ExpectResolverSuccess(const std::string& script_path, const std::string& ex
 
 int RunResolverIntegrationTests() {
   const std::string base = RepoRoot() + "/tests/scripts/language/";
-  ExpectResolverSuccess(base + "resolver_ok_return_in_function.ms", "42\n");
-  ExpectResolverSuccess(base + "resolver_ok_this_in_nested_function.ms", "9\n");
-  ExpectResolverSuccess(base + "resolver_ok_super_in_subclass.ms", "base-mid-leaf\n");
+  ExpectResolverSuccess(base + "resolver_ok_return_in_function.ms", "42\n",
+                        ms::SourceExecutionRoute::kVmPipeline);
+  ExpectResolverSuccess(base + "resolver_ok_this_in_nested_function.ms", "9\n",
+                        ms::SourceExecutionRoute::kVmCompileFailedThenLegacy);
+  ExpectResolverSuccess(base + "resolver_ok_super_in_subclass.ms", "base-mid-leaf\n",
+                        ms::SourceExecutionRoute::kVmCompileFailedThenLegacy);
 
   ExpectResolveCompileFailure(base + "error_runtime_top_level_return.ms", "MS3001");
   ExpectResolveCompileFailure(base + "error_resolve_top_level_return_in_block.ms", "MS3001");

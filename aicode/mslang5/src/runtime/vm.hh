@@ -1,7 +1,7 @@
 #pragma once
 
-#include <iosfwd>
 #include <cstdint>
+#include <iosfwd>
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,6 +9,7 @@
 #include "bytecode/chunk.hh"
 #include "runtime/gc.hh"
 #include "runtime/module.hh"
+#include "runtime/object.hh"
 #include "runtime/table.hh"
 #include "runtime/value.hh"
 #include "support/source.hh"
@@ -44,9 +45,9 @@ class Vm {
   InterpretResult execute(const Chunk& chunk, std::string* error);
   InterpretResult execute_source(const std::string& source, std::string* error);
   InterpretResult execute_source_named(const std::string& source, const std::string& source_name,
-                                     std::string* error);
+                                       std::string* error);
   InterpretResult execute_module(const std::string& source, std::shared_ptr<Module> module,
-                                std::string* error);
+                                 std::string* error);
   void set_source_execution_mode(SourceExecutionMode mode) noexcept;
   SourceExecutionMode get_source_execution_mode() const noexcept;
   SourceExecutionRoute last_source_execution_route() const noexcept;
@@ -60,6 +61,12 @@ class Vm {
   GcController& gc() noexcept;
 
  private:
+  struct CallFrame {
+    std::shared_ptr<ClosureObject> closure;
+    std::size_t ip = 0;
+    std::size_t slot_base = 0;
+  };
+
   bool push(Value value);
   bool pop(Value* out);
   bool peek(Value* out) const noexcept;
@@ -71,7 +78,15 @@ class Vm {
   void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);
   void set_single_diagnostic(const Diagnostic& diagnostic, std::string* error);
 
+  bool call_closure(const std::shared_ptr<ClosureObject>& closure, int arg_count,
+                    std::vector<CallFrame>* frames, std::string* error);
+  std::shared_ptr<UpvalueObject> capture_upvalue(std::size_t stack_index);
+  void close_upvalues(std::size_t min_stack_index);
+  Value read_upvalue(const std::shared_ptr<UpvalueObject>& upvalue) const;
+  void write_upvalue(const std::shared_ptr<UpvalueObject>& upvalue, Value value);
+
   std::vector<Value> stack_;
+  std::vector<std::shared_ptr<UpvalueObject>> open_upvalues_;
   Table globals_;
   std::ostream* out_;
   ModuleLoader modules_;

@@ -48,6 +48,27 @@ int RunVmCompilerTests() {
   Expect(out.str().find("3") != std::string::npos, "if/and/!= branch should print 3");
   Expect(out.str().find("30") != std::string::npos, "for/while control flow should print 30");
 
+  out.str("");
+  out.clear();
+  error.clear();
+  const std::string closure_script =
+      "fun makeCounter(start) {\n"
+      "  var value = start;\n"
+      "  fun inc() {\n"
+      "    value = value + 1;\n"
+      "    return value;\n"
+      "  }\n"
+      "  return inc;\n"
+      "}\n"
+      "var c = makeCounter(10);\n"
+      "print c();\n"
+      "print c();\n";
+  const ms::InterpretResult closure_result = vm.execute_source(closure_script, &error);
+  Expect(closure_result == ms::InterpretResult::kOk, "closure script should execute");
+  Expect(vm.last_source_execution_route() == ms::SourceExecutionRoute::kVmPipeline,
+         "closure script should execute on VM pipeline");
+  Expect(out.str() == "11\n12\n", "closure script output should be stable");
+
   error.clear();
   const ms::InterpretResult compile_error = vm.execute_source("var x = ;\n", &error);
   Expect(compile_error == ms::InterpretResult::kCompileError,

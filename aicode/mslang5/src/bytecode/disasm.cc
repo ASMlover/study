@@ -19,13 +19,22 @@ std::string ConstantToString(const Constant& constant) {
     out << std::get<double>(constant);
     return out.str();
   }
-  return "\"" + std::get<std::string>(constant) + "\"";
+  if (std::holds_alternative<std::string>(constant)) {
+    return "\"" + std::get<std::string>(constant) + "\"";
+  }
+  const auto prototype = std::get<std::shared_ptr<FunctionPrototype>>(constant);
+  if (prototype == nullptr) {
+    return "<fn:null>";
+  }
+  return "<fn " + prototype->name + ">";
 }
 
 const char* OpName(const OpCode op) {
   switch (op) {
     case OpCode::kConstant:
       return "OP_CONSTANT";
+    case OpCode::kClosure:
+      return "OP_CLOSURE";
     case OpCode::kEqual:
       return "OP_EQUAL";
     case OpCode::kGreater:
@@ -52,6 +61,14 @@ const char* OpName(const OpCode op) {
       return "OP_GET_LOCAL";
     case OpCode::kSetLocal:
       return "OP_SET_LOCAL";
+    case OpCode::kGetUpvalue:
+      return "OP_GET_UPVALUE";
+    case OpCode::kSetUpvalue:
+      return "OP_SET_UPVALUE";
+    case OpCode::kCall:
+      return "OP_CALL";
+    case OpCode::kCloseUpvalue:
+      return "OP_CLOSE_UPVALUE";
     case OpCode::kDefineGlobal:
       return "OP_DEFINE_GLOBAL";
     case OpCode::kGetGlobal:
@@ -100,13 +117,41 @@ std::string disassemble_chunk(const Chunk& chunk, const std::string& name) {
       case OpCode::kGetGlobal:
       case OpCode::kSetGlobal:
       case OpCode::kImportModule:
+      case OpCode::kCall:
         if (offset + 1 < chunk.code().size()) {
           print_const_operand(offset + 1);
         }
         offset += 2;
         break;
+      case OpCode::kClosure:
+        if (offset + 1 < chunk.code().size()) {
+          const std::size_t const_index = chunk.code()[offset + 1];
+          print_const_operand(offset + 1);
+          std::size_t consumed = 2;
+          if (const_index < chunk.constants().size() &&
+              std::holds_alternative<std::shared_ptr<FunctionPrototype>>(chunk.constants()[const_index])) {
+            const auto prototype =
+                std::get<std::shared_ptr<FunctionPrototype>>(chunk.constants()[const_index]);
+            if (prototype != nullptr) {
+              for (int i = 0; i < prototype->upvalue_count; ++i) {
+                if (offset + consumed + 1 >= chunk.code().size()) {
+                  break;
+                }
+                out << " [" << static_cast<int>(chunk.code()[offset + consumed]) << ","
+                    << static_cast<int>(chunk.code()[offset + consumed + 1]) << "]";
+                consumed += 2;
+              }
+            }
+          }
+          offset += consumed;
+          break;
+        }
+        offset += 1;
+        break;
       case OpCode::kGetLocal:
       case OpCode::kSetLocal:
+      case OpCode::kGetUpvalue:
+      case OpCode::kSetUpvalue:
         if (offset + 1 < chunk.code().size()) {
           print_raw_operand(offset + 1);
         }

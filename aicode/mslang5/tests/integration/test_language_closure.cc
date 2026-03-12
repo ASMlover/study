@@ -46,8 +46,8 @@ int RunClosureIntegrationTests() {
     Expect(default_run.output == "11\n12\n", "closure_capture output should be 11,12");
     Expect(default_run.output == legacy_run.output, "closure_capture output should be route independent");
     Expect(default_run.result == legacy_run.result, "closure_capture result should be route independent");
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           "closure_capture should use compatibility fallback until VM parity is complete");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "closure_capture should execute on VM pipeline");
   }
 
   {
@@ -59,8 +59,8 @@ int RunClosureIntegrationTests() {
            "closure_lexical output should preserve lexical scope");
     Expect(default_run.output == legacy_run.output, "closure_lexical output should be route independent");
     Expect(default_run.result == legacy_run.result, "closure_lexical result should be route independent");
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           "closure_lexical should use compatibility fallback until VM parity is complete");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "closure_lexical should execute on VM pipeline");
   }
 
   {
@@ -74,9 +74,8 @@ int RunClosureIntegrationTests() {
            "arity mismatch should report actual and expected arguments");
     Expect(default_run.error == legacy_run.error, "closure_arity_error message should be route independent");
     Expect(default_run.result == legacy_run.result, "closure_arity_error result should be route independent");
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline ||
-               default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           "closure_arity_error should execute via VM pipeline or compatibility fallback");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "closure_arity_error should execute on VM pipeline");
   }
   return 0;
 }
