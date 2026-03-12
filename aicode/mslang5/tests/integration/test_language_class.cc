@@ -46,8 +46,8 @@ int RunClassIntegrationTests() {
     Expect(default_run.output == "7\n9\n", "class_fields output should be 7,9");
     Expect(default_run.output == legacy_run.output, "class_fields output should be route independent");
     Expect(default_run.result == legacy_run.result, "class_fields result should be route independent");
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           "class_fields should use compatibility fallback until VM parity is complete");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "class_fields should execute directly on VM pipeline");
   }
 
   {
@@ -58,8 +58,8 @@ int RunClassIntegrationTests() {
     Expect(default_run.output == "AB\n", "class_inherit output should be AB");
     Expect(default_run.output == legacy_run.output, "class_inherit output should be route independent");
     Expect(default_run.result == legacy_run.result, "class_inherit result should be route independent");
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           "class_inherit should use compatibility fallback until VM parity is complete");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "class_inherit should execute directly on VM pipeline");
   }
 
   {
@@ -73,9 +73,11 @@ int RunClassIntegrationTests() {
            "missing super method should report undefined property");
     Expect(default_run.error == legacy_run.error, "class_super_error message should be route independent");
     Expect(default_run.result == legacy_run.result, "class_super_error result should be route independent");
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline ||
-               default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           "class_super_error should execute via VM pipeline or compatibility fallback");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "class_super_error should execute via VM pipeline");
   }
   return 0;
 }
+
+
+

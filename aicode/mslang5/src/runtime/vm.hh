@@ -80,6 +80,14 @@ class Vm {
 
   bool call_closure(const std::shared_ptr<ClosureObject>& closure, int arg_count,
                     std::vector<CallFrame>* frames, std::string* error);
+  bool invoke_from_class(const std::shared_ptr<ClassObject>& klass, const std::string& name,
+                         int arg_count, std::vector<CallFrame>* frames, std::string* error);
+  bool invoke_value(const Value& receiver, const std::string& name, int arg_count,
+                    std::vector<CallFrame>* frames, std::string* error);
+  bool bind_method(const std::shared_ptr<ClassObject>& klass, const std::string& name,
+                   const Value& receiver, std::string* error);
+  bool call_value_at(std::size_t callee_index, int arg_count, std::vector<CallFrame>* frames,
+                     std::string* error);
   std::shared_ptr<UpvalueObject> capture_upvalue(std::size_t stack_index);
   void close_upvalues(std::size_t min_stack_index);
   Value read_upvalue(const std::shared_ptr<UpvalueObject>& upvalue) const;
@@ -99,3 +107,5 @@ class Vm {
 };
 
 }  // namespace ms
+
+

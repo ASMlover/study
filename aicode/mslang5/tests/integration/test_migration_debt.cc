@@ -48,24 +48,7 @@ struct DebtCase {
 }  // namespace
 
 int RunMigrationDebtTests() {
-  const std::vector<DebtCase> debt_cases = {
-      {"class_fields", "tests/scripts/language/class_fields.ms", ms::InterpretResult::kOk, ""},
-      {"class_inherit", "tests/scripts/language/class_inherit.ms", ms::InterpretResult::kOk, ""},
-            {"resolver_ok_this_in_nested_function",
-       "tests/scripts/language/resolver_ok_this_in_nested_function.ms", ms::InterpretResult::kOk, ""},
-      {"resolver_ok_super_in_subclass", "tests/scripts/language/resolver_ok_super_in_subclass.ms",
-       ms::InterpretResult::kOk, ""},
-      {"error_runtime_top_level_return", "tests/scripts/language/error_runtime_top_level_return.ms",
-       ms::InterpretResult::kCompileError, "MS3001"},
-      {"error_resolve_this_in_free_function",
-       "tests/scripts/language/error_resolve_this_in_free_function.ms",
-       ms::InterpretResult::kCompileError, "MS3002"},
-      {"error_resolve_super_without_superclass_method",
-       "tests/scripts/language/error_resolve_super_without_superclass_method.ms",
-       ms::InterpretResult::kCompileError, "MS3003"},
-      {"error_parse_self_inherit", "tests/scripts/language/error_parse_self_inherit.ms",
-       ms::InterpretResult::kCompileError, "MS3004"},
-  };
+  const std::vector<DebtCase> debt_cases = {};
 
   const std::string repo_root = RepoRoot() + "/";
   int fallback_cases = 0;
@@ -102,3 +85,4 @@ int RunMigrationDebtTests() {
             << std::setprecision(3) << fallback_rate << "\n";
   return 0;
 }
+

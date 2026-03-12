@@ -23,7 +23,15 @@ enum class OpCode : std::uint8_t {
   kGetUpvalue,
   kSetUpvalue,
   kCall,
+  kInvoke,
+  kSuperInvoke,
   kCloseUpvalue,
+  kClass,
+  kInherit,
+  kMethod,
+  kGetProperty,
+  kSetProperty,
+  kGetSuper,
   kDefineGlobal,
   kGetGlobal,
   kSetGlobal,
@@ -36,3 +44,4 @@ enum class OpCode : std::uint8_t {
 };
 
 }  // namespace ms
+

@@ -50,8 +50,8 @@ void ExpectResolveCompileFailure(const std::string& script_path, const std::stri
   Expect(default_run.error.find(code) != std::string::npos, "resolver violation should expose MS3xxx code");
   Expect(default_run.error == legacy_run.error, "resolver diagnostics should be route independent");
   Expect(default_run.output.empty(), "resolver failures should not produce output");
-  Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-         "resolver script should run on fallback path while VM frontend is partial");
+  Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+         "resolver script should run on VM pipeline");
   Expect(legacy_run.route == ms::SourceExecutionRoute::kLegacyInterpreter,
          "legacy-only mode should remain explicit");
 }
@@ -82,9 +82,9 @@ int RunResolverIntegrationTests() {
   ExpectResolverSuccess(base + "resolver_ok_return_in_function.ms", "42\n",
                         ms::SourceExecutionRoute::kVmPipeline);
   ExpectResolverSuccess(base + "resolver_ok_this_in_nested_function.ms", "9\n",
-                        ms::SourceExecutionRoute::kVmCompileFailedThenLegacy);
+                        ms::SourceExecutionRoute::kVmPipeline);
   ExpectResolverSuccess(base + "resolver_ok_super_in_subclass.ms", "base-mid-leaf\n",
-                        ms::SourceExecutionRoute::kVmCompileFailedThenLegacy);
+                        ms::SourceExecutionRoute::kVmPipeline);
 
   ExpectResolveCompileFailure(base + "error_runtime_top_level_return.ms", "MS3001");
   ExpectResolveCompileFailure(base + "error_resolve_top_level_return_in_block.ms", "MS3001");
@@ -95,3 +95,5 @@ int RunResolverIntegrationTests() {
   ExpectResolveCompileFailure(base + "error_parse_self_inherit.ms", "MS3004");
   return 0;
 }
+
+

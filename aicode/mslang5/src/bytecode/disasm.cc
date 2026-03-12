@@ -67,8 +67,24 @@ const char* OpName(const OpCode op) {
       return "OP_SET_UPVALUE";
     case OpCode::kCall:
       return "OP_CALL";
+    case OpCode::kInvoke:
+      return "OP_INVOKE";
+    case OpCode::kSuperInvoke:
+      return "OP_SUPER_INVOKE";
     case OpCode::kCloseUpvalue:
       return "OP_CLOSE_UPVALUE";
+    case OpCode::kClass:
+      return "OP_CLASS";
+    case OpCode::kInherit:
+      return "OP_INHERIT";
+    case OpCode::kMethod:
+      return "OP_METHOD";
+    case OpCode::kGetProperty:
+      return "OP_GET_PROPERTY";
+    case OpCode::kSetProperty:
+      return "OP_SET_PROPERTY";
+    case OpCode::kGetSuper:
+      return "OP_GET_SUPER";
     case OpCode::kDefineGlobal:
       return "OP_DEFINE_GLOBAL";
     case OpCode::kGetGlobal:
@@ -117,11 +133,29 @@ std::string disassemble_chunk(const Chunk& chunk, const std::string& name) {
       case OpCode::kGetGlobal:
       case OpCode::kSetGlobal:
       case OpCode::kImportModule:
-      case OpCode::kCall:
+      case OpCode::kClass:
+      case OpCode::kMethod:
+      case OpCode::kGetProperty:
+      case OpCode::kSetProperty:
+      case OpCode::kGetSuper:
         if (offset + 1 < chunk.code().size()) {
           print_const_operand(offset + 1);
         }
         offset += 2;
+        break;
+      case OpCode::kCall:
+        if (offset + 1 < chunk.code().size()) {
+          print_raw_operand(offset + 1);
+        }
+        offset += 2;
+        break;
+      case OpCode::kInvoke:
+      case OpCode::kSuperInvoke:
+        if (offset + 2 < chunk.code().size()) {
+          print_const_operand(offset + 1);
+          print_raw_operand(offset + 2);
+        }
+        offset += 3;
         break;
       case OpCode::kClosure:
         if (offset + 1 < chunk.code().size()) {
@@ -185,3 +219,4 @@ std::string disassemble_chunk(const Chunk& chunk, const std::string& name) {
 }
 
 }  // namespace ms
+

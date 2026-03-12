@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "bytecode/chunk.hh"
+#include "runtime/table.hh"
 #include "runtime/value.hh"
 
 namespace ms {
@@ -59,8 +60,47 @@ struct ClosureObject : public RuntimeObject {
   std::vector<std::shared_ptr<UpvalueObject>> upvalues;
 };
 
+struct ClassObject : public RuntimeObject {
+  explicit ClassObject(std::string n, std::shared_ptr<ClassObject> parent = nullptr)
+      : name(std::move(n)), superclass(std::move(parent)) {}
+
+  inline std::string to_string() const override { return "<class " + name + ">"; }
+
+  std::string name;
+  std::shared_ptr<ClassObject> superclass;
+  Table methods;
+};
+
+struct InstanceObject : public RuntimeObject {
+  explicit InstanceObject(std::shared_ptr<ClassObject> k) : klass(std::move(k)) {}
+
+  inline std::string to_string() const override {
+    const std::string class_name = klass != nullptr ? klass->name : "unknown";
+    return "<" + class_name + " instance>";
+  }
+
+  std::shared_ptr<ClassObject> klass;
+  Table fields;
+};
+
+struct BoundMethodObject : public RuntimeObject {
+  BoundMethodObject(Value recv, std::shared_ptr<ClosureObject> m)
+      : receiver(std::move(recv)), method(std::move(m)) {}
+
+  inline std::string to_string() const override {
+    if (method == nullptr) {
+      return "<bound method:null>";
+    }
+    return "<bound " + method->to_string() + ">";
+  }
+
+  Value receiver;
+  std::shared_ptr<ClosureObject> method;
+};
+
 inline std::shared_ptr<StringObject> make_string_object(const std::string& value) {
   return std::make_shared<StringObject>(value);
 }
 
 }  // namespace ms
+

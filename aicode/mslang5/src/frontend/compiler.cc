@@ -23,7 +23,7 @@ class CompilerImpl {
     script->prototype->name = "<script>";
     script->prototype->chunk = std::make_shared<Chunk>();
     script->scope_depth = 0;
-    script->is_script = true;
+    script->type = FunctionType::kScript;
     current_ = script.get();
     contexts_.push_back(std::move(script));
   }
@@ -41,6 +41,8 @@ class CompilerImpl {
   }
 
  private:
+  enum class FunctionType { kScript, kFunction, kMethod, kInitializer };
+
   struct Local {
     std::string name;
     int depth = -1;
@@ -57,8 +59,14 @@ class CompilerImpl {
     std::vector<Local> locals;
     std::vector<Upvalue> upvalues;
     int scope_depth = 0;
-    bool is_script = false;
+    FunctionType type = FunctionType::kScript;
     FunctionContext* enclosing = nullptr;
+  };
+
+  struct ClassContext {
+    ClassContext* enclosing = nullptr;
+    bool has_superclass = false;
+    std::string superclass_name;
   };
 
   Chunk& chunk() { return *current_->prototype->chunk; }
@@ -69,9 +77,18 @@ class CompilerImpl {
 
   std::size_t current_line() const { return parser_.current().line; }
 
-  void report_error(const std::string& message) {
+  void report_parse_error(const std::size_t line, const std::string& message) {
     std::ostringstream out;
-    out << "[line " << current_line() << "] parse error: " << message;
+    out << "[line " << line << "] parse error: " << message;
+    compile_errors_.push_back(out.str());
+  }
+
+  void report_parse_error(const std::string& message) { report_parse_error(current_line(), message); }
+
+  void report_resolve_error(const std::size_t line, const std::string& code,
+                            const std::string& message) {
+    std::ostringstream out;
+    out << "[line " << line << "] resolve error (" << code << "): " << message;
     compile_errors_.push_back(out.str());
   }
 
@@ -88,6 +105,18 @@ class CompilerImpl {
   void emit_name_op(const OpCode op, const std::string& name, const std::size_t line) {
     emit_op(op, line);
     emit_byte(static_cast<std::uint8_t>(add_constant(name)), line);
+  }
+
+  void emit_property_op(const OpCode op, const std::string& name, const std::size_t line) {
+    emit_op(op, line);
+    emit_byte(static_cast<std::uint8_t>(add_constant(name)), line);
+  }
+
+  void emit_invoke_op(const OpCode op, const std::string& name, const std::uint8_t arg_count,
+                      const std::size_t line) {
+    emit_op(op, line);
+    emit_byte(static_cast<std::uint8_t>(add_constant(name)), line);
+    emit_byte(arg_count, line);
   }
 
   std::size_t emit_jump(const OpCode op) {
@@ -137,7 +166,7 @@ class CompilerImpl {
         break;
       }
       if (local.name == name) {
-        report_error("already a variable with this name in this scope");
+        report_parse_error("already a variable with this name in this scope");
       }
     }
     current_->locals.push_back(Local{name, -1, false});
@@ -191,7 +220,25 @@ class CompilerImpl {
     return std::nullopt;
   }
 
+  void emit_variable_get(const std::string& name, const std::size_t line) {
+    if (const auto local = resolve_local(current_, name); local.has_value()) {
+      emit_op(OpCode::kGetLocal, line);
+      emit_byte(*local, line);
+      return;
+    }
+    if (const auto upvalue = resolve_upvalue(current_, name); upvalue.has_value()) {
+      emit_op(OpCode::kGetUpvalue, line);
+      emit_byte(*upvalue, line);
+      return;
+    }
+    emit_name_op(OpCode::kGetGlobal, name, line);
+  }
+
   void declaration() {
+    if (parser_.match(TokenType::kClass)) {
+      class_declaration();
+      return;
+    }
     if (parser_.match(TokenType::kFun)) {
       fun_declaration();
       return;
@@ -203,6 +250,76 @@ class CompilerImpl {
     statement();
   }
 
+  void class_declaration() {
+    if (!parser_.consume(TokenType::kIdentifier, "expected class name")) {
+      return;
+    }
+    const std::string class_name = parser_.previous().lexeme;
+    const std::size_t class_line = parser_.previous().line;
+
+    declare_local(class_name);
+
+    emit_op(OpCode::kClass, class_line);
+    emit_byte(static_cast<std::uint8_t>(add_constant(class_name)), class_line);
+
+    if (current_->scope_depth == 0) {
+      emit_name_op(OpCode::kDefineGlobal, class_name, class_line);
+    } else {
+      mark_initialized();
+    }
+
+    ClassContext klass;
+    klass.enclosing = current_class_;
+    current_class_ = &klass;
+
+    if (parser_.match(TokenType::kLess)) {
+      if (!parser_.consume(TokenType::kIdentifier, "expected superclass name")) {
+        current_class_ = current_class_->enclosing;
+        return;
+      }
+      const std::string super_name = parser_.previous().lexeme;
+      const std::size_t super_line = parser_.previous().line;
+      if (super_name == class_name) {
+        report_resolve_error(super_line, "MS3004", "a class cannot inherit from itself");
+      }
+
+      emit_variable_get(class_name, class_line);
+      emit_variable_get(super_name, super_line);
+      emit_op(OpCode::kInherit, super_line);
+
+      current_class_->has_superclass = true;
+      current_class_->superclass_name = super_name;
+    }
+
+    emit_variable_get(class_name, class_line);
+
+    parser_.consume(TokenType::kLeftBrace, "expected '{' before class body");
+    while (!parser_.check(TokenType::kRightBrace) && !parser_.is_at_end()) {
+      method();
+    }
+    parser_.consume(TokenType::kRightBrace, "expected '}' after class body");
+
+    emit_op(OpCode::kPop, current_line());
+    current_class_ = current_class_->enclosing;
+  }
+
+  void method() {
+    if (!parser_.consume(TokenType::kIdentifier, "expected method name")) {
+      return;
+    }
+    const std::string method_name = parser_.previous().lexeme;
+    const std::size_t method_line = parser_.previous().line;
+
+    FunctionType type = FunctionType::kMethod;
+    if (method_name == "init") {
+      type = FunctionType::kInitializer;
+    }
+    function_body(method_name, type);
+
+    emit_op(OpCode::kMethod, method_line);
+    emit_byte(static_cast<std::uint8_t>(add_constant(method_name)), method_line);
+  }
+
   void fun_declaration() {
     if (!parser_.consume(TokenType::kIdentifier, "expected function name")) {
       return;
@@ -212,21 +329,23 @@ class CompilerImpl {
       declare_local(name);
       mark_initialized();
     }
-    function_body(name);
+    function_body(name, FunctionType::kFunction);
     if (current_->scope_depth == 0) {
       emit_name_op(OpCode::kDefineGlobal, name, current_line());
     }
   }
 
-  void function_body(const std::string& name) {
+  void function_body(const std::string& name, const FunctionType type) {
     auto nested = std::make_unique<FunctionContext>();
     nested->prototype = std::make_shared<FunctionPrototype>();
     nested->prototype->name = name;
     nested->prototype->chunk = std::make_shared<Chunk>();
     nested->scope_depth = 1;
-    nested->is_script = false;
+    nested->type = type;
     nested->enclosing = current_;
-    nested->locals.push_back(Local{"", 0, false});
+    const std::string first_local =
+        (type == FunctionType::kMethod || type == FunctionType::kInitializer) ? "this" : "";
+    nested->locals.push_back(Local{first_local, 0, false});
 
     FunctionContext* enclosing = current_;
     current_ = nested.get();
@@ -249,7 +368,13 @@ class CompilerImpl {
       declaration();
     }
     parser_.consume(TokenType::kRightBrace, "expected '}' after function body");
-    emit_constant(std::monostate{}, current_line());
+
+    if (type == FunctionType::kInitializer) {
+      emit_op(OpCode::kGetLocal, current_line());
+      emit_byte(0, current_line());
+    } else {
+      emit_constant(std::monostate{}, current_line());
+    }
     emit_op(OpCode::kReturn, current_line());
 
     const std::shared_ptr<FunctionPrototype> compiled = current_->prototype;
@@ -320,8 +445,9 @@ class CompilerImpl {
   }
 
   void return_statement() {
-    if (current_->is_script) {
-      report_error("cannot return from top-level code");
+    const std::size_t return_line = parser_.previous().line;
+    if (current_->type == FunctionType::kScript) {
+      report_resolve_error(return_line, "MS3001", "cannot return from top-level code");
       while (!parser_.check(TokenType::kSemicolon) && !parser_.is_at_end()) {
         parser_.advance();
       }
@@ -330,14 +456,24 @@ class CompilerImpl {
     }
 
     if (parser_.match(TokenType::kSemicolon)) {
-      emit_constant(std::monostate{}, current_line());
-      emit_op(OpCode::kReturn, current_line());
+      if (current_->type == FunctionType::kInitializer) {
+        emit_op(OpCode::kGetLocal, return_line);
+        emit_byte(0, return_line);
+      } else {
+        emit_constant(std::monostate{}, return_line);
+      }
+      emit_op(OpCode::kReturn, return_line);
       return;
     }
 
     expression();
     parser_.consume(TokenType::kSemicolon, "expected ';' after return value");
-    emit_op(OpCode::kReturn, current_line());
+    if (current_->type == FunctionType::kInitializer) {
+      emit_op(OpCode::kPop, return_line);
+      emit_op(OpCode::kGetLocal, return_line);
+      emit_byte(0, return_line);
+    }
+    emit_op(OpCode::kReturn, return_line);
   }
 
   void expression_statement() {
@@ -600,17 +736,41 @@ class CompilerImpl {
 
   void call() {
     primary();
-    while (parser_.match(TokenType::kLeftParen)) {
-      std::uint8_t arg_count = 0;
-      if (!parser_.check(TokenType::kRightParen)) {
-        do {
+    while (true) {
+      if (parser_.match(TokenType::kLeftParen)) {
+        std::uint8_t arg_count = 0;
+        if (!parser_.check(TokenType::kRightParen)) {
+          do {
+            expression();
+            ++arg_count;
+          } while (parser_.match(TokenType::kComma));
+        }
+        parser_.consume(TokenType::kRightParen, "expected ')' after arguments");
+        emit_op(OpCode::kCall, current_line());
+        emit_byte(arg_count, current_line());
+      } else if (parser_.match(TokenType::kDot)) {
+        parser_.consume(TokenType::kIdentifier, "expected property name after '.'");
+        const std::string name = parser_.previous().lexeme;
+        const std::size_t line = parser_.previous().line;
+        if (parser_.match(TokenType::kEqual)) {
           expression();
-          ++arg_count;
-        } while (parser_.match(TokenType::kComma));
+          emit_property_op(OpCode::kSetProperty, name, line);
+        } else if (parser_.match(TokenType::kLeftParen)) {
+          std::uint8_t arg_count = 0;
+          if (!parser_.check(TokenType::kRightParen)) {
+            do {
+              expression();
+              ++arg_count;
+            } while (parser_.match(TokenType::kComma));
+          }
+          parser_.consume(TokenType::kRightParen, "expected ')' after arguments");
+          emit_invoke_op(OpCode::kInvoke, name, arg_count, line);
+        } else {
+          emit_property_op(OpCode::kGetProperty, name, line);
+        }
+      } else {
+        break;
       }
-      parser_.consume(TokenType::kRightParen, "expected ')' after arguments");
-      emit_op(OpCode::kCall, current_line());
-      emit_byte(arg_count, current_line());
     }
   }
 
@@ -635,23 +795,41 @@ class CompilerImpl {
       emit_constant(std::monostate{}, current_line());
       return;
     }
+    if (parser_.match(TokenType::kThis)) {
+      const std::size_t line = parser_.previous().line;
+      if (current_class_ == nullptr) {
+        report_resolve_error(line, "MS3002", "cannot use 'this' outside of a class");
+      }
+      emit_variable_get("this", line);
+      return;
+    }
+    if (parser_.match(TokenType::kSuper)) {
+      const std::size_t line = parser_.previous().line;
+      const bool valid_super = current_class_ != nullptr && current_class_->has_superclass;
+      if (!valid_super) {
+        report_resolve_error(line, "MS3003", "cannot use 'super' outside of a subclass");
+      }
+      parser_.consume(TokenType::kDot, "expected '.' after 'super'");
+      parser_.consume(TokenType::kIdentifier, "expected superclass method name");
+      const std::string method = parser_.previous().lexeme;
+
+      if (!valid_super) {
+        emit_constant(std::monostate{}, line);
+        return;
+      }
+
+      emit_variable_get("this", line);
+      emit_variable_get(current_class_->superclass_name, line);
+      emit_property_op(OpCode::kGetSuper, method, line);
+      return;
+    }
     if (parser_.match(TokenType::kIdentifier)) {
       const std::string name = parser_.previous().lexeme;
-      if (const auto local = resolve_local(current_, name); local.has_value()) {
-        emit_op(OpCode::kGetLocal, current_line());
-        emit_byte(*local, current_line());
-        return;
-      }
-      if (const auto upvalue = resolve_upvalue(current_, name); upvalue.has_value()) {
-        emit_op(OpCode::kGetUpvalue, current_line());
-        emit_byte(*upvalue, current_line());
-        return;
-      }
-      emit_name_op(OpCode::kGetGlobal, name, current_line());
+      emit_variable_get(name, current_line());
       return;
     }
     if (parser_.match(TokenType::kFun)) {
-      function_body("anonymous");
+      function_body("anonymous", FunctionType::kFunction);
       return;
     }
     if (parser_.match(TokenType::kLeftParen)) {
@@ -670,6 +848,7 @@ class CompilerImpl {
   std::vector<std::string> compile_errors_;
   std::vector<std::unique_ptr<FunctionContext>> contexts_;
   FunctionContext* current_ = nullptr;
+  ClassContext* current_class_ = nullptr;
 };
 
 }  // namespace
@@ -682,3 +861,12 @@ CompileResult compile_to_chunk(const std::string& source) {
 }
 
 }  // namespace ms
+
+
+
+
+
+
+
+
+

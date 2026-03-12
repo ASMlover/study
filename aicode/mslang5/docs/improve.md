@@ -377,7 +377,7 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 | M0 Baseline freeze and guardrails | done | 100% | 2026-03-11 | 2026-03-11 | Freeze guard + VM gap matrix + migration debt suite landed |
 | M1 Frontend capability completion | done | 100% | 2026-03-12 | 2026-03-12 | VM-native control-flow/operators/locals + conformance landed |
 | M2 Function/closure VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native function/closure/upvalue + callframe landed; closure fallback debt removed |
-| M3 Class/inheritance/this/super VM migration | todo | 0% | - | - | - |
+| M3 Class/inheritance/this/super VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native class/object/super/init path landed; class fallback debt removed |
 | M4 Module VM protocol unification | todo | 0% | - | - | - |
 | M5 Real GC integration | todo | 0% | - | - | - |
 | M6 Interpreter retirement and path convergence | todo | 0% | - | - | - |
@@ -469,17 +469,33 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 ### 11.7 M3 Progress Subsections (class and inheritance VM migration)
 
 - `M3-01` Complete object model for Class/Instance/BoundMethod
-  - Status: todo
+  - Status: done
   - Done criteria: fields/methods/bound-method behavior is correct.
+  - Evidence:
+    - `src/runtime/object.hh` adds `ClassObject/InstanceObject/BoundMethodObject` with method/field storage and receiver binding model.
+    - `src/runtime/vm.cc` routes property read/write and method binding through VM-native object model (`kGetProperty/kSetProperty/kMethod`).
 - `M3-02` Land instruction chain (CLASS/INHERIT/METHOD/GET_PROPERTY/SET_PROPERTY/GET_SUPER/INVOKE/SUPER_INVOKE)
-  - Status: todo
+  - Status: done
   - Done criteria: class/inherit/this/super execute natively on VM.
+  - Evidence:
+    - `src/bytecode/opcode.hh` extends opcode set for class/method/super dispatch instructions.
+    - `src/frontend/compiler.cc` emits class declaration, inheritance, property access/set, method invoke, and super lookup bytecode.
+    - `src/runtime/vm.cc` executes class construction, inheritance wiring, dynamic invocation, super method lookup, and bound method calls on VM path.
 - `M3-03` Solidify `init` constructor semantics in VM
-  - Status: todo
+  - Status: done
   - Done criteria: constructor call returns receiver semantics reliably.
+  - Evidence:
+    - initializer methods compile with receiver-return semantics (`init` always returns slot-0 receiver).
+    - VM class-call path (`call_value_at`) constructs instances, dispatches `init`, and enforces arity contract when `init` is absent/present.
+    - scripts/conformance for initializer behavior remain green (`class_initializer_receiver.ms`, `class_initializer_receiver_001.ms`).
 - `M3-04` Remove fallback usage (class cases)
-  - Status: todo
+  - Status: done
   - Done criteria: class test family no longer triggers fallback.
+  - Evidence:
+    - `tests/integration/test_language_class.cc` now requires `kVmPipeline` for class scenarios.
+    - `tests/integration/test_language_resolver.cc` updates class-related resolver success/error routes to VM pipeline.
+    - `tests/integration/test_migration_debt.cc` removes M3 class/resolver debt cases (tracked set now empty for this milestone).
+    - verification: `cmake --build build --config Debug` and `ctest --test-dir build --output-on-failure -C Debug` pass (`7/7`).
 
 ### 11.8 M4 Progress Subsections (module VM protocol unification)
 
@@ -535,3 +551,5 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 3. Any `blocked` subsection must record blocker and unblock condition.
 4. Prefer each commit to advance adjacent subsections within one milestone only.
 5. Do not mark a milestone `done` before its closeout subsection (`M*-04`) is done.
+
+
