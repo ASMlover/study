@@ -24,6 +24,8 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cstdarg>
 #include <cmath>
@@ -472,6 +474,197 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
     }
     stack_top_[-arg_count - 1] = export_val;
     return call_value(export_val, arg_count);
+  }
+
+  // Handle string method calls (e.g., s.len(), s.upper(), s.split(","))
+  if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
+    ObjString* str = as_string(receiver);
+    const str_t& sv = str->value();
+    strv_t method_name = name->value();
+
+    if (method_name == "len") {
+      if (arg_count != 0) {
+        runtime_error("len() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(static_cast<double>(sv.length()));
+      return true;
+    } else if (method_name == "slice") {
+      if (arg_count != 2) {
+        runtime_error("slice() takes exactly 2 arguments (start, end).");
+        return false;
+      }
+      if (!peek(1).is_number() || !peek(0).is_number()) {
+        runtime_error("slice() arguments must be numbers.");
+        return false;
+      }
+      auto len = static_cast<i32_t>(sv.length());
+      auto start = static_cast<i32_t>(peek(1).as_number());
+      auto end = static_cast<i32_t>(peek(0).as_number());
+      if (start < 0) start += len;
+      if (end < 0) end += len;
+      start = std::clamp(start, 0, len);
+      end = std::clamp(end, start, len);
+      str_t result = sv.substr(start, end - start);
+      ObjString* res = copy_string(result.data(), result.length());
+      stack_top_[-arg_count - 1] = Value(static_cast<Object*>(res));
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "find") {
+      if (arg_count != 1) {
+        runtime_error("find() takes exactly 1 argument.");
+        return false;
+      }
+      if (!peek(0).is_string()) {
+        runtime_error("find() argument must be a string.");
+        return false;
+      }
+      const str_t& needle = as_string(peek(0))->value();
+      auto pos = sv.find(needle);
+      double result = (pos == str_t::npos) ? -1.0 : static_cast<double>(pos);
+      stack_top_[-arg_count - 1] = Value(result);
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "replace") {
+      if (arg_count != 2) {
+        runtime_error("replace() takes exactly 2 arguments (old, new).");
+        return false;
+      }
+      if (!peek(1).is_string() || !peek(0).is_string()) {
+        runtime_error("replace() arguments must be strings.");
+        return false;
+      }
+      const str_t& old_str = as_string(peek(1))->value();
+      const str_t& new_str = as_string(peek(0))->value();
+      str_t result = sv;
+      auto pos = result.find(old_str);
+      if (pos != str_t::npos) {
+        result.replace(pos, old_str.length(), new_str);
+      }
+      ObjString* res = copy_string(result.data(), result.length());
+      stack_top_[-arg_count - 1] = Value(static_cast<Object*>(res));
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "split") {
+      if (arg_count != 1) {
+        runtime_error("split() takes exactly 1 argument.");
+        return false;
+      }
+      if (!peek(0).is_string()) {
+        runtime_error("split() argument must be a string.");
+        return false;
+      }
+      const str_t& delim = as_string(peek(0))->value();
+      ObjList* list = allocate<ObjList>();
+      // Push list to protect from GC during string allocations
+      push(Value(static_cast<Object*>(list)));
+      if (delim.empty()) {
+        // Split into individual characters
+        for (sz_t i = 0; i < sv.length(); ++i) {
+          ObjString* ch = copy_string(sv.data() + i, 1);
+          list->elements().push_back(Value(static_cast<Object*>(ch)));
+        }
+      } else {
+        sz_t start = 0;
+        sz_t pos;
+        while ((pos = sv.find(delim, start)) != str_t::npos) {
+          str_t part = sv.substr(start, pos - start);
+          ObjString* s = copy_string(part.data(), part.length());
+          list->elements().push_back(Value(static_cast<Object*>(s)));
+          start = pos + delim.length();
+        }
+        str_t part = sv.substr(start);
+        ObjString* s = copy_string(part.data(), part.length());
+        list->elements().push_back(Value(static_cast<Object*>(s)));
+      }
+      pop(); // pop GC guard
+      // Replace receiver + arg with result
+      stack_top_[-arg_count - 1] = Value(static_cast<Object*>(list));
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "upper") {
+      if (arg_count != 0) {
+        runtime_error("upper() takes no arguments.");
+        return false;
+      }
+      str_t result = sv;
+      std::transform(result.begin(), result.end(), result.begin(),
+        [](unsigned char c) { return std::toupper(c); });
+      ObjString* res = copy_string(result.data(), result.length());
+      stack_top_[-1] = Value(static_cast<Object*>(res));
+      return true;
+    } else if (method_name == "lower") {
+      if (arg_count != 0) {
+        runtime_error("lower() takes no arguments.");
+        return false;
+      }
+      str_t result = sv;
+      std::transform(result.begin(), result.end(), result.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+      ObjString* res = copy_string(result.data(), result.length());
+      stack_top_[-1] = Value(static_cast<Object*>(res));
+      return true;
+    } else if (method_name == "trim") {
+      if (arg_count != 0) {
+        runtime_error("trim() takes no arguments.");
+        return false;
+      }
+      auto first = sv.find_first_not_of(" \t\n\r\f\v");
+      if (first == str_t::npos) {
+        ObjString* res = copy_string("", 0);
+        stack_top_[-1] = Value(static_cast<Object*>(res));
+      } else {
+        auto last = sv.find_last_not_of(" \t\n\r\f\v");
+        str_t result = sv.substr(first, last - first + 1);
+        ObjString* res = copy_string(result.data(), result.length());
+        stack_top_[-1] = Value(static_cast<Object*>(res));
+      }
+      return true;
+    } else if (method_name == "starts_with") {
+      if (arg_count != 1) {
+        runtime_error("starts_with() takes exactly 1 argument.");
+        return false;
+      }
+      if (!peek(0).is_string()) {
+        runtime_error("starts_with() argument must be a string.");
+        return false;
+      }
+      const str_t& prefix = as_string(peek(0))->value();
+      bool result = sv.starts_with(prefix);
+      stack_top_[-arg_count - 1] = Value(result);
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "ends_with") {
+      if (arg_count != 1) {
+        runtime_error("ends_with() takes exactly 1 argument.");
+        return false;
+      }
+      if (!peek(0).is_string()) {
+        runtime_error("ends_with() argument must be a string.");
+        return false;
+      }
+      const str_t& suffix = as_string(peek(0))->value();
+      bool result = sv.ends_with(suffix);
+      stack_top_[-arg_count - 1] = Value(result);
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "contains") {
+      if (arg_count != 1) {
+        runtime_error("contains() takes exactly 1 argument.");
+        return false;
+      }
+      if (!peek(0).is_string()) {
+        runtime_error("contains() argument must be a string.");
+        return false;
+      }
+      const str_t& needle = as_string(peek(0))->value();
+      bool result = sv.find(needle) != str_t::npos;
+      stack_top_[-arg_count - 1] = Value(result);
+      stack_top_ -= arg_count;
+      return true;
+    }
+    runtime_error(std::format("Undefined string method '{}'.", method_name));
+    return false;
   }
 
   if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
