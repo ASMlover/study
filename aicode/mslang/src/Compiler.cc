@@ -172,6 +172,7 @@ class Compiler {
   void while_statement() noexcept;
   void for_statement() noexcept;
   void for_in_statement(Token var_name) noexcept;
+  void list_comprehension_() noexcept;
   void break_statement() noexcept;
   void continue_statement() noexcept;
   void return_statement() noexcept;
@@ -1086,18 +1087,230 @@ void Compiler::super_(bool /*can_assign*/) noexcept {
 }
 
 void Compiler::list_(bool /*can_assign*/) noexcept {
-  u8_t count = 0;
-  if (!check(TokenType::TOKEN_RIGHT_BRACKET)) {
-    do {
-      expression();
-      if (count == 255) {
-        error("Can't have more than 255 elements in a list literal.");
-      }
-      count++;
-    } while (match(TokenType::TOKEN_COMMA));
+  if (check(TokenType::TOKEN_RIGHT_BRACKET)) {
+    // Empty list: []
+    consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after list elements.");
+    emit_op_byte(OpCode::OP_BUILD_LIST, 0);
+    invalidate_constants();
+    return;
+  }
+
+  // Save state before parsing first expression to detect comprehension
+  auto scanner_state = ps_->scanner.save_state();
+  Token saved_current = ps_->current;
+  Token saved_previous = ps_->previous;
+  sz_t saved_code_count = current_chunk().count();
+  ConstRecord saved_last_const = last_const_;
+  ConstRecord saved_prev_const = prev_const_;
+
+  expression();
+
+  if (match(TokenType::TOKEN_FOR)) {
+    // List comprehension: [expr for var in iterable]
+    // Rewind the emitted expression bytecode
+    current_chunk().truncate(saved_code_count);
+    ps_->scanner.restore_state(scanner_state);
+    ps_->current = saved_current;
+    ps_->previous = saved_previous;
+    last_const_ = saved_last_const;
+    prev_const_ = saved_prev_const;
+
+    list_comprehension_();
+    return;
+  }
+
+  // Normal list literal
+  u8_t count = 1;
+  while (match(TokenType::TOKEN_COMMA)) {
+    expression();
+    if (count == 255) {
+      error("Can't have more than 255 elements in a list literal.");
+    }
+    count++;
   }
   consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after list elements.");
   emit_op_byte(OpCode::OP_BUILD_LIST, count);
+  invalidate_constants();
+}
+
+void Compiler::list_comprehension_() noexcept {
+  // Syntax: [expr for var in iterable]
+  //         [expr for var in iterable if condition]
+  //
+  // Bytecode layout:
+  //   OP_BUILD_LIST 0          → __list (slot N)
+  //   <iterable expr>          → __seq  (slot N+1)
+  //   OP_CONSTANT 0            → __idx  (slot N+2)
+  //   loop_start:
+  //   OP_FOR_ITER N+1, exit    → pushes element or jumps
+  //   <element on stack>       → loop variable (slot N+3)
+  //   [if condition: OP_JUMP_IF_FALSE skip, OP_POP]
+  //   OP_GET_LOCAL N            → push __list ref
+  //   <expression>              → compute element value
+  //   OP_INVOKE "push" 1
+  //   OP_POP                    → discard nil
+  //   [skip: OP_POP (condition)]
+  //   end inner scope           → pops loop variable
+  //   OP_LOOP loop_start
+  //   exit:
+  //   OP_GET_LOCAL N            → push __list ref (result)
+  //   end outer scope           → pops __idx, __seq, __list
+
+  begin_scope(); // outer scope for __list, __seq, __idx
+
+  // Create empty list as hidden local __list
+  emit_op_byte(OpCode::OP_BUILD_LIST, 0);
+  Token list_token{TokenType::TOKEN_IDENTIFIER, " __list", ps_->previous.line};
+  add_local(list_token);
+  mark_initialized();
+  int list_slot = local_count_ - 1;
+
+  // Save source position for the element expression (we'll parse it later)
+  // First, skip past the expression to find "for var in iterable"
+  // We need to parse: <expr> for <var> in <iterable> [if <cond>] ]
+  // The expression will be re-parsed inside the loop body.
+
+  // Skip the element expression (we already rewound, so current token is at expr start)
+  auto expr_scanner_state = ps_->scanner.save_state();
+  Token expr_current = ps_->current;
+  Token expr_previous = ps_->previous;
+
+  // Parse and discard the expression to advance past it
+  {
+    sz_t discard_start = current_chunk().count();
+    ConstRecord discard_last = last_const_;
+    ConstRecord discard_prev = prev_const_;
+    expression();
+    current_chunk().truncate(discard_start);
+    last_const_ = discard_last;
+    prev_const_ = discard_prev;
+  }
+
+  // Now we should be at "for"
+  consume(TokenType::TOKEN_FOR, "Expect 'for' in list comprehension.");
+  Token var_name = ps_->current;
+  consume(TokenType::TOKEN_IDENTIFIER, "Expect variable name after 'for'.");
+  consume(TokenType::TOKEN_IN, "Expect 'in' after variable name.");
+
+  // Compile the iterable expression
+  expression();
+
+  // Create hidden local for iterable (__seq)
+  Token seq_token{TokenType::TOKEN_IDENTIFIER, " __seq", ps_->previous.line};
+  add_local(seq_token);
+  mark_initialized();
+  int seq_slot = local_count_ - 1;
+
+  // Create hidden local for index (__idx = 0)
+  emit_constant(Value(0.0));
+  Token idx_token{TokenType::TOKEN_IDENTIFIER, " __idx", ps_->previous.line};
+  add_local(idx_token);
+  mark_initialized();
+
+  // Check for optional "if" condition — save state for later
+  bool has_filter = false;
+  ScannerState filter_scanner_state{};
+  Token filter_current{};
+  Token filter_previous{};
+
+  if (match(TokenType::TOKEN_IF)) {
+    has_filter = true;
+    filter_scanner_state = ps_->scanner.save_state();
+    filter_current = ps_->current;
+    filter_previous = ps_->previous;
+
+    // Skip the condition expression
+    sz_t discard_start = current_chunk().count();
+    ConstRecord discard_last = last_const_;
+    ConstRecord discard_prev = prev_const_;
+    expression();
+    current_chunk().truncate(discard_start);
+    last_const_ = discard_last;
+    prev_const_ = discard_prev;
+  }
+
+  consume(TokenType::TOKEN_RIGHT_BRACKET, "Expect ']' after list comprehension.");
+
+  // Save scanner/parser state after consuming ']' so we can restore after re-parsing
+  auto after_scanner_state = ps_->scanner.save_state();
+  Token after_current = ps_->current;
+  Token after_previous = ps_->previous;
+
+  // Loop start
+  sz_t loop_start = current_chunk().count();
+
+  // OP_FOR_ITER: slot, jump_hi, jump_lo
+  emit_op_byte(OpCode::OP_FOR_ITER, static_cast<u8_t>(seq_slot));
+  emit_bytes(0xFF, 0xFF);
+  sz_t exit_jump = current_chunk().count() - 2;
+
+  // Inner scope for loop variable
+  begin_scope();
+  add_local(var_name);
+  mark_initialized();
+
+  if (has_filter) {
+    // Compile the filter condition
+    ps_->scanner.restore_state(filter_scanner_state);
+    ps_->current = filter_current;
+    ps_->previous = filter_previous;
+    expression();
+
+    sz_t skip_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+    emit_op(OpCode::OP_POP); // pop condition (true)
+
+    // Push list ref and compile element expression
+    emit_op_byte(OpCode::OP_GET_LOCAL, static_cast<u8_t>(list_slot));
+    ps_->scanner.restore_state(expr_scanner_state);
+    ps_->current = expr_current;
+    ps_->previous = expr_previous;
+    expression();
+
+    // Invoke push
+    u8_t push_name = identifier_constant(Token{TokenType::TOKEN_IDENTIFIER, "push", ps_->previous.line});
+    emit_bytes(static_cast<u8_t>(OpCode::OP_INVOKE), push_name);
+    emit_byte(1);
+    emit_op(OpCode::OP_POP); // discard nil
+
+    sz_t end_jump = emit_jump(OpCode::OP_JUMP);
+    patch_jump(skip_jump);
+    emit_op(OpCode::OP_POP); // pop condition (false)
+    patch_jump(end_jump);
+  } else {
+    // No filter — push list ref and compile element expression
+    emit_op_byte(OpCode::OP_GET_LOCAL, static_cast<u8_t>(list_slot));
+    ps_->scanner.restore_state(expr_scanner_state);
+    ps_->current = expr_current;
+    ps_->previous = expr_previous;
+    expression();
+
+    // Invoke push
+    u8_t push_name = identifier_constant(Token{TokenType::TOKEN_IDENTIFIER, "push", ps_->previous.line});
+    emit_bytes(static_cast<u8_t>(OpCode::OP_INVOKE), push_name);
+    emit_byte(1);
+    emit_op(OpCode::OP_POP); // discard nil
+  }
+
+  end_scope(); // pops loop variable
+
+  emit_loop(loop_start);
+
+  // Patch the exit jump
+  sz_t jump = current_chunk().count() - exit_jump - 2;
+  current_chunk()[exit_jump] = static_cast<u8_t>((jump >> 8) & 0xFF);
+  current_chunk()[exit_jump + 1] = static_cast<u8_t>(jump & 0xFF);
+
+  // Push the list reference as the expression result
+  emit_op_byte(OpCode::OP_GET_LOCAL, static_cast<u8_t>(list_slot));
+
+  end_scope(); // pops __idx, __seq, __list (3 POPs)
+  // The GET_LOCAL result survives: stack has [..., list]
+
+  // Restore scanner/parser state to after ']'
+  ps_->scanner.restore_state(after_scanner_state);
+  ps_->current = after_current;
+  ps_->previous = after_previous;
+
   invalidate_constants();
 }
 

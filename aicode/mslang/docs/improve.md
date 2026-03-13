@@ -275,7 +275,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 15.1 | Core natives (math/convert/assert/file I/O) | [x] |
 | | 15.3 | `range()` function | [x] |
 | **4 — Iteration** | 12.1 | `for-in` iterator protocol | [x] |
-| | 11.3 | List comprehensions | [ ] |
+| | 11.3 | List comprehensions | [x] |
 | **5 — OOP** | 13.1 | Static methods | [ ] |
 | | 13.4 | Operator overloading (`__add`/`__str`/...) | [ ] |
 | | 13.2 | Getter / setter properties | [ ] |

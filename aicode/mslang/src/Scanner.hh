@@ -30,6 +30,12 @@
 
 namespace ms {
 
+struct ScannerState {
+  cstr_t start;
+  cstr_t current;
+  int line;
+};
+
 class Scanner {
   static constexpr int kMAX_INTERPOLATION_NESTING = 8;
 
@@ -60,6 +66,9 @@ public:
 
   void init(strv_t source) noexcept;
   Token scan_token() noexcept;
+
+  ScannerState save_state() const noexcept;
+  void restore_state(const ScannerState& state) noexcept;
 };
 
 } // namespace ms

@@ -282,6 +282,16 @@ Token Scanner::scan_identifier() noexcept {
   return make_token(identifier_type());
 }
 
+ScannerState Scanner::save_state() const noexcept {
+  return {start_, current_, line_};
+}
+
+void Scanner::restore_state(const ScannerState& state) noexcept {
+  start_ = state.start;
+  current_ = state.current;
+  line_ = state.line;
+}
+
 Token Scanner::scan_token() noexcept {
   skip_whitespace();
   start_ = current_;
