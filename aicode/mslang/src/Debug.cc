@@ -175,6 +175,7 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_GET_SUPER:
   case OpCode::OP_CLASS:
   case OpCode::OP_METHOD:
+  case OpCode::OP_STATIC_METHOD:
   case OpCode::OP_IMPORT:
     return constant_instruction(opcode_name(op), chunk, offset);
 

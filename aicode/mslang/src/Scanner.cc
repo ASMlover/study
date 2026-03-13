@@ -261,7 +261,14 @@ TokenType Scanner::identifier_type() const noexcept {
   case 'o': return check_keyword(1, 1, "r", TokenType::TOKEN_OR);
   case 'p': return check_keyword(1, 4, "rint", TokenType::TOKEN_PRINT);
   case 'r': return check_keyword(1, 5, "eturn", TokenType::TOKEN_RETURN);
-  case 's': return check_keyword(1, 4, "uper", TokenType::TOKEN_SUPER);
+  case 's':
+    if (current_ - start_ > 1) {
+      switch (start_[1]) {
+      case 't': return check_keyword(2, 4, "atic", TokenType::TOKEN_STATIC);
+      case 'u': return check_keyword(2, 3, "per", TokenType::TOKEN_SUPER);
+      }
+    }
+    break;
   case 't':
     if (current_ - start_ > 1) {
       switch (start_[1]) {

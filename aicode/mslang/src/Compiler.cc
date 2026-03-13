@@ -82,6 +82,7 @@ struct LoopContext {
 struct ClassCompiler {
   ClassCompiler* enclosing{nullptr};
   bool has_superclass{false};
+  bool is_static_method{false};
 };
 
 class Compiler {
@@ -317,6 +318,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   // TOKEN_PRINT
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_RETURN
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_STATIC
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_SUPER
   { &Compiler::super_,   nullptr,            Precedence::PREC_NONE },
@@ -1058,12 +1061,18 @@ void Compiler::this_(bool /*can_assign*/) noexcept {
     error("Can't use 'this' outside of a class.");
     return;
   }
+  if (ps_->current_class->is_static_method) {
+    error("Can't use 'this' in a static method.");
+    return;
+  }
   variable(false);
 }
 
 void Compiler::super_(bool /*can_assign*/) noexcept {
   if (ps_->current_class == nullptr) {
     error("Can't use 'super' outside of a class.");
+  } else if (ps_->current_class->is_static_method) {
+    error("Can't use 'super' in a static method.");
   } else if (!ps_->current_class->has_superclass) {
     error("Can't use 'super' in a class with no superclass.");
   }
@@ -1459,7 +1468,22 @@ void Compiler::class_declaration() noexcept {
   named_variable(class_name, false);
   consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' before class body.");
   while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
-    method();
+    if (match(TokenType::TOKEN_STATIC)) {
+      consume(TokenType::TOKEN_IDENTIFIER, "Expect static method name.");
+      u8_t constant = identifier_constant(ps_->previous);
+
+      if (ps_->previous.lexeme == "init") {
+        error("Initializer can't be static.");
+      }
+
+      class_compiler.is_static_method = true;
+      function(FunctionType::TYPE_FUNCTION);
+      class_compiler.is_static_method = false;
+
+      emit_op_byte(OpCode::OP_STATIC_METHOD, constant);
+    } else {
+      method();
+    }
   }
   consume(TokenType::TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
   emit_op(OpCode::OP_POP);

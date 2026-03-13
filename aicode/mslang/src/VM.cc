@@ -697,6 +697,18 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
     return call_value(export_val, arg_count);
   }
 
+  // Handle static method calls (e.g., Math.max(3, 5))
+  if (is_obj_type(receiver, ObjectType::OBJ_CLASS)) {
+    ObjClass* klass = as_class(receiver);
+    Value method;
+    if (!klass->static_methods().get(name, &method)) {
+      runtime_error(std::format("Undefined static method '{}'.", name->value()));
+      return false;
+    }
+    stack_top_[-arg_count - 1] = method;
+    return call_value(method, arg_count);
+  }
+
   // Handle string method calls (e.g., s.len(), s.upper(), s.split(","))
   if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
     ObjString* str = as_string(receiver);
@@ -1283,6 +1295,19 @@ InterpretResult VM::run() noexcept {
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
 
+      if (is_obj_type(peek(0), ObjectType::OBJ_CLASS)) {
+        ObjClass* klass = as_class(peek(0));
+        ObjString* name = READ_STRING();
+        Value method;
+        if (klass->static_methods().get(name, &method)) {
+          pop(); // Class
+          push(method);
+          VM_DISPATCH();
+        }
+        runtime_error(std::format("Undefined static method '{}'.", name->value()));
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+      }
+
       if (!is_obj_type(peek(0), ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have properties.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -1529,8 +1554,10 @@ InterpretResult VM::run() noexcept {
       }
 
       ObjClass* subclass = as_class(peek(0));
+      ObjClass* super = as_class(superclass);
       // Copy methods from superclass
-      subclass->methods().add_all(as_class(superclass)->methods());
+      subclass->methods().add_all(super->methods());
+      subclass->static_methods().add_all(super->static_methods());
       pop(); // Subclass
       VM_DISPATCH();
     }
@@ -1540,6 +1567,15 @@ InterpretResult VM::run() noexcept {
       Value method = peek(0);
       ObjClass* klass = as_class(peek(1));
       klass->methods().set(name, method);
+      pop();
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_STATIC_METHOD) {
+      ObjString* name = READ_STRING();
+      Value method = peek(0);
+      ObjClass* klass = as_class(peek(1));
+      klass->static_methods().set(name, method);
       pop();
       VM_DISPATCH();
     }

@@ -149,6 +149,7 @@ str_t ObjClass::stringify() const noexcept {
 void ObjClass::trace_references() noexcept {
   mark_object(name_);
   methods_.mark_table();
+  static_methods_.mark_table();
 }
 
 sz_t ObjClass::size() const noexcept {
