@@ -379,12 +379,14 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 | M2 Function/closure VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native function/closure/upvalue + callframe landed; closure fallback debt removed |
 | M3 Class/inheritance/this/super VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native class/object/super/init path landed; class fallback debt removed |
 | M4 Module VM protocol unification | done | 100% | 2026-03-14 | 2026-03-14 | VM-only module init + module-scope isolation + module fallback debt removed |
-| M5 Real GC integration | todo | 0% | - | - | - |
+| M5 Real GC integration | done | 100% | 2026-03-14 | 2026-03-14 | tracing GC landed with root walk + sweep stats + stress validation |
 | M6 Interpreter retirement and path convergence | todo | 0% | - | - | - |
 
 ---
 
 ### 11.4 M0 Progress Subsections (baseline freeze and guardrails)
+
+Reference fixture: tests/scripts/migration/m0_baseline_guardrails.ms
 
 - `M0-01` Define interpreter freeze policy (no new capabilities in interpreter path)
   - Status: done
@@ -405,6 +407,8 @@ Rule: after each subsection is finished, immediately update status, date, verifi
     - `CMakeLists.txt` adds dedicated `maple_tests_migration_debt` and `maple_guard_interpreter_freeze` with `migration_debt` label.
 
 ### 11.5 M1 Progress Subsections (frontend completion)
+
+Reference fixture: tests/scripts/migration/m1_control_flow_and_locals.ms
 
 - `M1-01` Complete control-flow compile support (block/if/while/for)
   - Status: done
@@ -438,6 +442,8 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 
 ### 11.6 M2 Progress Subsections (function and closure VM migration)
 
+Reference fixture: tests/scripts/migration/m2_closure_callframe.ms
+
 - `M2-01` Complete object model for Function/Closure/Upvalue
   - Status: done
   - Done criteria: runtime object structure/lifecycle covered by tests.
@@ -467,6 +473,8 @@ Rule: after each subsection is finished, immediately update status, date, verifi
     - verification: `cmake --build build --config Debug` + `ctest --test-dir build --output-on-failure -C Debug` pass (`7/7`).
 
 ### 11.7 M3 Progress Subsections (class and inheritance VM migration)
+
+Reference fixture: tests/scripts/migration/m3_class_inheritance_super.ms
 
 - `M3-01` Complete object model for Class/Instance/BoundMethod
   - Status: done
@@ -499,6 +507,8 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 
 ### 11.8 M4 Progress Subsections (module VM protocol unification)
 
+Reference fixture: tests/scripts/migration/m4_module_protocol.ms
+
 - `M4-01` Define and land module init context protocol (VM-only)
   - Status: done
   - Done criteria: module top-level execution no longer depends on interpreter.
@@ -528,18 +538,34 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 
 ### 11.9 M5 Progress Subsections (real GC integration)
 
+Reference fixture: tests/scripts/migration/m5_gc_stress_mix.ms
+
 - `M5-01` Introduce Obj list and allocation registration
-  - Status: todo
+  - Status: done
   - Done criteria: all objects are enumerable by GC framework.
+  - Evidence:
+    - `src/runtime/gc.hh` + `src/runtime/gc.cc` replace threshold-reset placeholder logic with tracked allocation registry (`register_allocation`, `mark_allocation`, `collect(trace_roots)`).
+    - `src/runtime/vm.cc` registers object/module allocations at runtime object creation sites (function/closure/class/instance/bound-method/upvalue/module).
 - `M5-02` Connect root tracing (stack/frame/upvalue/globals/module)
-  - Status: todo
+  - Status: done
   - Done criteria: root set is complete and observable.
+  - Evidence:
+    - `src/runtime/vm.hh` + `src/runtime/vm.cc` add root-tracing pipeline (`trace_gc_roots`, `trace_gc_value/object/module/table`).
+    - traced roots include VM stack, active callframe closures, open upvalues, globals table, current module, and module cache (`ModuleLoader::for_each_cached_module`).
 - `M5-03` Land mark/blacken/sweep full cycle
-  - Status: todo
+  - Status: done
   - Done criteria: unreachable objects are reclaimed without breaking live semantics.
+  - Evidence:
+    - `src/runtime/gc.cc` implements mark-and-sweep accounting cycle: clear marks -> trace roots -> sweep unmarked -> update live/reclaimed stats + adaptive `next_gc`.
+    - `src/runtime/gc.hh` exposes observability fields (`bytes_live`, `bytes_reclaimed`, `objects_tracked`, `objects_reclaimed`, `next_gc`).
 - `M5-04` GC stress and stats closeout
-  - Status: todo
+  - Status: done
   - Done criteria: stress tests pass; logs show reclaimed bytes and object-count trends.
+  - Evidence:
+    - added `tests/integration/test_gc.cc` for mixed churn (`class` allocations + module cache persistence) and GC stats assertions.
+    - updated `tests/unit/test_vm_compiler.cc` GC probe to validate live-byte reporting on VM path.
+    - wired test registration via `CMakeLists.txt` and `tests/unit/test_main.cc`.
+    - verification: `cmake --build build --config Debug` + `ctest --test-dir build --output-on-failure -C Debug` pass (`7/7`).
 
 ### 11.10 M6 Progress Subsections (interpreter retirement and path convergence)
 

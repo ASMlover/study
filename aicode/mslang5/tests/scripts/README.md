@@ -42,6 +42,15 @@ error-path examples.
 - `cycle_a.ms` / `cycle_b.ms`: cycle pair used by `error_cycle_entry.ms`.
 - `pkg/math.ms`: nested module fixture for dotted-name import.
 
+## Migration Scripts (`tests/scripts/migration`)
+
+- `m0_baseline_guardrails.ms`: baseline fixture for guardrail-era VM execution smoke checks.
+- `m1_control_flow_and_locals.ms`: control flow, comparison/logical operators, and local-scope behavior.
+- `m2_closure_callframe.ms`: closure capture/update plus recursive callframe behavior.
+- `m3_class_inheritance_super.ms`: class initialization, inheritance chain, and `super` dispatch behavior.
+- `m4_module_protocol.ms`: module cache behavior and `from ... import ... as ...` protocol checks.
+- `m5_gc_stress_mix.ms`: object churn + retained graph probe for GC stress scenarios.
+
 ## Existing Baseline Fixtures
 
 - `closure_capture.ms`
