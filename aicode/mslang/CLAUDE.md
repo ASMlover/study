@@ -59,6 +59,7 @@ ss_t = std::stringstream;
 - `static_cast` for hot-path downcasts, `as_obj<T>()` helper
 - Raw `Object*` for GC-managed objects — never `shared_ptr`
 - Mark GC roots properly when allocating during compilation
+- Prefer `inline` for functions whenever feasible (short functions, header-defined helpers, etc.)
 
 ### Copyright Header
 ```cpp
