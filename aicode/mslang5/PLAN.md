@@ -1556,3 +1556,25 @@ Commit message convention reminder:
   - `ctest --test-dir build --output-on-failure -C Debug`
 - Verification result:
   - pass (`7/7`)
+
+#### 2026-03-14 Incremental Update (M4 module VM protocol unification)
+
+- Scope: execute `docs/improve.md` milestone `M4` (module VM protocol unification).
+- Delivered:
+  - Enforced VM-only module initialization protocol:
+    - `src/runtime/vm.cc` (`execute_module`) now forces module top-level execution under `kVmPreferred`.
+  - Isolated module execution scope from importer globals:
+    - `src/runtime/vm.cc` routes `define_global/get_global/set_global` to `current_module_->exports` while executing module top-level code.
+    - module-local declarations remain export-visible but do not leak into importer global namespace.
+  - Expanded module verification suites:
+    - `tests/unit/test_module.cc` adds scope-isolation and failed-cache retry assertions (`MS4001`, `MS5004`).
+    - `tests/integration/test_language_module.cc` adds VM-route and module error family checks (`MS5001~MS5004`).
+    - wired integration registration in `tests/unit/test_main.cc` and `CMakeLists.txt`.
+  - Synced milestone status in:
+    - `docs/improve.md` (`M4`, `M4-01`, `M4-02`, `M4-03`, `M4-04` => `done`).
+- Verification:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug -L integration`
+- Verification result:
+  - pass (`7/7` all labels; integration label pass `1/1`).

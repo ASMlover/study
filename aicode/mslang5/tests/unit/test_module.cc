@@ -53,5 +53,26 @@ int RunModuleTests() {
                        &cycle_error);
   Expect(r == ms::InterpretResult::kRuntimeError, "cycle import should fail");
   Expect(cycle_error.find("MS5003") != std::string::npos, "cycle import should expose MS5003");
+
+  std::string scope_error;
+  r = vm.execute_source("import side;\nprint x;\n", &scope_error);
+  Expect(r == ms::InterpretResult::kRuntimeError,
+         "module declarations should not leak into importer globals");
+  Expect(scope_error.find("MS4001") != std::string::npos,
+         "module scope isolation should expose MS4001 for leaked symbol access");
+
+  std::string failed_first_error;
+  r = vm.execute_source("import error_cycle_entry;\n", &failed_first_error);
+  Expect(r == ms::InterpretResult::kRuntimeError,
+         "failed module fixture should fail first initialization");
+  Expect(failed_first_error.find("MS5003") != std::string::npos,
+         "failed module fixture first error should expose MS5003");
+
+  std::string failed_retry_error;
+  r = vm.execute_source("import error_cycle_entry;\n", &failed_retry_error);
+  Expect(r == ms::InterpretResult::kRuntimeError,
+         "failed module fixture should fail on repeated initialization");
+  Expect(failed_retry_error.find("MS5004") != std::string::npos,
+         "failed module fixture retry should expose MS5004");
   return 0;
 }

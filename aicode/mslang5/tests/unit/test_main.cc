@@ -12,6 +12,7 @@ int RunModuleTests();
 int RunCliTests();
 int RunClosureIntegrationTests();
 int RunClassIntegrationTests();
+int RunModuleIntegrationTests();
 int RunResolverIntegrationTests();
 int RunMigrationDebtTests();
 int RunConformanceIntegrationTests();
@@ -32,6 +33,7 @@ void RunIntegrationSuite() {
   RunCliTests();
   RunClosureIntegrationTests();
   RunClassIntegrationTests();
+  RunModuleIntegrationTests();
   RunResolverIntegrationTests();
 }
 

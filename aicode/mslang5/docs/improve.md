@@ -378,7 +378,7 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 | M1 Frontend capability completion | done | 100% | 2026-03-12 | 2026-03-12 | VM-native control-flow/operators/locals + conformance landed |
 | M2 Function/closure VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native function/closure/upvalue + callframe landed; closure fallback debt removed |
 | M3 Class/inheritance/this/super VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native class/object/super/init path landed; class fallback debt removed |
-| M4 Module VM protocol unification | todo | 0% | - | - | - |
+| M4 Module VM protocol unification | done | 100% | 2026-03-14 | 2026-03-14 | VM-only module init + module-scope isolation + module fallback debt removed |
 | M5 Real GC integration | todo | 0% | - | - | - |
 | M6 Interpreter retirement and path convergence | todo | 0% | - | - | - |
 
@@ -500,17 +500,31 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 ### 11.8 M4 Progress Subsections (module VM protocol unification)
 
 - `M4-01` Define and land module init context protocol (VM-only)
-  - Status: todo
+  - Status: done
   - Done criteria: module top-level execution no longer depends on interpreter.
+  - Evidence:
+    - `src/runtime/vm.cc` updates `execute_module(...)` to force `SourceExecutionMode::kVmPreferred` while running module top-level chunks.
+    - module initialization no longer takes legacy/fallback route, even when outer execution mode is `kLegacyOnly`.
 - `M4-02` Solidify export-binding order and visibility rules
-  - Status: todo
+  - Status: done
   - Done criteria: partial-initialization scenarios have explicit behavior + tests.
+  - Evidence:
+    - `src/runtime/vm.cc` routes `define_global/get_global/set_global` to `current_module_->exports` during module execution.
+    - module top-level names are visible for module exports but no longer leak into importer global namespace.
+    - `tests/unit/test_module.cc` adds scope-isolation assertion (`import side; print x;` => `MS4001`).
 - `M4-03` Align cache/failed state-machine behavior with spec
-  - Status: todo
+  - Status: done
   - Done criteria: `MS5001~MS5004` behavior is stable and reproducible.
+  - Evidence:
+    - `tests/unit/test_module.cc` adds failed-cache retry verification (`import error_cycle_entry;` second run => `MS5004`).
+    - `tests/integration/test_language_module.cc` covers `MS5001` (not found), `MS5002` (missing symbol), `MS5003` (cycle), and `MS5004` (failed-cache retry).
 - `M4-04` Remove fallback usage (module cases)
-  - Status: todo
+  - Status: done
   - Done criteria: module conformance is fallback-independent.
+  - Evidence:
+    - added `tests/integration/test_language_module.cc` and wired it into integration suite (`tests/unit/test_main.cc`, `CMakeLists.txt`).
+    - module integration cases now assert `last_source_execution_route() == kVmPipeline` under default mode.
+    - verification: `cmake --build build --config Debug` + `ctest --test-dir build --output-on-failure -C Debug` pass (`7/7`).
 
 ### 11.9 M5 Progress Subsections (real GC integration)
 
@@ -551,5 +565,3 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 3. Any `blocked` subsection must record blocker and unblock condition.
 4. Prefer each commit to advance adjacent subsections within one milestone only.
 5. Do not mark a milestone `done` before its closeout subsection (`M*-04`) is done.
-
-
