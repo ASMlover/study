@@ -323,6 +323,53 @@ VM::VM() noexcept {
     }
     return Value(true);
   });
+
+  // --- range() native ---
+
+  define_native("range", [this](int arg_count, Value* args) -> Value {
+    if (arg_count < 1 || arg_count > 3) {
+      runtime_error("range() takes 1 to 3 arguments.");
+      return Value();
+    }
+    for (int i = 0; i < arg_count; i++) {
+      if (!args[i].is_number()) {
+        runtime_error("range() arguments must be numbers.");
+        return Value();
+      }
+    }
+
+    double start = 0, stop = 0, step = 1;
+    if (arg_count == 1) {
+      stop = args[0].as_number();
+    } else if (arg_count == 2) {
+      start = args[0].as_number();
+      stop = args[1].as_number();
+    } else {
+      start = args[0].as_number();
+      stop = args[1].as_number();
+      step = args[2].as_number();
+    }
+
+    if (step == 0) {
+      runtime_error("range() step argument must not be zero.");
+      return Value();
+    }
+
+    ObjList* list = allocate<ObjList>();
+    // Push to stack immediately so GC can find it
+    push(Value(static_cast<Object*>(list)));
+
+    if (step > 0) {
+      for (double i = start; i < stop; i += step)
+        list->elements().push_back(Value(i));
+    } else {
+      for (double i = start; i > stop; i += step)
+        list->elements().push_back(Value(i));
+    }
+
+    pop(); // pop the list we pushed for GC safety
+    return Value(static_cast<Object*>(list));
+  });
 }
 
 VM::~VM() noexcept {
