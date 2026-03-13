@@ -31,8 +31,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <format>
+#include <random>
+#include <sstream>
 #include <unordered_set>
 #include "VM.hh"
 #include "Compiler.hh"
@@ -148,6 +151,177 @@ VM::VM() noexcept {
       return Value(); // nil on EOF
     }
     return Value(static_cast<Object*>(copy_string(line.data(), line.length())));
+  });
+
+  // --- Math natives ---
+
+  define_native("abs", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1 || !args[0].is_number()) {
+      runtime_error("abs() takes exactly 1 number argument.");
+      return Value();
+    }
+    return Value(std::abs(args[0].as_number()));
+  });
+
+  define_native("ceil", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1 || !args[0].is_number()) {
+      runtime_error("ceil() takes exactly 1 number argument.");
+      return Value();
+    }
+    return Value(std::ceil(args[0].as_number()));
+  });
+
+  define_native("floor", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1 || !args[0].is_number()) {
+      runtime_error("floor() takes exactly 1 number argument.");
+      return Value();
+    }
+    return Value(std::floor(args[0].as_number()));
+  });
+
+  define_native("round", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1 || !args[0].is_number()) {
+      runtime_error("round() takes exactly 1 number argument.");
+      return Value();
+    }
+    return Value(std::round(args[0].as_number()));
+  });
+
+  define_native("sqrt", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1 || !args[0].is_number()) {
+      runtime_error("sqrt() takes exactly 1 number argument.");
+      return Value();
+    }
+    double x = args[0].as_number();
+    if (x < 0) {
+      runtime_error("sqrt() argument must be non-negative.");
+      return Value();
+    }
+    return Value(std::sqrt(x));
+  });
+
+  define_native("pow", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 2 || !args[0].is_number() || !args[1].is_number()) {
+      runtime_error("pow() takes exactly 2 number arguments.");
+      return Value();
+    }
+    return Value(std::pow(args[0].as_number(), args[1].as_number()));
+  });
+
+  define_native("min", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 2 || !args[0].is_number() || !args[1].is_number()) {
+      runtime_error("min() takes exactly 2 number arguments.");
+      return Value();
+    }
+    return Value(std::min(args[0].as_number(), args[1].as_number()));
+  });
+
+  define_native("max", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 2 || !args[0].is_number() || !args[1].is_number()) {
+      runtime_error("max() takes exactly 2 number arguments.");
+      return Value();
+    }
+    return Value(std::max(args[0].as_number(), args[1].as_number()));
+  });
+
+  define_native("random", [](int arg_count, Value*) -> Value {
+    if (arg_count != 0) return Value();
+    static std::mt19937 gen{std::random_device{}()};
+    static std::uniform_real_distribution<double> dist(0.0, 1.0);
+    return Value(dist(gen));
+  });
+
+  // --- Conversion natives ---
+
+  define_native("int", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("int() takes exactly 1 argument.");
+      return Value();
+    }
+    if (args[0].is_number()) {
+      return Value(static_cast<double>(static_cast<long long>(args[0].as_number())));
+    }
+    if (args[0].is_boolean()) {
+      return Value(args[0].as_boolean() ? 1.0 : 0.0);
+    }
+    if (args[0].is_string()) {
+      const str_t& s = as_string(args[0])->value();
+      try {
+        sz_t pos = 0;
+        long long result = std::stoll(s, &pos);
+        if (pos != s.length()) {
+          runtime_error(std::format("Could not convert '{}' to an integer.", s));
+          return Value();
+        }
+        return Value(static_cast<double>(result));
+      } catch (...) {
+        runtime_error(std::format("Could not convert '{}' to an integer.", s));
+        return Value();
+      }
+    }
+    runtime_error("int() argument must be a number, bool, or string.");
+    return Value();
+  });
+
+  define_native("bool", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("bool() takes exactly 1 argument.");
+      return Value();
+    }
+    return Value(args[0].is_truthy());
+  });
+
+  // --- I/O natives ---
+
+  define_native("read_file", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1 || !args[0].is_string()) {
+      runtime_error("read_file() takes exactly 1 string argument.");
+      return Value();
+    }
+    const str_t& path = as_string(args[0])->value();
+    std::ifstream file(path, std::ios::in | std::ios::binary);
+    if (!file) {
+      runtime_error(std::format("Could not open file '{}'.", path));
+      return Value();
+    }
+    std::ostringstream oss;
+    oss << file.rdbuf();
+    str_t content = oss.str();
+    return Value(static_cast<Object*>(copy_string(content.data(), content.length())));
+  });
+
+  define_native("write_file", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 2 || !args[0].is_string() || !args[1].is_string()) {
+      runtime_error("write_file() takes exactly 2 string arguments (path, data).");
+      return Value();
+    }
+    const str_t& path = as_string(args[0])->value();
+    const str_t& data = as_string(args[1])->value();
+    std::ofstream file(path, std::ios::out | std::ios::binary);
+    if (!file) {
+      runtime_error(std::format("Could not open file '{}' for writing.", path));
+      return Value();
+    }
+    file.write(data.data(), static_cast<std::streamsize>(data.length()));
+    return Value();
+  });
+
+  // --- Assert native ---
+
+  define_native("assert", [this](int arg_count, Value* args) -> Value {
+    if (arg_count < 1 || arg_count > 2) {
+      runtime_error("assert() takes 1 or 2 arguments.");
+      return Value();
+    }
+    if (!args[0].is_truthy()) {
+      if (arg_count == 2 && args[1].is_string()) {
+        runtime_error(std::format("Assertion failed: {}.", as_string(args[1])->value()));
+      } else {
+        runtime_error("Assertion failed.");
+      }
+      return Value();
+    }
+    return Value(true);
   });
 }
 
