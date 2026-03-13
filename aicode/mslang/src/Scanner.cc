@@ -252,6 +252,7 @@ TokenType Scanner::identifier_type() const noexcept {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
       case 'f': return check_keyword(2, 0, "", TokenType::TOKEN_IF);
+      case 'n': return check_keyword(2, 0, "", TokenType::TOKEN_IN);
       case 'm': return check_keyword(2, 4, "port", TokenType::TOKEN_IMPORT);
       }
     }

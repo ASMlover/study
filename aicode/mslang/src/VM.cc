@@ -1179,6 +1179,7 @@ InterpretResult VM::run() noexcept {
     &&op_OP_BUILD_LIST,    &&op_OP_BUILD_MAP,
     &&op_OP_INDEX_GET,     &&op_OP_INDEX_SET,
     &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
+    &&op_OP_FOR_ITER,
   };
 
 #define VM_DISPATCH() do { TRACE_INSTRUCTION(); goto *dispatch_table[READ_BYTE()]; } while (false)
@@ -1704,6 +1705,51 @@ InterpretResult VM::run() noexcept {
         }
       } else if (!pending_imports_.empty()) {
         pending_imports_.back().from_imports.push_back({name, alias});
+      }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_FOR_ITER) {
+      // Format: OP_FOR_ITER slot jump_hi jump_lo
+      // slot   = stack slot of the iterable (index is at slot+1)
+      // jump   = forward offset to exit the loop when iteration ends
+      u8_t slot = READ_BYTE();
+      u16_t offset = READ_SHORT();
+      Value& iterable = frame->slots[slot];
+      Value& index_val = frame->slots[slot + 1];
+      int idx = static_cast<int>(index_val.as_number());
+
+      if (is_obj_type(iterable, ObjectType::OBJ_LIST)) {
+        ObjList* list = as_list(iterable);
+        if (idx >= static_cast<int>(list->len())) {
+          frame->ip += offset; // jump past loop body
+        } else {
+          push(list->elements()[static_cast<sz_t>(idx)]);
+          index_val = Value(static_cast<double>(idx + 1));
+        }
+      } else if (is_obj_type(iterable, ObjectType::OBJ_STRING)) {
+        ObjString* str = as_string(iterable);
+        if (idx >= static_cast<int>(str->value().length())) {
+          frame->ip += offset;
+        } else {
+          push(Value(static_cast<Object*>(
+              copy_string(&str->value()[static_cast<sz_t>(idx)], 1))));
+          index_val = Value(static_cast<double>(idx + 1));
+        }
+      } else if (is_obj_type(iterable, ObjectType::OBJ_MAP)) {
+        ObjMap* map = as_map(iterable);
+        auto& entries = map->entries();
+        if (idx >= static_cast<int>(entries.size())) {
+          frame->ip += offset;
+        } else {
+          auto it = entries.begin();
+          std::advance(it, idx);
+          push(it->first); // iterate over keys
+          index_val = Value(static_cast<double>(idx + 1));
+        }
+      } else {
+        runtime_error("Can only iterate over lists, strings, and maps.");
+        return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
       VM_DISPATCH();
     }

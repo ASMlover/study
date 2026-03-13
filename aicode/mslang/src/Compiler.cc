@@ -171,6 +171,7 @@ class Compiler {
   void if_statement() noexcept;
   void while_statement() noexcept;
   void for_statement() noexcept;
+  void for_in_statement(Token var_name) noexcept;
   void break_statement() noexcept;
   void continue_statement() noexcept;
   void return_statement() noexcept;
@@ -299,6 +300,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   // TOKEN_FUN
   { &Compiler::fun_expression, nullptr,      Precedence::PREC_NONE },
   // TOKEN_IF
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_IN
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_IMPORT
   { nullptr,             nullptr,            Precedence::PREC_NONE },
@@ -1328,6 +1331,82 @@ void Compiler::while_statement() noexcept {
 }
 
 void Compiler::for_statement() noexcept {
+  consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+
+  // Check for for-in: for (var x in expr)
+  if (match(TokenType::TOKEN_VAR)) {
+    // Consume the variable name
+    consume(TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
+    Token var_name = ps_->previous;
+
+    if (match(TokenType::TOKEN_IN)) {
+      // for-in loop: for (var <name> in <expr>) <body>
+      for_in_statement(var_name);
+      return;
+    }
+
+    // Standard for with var initializer.
+    // We already consumed "var <name>", now handle "= expr ;" inline.
+    LoopContext loop;
+    loop.enclosing = current_loop_;
+    loop.break_depth = scope_depth_;
+
+    begin_scope();
+    loop.continue_depth = scope_depth_;
+
+    // Declare the variable we already consumed
+    declare_variable();
+    if (match(TokenType::TOKEN_EQUAL)) {
+      expression();
+    } else {
+      emit_op(OpCode::OP_NIL);
+    }
+    mark_initialized();
+    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+
+    // Continue with condition, increment, body (same as standard for)
+    sz_t loop_start = current_chunk().count();
+
+    sz_t exit_jump = static_cast<sz_t>(-1);
+    if (!match(TokenType::TOKEN_SEMICOLON)) {
+      expression();
+      consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after loop condition.");
+      exit_jump = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+      emit_op(OpCode::OP_POP);
+    }
+
+    if (!match(TokenType::TOKEN_RIGHT_PAREN)) {
+      sz_t body_jump = emit_jump(OpCode::OP_JUMP);
+      sz_t increment_start = current_chunk().count();
+      expression();
+      emit_op(OpCode::OP_POP);
+      consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
+      emit_loop(loop_start);
+      loop_start = increment_start;
+      patch_jump(body_jump);
+    }
+
+    loop.continue_target = loop_start;
+    current_loop_ = &loop;
+    statement();
+    current_loop_ = loop.enclosing;
+
+    emit_loop(loop_start);
+
+    if (exit_jump != static_cast<sz_t>(-1)) {
+      patch_jump(exit_jump);
+      emit_op(OpCode::OP_POP);
+    }
+
+    end_scope();
+
+    for (sz_t offset : loop.break_jumps) {
+      patch_jump(offset);
+    }
+    return;
+  }
+
+  // Standard C-style for loop (no var initializer)
   LoopContext loop;
   loop.enclosing = current_loop_;
   loop.break_depth = scope_depth_;
@@ -1335,13 +1414,9 @@ void Compiler::for_statement() noexcept {
   begin_scope();
   loop.continue_depth = scope_depth_;
 
-  consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
-
   // Initializer
   if (match(TokenType::TOKEN_SEMICOLON)) {
     // No initializer.
-  } else if (match(TokenType::TOKEN_VAR)) {
-    var_declaration();
   } else {
     expression_statement();
   }
@@ -1385,6 +1460,82 @@ void Compiler::for_statement() noexcept {
   }
 
   end_scope();
+
+  for (sz_t offset : loop.break_jumps) {
+    patch_jump(offset);
+  }
+}
+
+void Compiler::for_in_statement(Token var_name) noexcept {
+  // Called after "for (var <name> in" has been consumed.
+  //
+  // Bytecode layout:
+  //   <iterable expr>          → hidden local __seq (slot N)
+  //   OP_CONSTANT 0            → hidden local __idx (slot N+1)
+  //   loop_start:
+  //   OP_FOR_ITER N, jump      → pushes element or jumps to exit
+  //   <element on stack>       → loop variable (slot N+2)
+  //   <body>
+  //   end inner scope          → pops loop variable
+  //   OP_LOOP loop_start
+  //   exit:
+  //   end outer scope          → pops __idx, __seq
+
+  LoopContext loop;
+  loop.enclosing = current_loop_;
+  loop.break_depth = scope_depth_;
+
+  begin_scope(); // outer scope for __seq and __idx
+
+  // Compile the iterable expression
+  expression();
+  consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after for-in clause.");
+
+  // Create hidden local for iterable (__seq)
+  Token seq_token{TokenType::TOKEN_IDENTIFIER, " __seq", 0};
+  add_local(seq_token);
+  mark_initialized();
+  int seq_slot = local_count_ - 1;
+
+  // Create hidden local for index (__idx = 0)
+  emit_constant(Value(0.0));
+  Token idx_token{TokenType::TOKEN_IDENTIFIER, " __idx", 0};
+  add_local(idx_token);
+  mark_initialized();
+
+  // Loop start
+  sz_t loop_start = current_chunk().count();
+  loop.continue_target = loop_start;
+  loop.continue_depth = scope_depth_;
+
+  // OP_FOR_ITER: slot, jump_hi, jump_lo
+  emit_op_byte(OpCode::OP_FOR_ITER, static_cast<u8_t>(seq_slot));
+  // Emit placeholder jump offset (2 bytes)
+  emit_bytes(0xFF, 0xFF);
+  sz_t exit_jump = current_chunk().count() - 2;
+
+  // Inner scope for loop variable
+  begin_scope();
+
+  // The element is already on the stack from OP_FOR_ITER
+  add_local(var_name);
+  mark_initialized();
+
+  // Body
+  current_loop_ = &loop;
+  statement();
+  current_loop_ = loop.enclosing;
+
+  end_scope(); // pops loop variable
+
+  emit_loop(loop_start);
+
+  // Patch the exit jump
+  sz_t jump = current_chunk().count() - exit_jump - 2;
+  current_chunk()[exit_jump] = static_cast<u8_t>((jump >> 8) & 0xFF);
+  current_chunk()[exit_jump + 1] = static_cast<u8_t>(jump & 0xFF);
+
+  end_scope(); // pops __idx and __seq
 
   for (sz_t offset : loop.break_jumps) {
     patch_jump(offset);

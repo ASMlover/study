@@ -78,6 +78,7 @@ enum class OpCode : u8_t {
   OP_IMPORT,
   OP_IMPORT_FROM,
   OP_IMPORT_ALIAS,
+  OP_FOR_ITER,
 };
 
 inline cstr_t opcode_name(OpCode code) noexcept {
@@ -129,6 +130,7 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_IMPORT:         return "OP_IMPORT";
   case OpCode::OP_IMPORT_FROM:    return "OP_IMPORT_FROM";
   case OpCode::OP_IMPORT_ALIAS:   return "OP_IMPORT_ALIAS";
+  case OpCode::OP_FOR_ITER:       return "OP_FOR_ITER";
   default:                        return "OP_UNKNOWN";
   }
 }

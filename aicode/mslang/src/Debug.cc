@@ -196,6 +196,16 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_CLOSURE:
     return closure_instruction(chunk, offset);
 
+  case OpCode::OP_FOR_ITER: {
+    u8_t slot = chunk.code_at(offset + 1);
+    u8_t hi = chunk.code_at(offset + 2);
+    u8_t lo = chunk.code_at(offset + 3);
+    auto jump = static_cast<std::uint16_t>((hi << 8) | lo);
+    std::cout << std::format("{:<16s} {:4d} -> {:04d}\n",
+        "OP_FOR_ITER", slot, offset + 4 + jump);
+    return offset + 4;
+  }
+
   default:
     std::cout << std::format("Unknown opcode {}\n", byte);
     return offset + 1;
