@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -28,6 +29,7 @@ class ModuleLoader {
 
   std::shared_ptr<Module> load(const std::string& module_name, Vm& vm,
                                std::string* error);
+  void for_each_cached_module(const std::function<void(const std::shared_ptr<Module>&)>& visitor) const;
 
  private:
   std::vector<std::string> search_paths_;

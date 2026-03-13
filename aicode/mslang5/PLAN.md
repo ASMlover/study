@@ -555,7 +555,7 @@ PLAN is implementable and verifiable when all conditions are met:
 - Module system works functionally, but language-level contract is under-specified:
   - Export surface, visibility, and initialization contract need a formal definition.
 - Diagnostics and conformance are still engineering-oriented, not language-standard oriented:
-  - Error metadata (span, phase, code) and compatibility suite are insufficient for a “formal language” baseline.
+  - Error metadata (span, phase, code) and compatibility suite are insufficient for a 鈥渇ormal language鈥?baseline.
 
 ### B. Iteration Goal (Professional/Formal Language Baseline)
 
@@ -713,7 +713,7 @@ Define Maple as a spec-driven language runtime with:
   - Status: deferred (2026-03-09, W12-D4)
 
 #### T18 - Module & Namespace Specification Upgrade (P1)
-- Goal: evolve module behavior from “works” to “specified”.
+- Goal: evolve module behavior from 鈥渨orks鈥?to 鈥渟pecified鈥?
 - Status: draft completed (2026-03-08, docs-only; no module loader implementation changes)
 - Deliverables:
   - `docs/spec/modules.md`:
@@ -808,14 +808,14 @@ Define Maple as a spec-driven language runtime with:
   - Exit criteria:
     - T16~T19 completed.
     - Diagnostic schema enforced in CI.
-    - Module/value/object semantics marked “normative” in docs.
+    - Module/value/object semantics marked 鈥渘ormative鈥?in docs.
 
 ### E. Risks and Controls
 
 - Risk: dual execution paths continue to diverge.
   - Control: introduce parity suite immediately after T15.
 - Risk: feature additions outpace specification.
-  - Control: “spec-first PR gate” for syntax/semantic changes.
+  - Control: 鈥渟pec-first PR gate鈥?for syntax/semantic changes.
 - Risk: diagnostics churn breaks tests.
   - Control: stable error code policy + golden update protocol.
 
@@ -1578,3 +1578,26 @@ Commit message convention reminder:
   - `ctest --test-dir build --output-on-failure -C Debug -L integration`
 - Verification result:
   - pass (`7/7` all labels; integration label pass `1/1`).
+
+#### 2026-03-14 Incremental Update (M5 real GC integration)
+
+- Scope: execute `docs/improve.md` milestone `M5` (real GC integration).
+- Delivered:
+  - Replaced placeholder GC with tracing mark-sweep accounting controller:
+    - `src/runtime/gc.hh` / `src/runtime/gc.cc` add allocation registry, root-traced collect cycle, and adaptive `next_gc` threshold update.
+  - Connected VM root tracing pipeline:
+    - `src/runtime/vm.hh` / `src/runtime/vm.cc` add `trace_gc_roots` and recursive tracing over value/object/module/table graph.
+    - root sources include VM stack, active callframe closures, open upvalues, globals, current module, and module cache.
+  - Added module-cache root iteration seam:
+    - `src/runtime/module.hh` / `src/runtime/module.cc` add `for_each_cached_module(...)` for GC traversal.
+  - Added GC verification coverage:
+    - `tests/integration/test_gc.cc` adds churn + module-cache persistence + GC stats assertions.
+    - `tests/unit/test_vm_compiler.cc` updates GC probe to assert live-byte reporting in VM path.
+    - test registration updated in `CMakeLists.txt` and `tests/unit/test_main.cc`.
+  - Synced milestone status in:
+    - `docs/improve.md` (`M5`, `M5-01`, `M5-02`, `M5-03`, `M5-04` => `done`).
+- Verification:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+- Verification result:
+  - pass (`7/7`).

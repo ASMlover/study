@@ -4,6 +4,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "bytecode/chunk.hh"
@@ -73,7 +74,7 @@ class Vm {
   bool read_constant(const Chunk& chunk, std::size_t ip, Constant* out) const noexcept;
   bool read_jump_offset(const Chunk& chunk, std::size_t ip, std::uint16_t* out) const noexcept;
   bool is_falsey(const Value& value) const noexcept;
-  Value constant_to_value(const Constant& constant) const;
+  Value constant_to_value(const Constant& constant);
   std::string last_segment(const std::string& dotted) const;
   void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);
   void set_single_diagnostic(const Diagnostic& diagnostic, std::string* error);
@@ -93,8 +94,29 @@ class Vm {
   Value read_upvalue(const std::shared_ptr<UpvalueObject>& upvalue) const;
   void write_upvalue(const std::shared_ptr<UpvalueObject>& upvalue, Value value);
 
+  void maybe_collect_garbage();
+  void register_object_allocation(const std::shared_ptr<RuntimeObject>& object);
+  void register_module_allocation(const std::shared_ptr<Module>& module);
+  std::size_t estimate_object_bytes(const std::shared_ptr<RuntimeObject>& object) const;
+  std::size_t estimate_module_bytes(const std::shared_ptr<Module>& module) const;
+
+  void trace_gc_roots(GcController& gc) const;
+  void trace_gc_table(const Table& table, GcController& gc,
+                      std::unordered_set<const void*>* seen_modules,
+                      std::unordered_set<const void*>* seen_objects) const;
+  void trace_gc_value(const Value& value, GcController& gc,
+                      std::unordered_set<const void*>* seen_modules,
+                      std::unordered_set<const void*>* seen_objects) const;
+  void trace_gc_module(const std::shared_ptr<Module>& module, GcController& gc,
+                       std::unordered_set<const void*>* seen_modules,
+                       std::unordered_set<const void*>* seen_objects) const;
+  void trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcController& gc,
+                       std::unordered_set<const void*>* seen_modules,
+                       std::unordered_set<const void*>* seen_objects) const;
+
   std::vector<Value> stack_;
   std::vector<std::shared_ptr<UpvalueObject>> open_upvalues_;
+  std::vector<std::shared_ptr<ClosureObject>> gc_frame_roots_;
   Table globals_;
   std::ostream* out_;
   ModuleLoader modules_;
@@ -107,5 +129,3 @@ class Vm {
 };
 
 }  // namespace ms
-
-

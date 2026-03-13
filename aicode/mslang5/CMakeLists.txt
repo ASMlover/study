@@ -70,6 +70,7 @@ if(MAPLE_BUILD_TESTS)
     tests/integration/test_language_closure.cc
     tests/integration/test_language_class.cc
     tests/integration/test_language_module.cc
+    tests/integration/test_gc.cc
     tests/integration/test_language_resolver.cc
     tests/integration/test_migration_debt.cc
     tests/integration/test_conformance.cc

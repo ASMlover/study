@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 
 #include "bytecode/opcode.hh"
@@ -59,7 +61,9 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
   script_proto->name = "<script>";
   script_proto->chunk = std::make_shared<Chunk>(chunk);
   auto script_fn = std::make_shared<FunctionObject>(std::move(script_proto));
+  register_object_allocation(script_fn);
   auto script_closure = std::make_shared<ClosureObject>(std::move(script_fn));
+  register_object_allocation(script_closure);
 
   std::vector<CallFrame> frames;
   frames.push_back(CallFrame{script_closure, 0, 0});
@@ -106,7 +110,9 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         }
         const auto prototype = std::get<std::shared_ptr<FunctionPrototype>>(c);
         auto function = std::make_shared<FunctionObject>(prototype);
+        register_object_allocation(function);
         auto closure = std::make_shared<ClosureObject>(function);
+        register_object_allocation(closure);
         closure->upvalues.resize(static_cast<std::size_t>(prototype->upvalue_count));
 
         for (int i = 0; i < prototype->upvalue_count; ++i) {
@@ -386,6 +392,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           return InterpretResult::kRuntimeError;
         }
         auto klass = std::make_shared<ClassObject>(std::get<std::string>(c));
+        register_object_allocation(klass);
         push(Value(std::static_pointer_cast<RuntimeObject>(klass)));
         break;
       }
@@ -759,6 +766,9 @@ InterpretResult Vm::execute_module(const std::string& source, std::shared_ptr<Mo
   const std::string previous_source_name = current_source_name_;
   const SourceExecutionMode previous_mode = source_mode_;
   source_mode_ = SourceExecutionMode::kVmPreferred;
+  if (current_module_ != nullptr) {
+    register_module_allocation(current_module_);
+  }
   const std::string module_name = current_module_ != nullptr ? current_module_->name : "module.ms";
   const InterpretResult r = execute_source_named(source, module_name, error);
   source_mode_ = previous_mode;
@@ -768,15 +778,13 @@ InterpretResult Vm::execute_module(const std::string& source, std::shared_ptr<Mo
 }
 
 bool Vm::define_global(const std::string& name, Value value) {
-  gc_.on_allocation(name.size() + value.to_string().size());
-  if (gc_.should_collect()) {
-    gc_.collect();
-  }
   if (current_module_ != nullptr) {
     current_module_->exports.set(name, value);
+    maybe_collect_garbage();
     return true;
   }
   globals_.set(name, value);
+  maybe_collect_garbage();
   return true;
 }
 
@@ -877,7 +885,7 @@ bool Vm::is_falsey(const Value& value) const noexcept {
   return false;
 }
 
-Value Vm::constant_to_value(const Constant& constant) const {
+Value Vm::constant_to_value(const Constant& constant) {
   if (std::holds_alternative<std::monostate>(constant)) {
     return Value::nil();
   }
@@ -891,6 +899,7 @@ Value Vm::constant_to_value(const Constant& constant) const {
     return Value(std::get<std::string>(constant));
   }
   auto function = std::make_shared<FunctionObject>(std::get<std::shared_ptr<FunctionPrototype>>(constant));
+  register_object_allocation(function);
   return Value(std::static_pointer_cast<RuntimeObject>(function));
 }
 
@@ -1023,6 +1032,7 @@ bool Vm::bind_method(const std::shared_ptr<ClassObject>& klass, const std::strin
     return false;
   }
   auto bound = std::make_shared<BoundMethodObject>(receiver, closure);
+  register_object_allocation(bound);
   push(Value(std::static_pointer_cast<RuntimeObject>(bound)));
   return true;
 }
@@ -1051,6 +1061,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
 
   if (const auto klass = std::dynamic_pointer_cast<ClassObject>(object); klass != nullptr) {
     auto instance = std::make_shared<InstanceObject>(klass);
+    register_object_allocation(instance);
     stack_[callee_index] = Value(std::static_pointer_cast<RuntimeObject>(instance));
 
     Value init_method;
@@ -1104,6 +1115,7 @@ std::shared_ptr<UpvalueObject> Vm::capture_upvalue(const std::size_t stack_index
     }
   }
   auto created = std::make_shared<UpvalueObject>(stack_index);
+  register_object_allocation(created);
   open_upvalues_.push_back(created);
   return created;
 }
@@ -1157,4 +1169,186 @@ void Vm::write_upvalue(const std::shared_ptr<UpvalueObject>& upvalue, Value valu
   stack_[upvalue->stack_index] = std::move(value);
 }
 
+
+void Vm::maybe_collect_garbage() {
+  if (!gc_.should_collect()) {
+    return;
+  }
+  gc_.collect([this](GcController& gc) { trace_gc_roots(gc); });
+}
+
+void Vm::register_object_allocation(const std::shared_ptr<RuntimeObject>& object) {
+  if (object == nullptr) {
+    return;
+  }
+  gc_.register_allocation(object.get(), estimate_object_bytes(object));
+  maybe_collect_garbage();
+}
+
+void Vm::register_module_allocation(const std::shared_ptr<Module>& module) {
+  if (module == nullptr) {
+    return;
+  }
+  gc_.register_allocation(module.get(), estimate_module_bytes(module));
+  maybe_collect_garbage();
+}
+
+std::size_t Vm::estimate_object_bytes(const std::shared_ptr<RuntimeObject>& object) const {
+  if (object == nullptr) {
+    return 0;
+  }
+  std::size_t bytes = sizeof(RuntimeObject);
+  if (const auto string_obj = std::dynamic_pointer_cast<StringObject>(object); string_obj != nullptr) {
+    bytes += sizeof(StringObject) + string_obj->value.capacity();
+    return bytes;
+  }
+  if (const auto function_obj = std::dynamic_pointer_cast<FunctionObject>(object);
+      function_obj != nullptr) {
+    bytes += sizeof(FunctionObject);
+    if (function_obj->prototype != nullptr) {
+      bytes += sizeof(FunctionPrototype);
+      if (function_obj->prototype->chunk != nullptr) {
+        const auto& chunk = *function_obj->prototype->chunk;
+        bytes += sizeof(Chunk);
+        bytes += chunk.code().size() * sizeof(std::uint8_t);
+        bytes += chunk.lines().size() * sizeof(std::size_t);
+        bytes += chunk.constants().size() * sizeof(Constant);
+      }
+    }
+    return bytes;
+  }
+  if (const auto upvalue_obj = std::dynamic_pointer_cast<UpvalueObject>(object); upvalue_obj != nullptr) {
+    bytes += sizeof(UpvalueObject);
+    return bytes;
+  }
+  if (const auto closure_obj = std::dynamic_pointer_cast<ClosureObject>(object); closure_obj != nullptr) {
+    bytes += sizeof(ClosureObject);
+    bytes += closure_obj->upvalues.capacity() * sizeof(std::shared_ptr<UpvalueObject>);
+    return bytes;
+  }
+  if (const auto class_obj = std::dynamic_pointer_cast<ClassObject>(object); class_obj != nullptr) {
+    bytes += sizeof(ClassObject);
+    bytes += class_obj->name.capacity();
+    bytes += class_obj->methods.size() * (sizeof(std::string) + sizeof(Value));
+    return bytes;
+  }
+  if (const auto instance_obj = std::dynamic_pointer_cast<InstanceObject>(object);
+      instance_obj != nullptr) {
+    bytes += sizeof(InstanceObject);
+    bytes += instance_obj->fields.size() * (sizeof(std::string) + sizeof(Value));
+    return bytes;
+  }
+  if (const auto bound_obj = std::dynamic_pointer_cast<BoundMethodObject>(object);
+      bound_obj != nullptr) {
+    bytes += sizeof(BoundMethodObject);
+    return bytes;
+  }
+  return bytes;
+}
+
+std::size_t Vm::estimate_module_bytes(const std::shared_ptr<Module>& module) const {
+  if (module == nullptr) {
+    return 0;
+  }
+  return sizeof(Module) + module->name.capacity() +
+         module->exports.size() * (sizeof(std::string) + sizeof(Value));
+}
+
+void Vm::trace_gc_roots(GcController& gc) const {
+  std::unordered_set<const void*> seen_modules;
+  std::unordered_set<const void*> seen_objects;
+
+  for (const auto& value : stack_) {
+    trace_gc_value(value, gc, &seen_modules, &seen_objects);
+  }
+  for (const auto& upvalue : open_upvalues_) {
+    trace_gc_object(upvalue, gc, &seen_modules, &seen_objects);
+  }
+  trace_gc_table(globals_, gc, &seen_modules, &seen_objects);
+
+  if (current_module_ != nullptr) {
+    trace_gc_module(current_module_, gc, &seen_modules, &seen_objects);
+  }
+  modules_.for_each_cached_module([this, &gc, &seen_modules, &seen_objects](
+                                   const std::shared_ptr<Module>& module) {
+    trace_gc_module(module, gc, &seen_modules, &seen_objects);
+  });
+}
+
+void Vm::trace_gc_table(const Table& table, GcController& gc,
+                        std::unordered_set<const void*>* seen_modules,
+                        std::unordered_set<const void*>* seen_objects) const {
+  for (const auto& [_, value] : table.data()) {
+    trace_gc_value(value, gc, seen_modules, seen_objects);
+  }
+}
+
+void Vm::trace_gc_value(const Value& value, GcController& gc,
+                        std::unordered_set<const void*>* seen_modules,
+                        std::unordered_set<const void*>* seen_objects) const {
+  if (value.is_module()) {
+    trace_gc_module(value.as_module(), gc, seen_modules, seen_objects);
+    return;
+  }
+  if (value.is_object()) {
+    trace_gc_object(value.as_object(), gc, seen_modules, seen_objects);
+  }
+}
+
+void Vm::trace_gc_module(const std::shared_ptr<Module>& module, GcController& gc,
+                         std::unordered_set<const void*>* seen_modules,
+                         std::unordered_set<const void*>* seen_objects) const {
+  if (module == nullptr) {
+    return;
+  }
+  const void* key = module.get();
+  if (seen_modules != nullptr && !seen_modules->insert(key).second) {
+    return;
+  }
+  gc.mark_allocation(key);
+  trace_gc_table(module->exports, gc, seen_modules, seen_objects);
+}
+
+void Vm::trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcController& gc,
+                         std::unordered_set<const void*>* seen_modules,
+                         std::unordered_set<const void*>* seen_objects) const {
+  if (object == nullptr) {
+    return;
+  }
+  const void* key = object.get();
+  if (seen_objects != nullptr && !seen_objects->insert(key).second) {
+    return;
+  }
+  gc.mark_allocation(key);
+
+  if (const auto closure_obj = std::dynamic_pointer_cast<ClosureObject>(object);
+      closure_obj != nullptr) {
+    trace_gc_object(closure_obj->function, gc, seen_modules, seen_objects);
+    for (const auto& upvalue : closure_obj->upvalues) {
+      trace_gc_object(upvalue, gc, seen_modules, seen_objects);
+    }
+    return;
+  }
+  if (const auto upvalue_obj = std::dynamic_pointer_cast<UpvalueObject>(object);
+      upvalue_obj != nullptr) {
+    trace_gc_value(upvalue_obj->closed, gc, seen_modules, seen_objects);
+    return;
+  }
+  if (const auto class_obj = std::dynamic_pointer_cast<ClassObject>(object); class_obj != nullptr) {
+    trace_gc_object(class_obj->superclass, gc, seen_modules, seen_objects);
+    trace_gc_table(class_obj->methods, gc, seen_modules, seen_objects);
+    return;
+  }
+  if (const auto instance_obj = std::dynamic_pointer_cast<InstanceObject>(object);
+      instance_obj != nullptr) {
+    trace_gc_object(instance_obj->klass, gc, seen_modules, seen_objects);
+    trace_gc_table(instance_obj->fields, gc, seen_modules, seen_objects);
+    return;
+  }
+  if (const auto bound_obj = std::dynamic_pointer_cast<BoundMethodObject>(object);
+      bound_obj != nullptr) {
+    trace_gc_value(bound_obj->receiver, gc, seen_modules, seen_objects);
+    trace_gc_object(bound_obj->method, gc, seen_modules, seen_objects);
+  }
+}
 }  // namespace ms

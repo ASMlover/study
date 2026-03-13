@@ -85,7 +85,15 @@ int RunVmCompilerTests() {
          "runtime error should retain undefined variable detail");
 
   vm.gc().set_threshold(1);
-  vm.define_global("gc_probe", ms::Value(1.0));
+  error.clear();
+  const ms::InterpretResult gc_probe_result = vm.execute_source(
+      "class Box { init(v) { this.value = v; } }\n"
+      "fun make() { var box = Box(1); return box; }\n"
+      "var keep = make();\n",
+      &error);
+  Expect(gc_probe_result == ms::InterpretResult::kOk,
+         "gc probe script should execute without semantic regression");
   Expect(vm.gc().stats().collections > 0, "gc collection should trigger");
+  Expect(vm.gc().stats().bytes_live > 0, "gc should report live bytes after tracing roots");
   return 0;
 }

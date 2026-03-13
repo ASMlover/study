@@ -40,6 +40,16 @@ std::optional<std::string> ModuleLoader::resolve_path(
   return std::nullopt;
 }
 
+
+void ModuleLoader::for_each_cached_module(
+    const std::function<void(const std::shared_ptr<Module>&)>& visitor) const {
+  if (!visitor) {
+    return;
+  }
+  for (const auto& [_, module] : cache_) {
+    visitor(module);
+  }
+}
 std::shared_ptr<Module> ModuleLoader::load(const std::string& module_name, Vm& vm,
                                            std::string* error) {
   if (const auto it = cache_.find(module_name); it != cache_.end()) {
