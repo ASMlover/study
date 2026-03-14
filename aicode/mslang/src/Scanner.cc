@@ -232,6 +232,7 @@ TokenType Scanner::identifier_type() const noexcept {
   case 'c':
     if (current_ - start_ > 1) {
       switch (start_[1]) {
+      case 'a': return check_keyword(2, 3, "tch", TokenType::TOKEN_CATCH);
       case 'l': return check_keyword(2, 3, "ass", TokenType::TOKEN_CLASS);
       case 'o': return check_keyword(2, 6, "ntinue", TokenType::TOKEN_CONTINUE);
       }
@@ -272,8 +273,22 @@ TokenType Scanner::identifier_type() const noexcept {
   case 't':
     if (current_ - start_ > 1) {
       switch (start_[1]) {
-      case 'h': return check_keyword(2, 2, "is", TokenType::TOKEN_THIS);
-      case 'r': return check_keyword(2, 2, "ue", TokenType::TOKEN_TRUE);
+      case 'h':
+        if (current_ - start_ > 2) {
+          switch (start_[2]) {
+          case 'i': return check_keyword(3, 1, "s", TokenType::TOKEN_THIS);
+          case 'r': return check_keyword(3, 2, "ow", TokenType::TOKEN_THROW);
+          }
+        }
+        break;
+      case 'r':
+        if (current_ - start_ > 2) {
+          switch (start_[2]) {
+          case 'u': return check_keyword(3, 1, "e", TokenType::TOKEN_TRUE);
+          case 'y': return check_keyword(3, 0, "", TokenType::TOKEN_TRY);
+          }
+        }
+        break;
       }
     }
     break;

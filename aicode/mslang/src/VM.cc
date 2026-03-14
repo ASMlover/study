@@ -421,6 +421,13 @@ Value VM::peek(int distance) const noexcept {
 }
 
 void VM::runtime_error(strv_t message) noexcept {
+  ObjString* msg_str = copy_string(message.data(), message.length());
+  pending_exception_ = Value(static_cast<Object*>(msg_str));
+
+  if (!exception_handlers_.empty()) {
+    return;
+  }
+
   std::cerr << message << std::endl;
 
   for (int i = frame_count_ - 1; i >= 0; i--) {
@@ -533,6 +540,9 @@ void VM::mark_roots() noexcept {
   mark_object(op_lt_string_);
   mark_object(op_gt_string_);
   mark_object(op_str_string_);
+
+  // Mark pending exception
+  mark_value(pending_exception_);
 
   // Mark pending import modules
   for (auto& pending : pending_imports_) {
@@ -1184,7 +1194,7 @@ InterpretResult VM::run() noexcept {
     do { \
       if (!peek(0).is_number() || !peek(1).is_number()) { \
         runtime_error("Operands must be numbers."); \
-        return InterpretResult::INTERPRET_RUNTIME_ERROR; \
+        goto handle_runtime_error; \
       } \
       double b = pop().as_number(); \
       double a = pop().as_number(); \
@@ -1235,6 +1245,7 @@ InterpretResult VM::run() noexcept {
     &&op_OP_INDEX_GET,     &&op_OP_INDEX_SET,
     &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
     &&op_OP_FOR_ITER,
+    &&op_OP_THROW,         &&op_OP_TRY,           &&op_OP_END_TRY,
   };
 
 #define VM_DISPATCH() do { TRACE_INSTRUCTION(); goto *dispatch_table[READ_BYTE()]; } while (false)
@@ -1244,6 +1255,7 @@ InterpretResult VM::run() noexcept {
 #define VM_CASE(name) case OpCode::name:
 #endif
 
+dispatch_loop:
 #ifdef MAPLE_GNUC
   VM_DISPATCH();
 #else
@@ -1289,7 +1301,7 @@ InterpretResult VM::run() noexcept {
       Value value;
       if (!globals_.get(name, &value)) {
         runtime_error(std::format("Undefined variable '{}'.", name->value()));
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       push(value);
       VM_DISPATCH();
@@ -1307,7 +1319,7 @@ InterpretResult VM::run() noexcept {
       if (globals_.set(name, peek(0))) {
         globals_.remove(name);
         runtime_error(std::format("Undefined variable '{}'.", name->value()));
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       VM_DISPATCH();
     }
@@ -1335,7 +1347,7 @@ InterpretResult VM::run() noexcept {
           VM_DISPATCH();
         }
         runtime_error(std::format("Undefined export '{}'.", name->value()));
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
 
       if (is_obj_type(peek(0), ObjectType::OBJ_CLASS)) {
@@ -1348,12 +1360,12 @@ InterpretResult VM::run() noexcept {
           VM_DISPATCH();
         }
         runtime_error(std::format("Undefined static method '{}'.", name->value()));
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
 
       if (!is_obj_type(peek(0), ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have properties.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
 
       ObjInstance* instance = as_instance(peek(0));
@@ -1371,7 +1383,7 @@ InterpretResult VM::run() noexcept {
       if (instance->klass()->getters().get(name, &getter)) {
         // Call the getter with the instance as receiver (0 args)
         if (!call(as_closure(getter), 0)) {
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         frame = &frames_[frame_count_ - 1];
         VM_DISPATCH();
@@ -1384,7 +1396,7 @@ InterpretResult VM::run() noexcept {
     VM_CASE(OP_SET_PROPERTY) {
       if (!is_obj_type(peek(1), ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have fields.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
 
       ObjInstance* instance = as_instance(peek(1));
@@ -1400,7 +1412,7 @@ InterpretResult VM::run() noexcept {
         // Overwrite: [recv, value] → keep as-is for call(setter, 1)
         // instance is already at stack_top_[-2], value at stack_top_[-1]
         if (!call(as_closure(setter_val), 1)) {
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         frame = &frames_[frame_count_ - 1];
         VM_DISPATCH();
@@ -1456,7 +1468,7 @@ InterpretResult VM::run() noexcept {
         frame = &frames_[frame_count_ - 1];
       } else {
         runtime_error("Operands must be two numbers or two strings.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       VM_DISPATCH();
     }
@@ -1489,7 +1501,7 @@ InterpretResult VM::run() noexcept {
         push(Value(std::fmod(a, b)));
       } else {
         runtime_error("Operands must be numbers.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       VM_DISPATCH();
     }
@@ -1502,7 +1514,7 @@ InterpretResult VM::run() noexcept {
     VM_CASE(OP_NEGATE) {
       if (!peek(0).is_number()) {
         runtime_error("Operand must be a number.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       push(Value(-pop().as_number()));
       VM_DISPATCH();
@@ -1515,7 +1527,7 @@ InterpretResult VM::run() noexcept {
         if (instance->klass()->methods().get(op_str_string_, &method)) {
           // __str takes no args: stack has [instance], call with 0 args
           if (!call(as_closure(method), 0)) {
-            return InterpretResult::INTERPRET_RUNTIME_ERROR;
+            goto handle_runtime_error;
           }
           frame = &frames_[frame_count_ - 1];
           VM_DISPATCH();
@@ -1557,7 +1569,7 @@ InterpretResult VM::run() noexcept {
     VM_CASE(OP_CALL) {
       int arg_count = READ_BYTE();
       if (!call_value(peek(arg_count), arg_count)) {
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];
       VM_DISPATCH();
@@ -1567,7 +1579,7 @@ InterpretResult VM::run() noexcept {
       ObjString* method = READ_STRING();
       int arg_count = READ_BYTE();
       if (!invoke(method, arg_count)) {
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];
       VM_DISPATCH();
@@ -1578,7 +1590,7 @@ InterpretResult VM::run() noexcept {
       int arg_count = READ_BYTE();
       ObjClass* superclass = as_class(pop());
       if (!invoke_from_class(superclass, method, arg_count)) {
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];
       VM_DISPATCH();
@@ -1667,7 +1679,7 @@ InterpretResult VM::run() noexcept {
       Value superclass = peek(1);
       if (!is_obj_type(superclass, ObjectType::OBJ_CLASS)) {
         runtime_error("Superclass must be a class.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
 
       ObjClass* subclass = as_class(peek(0));
@@ -1746,13 +1758,13 @@ InterpretResult VM::run() noexcept {
       if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
         if (!index_val.is_number()) {
           runtime_error("List index must be a number.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         ObjList* list = as_list(receiver);
         int index = static_cast<int>(index_val.as_number());
         if (index < 0 || index >= static_cast<int>(list->len())) {
           runtime_error("List index out of bounds.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         push(list->elements()[static_cast<sz_t>(index)]);
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
@@ -1760,24 +1772,24 @@ InterpretResult VM::run() noexcept {
         auto it = map->entries().find(index_val);
         if (it == map->entries().end()) {
           runtime_error("Key not found in map.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         push(it->second);
       } else if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
         if (!index_val.is_number()) {
           runtime_error("String index must be a number.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         ObjString* str = as_string(receiver);
         int index = static_cast<int>(index_val.as_number());
         if (index < 0 || index >= static_cast<int>(str->value().length())) {
           runtime_error("String index out of bounds.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         push(Value(static_cast<Object*>(copy_string(&str->value()[static_cast<sz_t>(index)], 1))));
       } else {
         runtime_error("Only lists and strings can be indexed.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       VM_DISPATCH();
     }
@@ -1789,13 +1801,13 @@ InterpretResult VM::run() noexcept {
       if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
         if (!index_val.is_number()) {
           runtime_error("List index must be a number.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         ObjList* list = as_list(receiver);
         int index = static_cast<int>(index_val.as_number());
         if (index < 0 || index >= static_cast<int>(list->len())) {
           runtime_error("List index out of bounds.");
-          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          goto handle_runtime_error;
         }
         list->elements()[static_cast<sz_t>(index)] = value;
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
@@ -1803,7 +1815,7 @@ InterpretResult VM::run() noexcept {
         map->entries()[index_val] = value;
       } else {
         runtime_error("Only lists and maps support index assignment.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       push(value);
       VM_DISPATCH();
@@ -1813,7 +1825,7 @@ InterpretResult VM::run() noexcept {
       Value path_val = pop();
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       import_module(as_string(path_val));
       frame = &frames_[frame_count_ - 1];
@@ -1826,7 +1838,7 @@ InterpretResult VM::run() noexcept {
       Value path_val = pop();
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       ObjString* path = as_string(path_val);
       ObjString* name = as_string(name_val);
@@ -1858,7 +1870,7 @@ InterpretResult VM::run() noexcept {
       Value path_val = pop();
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
       ObjString* path = as_string(path_val);
       ObjString* name = as_string(name_val);
@@ -1922,8 +1934,28 @@ InterpretResult VM::run() noexcept {
         }
       } else {
         runtime_error("Can only iterate over lists, strings, and maps.");
-        return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        goto handle_runtime_error;
       }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_THROW) {
+      pending_exception_ = pop();
+      goto handle_runtime_error;
+    }
+
+    VM_CASE(OP_TRY) {
+      u16_t offset = READ_SHORT();
+      exception_handlers_.push_back({
+        frame_count_ - 1,
+        stack_top_,
+        frame->ip + offset,
+      });
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_END_TRY) {
+      exception_handlers_.pop_back();
       VM_DISPATCH();
     }
 
@@ -1931,6 +1963,25 @@ InterpretResult VM::run() noexcept {
     } // switch
   } // for
 #endif
+
+handle_runtime_error:
+  if (!exception_handlers_.empty()) {
+    auto handler = exception_handlers_.back();
+    exception_handlers_.pop_back();
+
+    // Close upvalues for frames being unwound
+    while (frame_count_ - 1 > handler.frame_index) {
+      close_upvalues(frames_[frame_count_ - 1].slots);
+      frame_count_--;
+    }
+
+    frame = &frames_[frame_count_ - 1];
+    stack_top_ = handler.stack_depth;
+    frame->ip = handler.catch_ip;
+    push(pending_exception_);
+    goto dispatch_loop;
+  }
+  return InterpretResult::INTERPRET_RUNTIME_ERROR;
 
 #undef VM_CASE
 #undef VM_DISPATCH

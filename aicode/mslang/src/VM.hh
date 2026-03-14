@@ -48,6 +48,12 @@ struct CallFrame {
   Value* slots{nullptr};
 };
 
+struct ExceptionHandler {
+  int frame_index{0};
+  Value* stack_depth{nullptr};
+  u8_t* catch_ip{nullptr};
+};
+
 class VM : public Singleton<VM> {
   std::array<CallFrame, kFRAMES_MAX> frames_{};
   int frame_count_{0};
@@ -73,6 +79,9 @@ class VM : public Singleton<VM> {
   sz_t bytes_allocated_{0};
   sz_t next_gc_{kGC_INITIAL_SIZE};
   std::vector<Object*> gray_stack_;
+
+  std::vector<ExceptionHandler> exception_handlers_;
+  Value pending_exception_;
 
   str_t current_script_path_;
   std::unordered_map<str_t, ObjModule*> modules_;

@@ -177,6 +177,8 @@ class Compiler {
   void break_statement() noexcept;
   void continue_statement() noexcept;
   void return_statement() noexcept;
+  void try_statement() noexcept;
+  void throw_statement() noexcept;
   void function(FunctionType type) noexcept;
   void method() noexcept;
   void synchronize() noexcept;
@@ -325,11 +327,17 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { &Compiler::super_,   nullptr,            Precedence::PREC_NONE },
   // TOKEN_THIS
   { &Compiler::this_,    nullptr,            Precedence::PREC_NONE },
+  // TOKEN_THROW
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_TRUE
   { &Compiler::literal,  nullptr,            Precedence::PREC_NONE },
+  // TOKEN_TRY
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_VAR
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_WHILE
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_CATCH
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_ERROR
   { nullptr,             nullptr,            Precedence::PREC_NONE },
@@ -1854,6 +1862,50 @@ void Compiler::return_statement() noexcept {
   }
 }
 
+void Compiler::try_statement() noexcept {
+  // try { body } catch (name) { handler }
+
+  // Emit OP_TRY with placeholder offset to catch block
+  sz_t try_jump = emit_jump(OpCode::OP_TRY);
+
+  // Compile try body
+  consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' after 'try'.");
+  begin_scope();
+  block();
+  end_scope();
+
+  // Normal exit: pop handler and jump over catch block
+  emit_op(OpCode::OP_END_TRY);
+  sz_t end_jump = emit_jump(OpCode::OP_JUMP);
+
+  // Patch try_jump to here (start of catch block)
+  patch_jump(try_jump);
+
+  // Parse catch clause
+  consume(TokenType::TOKEN_CATCH, "Expect 'catch' after try block.");
+  consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'catch'.");
+  consume(TokenType::TOKEN_IDENTIFIER, "Expect variable name.");
+  Token error_name = ps_->previous;
+  consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after catch variable.");
+
+  // Catch body: the exception value is on the stack (pushed by VM)
+  consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' before catch body.");
+  begin_scope();
+  add_local(error_name);
+  mark_initialized();
+  block();
+  end_scope();
+
+  // Patch end_jump to here (after catch block)
+  patch_jump(end_jump);
+}
+
+void Compiler::throw_statement() noexcept {
+  expression();
+  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after throw value.");
+  emit_op(OpCode::OP_THROW);
+}
+
 void Compiler::synchronize() noexcept {
   ps_->panic_mode = false;
 
@@ -1868,6 +1920,8 @@ void Compiler::synchronize() noexcept {
     case TokenType::TOKEN_WHILE:
     case TokenType::TOKEN_PRINT:
     case TokenType::TOKEN_RETURN:
+    case TokenType::TOKEN_TRY:
+    case TokenType::TOKEN_THROW:
     case TokenType::TOKEN_IMPORT:
     case TokenType::TOKEN_FROM:
       return;
@@ -1893,6 +1947,10 @@ void Compiler::statement() noexcept {
     break_statement();
   } else if (match(TokenType::TOKEN_CONTINUE)) {
     continue_statement();
+  } else if (match(TokenType::TOKEN_TRY)) {
+    try_statement();
+  } else if (match(TokenType::TOKEN_THROW)) {
+    throw_statement();
   } else if (match(TokenType::TOKEN_LEFT_BRACE)) {
     begin_scope();
     block();

@@ -149,6 +149,8 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_INHERIT:
   case OpCode::OP_IMPORT_FROM:
   case OpCode::OP_IMPORT_ALIAS:
+  case OpCode::OP_THROW:
+  case OpCode::OP_END_TRY:
     return simple_instruction(opcode_name(op), offset);
 
   // Byte instructions (1 byte operand = slot index)
@@ -184,6 +186,7 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   // Jump instructions (2 byte operand = jump offset, forward)
   case OpCode::OP_JUMP:
   case OpCode::OP_JUMP_IF_FALSE:
+  case OpCode::OP_TRY:
     return jump_instruction(opcode_name(op), 1, chunk, offset);
 
   // Loop instruction (2 byte operand = jump offset, backward)

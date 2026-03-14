@@ -279,7 +279,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | **5 — OOP** | 13.1 | Static methods | [x] |
 | | 13.4 | Operator overloading (`__add`/`__str`/...) | [x] |
 | | 13.2 | Getter / setter properties | [x] |
-| **6 — Robustness** | 12.2 | `try` / `catch` / `throw` | [ ] |
+| **6 — Robustness** | 12.2 | `try` / `catch` / `throw` | [x] |
 | | 12.3 | `defer` statement | [ ] |
 | | 16.2 | Source maps & better stack traces | [ ] |
 | **7 — Performance** | 14.3 | Inline caching for property access | [ ] |
