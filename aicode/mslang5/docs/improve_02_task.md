@@ -44,7 +44,7 @@ Script execution template:
 
 | Task ID | Milestone | Atomic goal | Compile step | C++ tests | `.ms` scripts | Status | Owner | Evidence |
 |---|---|---|---|---|---|---|---|---|
-| T00 | Baseline | Freeze baseline and verify current green state | Full build | unit + integration + migration_debt + conformance + diagnostics | `tests/scripts/migration/m0_baseline_guardrails.ms` | todo | - | - |
+| T00 | Baseline | Freeze baseline and verify current green state | Full build | unit + integration + migration_debt + conformance + diagnostics | `tests/scripts/migration/m0_baseline_guardrails.ms` | done | Codex | 2026-03-15: `cmake -S . -B build`; `cmake --build build --config Debug`; all five `ctest` suites passed; `build\\Debug\\maple_cli.exe tests/scripts/migration/m0_baseline_guardrails.ms` => stdout `14` `15`. |
 | T01 | VM-only | Remove legacy interpreter build switch from CMake | Full build | unit + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | todo | - | - |
 | T02 | VM-only | Remove legacy interpreter source files and runtime hooks | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | todo | - | - |
 | T03 | VM-only | Simplify source mode/route enums and update tests | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | todo | - | - |
