@@ -277,8 +277,8 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | **4 — Iteration** | 12.1 | `for-in` iterator protocol | [x] |
 | | 11.3 | List comprehensions | [x] |
 | **5 — OOP** | 13.1 | Static methods | [x] |
-| | 13.4 | Operator overloading (`__add`/`__str`/...) | [ ] |
-| | 13.2 | Getter / setter properties | [ ] |
+| | 13.4 | Operator overloading (`__add`/`__str`/...) | [x] |
+| | 13.2 | Getter / setter properties | [x] |
 | **6 — Robustness** | 12.2 | `try` / `catch` / `throw` | [ ] |
 | | 12.3 | `defer` statement | [ ] |
 | | 16.2 | Source maps & better stack traces | [ ] |

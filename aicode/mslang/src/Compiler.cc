@@ -1481,6 +1481,22 @@ void Compiler::class_declaration() noexcept {
       class_compiler.is_static_method = false;
 
       emit_op_byte(OpCode::OP_STATIC_METHOD, constant);
+    } else if (check(TokenType::TOKEN_IDENTIFIER) &&
+               (ps_->current.lexeme == "get" || ps_->current.lexeme == "set")) {
+      bool is_getter = ps_->current.lexeme == "get";
+      advance(); // consume "get" or "set"
+      consume(TokenType::TOKEN_IDENTIFIER, "Expect property name.");
+      u8_t constant = identifier_constant(ps_->previous);
+
+      if (is_getter) {
+        // Getter: no parameters, compiled as 0-arity method
+        function(FunctionType::TYPE_METHOD);
+        emit_op_byte(OpCode::OP_GETTER, constant);
+      } else {
+        // Setter: exactly one parameter
+        function(FunctionType::TYPE_METHOD);
+        emit_op_byte(OpCode::OP_SETTER, constant);
+      }
     } else {
       method();
     }

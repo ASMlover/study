@@ -50,6 +50,15 @@ namespace ms {
 VM::VM() noexcept {
   reset_stack();
   init_string_ = copy_string("init", 4);
+  op_add_string_ = copy_string("__add", 5);
+  op_sub_string_ = copy_string("__sub", 5);
+  op_mul_string_ = copy_string("__mul", 5);
+  op_div_string_ = copy_string("__div", 5);
+  op_mod_string_ = copy_string("__mod", 5);
+  op_eq_string_ = copy_string("__eq", 4);
+  op_lt_string_ = copy_string("__lt", 4);
+  op_gt_string_ = copy_string("__gt", 4);
+  op_str_string_ = copy_string("__str", 5);
 
   // Register native functions
   define_native("clock", [](int, Value*) -> Value {
@@ -104,6 +113,7 @@ VM::VM() noexcept {
       runtime_error("str() takes exactly 1 argument.");
       return Value();
     }
+    if (args[0].is_string()) return args[0];
     str_t s = args[0].stringify();
     return Value(static_cast<Object*>(copy_string(s.data(), s.length())));
   });
@@ -374,6 +384,15 @@ VM::VM() noexcept {
 
 VM::~VM() noexcept {
   init_string_ = nullptr;
+  op_add_string_ = nullptr;
+  op_sub_string_ = nullptr;
+  op_mul_string_ = nullptr;
+  op_div_string_ = nullptr;
+  op_mod_string_ = nullptr;
+  op_eq_string_ = nullptr;
+  op_lt_string_ = nullptr;
+  op_gt_string_ = nullptr;
+  op_str_string_ = nullptr;
   free_objects();
 }
 
@@ -503,8 +522,17 @@ void VM::mark_roots() noexcept {
   // Mark compiler roots
   mark_compiler_roots();
 
-  // Mark init string
+  // Mark init string and operator method names
   mark_object(init_string_);
+  mark_object(op_add_string_);
+  mark_object(op_sub_string_);
+  mark_object(op_mul_string_);
+  mark_object(op_div_string_);
+  mark_object(op_mod_string_);
+  mark_object(op_eq_string_);
+  mark_object(op_lt_string_);
+  mark_object(op_gt_string_);
+  mark_object(op_str_string_);
 
   // Mark pending import modules
   for (auto& pending : pending_imports_) {
@@ -680,6 +708,20 @@ bool VM::invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noex
     return false;
   }
   return call(as_closure(method), arg_count);
+}
+
+bool VM::invoke_operator(ObjString* op_name) noexcept {
+  // Stack: [... lhs, rhs]  peek(1)=lhs, peek(0)=rhs
+  // Check if lhs is an instance with the operator method
+  if (peek(1).is_instance()) {
+    ObjInstance* instance = as_instance(peek(1));
+    Value method;
+    if (instance->klass()->methods().get(op_name, &method)) {
+      // Set up: stack_top_[-2] = lhs (receiver), stack_top_[-1] = rhs (arg)
+      return call(as_closure(method), 1);
+    }
+  }
+  return false;
 }
 
 bool VM::invoke(ObjString* name, int arg_count) noexcept {
@@ -1188,6 +1230,7 @@ InterpretResult VM::run() noexcept {
     &&op_OP_CALL,          &&op_OP_INVOKE,        &&op_OP_SUPER_INVOKE,
     &&op_OP_CLOSURE,       &&op_OP_CLOSE_UPVALUE, &&op_OP_RETURN,
     &&op_OP_CLASS,         &&op_OP_INHERIT,       &&op_OP_METHOD,
+    &&op_OP_STATIC_METHOD, &&op_OP_GETTER,        &&op_OP_SETTER,
     &&op_OP_BUILD_LIST,    &&op_OP_BUILD_MAP,
     &&op_OP_INDEX_GET,     &&op_OP_INDEX_SET,
     &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
@@ -1323,6 +1366,17 @@ InterpretResult VM::run() noexcept {
         VM_DISPATCH();
       }
 
+      // Check for getter
+      Value getter;
+      if (instance->klass()->getters().get(name, &getter)) {
+        // Call the getter with the instance as receiver (0 args)
+        if (!call(as_closure(getter), 0)) {
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &frames_[frame_count_ - 1];
+        VM_DISPATCH();
+      }
+
       bind_method(instance->klass(), name);
       VM_DISPATCH();
     }
@@ -1335,6 +1389,23 @@ InterpretResult VM::run() noexcept {
 
       ObjInstance* instance = as_instance(peek(1));
       ObjString* name = READ_STRING();
+
+      // Check for setter
+      Value setter_val;
+      if (instance->klass()->setters().get(name, &setter_val)) {
+        // Stack: [..., instance, value]
+        // Rearrange: instance as receiver (slot 0), value as arg
+        Value assigned = peek(0);
+        Value recv = peek(1);
+        // Overwrite: [recv, value] → keep as-is for call(setter, 1)
+        // instance is already at stack_top_[-2], value at stack_top_[-1]
+        if (!call(as_closure(setter_val), 1)) {
+          return InterpretResult::INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &frames_[frame_count_ - 1];
+        VM_DISPATCH();
+      }
+
       instance->fields().set(name, peek(0));
       Value value = pop();
       pop();
@@ -1350,14 +1421,28 @@ InterpretResult VM::run() noexcept {
     }
 
     VM_CASE(OP_EQUAL) {
-      Value b = pop();
-      Value a = pop();
-      push(Value(a.is_equal(b)));
+      if (peek(1).is_instance() && invoke_operator(op_eq_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else {
+        Value b = pop();
+        Value a = pop();
+        push(Value(a.is_equal(b)));
+      }
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_GREATER) { BINARY_OP(Value, >); VM_DISPATCH(); }
-    VM_CASE(OP_LESS)    { BINARY_OP(Value, <); VM_DISPATCH(); }
+    VM_CASE(OP_GREATER) {
+      if (peek(1).is_instance() && invoke_operator(op_gt_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else { BINARY_OP(Value, >); }
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_LESS) {
+      if (peek(1).is_instance() && invoke_operator(op_lt_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else { BINARY_OP(Value, <); }
+      VM_DISPATCH();
+    }
 
     VM_CASE(OP_ADD) {
       if (is_obj_type(peek(0), ObjectType::OBJ_STRING) &&
@@ -1367,6 +1452,8 @@ InterpretResult VM::run() noexcept {
         double b = pop().as_number();
         double a = pop().as_number();
         push(Value(a + b));
+      } else if (peek(1).is_instance() && invoke_operator(op_add_string_)) {
+        frame = &frames_[frame_count_ - 1];
       } else {
         runtime_error("Operands must be two numbers or two strings.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
@@ -1374,18 +1461,36 @@ InterpretResult VM::run() noexcept {
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_SUBTRACT) { BINARY_OP(Value, -); VM_DISPATCH(); }
-    VM_CASE(OP_MULTIPLY) { BINARY_OP(Value, *); VM_DISPATCH(); }
-    VM_CASE(OP_DIVIDE)   { BINARY_OP(Value, /); VM_DISPATCH(); }
+    VM_CASE(OP_SUBTRACT) {
+      if (peek(1).is_instance() && invoke_operator(op_sub_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else { BINARY_OP(Value, -); }
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_MULTIPLY) {
+      if (peek(1).is_instance() && invoke_operator(op_mul_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else { BINARY_OP(Value, *); }
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_DIVIDE) {
+      if (peek(1).is_instance() && invoke_operator(op_div_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else { BINARY_OP(Value, /); }
+      VM_DISPATCH();
+    }
 
     VM_CASE(OP_MODULO) {
-      if (!peek(0).is_number() || !peek(1).is_number()) {
+      if (peek(1).is_instance() && invoke_operator(op_mod_string_)) {
+        frame = &frames_[frame_count_ - 1];
+      } else if (peek(0).is_number() && peek(1).is_number()) {
+        double b = pop().as_number();
+        double a = pop().as_number();
+        push(Value(std::fmod(a, b)));
+      } else {
         runtime_error("Operands must be numbers.");
         return InterpretResult::INTERPRET_RUNTIME_ERROR;
       }
-      double b = pop().as_number();
-      double a = pop().as_number();
-      push(Value(std::fmod(a, b)));
       VM_DISPATCH();
     }
 
@@ -1404,6 +1509,18 @@ InterpretResult VM::run() noexcept {
     }
 
     VM_CASE(OP_STR) {
+      if (peek(0).is_instance()) {
+        ObjInstance* instance = as_instance(peek(0));
+        Value method;
+        if (instance->klass()->methods().get(op_str_string_, &method)) {
+          // __str takes no args: stack has [instance], call with 0 args
+          if (!call(as_closure(method), 0)) {
+            return InterpretResult::INTERPRET_RUNTIME_ERROR;
+          }
+          frame = &frames_[frame_count_ - 1];
+          VM_DISPATCH();
+        }
+      }
       Value val = pop();
       if (val.is_string()) {
         push(val);
@@ -1558,6 +1675,8 @@ InterpretResult VM::run() noexcept {
       // Copy methods from superclass
       subclass->methods().add_all(super->methods());
       subclass->static_methods().add_all(super->static_methods());
+      subclass->getters().add_all(super->getters());
+      subclass->setters().add_all(super->setters());
       pop(); // Subclass
       VM_DISPATCH();
     }
@@ -1576,6 +1695,24 @@ InterpretResult VM::run() noexcept {
       Value method = peek(0);
       ObjClass* klass = as_class(peek(1));
       klass->static_methods().set(name, method);
+      pop();
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_GETTER) {
+      ObjString* name = READ_STRING();
+      Value method = peek(0);
+      ObjClass* klass = as_class(peek(1));
+      klass->getters().set(name, method);
+      pop();
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_SETTER) {
+      ObjString* name = READ_STRING();
+      Value method = peek(0);
+      ObjClass* klass = as_class(peek(1));
+      klass->setters().set(name, method);
       pop();
       VM_DISPATCH();
     }

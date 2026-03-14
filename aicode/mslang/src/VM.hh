@@ -58,6 +58,15 @@ class VM : public Singleton<VM> {
   Table globals_;
   Table strings_;
   ObjString* init_string_{nullptr};
+  ObjString* op_add_string_{nullptr};
+  ObjString* op_sub_string_{nullptr};
+  ObjString* op_mul_string_{nullptr};
+  ObjString* op_div_string_{nullptr};
+  ObjString* op_mod_string_{nullptr};
+  ObjString* op_eq_string_{nullptr};
+  ObjString* op_lt_string_{nullptr};
+  ObjString* op_gt_string_{nullptr};
+  ObjString* op_str_string_{nullptr};
   ObjUpvalue* open_upvalues_{nullptr};
 
   Object* objects_{nullptr};
@@ -103,6 +112,7 @@ class VM : public Singleton<VM> {
   bool call(ObjClosure* closure, int arg_count) noexcept;
   bool invoke(ObjString* name, int arg_count) noexcept;
   bool invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noexcept;
+  bool invoke_operator(ObjString* op_name) noexcept;
   void bind_method(ObjClass* klass, ObjString* name) noexcept;
 
   // Upvalue management

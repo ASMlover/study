@@ -150,6 +150,8 @@ void ObjClass::trace_references() noexcept {
   mark_object(name_);
   methods_.mark_table();
   static_methods_.mark_table();
+  getters_.mark_table();
+  setters_.mark_table();
 }
 
 sz_t ObjClass::size() const noexcept {
