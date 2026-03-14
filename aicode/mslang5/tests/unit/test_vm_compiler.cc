@@ -9,8 +9,6 @@ int RunVmCompilerTests() {
   ms::Vm vm;
   std::ostringstream out;
   vm.set_output(out);
-  Expect(vm.get_source_execution_mode() == ms::SourceExecutionMode::kVmPreferred,
-         "default execution mode should prefer VM pipeline");
 
   std::string error;
   const std::string script =

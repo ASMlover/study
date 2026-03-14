@@ -22,13 +22,12 @@ struct ExecOutcome {
   ms::SourceExecutionRoute route;
 };
 
-ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mode) {
+ExecOutcome RunWithMode(const std::string& src) {
   ms::Vm vm;
   std::ostringstream out;
   vm.set_output(out);
-  vm.set_source_execution_mode(mode);
 
-  ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kNone};
+  ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kVmPipeline};
   outcome.result = vm.execute_source(src, &outcome.error);
   outcome.output = out.str();
   outcome.route = vm.last_source_execution_route();
@@ -37,7 +36,7 @@ ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mo
 
 void ExpectResolveCompileFailure(const std::string& script_path, const std::string& code) {
   const std::string src = ReadAll(script_path);
-  const ExecOutcome run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
+  const ExecOutcome run = RunWithMode(src);
 
   Expect(run.result == ms::InterpretResult::kCompileError,
          "resolver violation should classify as compile error");
@@ -51,7 +50,7 @@ void ExpectResolveCompileFailure(const std::string& script_path, const std::stri
 
 void ExpectResolverSuccess(const std::string& script_path, const std::string& expected_output) {
   const std::string src = ReadAll(script_path);
-  const ExecOutcome run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
+  const ExecOutcome run = RunWithMode(src);
 
   Expect(run.result == ms::InterpretResult::kOk, "resolver success script should execute");
   Expect(run.output == expected_output, "resolver success script output should match expectation");

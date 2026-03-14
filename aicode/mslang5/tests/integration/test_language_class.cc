@@ -22,13 +22,12 @@ struct ExecOutcome {
   ms::SourceExecutionRoute route;
 };
 
-ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mode) {
+ExecOutcome RunWithMode(const std::string& src) {
   ms::Vm vm;
   std::ostringstream out;
   vm.set_output(out);
-  vm.set_source_execution_mode(mode);
 
-  ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kNone};
+  ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kVmPipeline};
   outcome.result = vm.execute_source(src, &outcome.error);
   outcome.output = out.str();
   outcome.route = vm.last_source_execution_route();
@@ -40,7 +39,7 @@ ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mo
 int RunClassIntegrationTests() {
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/class_fields.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
+    const ExecOutcome default_run = RunWithMode(src);
     Expect(default_run.result == ms::InterpretResult::kOk, "class_fields should execute");
     Expect(default_run.output == "7\n9\n", "class_fields output should be 7,9");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
@@ -49,7 +48,7 @@ int RunClassIntegrationTests() {
 
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/class_inherit.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
+    const ExecOutcome default_run = RunWithMode(src);
     Expect(default_run.result == ms::InterpretResult::kOk, "class_inherit should execute");
     Expect(default_run.output == "AB\n", "class_inherit output should be AB");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
@@ -58,7 +57,7 @@ int RunClassIntegrationTests() {
 
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/class_super_error.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
+    const ExecOutcome default_run = RunWithMode(src);
     Expect(default_run.result == ms::InterpretResult::kRuntimeError, "class_super_error should fail");
     Expect(default_run.error.find("MS4004") != std::string::npos,
            "missing super method should expose MS4004");

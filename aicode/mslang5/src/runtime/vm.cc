@@ -683,7 +683,7 @@ InterpretResult Vm::execute_source_named(const std::string& source, const std::s
                                          std::string* error) {
   current_source_name_ = source_name;
   last_diagnostics_.clear();
-  last_source_route_ = SourceExecutionRoute::kNone;
+  last_source_route_ = SourceExecutionRoute::kVmPipeline;
 
 
   CompileResult compiled = compile_to_chunk(source);
@@ -713,14 +713,11 @@ InterpretResult Vm::execute_module(const std::string& source, std::shared_ptr<Mo
   auto prev = current_module_;
   current_module_ = std::move(module);
   const std::string previous_source_name = current_source_name_;
-  const SourceExecutionMode previous_mode = source_mode_;
-  source_mode_ = SourceExecutionMode::kVmPreferred;
   if (current_module_ != nullptr) {
     register_module_allocation(current_module_);
   }
   const std::string module_name = current_module_ != nullptr ? current_module_->name : "module.ms";
   const InterpretResult r = execute_source_named(source, module_name, error);
-  source_mode_ = previous_mode;
   current_source_name_ = previous_source_name;
   current_module_ = prev;
   return r;
@@ -763,12 +760,6 @@ ModuleLoader& Vm::modules() noexcept { return modules_; }
 
 GcController& Vm::gc() noexcept { return gc_; }
 
-void Vm::set_source_execution_mode(const SourceExecutionMode mode) noexcept {
-  (void)mode;
-  source_mode_ = SourceExecutionMode::kVmPreferred;
-}
-
-SourceExecutionMode Vm::get_source_execution_mode() const noexcept { return source_mode_; }
 
 SourceExecutionRoute Vm::last_source_execution_route() const noexcept { return last_source_route_; }
 

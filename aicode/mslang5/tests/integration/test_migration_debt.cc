@@ -25,13 +25,12 @@ struct ExecOutcome {
   ms::SourceExecutionRoute route;
 };
 
-ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mode) {
+ExecOutcome RunWithMode(const std::string& src) {
   ms::Vm vm;
   std::ostringstream out;
   vm.set_output(out);
-  vm.set_source_execution_mode(mode);
 
-  ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kNone};
+  ExecOutcome outcome{ms::InterpretResult::kRuntimeError, "", "", ms::SourceExecutionRoute::kVmPipeline};
   outcome.result = vm.execute_source(src, &outcome.error);
   outcome.output = out.str();
   outcome.route = vm.last_source_execution_route();
@@ -54,7 +53,7 @@ int RunMigrationDebtTests() {
   int fallback_cases = 0;
   for (const auto& debt_case : debt_cases) {
     const std::string source = ReadAll(repo_root + debt_case.script_path);
-    const ExecOutcome run = RunWithMode(source, ms::SourceExecutionMode::kVmPreferred);
+    const ExecOutcome run = RunWithMode(source);
 
     const std::string case_name = debt_case.name;
     Expect(run.result == debt_case.expected_result,

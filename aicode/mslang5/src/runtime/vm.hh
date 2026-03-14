@@ -23,17 +23,8 @@ enum class InterpretResult {
   kRuntimeError = 2,
 };
 
-enum class SourceExecutionMode {
-  kVmPreferred = 0,
-  kVmPreferredWithLegacyFallback = 1,
-  kLegacyOnly = 2,
-};
-
 enum class SourceExecutionRoute {
-  kNone = 0,
-  kVmPipeline = 1,
-  kLegacyInterpreter = 2,
-  kVmCompileFailedThenLegacy = 3,
+  kVmPipeline = 0,
 };
 
 class Vm {
@@ -49,8 +40,6 @@ class Vm {
                                        std::string* error);
   InterpretResult execute_module(const std::string& source, std::shared_ptr<Module> module,
                                  std::string* error);
-  void set_source_execution_mode(SourceExecutionMode mode) noexcept;
-  SourceExecutionMode get_source_execution_mode() const noexcept;
   SourceExecutionRoute last_source_execution_route() const noexcept;
   const std::vector<Diagnostic>& last_diagnostics() const noexcept;
 
@@ -124,8 +113,7 @@ class Vm {
   std::shared_ptr<Module> current_module_;
   std::string current_source_name_ = "script.ms";
   std::vector<Diagnostic> last_diagnostics_;
-  SourceExecutionMode source_mode_ = SourceExecutionMode::kVmPreferred;
-  SourceExecutionRoute last_source_route_ = SourceExecutionRoute::kNone;
+  SourceExecutionRoute last_source_route_ = SourceExecutionRoute::kVmPipeline;
 };
 
 }  // namespace ms
