@@ -40,44 +40,32 @@ ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mo
 int RunClassIntegrationTests() {
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/class_fields.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
     Expect(default_run.result == ms::InterpretResult::kOk, "class_fields should execute");
     Expect(default_run.output == "7\n9\n", "class_fields output should be 7,9");
-    Expect(default_run.output == legacy_run.output, "class_fields output should be route independent");
-    Expect(default_run.result == legacy_run.result, "class_fields result should be route independent");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "class_fields should execute directly on VM pipeline");
   }
 
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/class_inherit.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
     Expect(default_run.result == ms::InterpretResult::kOk, "class_inherit should execute");
     Expect(default_run.output == "AB\n", "class_inherit output should be AB");
-    Expect(default_run.output == legacy_run.output, "class_inherit output should be route independent");
-    Expect(default_run.result == legacy_run.result, "class_inherit result should be route independent");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "class_inherit should execute directly on VM pipeline");
   }
 
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/class_super_error.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
     Expect(default_run.result == ms::InterpretResult::kRuntimeError, "class_super_error should fail");
     Expect(default_run.error.find("MS4004") != std::string::npos,
            "missing super method should expose MS4004");
     Expect(default_run.error.find("undefined property: nope") != std::string::npos,
            "missing super method should report undefined property");
-    Expect(default_run.error == legacy_run.error, "class_super_error message should be route independent");
-    Expect(default_run.result == legacy_run.result, "class_super_error result should be route independent");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "class_super_error should execute via VM pipeline");
   }
   return 0;
 }
-
-
-

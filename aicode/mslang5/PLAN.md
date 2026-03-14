@@ -1601,3 +1601,28 @@ Commit message convention reminder:
   - `ctest --test-dir build --output-on-failure -C Debug`
 - Verification result:
   - pass (`7/7`).
+
+#### 2026-03-14 Incremental Update (M6 interpreter retirement and path convergence)
+
+- Scope: execute `docs/improve.md` milestone `M6` (VM-only convergence).
+- Delivered:
+  - Switched default runtime execution mode to VM-only:
+    - `src/runtime/vm.hh` default `source_mode_` is now `kVmPreferred`.
+  - Retired fallback in normal builds and moved legacy interpreter to debug/reference-only compile gate:
+    - `CMakeLists.txt` adds `MAPLE_ENABLE_LEGACY_INTERPRETER` (default `OFF`).
+    - `src/runtime/script_interpreter.cc` is compiled only when the option is enabled.
+    - `src/runtime/vm.cc` wraps all interpreter dispatch/fallback paths with `#if MAPLE_ENABLE_LEGACY_INTERPRETER`.
+  - Removed fallback-dependent integration assertions and normalized VM-single-path checks:
+    - `tests/integration/test_language_closure.cc`
+    - `tests/integration/test_language_class.cc`
+    - `tests/integration/test_language_resolver.cc`
+    - `tests/integration/test_migration_debt.cc`
+    - `tests/unit/test_vm_compiler.cc`
+  - Synced milestone status in:
+    - `docs/improve.md` (`M6`, `M6-01`, `M6-02`, `M6-03`, `M6-04` => `done`).
+- Verification:
+  - `cmake --build build --config Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug`
+  - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt`
+- Verification result:
+  - pass (all suites green under VM-only default; migration debt reports `fallback_rate=0.000`).

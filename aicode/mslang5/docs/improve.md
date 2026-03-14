@@ -380,7 +380,7 @@ Rule: after each subsection is finished, immediately update status, date, verifi
 | M3 Class/inheritance/this/super VM migration | done | 100% | 2026-03-13 | 2026-03-13 | VM-native class/object/super/init path landed; class fallback debt removed |
 | M4 Module VM protocol unification | done | 100% | 2026-03-14 | 2026-03-14 | VM-only module init + module-scope isolation + module fallback debt removed |
 | M5 Real GC integration | done | 100% | 2026-03-14 | 2026-03-14 | tracing GC landed with root walk + sweep stats + stress validation |
-| M6 Interpreter retirement and path convergence | todo | 0% | - | - | - |
+| M6 Interpreter retirement and path convergence | done | 100% | 2026-03-14 | 2026-03-14 | VM-only default path + legacy interpreter compile switch default OFF + fallback-dependent assertions removed |
 
 ---
 
@@ -569,18 +569,38 @@ Reference fixture: tests/scripts/migration/m5_gc_stress_mix.ms
 
 ### 11.10 M6 Progress Subsections (interpreter retirement and path convergence)
 
+Reference fixture: tests/scripts/migration/m6_vm_only_convergence.ms
+
 - `M6-01` Switch default execution mode to VM-only
-  - Status: todo
+  - Status: done
   - Done criteria: normal execution path no longer calls `ScriptInterpreter`.
+  - Evidence:
+    - `src/runtime/vm.hh` sets default source execution mode to `kVmPreferred`.
+    - `src/runtime/vm.cc` keeps interpreter dispatch behind `MAPLE_ENABLE_LEGACY_INTERPRETER` compile gate; normal build no longer executes `ScriptInterpreter`.
 - `M6-02` Remove fallback-dependent assertions from tests
-  - Status: todo
+  - Status: done
   - Done criteria: integration/conformance/diagnostics all treat VM as single path.
+  - Evidence:
+    - integration tests now validate VM-only route/contracts without legacy-fallback coupling:
+      - `tests/integration/test_language_closure.cc`
+      - `tests/integration/test_language_class.cc`
+      - `tests/integration/test_language_resolver.cc`
+      - `tests/integration/test_migration_debt.cc`
+    - `tests/unit/test_vm_compiler.cc` now expects VM-preferred as default source mode.
 - `M6-03` Final interpreter disposition (delete or debug-only)
-  - Status: todo
+  - Status: done
   - Done criteria: disposition strategy is implemented and documented consistently.
+  - Evidence:
+    - `CMakeLists.txt` adds `MAPLE_ENABLE_LEGACY_INTERPRETER` (default `OFF`) and conditionally compiles `src/runtime/script_interpreter.cc`.
+    - `maple_core` exports `MAPLE_ENABLE_LEGACY_INTERPRETER` compile definition; legacy interpreter is debug/reference-only when explicitly enabled.
 - `M6-04` Milestone final closeout
-  - Status: todo
+  - Status: done
   - Done criteria: `fallback_rate == 0` (normal mode), full verification passes.
+  - Evidence:
+    - `cmake --build build --config Debug`
+    - `ctest --test-dir build --output-on-failure -C Debug`
+    - `ctest --test-dir build --output-on-failure -C Debug -L migration_debt`
+    - migration debt suite reports `fallback_rate=0.000` under VM-only default mode.
 
 ---
 

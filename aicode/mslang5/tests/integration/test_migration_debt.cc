@@ -54,24 +54,20 @@ int RunMigrationDebtTests() {
   int fallback_cases = 0;
   for (const auto& debt_case : debt_cases) {
     const std::string source = ReadAll(repo_root + debt_case.script_path);
-    const ExecOutcome default_run =
-        RunWithMode(source, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(source, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome run = RunWithMode(source, ms::SourceExecutionMode::kVmPreferred);
 
     const std::string case_name = debt_case.name;
-    Expect(default_run.result == debt_case.expected_result,
+    Expect(run.result == debt_case.expected_result,
            case_name + " should keep expected result contract in debt suite");
-    Expect(default_run.result == legacy_run.result,
-           case_name + " should keep route-independent result while under debt tracking");
     if (std::string(debt_case.expected_error_code).empty()) {
-      Expect(default_run.error.empty(), case_name + " should not produce diagnostics");
+      Expect(run.error.empty(), case_name + " should not produce diagnostics");
     } else {
-      Expect(default_run.error.find(debt_case.expected_error_code) != std::string::npos,
+      Expect(run.error.find(debt_case.expected_error_code) != std::string::npos,
              case_name + " should expose expected diagnostic code while under debt tracking");
     }
-    Expect(default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy,
-           case_name + " should stay classified as VM fallback migration debt");
-    if (default_run.route == ms::SourceExecutionRoute::kVmCompileFailedThenLegacy) {
+    Expect(run.route == ms::SourceExecutionRoute::kVmPipeline,
+           case_name + " should execute on VM pipeline after M6 convergence");
+    if (run.route != ms::SourceExecutionRoute::kVmPipeline) {
       ++fallback_cases;
     }
   }
@@ -85,4 +81,3 @@ int RunMigrationDebtTests() {
             << std::setprecision(3) << fallback_rate << "\n";
   return 0;
 }
-

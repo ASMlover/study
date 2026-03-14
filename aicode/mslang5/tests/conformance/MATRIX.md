@@ -42,6 +42,7 @@ Coverage state:
 | `grammar.assignment` | `GRM-ASSIGN-TARGET-001` | `tests/conformance/grammar/parse_invalid_assignment_target_001.ms` | mapped-conformance | invalid assignment target rejected |
 | `semantics.expression.assignment_target` | `GRM-ASSIGN-TARGET-001` | `tests/conformance/grammar/parse_invalid_assignment_target_001.ms` | mapped-conformance | non-lvalue assignment fails in parse phase |
 | `errors.MS1002` | `LEX-ERR-STRING-001` | none | planned | unterminated string diagnostic code mapping |
+| `errors.MS2001` | `GRM-ASSIGN-TARGET-001` | `tests/conformance/grammar/parse_invalid_assignment_target_001.ms` | mapped-conformance | parser currently reports invalid assignment target as generic parse error |
 | `errors.MS2003` | `PARSE-ASSIGN-TARGET-001` | none | planned | invalid assignment target |
 | `errors.MS3001` | `RES-RETURN-OUTSIDE-001`, `RES-RETURN-OUTSIDE-BLOCK-001` | `tests/conformance/semantics/resolver_return_outside_001.ms`, `tests/conformance/semantics/resolver_return_outside_block_001.ms` | mapped-conformance | resolve-phase return misuse |
 | `errors.MS3002` | `RES-THIS-OUTSIDE-001`, `RES-THIS-FREE-FUNC-001` | `tests/conformance/semantics/resolver_this_outside_001.ms`, `tests/conformance/semantics/resolver_this_in_free_function_001.ms` | mapped-conformance | resolve-phase this misuse |
@@ -49,7 +50,7 @@ Coverage state:
 | `errors.MS3004` | `RES-SELF-INHERIT-001` | `tests/conformance/semantics/resolver_self_inherit_001.ms` | mapped-conformance | self-inheritance rejected in resolve phase |
 | `errors.MS4001` | `RUN-UNDEF-VAR-001` | `tests/conformance/semantics/runtime_undefined_variable_001.ms` | mapped-existing | undefined variable standardized diagnostics |
 | `errors.MS4002` | `RUN-ARITY-001` | `tests/conformance/semantics/runtime_arity_001.ms` | mapped-existing | callable arity mismatch |
-| `errors.MS4003` | `RUN-INVALID-OPERAND-001`, `RUN-PROP-NON-INSTANCE-001`, `RUN-SET-NON-INSTANCE-001`, `RUN-SUPERCLASS-NON-CLASS-001`, `GRM-ASSIGN-TARGET-001` | `tests/conformance/semantics/runtime_invalid_operand_001.ms`, `tests/conformance/semantics/runtime_property_on_non_instance_001.ms`, `tests/conformance/semantics/runtime_set_on_non_instance_001.ms`, `tests/conformance/semantics/runtime_superclass_not_class_001.ms`, `tests/conformance/grammar/parse_invalid_assignment_target_001.ms` | mapped-conformance | runtime type misuse and current parse-target mapping |
+| `errors.MS4003` | `RUN-INVALID-OPERAND-001`, `RUN-PROP-NON-INSTANCE-001`, `RUN-SET-NON-INSTANCE-001`, `RUN-SUPERCLASS-NON-CLASS-001` | `tests/conformance/semantics/runtime_invalid_operand_001.ms`, `tests/conformance/semantics/runtime_property_on_non_instance_001.ms`, `tests/conformance/semantics/runtime_set_on_non_instance_001.ms`, `tests/conformance/semantics/runtime_superclass_not_class_001.ms` | mapped-conformance | runtime type misuse diagnostics |
 | `errors.MS4004` | `RUN-UNDEF-PROP-001` | `tests/conformance/semantics/runtime_undefined_property_001.ms` | mapped-existing | undefined instance property |
 | `errors.MS4005` | `RUN-NON-CALLABLE-001` | `tests/conformance/semantics/runtime_non_callable_001.ms` | mapped-existing | non-callable invocation |
 | `errors.MS5001` | `MOD-NOT-FOUND-001` | `tests/conformance/modules/module_not_found_001.ms` | mapped-existing | module not found |

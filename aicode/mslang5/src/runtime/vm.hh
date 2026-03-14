@@ -124,7 +124,7 @@ class Vm {
   std::shared_ptr<Module> current_module_;
   std::string current_source_name_ = "script.ms";
   std::vector<Diagnostic> last_diagnostics_;
-  SourceExecutionMode source_mode_ = SourceExecutionMode::kVmPreferredWithLegacyFallback;
+  SourceExecutionMode source_mode_ = SourceExecutionMode::kVmPreferred;
   SourceExecutionRoute last_source_route_ = SourceExecutionRoute::kNone;
 };
 

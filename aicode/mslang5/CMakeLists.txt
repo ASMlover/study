@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(MAPLE_BUILD_TESTS "Build Maple tests" ON)
+option(MAPLE_ENABLE_LEGACY_INTERPRETER "Enable legacy ScriptInterpreter path for debug/reference" OFF)
 
 add_library(maple_core
   src/runtime/core.cc
@@ -22,13 +23,21 @@ add_library(maple_core
   src/runtime/table.cc
   src/runtime/gc.cc
   src/runtime/module.cc
-  src/runtime/script_interpreter.cc
   src/runtime/vm.cc
 )
+
+if(MAPLE_ENABLE_LEGACY_INTERPRETER)
+  target_sources(maple_core PRIVATE src/runtime/script_interpreter.cc)
+endif()
 
 target_include_directories(maple_core
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_compile_definitions(maple_core
+  PUBLIC
+    MAPLE_ENABLE_LEGACY_INTERPRETER=$<BOOL:${MAPLE_ENABLE_LEGACY_INTERPRETER}>
 )
 
 if(MSVC)

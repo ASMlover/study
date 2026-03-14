@@ -10,18 +10,23 @@
 
 #include "bytecode/opcode.hh"
 #include "frontend/compiler.hh"
+#if MAPLE_ENABLE_LEGACY_INTERPRETER
 #include "runtime/script_interpreter.hh"
+#endif
 
 namespace ms {
 
 namespace {
 
+#if MAPLE_ENABLE_LEGACY_INTERPRETER
 InterpretResult LegacyResultFromError(const std::string& error) {
   if (ScriptInterpreter::is_compile_like_error(error)) {
     return InterpretResult::kCompileError;
   }
   return InterpretResult::kRuntimeError;
 }
+
+#endif
 
 std::string RuntimeError(const std::string& code, const std::string& message) {
   return "runtime error (" + code + "): " + message;
@@ -32,6 +37,7 @@ Diagnostic ParseWithFallback(const std::string& text, const std::string& phase,
   return parse_diagnostic_text(text, phase, code, file);
 }
 
+#if MAPLE_ENABLE_LEGACY_INTERPRETER
 bool ShouldFallbackAfterCompileError(const std::vector<Diagnostic>& diagnostics) {
   if (diagnostics.empty()) {
     return false;
@@ -43,6 +49,7 @@ bool ShouldFallbackAfterCompileError(const std::vector<Diagnostic>& diagnostics)
   }
   return true;
 }
+#endif
 
 }  // namespace
 
@@ -703,6 +710,7 @@ InterpretResult Vm::execute_source_named(const std::string& source, const std::s
   last_diagnostics_.clear();
   last_source_route_ = SourceExecutionRoute::kNone;
 
+#if MAPLE_ENABLE_LEGACY_INTERPRETER
   auto execute_legacy = [&]() -> InterpretResult {
     last_source_route_ = SourceExecutionRoute::kLegacyInterpreter;
     std::string legacy_error;
@@ -721,6 +729,7 @@ InterpretResult Vm::execute_source_named(const std::string& source, const std::s
   if (source_mode_ == SourceExecutionMode::kLegacyOnly) {
     return execute_legacy();
   }
+#endif
 
   CompileResult compiled = compile_to_chunk(source);
   if (!compiled.errors.empty()) {
@@ -731,6 +740,7 @@ InterpretResult Vm::execute_source_named(const std::string& source, const std::s
     }
     set_diagnostics(diagnostics, error);
 
+#if MAPLE_ENABLE_LEGACY_INTERPRETER
     if (source_mode_ == SourceExecutionMode::kVmPreferredWithLegacyFallback &&
         ShouldFallbackAfterCompileError(diagnostics)) {
       std::string legacy_error;
@@ -746,6 +756,7 @@ InterpretResult Vm::execute_source_named(const std::string& source, const std::s
       set_single_diagnostic(ParseWithFallback(legacy_error, "runtime", "MS4003", source_name), error);
       return LegacyResultFromError(legacy_error);
     }
+#endif
 
     last_source_route_ = SourceExecutionRoute::kVmPipeline;
     return InterpretResult::kCompileError;
@@ -814,7 +825,14 @@ ModuleLoader& Vm::modules() noexcept { return modules_; }
 
 GcController& Vm::gc() noexcept { return gc_; }
 
-void Vm::set_source_execution_mode(const SourceExecutionMode mode) noexcept { source_mode_ = mode; }
+void Vm::set_source_execution_mode(const SourceExecutionMode mode) noexcept {
+#if MAPLE_ENABLE_LEGACY_INTERPRETER
+  source_mode_ = mode;
+#else
+  (void)mode;
+  source_mode_ = SourceExecutionMode::kVmPreferred;
+#endif
+}
 
 SourceExecutionMode Vm::get_source_execution_mode() const noexcept { return source_mode_; }
 

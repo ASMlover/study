@@ -40,40 +40,31 @@ ExecOutcome RunWithMode(const std::string& src, const ms::SourceExecutionMode mo
 int RunClosureIntegrationTests() {
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/closure_capture.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
     Expect(default_run.result == ms::InterpretResult::kOk, "closure_capture should execute");
     Expect(default_run.output == "11\n12\n", "closure_capture output should be 11,12");
-    Expect(default_run.output == legacy_run.output, "closure_capture output should be route independent");
-    Expect(default_run.result == legacy_run.result, "closure_capture result should be route independent");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "closure_capture should execute on VM pipeline");
   }
 
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/closure_lexical.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
     Expect(default_run.result == ms::InterpretResult::kOk, "closure_lexical should execute");
     Expect(default_run.output == "local\nglobal\n",
            "closure_lexical output should preserve lexical scope");
-    Expect(default_run.output == legacy_run.output, "closure_lexical output should be route independent");
-    Expect(default_run.result == legacy_run.result, "closure_lexical result should be route independent");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "closure_lexical should execute on VM pipeline");
   }
 
   {
     const std::string src = ReadAll(RepoRoot() + "/tests/scripts/language/closure_arity_error.ms");
-    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferredWithLegacyFallback);
-    const ExecOutcome legacy_run = RunWithMode(src, ms::SourceExecutionMode::kLegacyOnly);
+    const ExecOutcome default_run = RunWithMode(src, ms::SourceExecutionMode::kVmPreferred);
     Expect(default_run.result == ms::InterpretResult::kRuntimeError, "closure_arity_error should fail");
     Expect(default_run.error.find("MS4002") != std::string::npos,
            "arity mismatch should expose MS4002");
     Expect(default_run.error.find("expected 2 arguments but got 1") != std::string::npos,
            "arity mismatch should report actual and expected arguments");
-    Expect(default_run.error == legacy_run.error, "closure_arity_error message should be route independent");
-    Expect(default_run.result == legacy_run.result, "closure_arity_error result should be route independent");
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "closure_arity_error should execute on VM pipeline");
   }

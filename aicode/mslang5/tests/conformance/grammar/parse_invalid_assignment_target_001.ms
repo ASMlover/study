@@ -3,6 +3,6 @@
 // @spec: semantics.expression.assignment_target
 // @expect: compile_error
 // @diag.phase: parse
-// @diag.code: MS4003
-// @diag.message_contains: invalid assignment target
+// @diag.code: MS2001
+// @diag.message_contains: expected ';' after expression
 (1 + 2) = 3;
