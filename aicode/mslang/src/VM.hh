@@ -46,6 +46,9 @@ struct CallFrame {
   ObjClosure* closure{nullptr};
   u8_t* ip{nullptr};
   Value* slots{nullptr};
+  std::vector<ObjClosure*> deferred{};
+  Value pending_return{};
+  bool returning{false};
 };
 
 struct ExceptionHandler {

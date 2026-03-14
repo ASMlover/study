@@ -179,6 +179,7 @@ class Compiler {
   void return_statement() noexcept;
   void try_statement() noexcept;
   void throw_statement() noexcept;
+  void defer_statement() noexcept;
   void function(FunctionType type) noexcept;
   void method() noexcept;
   void synchronize() noexcept;
@@ -1906,6 +1907,36 @@ void Compiler::throw_statement() noexcept {
   emit_op(OpCode::OP_THROW);
 }
 
+void Compiler::defer_statement() noexcept {
+  // Wrap the deferred statement in a zero-arg closure:
+  //   defer <stmt>;  →  OP_CLOSURE <wrapper> + OP_DEFER
+  // The wrapper function contains the compiled statement + implicit return.
+
+  Compiler compiler(*ps_, FunctionType::TYPE_FUNCTION);
+  compiler.begin_scope();
+
+  // Compile the deferred statement inside the wrapper function
+  compiler.statement();
+
+  ObjFunction* wrapper = compiler.end_compiler();
+  wrapper->set_name(VM::get_instance().copy_string("<defer>", 7));
+
+  sz_t closure_index = make_constant(Value(static_cast<Object*>(wrapper)));
+  if (closure_index > 255) {
+    error("Too many constants in one chunk.");
+    return;
+  }
+  emit_op_byte(OpCode::OP_CLOSURE, static_cast<u8_t>(closure_index));
+
+  // Emit upvalue capture metadata
+  for (int i = 0; i < wrapper->upvalue_count(); i++) {
+    emit_byte(compiler.upvalues_[i].is_local ? 1 : 0);
+    emit_byte(compiler.upvalues_[i].index);
+  }
+
+  emit_op(OpCode::OP_DEFER);
+}
+
 void Compiler::synchronize() noexcept {
   ps_->panic_mode = false;
 
@@ -1922,6 +1953,7 @@ void Compiler::synchronize() noexcept {
     case TokenType::TOKEN_RETURN:
     case TokenType::TOKEN_TRY:
     case TokenType::TOKEN_THROW:
+    case TokenType::TOKEN_DEFER:
     case TokenType::TOKEN_IMPORT:
     case TokenType::TOKEN_FROM:
       return;
@@ -1951,6 +1983,8 @@ void Compiler::statement() noexcept {
     try_statement();
   } else if (match(TokenType::TOKEN_THROW)) {
     throw_statement();
+  } else if (match(TokenType::TOKEN_DEFER)) {
+    defer_statement();
   } else if (match(TokenType::TOKEN_LEFT_BRACE)) {
     begin_scope();
     block();

@@ -85,6 +85,7 @@ enum class OpCode : u8_t {
   OP_THROW,
   OP_TRY,
   OP_END_TRY,
+  OP_DEFER,
 };
 
 inline cstr_t opcode_name(OpCode code) noexcept {
@@ -143,6 +144,7 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_THROW:          return "OP_THROW";
   case OpCode::OP_TRY:            return "OP_TRY";
   case OpCode::OP_END_TRY:        return "OP_END_TRY";
+  case OpCode::OP_DEFER:          return "OP_DEFER";
   default:                        return "OP_UNKNOWN";
   }
 }

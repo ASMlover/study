@@ -512,9 +512,15 @@ void VM::mark_roots() noexcept {
     mark_value(*slot);
   }
 
-  // Mark call frames
+  // Mark call frames and their deferred closures
   for (int i = 0; i < frame_count_; i++) {
     mark_object(frames_[i].closure);
+    for (auto* deferred : frames_[i].deferred) {
+      mark_object(deferred);
+    }
+    if (frames_[i].returning) {
+      mark_value(frames_[i].pending_return);
+    }
   }
 
   // Mark open upvalues
@@ -664,6 +670,8 @@ bool VM::call(ObjClosure* closure, int arg_count) noexcept {
   frame.closure = closure;
   frame.ip = closure->function()->chunk().code_data();
   frame.slots = stack_top_ - arg_count - 1;
+  frame.deferred.clear();
+  frame.returning = false;
   return true;
 }
 
@@ -1246,6 +1254,7 @@ InterpretResult VM::run() noexcept {
     &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
     &&op_OP_FOR_ITER,
     &&op_OP_THROW,         &&op_OP_TRY,           &&op_OP_END_TRY,
+    &&op_OP_DEFER,
   };
 
 #define VM_DISPATCH() do { TRACE_INSTRUCTION(); goto *dispatch_table[READ_BYTE()]; } while (false)
@@ -1619,8 +1628,36 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
+    VM_CASE(OP_DEFER) {
+      Value closure_val = pop();
+      frame->deferred.push_back(as_closure(closure_val));
+      VM_DISPATCH();
+    }
+
     VM_CASE(OP_RETURN) {
       Value result = pop();
+
+      // If returning from a deferred call, discard its result
+      // and restore the original return value.
+      if (frame->returning) {
+        result = frame->pending_return;
+      }
+
+      // Execute deferred closures in LIFO order before returning.
+      if (!frame->deferred.empty()) {
+        ObjClosure* deferred = frame->deferred.back();
+        frame->deferred.pop_back();
+        frame->pending_return = result;
+        frame->returning = true;
+        frame->ip--;  // rewind IP to OP_RETURN for re-entry
+
+        push(Value(static_cast<Object*>(deferred)));
+        call(deferred, 0);
+        frame = &frames_[frame_count_ - 1];
+        VM_DISPATCH();
+      }
+
+      frame->returning = false;
       close_upvalues(frame->slots);
       frame_count_--;
       if (frame_count_ == 0) {
@@ -1969,9 +2006,12 @@ handle_runtime_error:
     auto handler = exception_handlers_.back();
     exception_handlers_.pop_back();
 
-    // Close upvalues for frames being unwound
+    // Close upvalues and clear deferred closures for frames being unwound
     while (frame_count_ - 1 > handler.frame_index) {
-      close_upvalues(frames_[frame_count_ - 1].slots);
+      auto& unwound = frames_[frame_count_ - 1];
+      unwound.deferred.clear();
+      unwound.returning = false;
+      close_upvalues(unwound.slots);
       frame_count_--;
     }
 

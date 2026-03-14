@@ -238,6 +238,7 @@ TokenType Scanner::identifier_type() const noexcept {
       }
     }
     break;
+  case 'd': return check_keyword(1, 4, "efer", TokenType::TOKEN_DEFER);
   case 'e': return check_keyword(1, 3, "lse", TokenType::TOKEN_ELSE);
   case 'f':
     if (current_ - start_ > 1) {
