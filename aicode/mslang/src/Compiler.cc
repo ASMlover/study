@@ -182,6 +182,7 @@ class Compiler {
   void try_statement() noexcept;
   void throw_statement() noexcept;
   void defer_statement() noexcept;
+  void switch_statement() noexcept;
   void function(FunctionType type) noexcept;
   void method() noexcept;
   void synchronize() noexcept;
@@ -338,9 +339,17 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_VAR
   { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_SWITCH
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_WHILE
   { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_CASE
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_CATCH
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_DEFAULT
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_DEFER
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_ERROR
   { nullptr,             nullptr,            Precedence::PREC_NONE },
@@ -1871,7 +1880,7 @@ void Compiler::for_in_statement(Token var_name) noexcept {
 
 void Compiler::break_statement() noexcept {
   if (current_loop_ == nullptr) {
-    error("Can't use 'break' outside of a loop.");
+    error("Can't use 'break' outside of a loop or switch.");
     return;
   }
 
@@ -2002,6 +2011,98 @@ void Compiler::defer_statement() noexcept {
   emit_op(OpCode::OP_DEFER);
 }
 
+void Compiler::switch_statement() noexcept {
+  // switch (value) { case <expr>: <body> ... default: <body> }
+  //
+  // Bytecode layout (no fall-through — each case is exclusive):
+  //   <switch expr>             → hidden local " switch" (slot N)
+  //   GET_LOCAL N, <case1 expr>, OP_EQUAL, JUMP_IF_FALSE -> case2
+  //   POP (true), <case1 body>, JUMP -> end
+  //   case2: POP (false)
+  //   GET_LOCAL N, <case2 expr>, OP_EQUAL, JUMP_IF_FALSE -> case3
+  //   ...
+  //   default: <default body>
+  //   end:
+  //   end_scope                 → pops hidden local
+
+  consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after 'switch'.");
+  expression();
+  consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after value.");
+  consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' before switch cases.");
+
+  // Store switch value as a hidden local
+  begin_scope();
+  Token switch_token{TokenType::TOKEN_IDENTIFIER, " switch", ps_->previous.line};
+  add_local(switch_token);
+  mark_initialized();
+  int switch_slot = local_count_ - 1;
+
+  // Set up break context (reuse LoopContext for break support)
+  LoopContext switch_ctx;
+  switch_ctx.enclosing = current_loop_;
+  switch_ctx.break_depth = scope_depth_;
+  current_loop_ = &switch_ctx;
+
+  std::vector<sz_t> case_ends;
+  bool had_default = false;
+
+  while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+    if (match(TokenType::TOKEN_CASE)) {
+      // Load switch value and case expression, compare
+      emit_op_byte(OpCode::OP_GET_LOCAL, static_cast<u8_t>(switch_slot));
+      expression();
+      emit_op(OpCode::OP_EQUAL);
+
+      sz_t next_case = emit_jump(OpCode::OP_JUMP_IF_FALSE);
+      emit_op(OpCode::OP_POP); // pop true
+
+      consume(TokenType::TOKEN_COLON, "Expect ':' after case value.");
+
+      // Parse case body statements
+      while (!check(TokenType::TOKEN_CASE) && !check(TokenType::TOKEN_DEFAULT) &&
+             !check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+        declaration();
+      }
+
+      case_ends.push_back(emit_jump(OpCode::OP_JUMP)); // jump to end
+
+      patch_jump(next_case);
+      emit_op(OpCode::OP_POP); // pop false
+    } else if (match(TokenType::TOKEN_DEFAULT)) {
+      if (had_default) {
+        error("Already has a default case in switch statement.");
+      }
+      had_default = true;
+
+      consume(TokenType::TOKEN_COLON, "Expect ':' after 'default'.");
+
+      // Parse default body statements
+      while (!check(TokenType::TOKEN_CASE) && !check(TokenType::TOKEN_DEFAULT) &&
+             !check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+        declaration();
+      }
+    } else {
+      error("Expect 'case' or 'default' in switch statement.");
+      advance();
+    }
+  }
+
+  // Patch all case-end jumps and break jumps to here
+  for (sz_t offset : case_ends) {
+    patch_jump(offset);
+  }
+
+  current_loop_ = switch_ctx.enclosing;
+
+  for (sz_t offset : switch_ctx.break_jumps) {
+    patch_jump(offset);
+  }
+
+  end_scope(); // pops hidden switch local
+
+  consume(TokenType::TOKEN_RIGHT_BRACE, "Expect '}' after switch body.");
+}
+
 void Compiler::synchronize() noexcept {
   ps_->panic_mode = false;
 
@@ -2019,6 +2120,7 @@ void Compiler::synchronize() noexcept {
     case TokenType::TOKEN_TRY:
     case TokenType::TOKEN_THROW:
     case TokenType::TOKEN_DEFER:
+    case TokenType::TOKEN_SWITCH:
     case TokenType::TOKEN_IMPORT:
     case TokenType::TOKEN_FROM:
       return;
@@ -2050,6 +2152,8 @@ void Compiler::statement() noexcept {
     throw_statement();
   } else if (match(TokenType::TOKEN_DEFER)) {
     defer_statement();
+  } else if (match(TokenType::TOKEN_SWITCH)) {
+    switch_statement();
   } else if (match(TokenType::TOKEN_LEFT_BRACE)) {
     begin_scope();
     block();

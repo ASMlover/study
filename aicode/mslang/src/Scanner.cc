@@ -236,13 +236,39 @@ TokenType Scanner::identifier_type() const noexcept {
   case 'c':
     if (current_ - start_ > 1) {
       switch (start_[1]) {
-      case 'a': return check_keyword(2, 3, "tch", TokenType::TOKEN_CATCH);
+      case 'a':
+        if (current_ - start_ > 2) {
+          switch (start_[2]) {
+          case 's': return check_keyword(3, 1, "e", TokenType::TOKEN_CASE);
+          case 't': return check_keyword(3, 2, "ch", TokenType::TOKEN_CATCH);
+          }
+        }
+        break;
       case 'l': return check_keyword(2, 3, "ass", TokenType::TOKEN_CLASS);
       case 'o': return check_keyword(2, 6, "ntinue", TokenType::TOKEN_CONTINUE);
       }
     }
     break;
-  case 'd': return check_keyword(1, 4, "efer", TokenType::TOKEN_DEFER);
+  case 'd':
+    if (current_ - start_ > 1) {
+      switch (start_[1]) {
+      case 'e':
+        if (current_ - start_ > 2) {
+          switch (start_[2]) {
+          case 'f':
+            if (current_ - start_ > 3) {
+              switch (start_[3]) {
+              case 'a': return check_keyword(4, 3, "ult", TokenType::TOKEN_DEFAULT);
+              case 'e': return check_keyword(4, 1, "r", TokenType::TOKEN_DEFER);
+              }
+            }
+            break;
+          }
+        }
+        break;
+      }
+    }
+    break;
   case 'e': return check_keyword(1, 3, "lse", TokenType::TOKEN_ELSE);
   case 'f':
     if (current_ - start_ > 1) {
@@ -272,6 +298,7 @@ TokenType Scanner::identifier_type() const noexcept {
       switch (start_[1]) {
       case 't': return check_keyword(2, 4, "atic", TokenType::TOKEN_STATIC);
       case 'u': return check_keyword(2, 3, "per", TokenType::TOKEN_SUPER);
+      case 'w': return check_keyword(2, 4, "itch", TokenType::TOKEN_SWITCH);
       }
     }
     break;
