@@ -284,7 +284,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 16.2 | Source maps & better stack traces | [x] |
 | **7 — Performance** | 14.3 | Inline caching for property access | [x] |
 | | 14.4 | Superinstruction fusion | [x] |
-| | 14.5 | COW strings / StringBuilder | [ ] |
+| | 14.5 | COW strings / StringBuilder | [x] |
 | **8 — Tooling** | 16.1 | REPL enhancements (multi-line/history/completion) | [ ] |
 | | 16.3 | Bytecode serialization (`.msc`) | [ ] |
 | **Backlog** | 10.7 | `switch` statement | [ ] |

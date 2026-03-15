@@ -89,8 +89,9 @@ VM::VM() noexcept {
       case ObjectType::OBJ_CLASS:        type_str = "class"; break;
       case ObjectType::OBJ_INSTANCE:     type_str = "instance"; break;
       case ObjectType::OBJ_LIST:         type_str = "list"; break;
-      case ObjectType::OBJ_MAP:          type_str = "map"; break;
-      default:                           type_str = "object"; break;
+      case ObjectType::OBJ_MAP:              type_str = "map"; break;
+      case ObjectType::OBJ_STRING_BUILDER: type_str = "stringbuilder"; break;
+      default:                              type_str = "object"; break;
       }
     }
     return Value(static_cast<Object*>(copy_string(type_str, std::strlen(type_str))));
@@ -379,6 +380,20 @@ VM::VM() noexcept {
 
     pop(); // pop the list we pushed for GC safety
     return Value(static_cast<Object*>(list));
+  });
+
+  // --- StringBuilder native ---
+
+  define_native("StringBuilder", [this](int arg_count, Value* args) -> Value {
+    ObjStringBuilder* sb = allocate<ObjStringBuilder>();
+    if (arg_count == 1) {
+      str_t s = args[0].stringify();
+      sb->append(s);
+    } else if (arg_count > 1) {
+      runtime_error("StringBuilder() takes 0 or 1 arguments.");
+      return Value();
+    }
+    return Value(static_cast<Object*>(sb));
   });
 }
 
@@ -1087,6 +1102,50 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
       return true;
     }
     runtime_error(std::format("Undefined map method '{}'.", method_name));
+    return false;
+  }
+
+  if (is_obj_type(receiver, ObjectType::OBJ_STRING_BUILDER)) {
+    ObjStringBuilder* sb = as_string_builder(receiver);
+    strv_t method_name = name->value();
+
+    if (method_name == "append") {
+      if (arg_count != 1) {
+        runtime_error("append() takes exactly 1 argument.");
+        return false;
+      }
+      str_t s = peek(0).stringify();
+      sb->append(s);
+      // Return the builder itself for chaining
+      stack_top_[-arg_count - 1] = Value(static_cast<Object*>(sb));
+      stack_top_ -= arg_count;
+      return true;
+    } else if (method_name == "build") {
+      if (arg_count != 0) {
+        runtime_error("build() takes no arguments.");
+        return false;
+      }
+      const str_t& buf = sb->buffer();
+      ObjString* result = copy_string(buf.data(), buf.length());
+      stack_top_[-1] = Value(static_cast<Object*>(result));
+      return true;
+    } else if (method_name == "len") {
+      if (arg_count != 0) {
+        runtime_error("len() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(static_cast<double>(sb->len()));
+      return true;
+    } else if (method_name == "clear") {
+      if (arg_count != 0) {
+        runtime_error("clear() takes no arguments.");
+        return false;
+      }
+      sb->clear();
+      stack_top_[-1] = Value(static_cast<Object*>(sb));
+      return true;
+    }
+    runtime_error(std::format("Undefined StringBuilder method '{}'.", method_name));
     return false;
   }
 

@@ -311,4 +311,18 @@ sz_t ObjModule::size() const noexcept {
   return sizeof(ObjModule);
 }
 
+// --- ObjStringBuilder ---
+
+ObjStringBuilder::ObjStringBuilder() noexcept
+    : Object(ObjectType::OBJ_STRING_BUILDER) {
+}
+
+str_t ObjStringBuilder::stringify() const noexcept {
+  return std::format("<StringBuilder len={}>", buffer_.size());
+}
+
+sz_t ObjStringBuilder::size() const noexcept {
+  return sizeof(ObjStringBuilder) + buffer_.capacity();
+}
+
 } // namespace ms

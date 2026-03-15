@@ -47,6 +47,7 @@ enum class ObjectType : int {
   OBJ_LIST,
   OBJ_MAP,
   OBJ_MODULE,
+  OBJ_STRING_BUILDER,
 };
 
 class Object {
@@ -314,6 +315,22 @@ public:
   const Table& exports() const noexcept { return exports_; }
 };
 
+// --- ObjStringBuilder ---
+class ObjStringBuilder final : public Object {
+  str_t buffer_;
+
+public:
+  ObjStringBuilder() noexcept;
+  str_t stringify() const noexcept override;
+  sz_t size() const noexcept override;
+
+  str_t& buffer() noexcept { return buffer_; }
+  const str_t& buffer() const noexcept { return buffer_; }
+  sz_t len() const noexcept { return buffer_.size(); }
+  void append(strv_t s) noexcept { buffer_.append(s); }
+  void clear() noexcept { buffer_.clear(); }
+};
+
 // --- Convenience helpers for Value ---
 inline ObjString* as_string(const Value& v) noexcept {
   return as_obj<ObjString>(v.as_object());
@@ -353,6 +370,10 @@ inline ObjMap* as_map(const Value& v) noexcept {
 
 inline ObjModule* as_module(const Value& v) noexcept {
   return as_obj<ObjModule>(v.as_object());
+}
+
+inline ObjStringBuilder* as_string_builder(const Value& v) noexcept {
+  return as_obj<ObjStringBuilder>(v.as_object());
 }
 
 inline strv_t as_cppstring(const Value& v) noexcept {
