@@ -113,6 +113,7 @@ class Compiler {
   void invalidate_constants() noexcept;
   bool try_fold_unary(OpCode op) noexcept;
   bool try_fold_binary(OpCode op) noexcept;
+  bool try_fuse_binary_local_local(OpCode op) noexcept;
 
   // Error reporting
   void error_at(const Token& token, strv_t message) noexcept;
@@ -448,6 +449,40 @@ bool Compiler::try_fold_binary(OpCode op) noexcept {
   }
 
   return false;
+}
+
+bool Compiler::try_fuse_binary_local_local(OpCode op) noexcept {
+  // Peephole: GET_LOCAL slot1, GET_LOCAL slot2, <binary_op>
+  //        → <BINARY>_LOCAL_LOCAL slot1, slot2
+  Chunk& chunk = current_chunk();
+  sz_t count = chunk.count();
+  if (count < 4) return false;
+
+  u8_t b3 = chunk.code_at(count - 4); // OP_GET_LOCAL (left)
+  u8_t b1 = chunk.code_at(count - 2); // OP_GET_LOCAL (right)
+  if (b3 != static_cast<u8_t>(OpCode::OP_GET_LOCAL) ||
+      b1 != static_cast<u8_t>(OpCode::OP_GET_LOCAL))
+    return false;
+
+  u8_t slot1 = chunk.code_at(count - 3);
+  u8_t slot2 = chunk.code_at(count - 1);
+
+  OpCode fused;
+  switch (op) {
+  case OpCode::OP_ADD:      fused = OpCode::OP_ADD_LOCAL_LOCAL; break;
+  case OpCode::OP_SUBTRACT: fused = OpCode::OP_SUBTRACT_LOCAL_LOCAL; break;
+  case OpCode::OP_MULTIPLY: fused = OpCode::OP_MULTIPLY_LOCAL_LOCAL; break;
+  case OpCode::OP_DIVIDE:   fused = OpCode::OP_DIVIDE_LOCAL_LOCAL; break;
+  case OpCode::OP_MODULO:   fused = OpCode::OP_MODULO_LOCAL_LOCAL; break;
+  default: return false;
+  }
+
+  // Rewrite: truncate the two GET_LOCALs, emit fused instruction
+  chunk.truncate(count - 4);
+  emit_op(fused);
+  emit_byte(slot1);
+  emit_byte(slot2);
+  return true;
 }
 
 void Compiler::error_at(const Token& token, strv_t message) noexcept {
@@ -959,7 +994,23 @@ void Compiler::binary(bool /*can_assign*/) noexcept {
   // Restore: right operand is now in last_const_, set left as prev_const_
   prev_const_ = left_const;
 
-  OpCode folded_op = OpCode::OP_RETURN; // sentinel: not foldable
+  // Map operator token to binary opcode (for foldable/fusible arithmetic ops)
+  OpCode arith_op = OpCode::OP_RETURN; // sentinel: not arithmetic
+  switch (operator_type) {
+  case TokenType::TOKEN_PLUS:    arith_op = OpCode::OP_ADD; break;
+  case TokenType::TOKEN_MINUS:   arith_op = OpCode::OP_SUBTRACT; break;
+  case TokenType::TOKEN_STAR:    arith_op = OpCode::OP_MULTIPLY; break;
+  case TokenType::TOKEN_SLASH:   arith_op = OpCode::OP_DIVIDE; break;
+  case TokenType::TOKEN_PERCENT: arith_op = OpCode::OP_MODULO; break;
+  default: break;
+  }
+
+  // Try superinstruction fusion before emitting the binary op
+  if (arith_op != OpCode::OP_RETURN && try_fuse_binary_local_local(arith_op)) {
+    invalidate_constants();
+    return;
+  }
+
   switch (operator_type) {
   case TokenType::TOKEN_BANG_EQUAL:    emit_bytes(static_cast<u8_t>(OpCode::OP_EQUAL), static_cast<u8_t>(OpCode::OP_NOT)); break;
   case TokenType::TOKEN_EQUAL_EQUAL:   emit_op(OpCode::OP_EQUAL); break;
@@ -967,16 +1018,16 @@ void Compiler::binary(bool /*can_assign*/) noexcept {
   case TokenType::TOKEN_GREATER_EQUAL: emit_bytes(static_cast<u8_t>(OpCode::OP_LESS), static_cast<u8_t>(OpCode::OP_NOT)); break;
   case TokenType::TOKEN_LESS:          emit_op(OpCode::OP_LESS); break;
   case TokenType::TOKEN_LESS_EQUAL:    emit_bytes(static_cast<u8_t>(OpCode::OP_GREATER), static_cast<u8_t>(OpCode::OP_NOT)); break;
-  case TokenType::TOKEN_PLUS:          emit_op(OpCode::OP_ADD);      folded_op = OpCode::OP_ADD; break;
-  case TokenType::TOKEN_MINUS:         emit_op(OpCode::OP_SUBTRACT); folded_op = OpCode::OP_SUBTRACT; break;
-  case TokenType::TOKEN_STAR:          emit_op(OpCode::OP_MULTIPLY); folded_op = OpCode::OP_MULTIPLY; break;
-  case TokenType::TOKEN_SLASH:         emit_op(OpCode::OP_DIVIDE);   folded_op = OpCode::OP_DIVIDE; break;
-  case TokenType::TOKEN_PERCENT:       emit_op(OpCode::OP_MODULO);   folded_op = OpCode::OP_MODULO; break;
+  case TokenType::TOKEN_PLUS:          emit_op(OpCode::OP_ADD); break;
+  case TokenType::TOKEN_MINUS:         emit_op(OpCode::OP_SUBTRACT); break;
+  case TokenType::TOKEN_STAR:          emit_op(OpCode::OP_MULTIPLY); break;
+  case TokenType::TOKEN_SLASH:         emit_op(OpCode::OP_DIVIDE); break;
+  case TokenType::TOKEN_PERCENT:       emit_op(OpCode::OP_MODULO); break;
   default: return;
   }
 
-  if (folded_op != OpCode::OP_RETURN) {
-    if (!try_fold_binary(folded_op)) {
+  if (arith_op != OpCode::OP_RETURN) {
+    if (!try_fold_binary(arith_op)) {
       invalidate_constants();
     }
   } else {

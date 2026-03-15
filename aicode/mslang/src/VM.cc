@@ -1296,6 +1296,9 @@ InterpretResult VM::run() noexcept {
     &&op_OP_FOR_ITER,
     &&op_OP_THROW,         &&op_OP_TRY,           &&op_OP_END_TRY,
     &&op_OP_DEFER,
+    &&op_OP_ADD_LOCAL_LOCAL,      &&op_OP_SUBTRACT_LOCAL_LOCAL,
+    &&op_OP_MULTIPLY_LOCAL_LOCAL, &&op_OP_DIVIDE_LOCAL_LOCAL,
+    &&op_OP_MODULO_LOCAL_LOCAL,
   };
 
 #define VM_DISPATCH() do { TRACE_INSTRUCTION(); goto *dispatch_table[READ_BYTE()]; } while (false)
@@ -2150,6 +2153,77 @@ dispatch_loop:
 
     VM_CASE(OP_END_TRY) {
       exception_handlers_.pop_back();
+      VM_DISPATCH();
+    }
+
+    // Superinstructions: fused GET_LOCAL+GET_LOCAL+binary_op
+    VM_CASE(OP_ADD_LOCAL_LOCAL) {
+      u8_t slot1 = READ_BYTE();
+      u8_t slot2 = READ_BYTE();
+      Value a = frame->slots[slot1];
+      Value b = frame->slots[slot2];
+      if (a.is_number() && b.is_number()) {
+        push(Value(a.as_number() + b.as_number()));
+      } else if (is_obj_type(a, ObjectType::OBJ_STRING) &&
+                 is_obj_type(b, ObjectType::OBJ_STRING)) {
+        push(a); push(b);
+        concatenate();
+      } else {
+        runtime_error("Operands must be two numbers or two strings.");
+        goto handle_runtime_error;
+      }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_SUBTRACT_LOCAL_LOCAL) {
+      u8_t slot1 = READ_BYTE();
+      u8_t slot2 = READ_BYTE();
+      Value a = frame->slots[slot1];
+      Value b = frame->slots[slot2];
+      if (!a.is_number() || !b.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      push(Value(a.as_number() - b.as_number()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_MULTIPLY_LOCAL_LOCAL) {
+      u8_t slot1 = READ_BYTE();
+      u8_t slot2 = READ_BYTE();
+      Value a = frame->slots[slot1];
+      Value b = frame->slots[slot2];
+      if (!a.is_number() || !b.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      push(Value(a.as_number() * b.as_number()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_DIVIDE_LOCAL_LOCAL) {
+      u8_t slot1 = READ_BYTE();
+      u8_t slot2 = READ_BYTE();
+      Value a = frame->slots[slot1];
+      Value b = frame->slots[slot2];
+      if (!a.is_number() || !b.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      push(Value(a.as_number() / b.as_number()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_MODULO_LOCAL_LOCAL) {
+      u8_t slot1 = READ_BYTE();
+      u8_t slot2 = READ_BYTE();
+      Value a = frame->slots[slot1];
+      Value b = frame->slots[slot2];
+      if (!a.is_number() || !b.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      push(Value(std::fmod(a.as_number(), b.as_number())));
       VM_DISPATCH();
     }
 

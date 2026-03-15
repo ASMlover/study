@@ -46,6 +46,13 @@ static sz_t byte_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexc
   return offset + 2;
 }
 
+static sz_t two_byte_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
+  u8_t slot1 = chunk.code_at(offset + 1);
+  u8_t slot2 = chunk.code_at(offset + 2);
+  std::cout << std::format("{:<24s} {:4d} {:4d}\n", name, slot1, slot2);
+  return offset + 3;
+}
+
 static sz_t constant_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
   u8_t index = chunk.code_at(offset + 1);
   std::cout << std::format("{:<16s} {:4d} '{}'\n",
@@ -224,6 +231,14 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
         "OP_FOR_ITER", slot, offset + 4 + jump);
     return offset + 4;
   }
+
+  // Superinstructions (2 byte operands = slot1, slot2)
+  case OpCode::OP_ADD_LOCAL_LOCAL:
+  case OpCode::OP_SUBTRACT_LOCAL_LOCAL:
+  case OpCode::OP_MULTIPLY_LOCAL_LOCAL:
+  case OpCode::OP_DIVIDE_LOCAL_LOCAL:
+  case OpCode::OP_MODULO_LOCAL_LOCAL:
+    return two_byte_instruction(opcode_name(op), chunk, offset);
 
   default:
     std::cout << std::format("Unknown opcode {}\n", byte);
