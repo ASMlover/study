@@ -151,6 +151,7 @@ public:
 
   InterpretResult interpret(strv_t source) noexcept;
   InterpretResult interpret(strv_t source, strv_t script_path) noexcept;
+  InterpretResult interpret_bytecode(ObjFunction* function) noexcept;
 
   // Object allocation (accessible from Compiler)
   ObjString* copy_string(cstr_t chars, sz_t length) noexcept;

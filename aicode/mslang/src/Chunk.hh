@@ -33,14 +33,14 @@
 
 namespace ms {
 
-class Chunk {
-  struct SourceRun {
-    int line;
-    int column;
-    int token_length;
-    int count;
-  };
+struct SourceRun {
+  int line;
+  int column;
+  int token_length;
+  int count;
+};
 
+class Chunk {
   std::vector<u8_t> code_;
   std::vector<Value> constants_;
   std::vector<SourceRun> lines_;
@@ -74,6 +74,15 @@ public:
 
   // Constants access
   const std::vector<Value>& constants() const noexcept;
+  std::vector<Value>& constants() noexcept;
+
+  // Lines access (for serialization)
+  const std::vector<SourceRun>& lines() const noexcept;
+  std::vector<SourceRun>& lines() noexcept;
+
+  // Direct code access (for deserialization)
+  std::vector<u8_t>& code() noexcept;
+  const std::vector<u8_t>& code() const noexcept;
 };
 
 } // namespace ms

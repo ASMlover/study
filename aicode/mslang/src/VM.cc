@@ -1288,6 +1288,18 @@ InterpretResult VM::interpret(strv_t source, strv_t script_path) noexcept {
   return run();
 }
 
+InterpretResult VM::interpret_bytecode(ObjFunction* function) noexcept {
+  current_script_path_ = function->script_path();
+
+  push(Value(static_cast<Object*>(function)));
+  ObjClosure* closure = allocate<ObjClosure>(function);
+  pop();
+  push(Value(static_cast<Object*>(closure)));
+  call(closure, 0);
+
+  return run();
+}
+
 InterpretResult VM::run() noexcept {
   CallFrame* frame = &frames_[frame_count_ - 1];
 

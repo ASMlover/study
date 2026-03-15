@@ -29,6 +29,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "Compiler.hh"
+#include "Serializer.hh"
 #include "VM.hh"
 
 static constexpr ms::sz_t kHISTORY_MAX = 1000;
@@ -181,17 +183,57 @@ static void repl() noexcept {
 }
 
 static void run_file(const ms::str_t& path) noexcept {
+  auto& vm = ms::VM::get_instance();
+
+  if (ms::is_msc_file(path)) {
+    // Execute precompiled bytecode
+    ms::ObjFunction* fn = ms::deserialize(path);
+    if (fn == nullptr) std::exit(65);
+
+    ms::InterpretResult result = vm.interpret_bytecode(fn);
+    if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);
+    return;
+  }
+
   auto source_opt = ms::ModuleLoader::read_source(path);
   if (!source_opt.has_value()) {
     std::cerr << "Could not open file \"" << path << "\"." << std::endl;
     std::exit(74);
   }
 
-  auto& vm = ms::VM::get_instance();
   ms::InterpretResult result = vm.interpret(*source_opt, path);
 
   if (result == ms::InterpretResult::INTERPRET_COMPILE_ERROR) std::exit(65);
   if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);
+}
+
+static void compile_file(const ms::str_t& path) noexcept {
+  auto source_opt = ms::ModuleLoader::read_source(path);
+  if (!source_opt.has_value()) {
+    std::cerr << "Could not open file \"" << path << "\"." << std::endl;
+    std::exit(74);
+  }
+
+  ms::ObjFunction* fn = ms::compile(*source_opt, path);
+  if (fn == nullptr) {
+    std::cerr << "Compilation failed." << std::endl;
+    std::exit(65);
+  }
+
+  // Replace .ms extension with .msc (or append .msc)
+  ms::str_t out_path = path;
+  if (out_path.size() >= 3 && out_path.substr(out_path.size() - 3) == ".ms") {
+    out_path += "c";
+  } else {
+    out_path += ".msc";
+  }
+
+  if (!ms::serialize(fn, out_path)) {
+    std::cerr << "Failed to write bytecode to \"" << out_path << "\"." << std::endl;
+    std::exit(74);
+  }
+
+  std::cout << "Compiled: " << path << " -> " << out_path << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -199,8 +241,11 @@ int main(int argc, char* argv[]) {
     repl();
   } else if (argc == 2) {
     run_file(argv[1]);
+  } else if (argc == 3 && ms::str_t(argv[1]) == "--compile") {
+    compile_file(argv[2]);
   } else {
-    std::cerr << "Usage: mslang [script]" << std::endl;
+    std::cerr << "Usage: mslang [script]\n"
+              << "       mslang --compile <script.ms>" << std::endl;
     std::exit(64);
   }
 

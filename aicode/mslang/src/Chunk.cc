@@ -122,4 +122,24 @@ const std::vector<Value>& Chunk::constants() const noexcept {
   return constants_;
 }
 
+std::vector<Value>& Chunk::constants() noexcept {
+  return constants_;
+}
+
+const std::vector<SourceRun>& Chunk::lines() const noexcept {
+  return lines_;
+}
+
+std::vector<SourceRun>& Chunk::lines() noexcept {
+  return lines_;
+}
+
+std::vector<u8_t>& Chunk::code() noexcept {
+  return code_;
+}
+
+const std::vector<u8_t>& Chunk::code() const noexcept {
+  return code_;
+}
+
 } // namespace ms

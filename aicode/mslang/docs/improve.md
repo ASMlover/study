@@ -286,7 +286,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 14.4 | Superinstruction fusion | [x] |
 | | 14.5 | COW strings / StringBuilder | [x] |
 | **8 — Tooling** | 16.1 | REPL enhancements (multi-line/history/completion) | [x] |
-| | 16.3 | Bytecode serialization (`.msc`) | [ ] |
+| | 16.3 | Bytecode serialization (`.msc`) | [x] |
 | **Backlog** | 10.7 | `switch` statement | [ ] |
 | | 11.1 | Integer type + bitwise operators | [ ] |
 | | 11.4 | Tuple type + destructuring | [ ] |
