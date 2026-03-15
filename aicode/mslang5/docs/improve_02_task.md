@@ -1,4 +1,4 @@
-# Maple Task Breakdown for `impove_02` (Executable/Build/Test Atomic Mode)
+﻿# Maple Task Breakdown for `impove_02` (Executable/Build/Test Atomic Mode)
 
 Status: Proposal
 Date: 2026-03-15
@@ -48,7 +48,7 @@ Script execution template:
 | T01 | VM-only | Remove legacy interpreter build switch from CMake | Full build | unit + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex | 2026-03-15: removed `MAPLE_ENABLE_LEGACY_INTERPRETER` option/definitions from `CMakeLists.txt`; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest -R maple_tests_unit` passed; `ctest -R maple_tests_migration_debt` passed; `build\\Debug\\maple_cli.exe tests/scripts/migration/m6_vm_only_convergence.ms` => stdout `12` `34`. |
 | T02 | VM-only | Remove legacy interpreter source files and runtime hooks | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex | 2026-03-15: removed legacy fallback branches from `src/runtime/vm.cc`; deleted `src/runtime/script_interpreter.hh/.cc`; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest -R maple_tests_unit` passed; `ctest -R maple_tests_integration` passed; `ctest -R maple_tests_migration_debt` passed; `build\\Debug\\maple_cli.exe tests/scripts/migration/m6_vm_only_convergence.ms` => stdout `12` `34`. |
 | T03 | VM-only | Simplify source mode/route enums and update tests | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex | 2026-03-15: removed `SourceExecutionMode` and legacy route variants from `src/runtime/vm.hh/.cc`; updated integration/unit tests to VM-only execution contract; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest -R maple_tests_unit` passed; `ctest -R maple_tests_integration` passed; `ctest -R maple_tests_migration_debt` passed; `build\\Debug\\maple_cli.exe tests\\scripts\\migration\\m6_vm_only_convergence.ms` => stdout `12` `34`. |
-| T04 | GC | Introduce VM-owned object header and allocation list scaffolding | Full build | unit + integration | `tests/scripts/migration/m5_gc_stress_mix.ms` | todo | - | - |
+| T04 | GC | Introduce VM-owned object header and allocation list scaffolding | Full build | unit + integration | `tests/scripts/migration/m5_gc_stress_mix.ms` | done | Codex | 2026-03-16: added `GcObjectHeader` to `RuntimeObject` and object-chain tracking in `GcController`; VM now registers objects via `register_object` and marks via `mark_object`; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_unit` passed; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_integration` passed; `build\\Debug\\maple_cli.exe tests\\scripts\\migration\\m5_gc_stress_mix.ms` => stdout `785`. |
 | T05 | GC | Replace shared ownership paths for closure/class/instance core objects | Full build | integration + conformance | `tests/scripts/language/closure_capture.ms`, `tests/scripts/language/class_super_chain.ms` | todo | - | - |
 | T06 | GC | Complete root tracing and raw sweep reclamation | Full build | integration + diagnostics | `tests/scripts/migration/m5_gc_stress_mix.ms`, `tests/scripts/module/import_cache_and_alias.ms` | todo | - | - |
 | T07 | GC | Add GC stress assertions and observability checks | Full build | integration (`test_gc.cc`) + unit (`test_vm_compiler.cc`) | `tests/scripts/migration/m5_gc_stress_mix.ms` | todo | - | - |
@@ -212,3 +212,4 @@ Per-task fixed template:
 2. Any `done` task must include reproducible evidence in the table.
 3. Any `blocked` task must include blocker + unblock condition.
 4. T14 cannot be `done` before all preceding tasks are `done`.
+

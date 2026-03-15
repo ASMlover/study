@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstdint>
 #include <iosfwd>
@@ -84,6 +84,7 @@ class Vm {
   void write_upvalue(const std::shared_ptr<UpvalueObject>& upvalue, Value value);
 
   void maybe_collect_garbage();
+  void prune_untracked_owned_objects();
   void register_object_allocation(const std::shared_ptr<RuntimeObject>& object);
   void register_module_allocation(const std::shared_ptr<Module>& module);
   std::size_t estimate_object_bytes(const std::shared_ptr<RuntimeObject>& object) const;
@@ -106,6 +107,7 @@ class Vm {
   std::vector<Value> stack_;
   std::vector<std::shared_ptr<UpvalueObject>> open_upvalues_;
   std::vector<std::shared_ptr<ClosureObject>> gc_frame_roots_;
+  std::vector<std::shared_ptr<RuntimeObject>> gc_owned_objects_;
   Table globals_;
   std::ostream* out_;
   ModuleLoader modules_;
@@ -117,3 +119,4 @@ class Vm {
 };
 
 }  // namespace ms
+

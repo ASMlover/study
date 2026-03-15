@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -12,10 +12,28 @@
 
 namespace ms {
 
+class RuntimeObject;
+
+struct GcObjectHeader {
+  RuntimeObject* next = nullptr;
+  std::size_t bytes = 0;
+  bool marked = false;
+  bool tracked = false;
+};
+
 class RuntimeObject {
  public:
   virtual ~RuntimeObject() = default;
   virtual std::string to_string() const = 0;
+
+  inline GcObjectHeader& gc_header() noexcept { return gc_header_; }
+  inline const GcObjectHeader& gc_header() const noexcept { return gc_header_; }
+
+ protected:
+  RuntimeObject() = default;
+
+ private:
+  GcObjectHeader gc_header_{};
 };
 
 struct StringObject : public RuntimeObject {
@@ -103,4 +121,3 @@ inline std::shared_ptr<StringObject> make_string_object(const std::string& value
 }
 
 }  // namespace ms
-

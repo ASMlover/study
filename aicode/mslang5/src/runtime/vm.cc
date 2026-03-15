@@ -1,4 +1,4 @@
-#include "runtime/vm.hh"
+﻿#include "runtime/vm.hh"
 
 #include <algorithm>
 #include <cmath>
@@ -1118,13 +1118,24 @@ void Vm::maybe_collect_garbage() {
     return;
   }
   gc_.collect([this](GcController& gc) { trace_gc_roots(gc); });
+  prune_untracked_owned_objects();
+}
+
+void Vm::prune_untracked_owned_objects() {
+  gc_owned_objects_.erase(
+      std::remove_if(gc_owned_objects_.begin(), gc_owned_objects_.end(),
+                     [](const std::shared_ptr<RuntimeObject>& object) {
+                       return object == nullptr || !object->gc_header().tracked;
+                     }),
+      gc_owned_objects_.end());
 }
 
 void Vm::register_object_allocation(const std::shared_ptr<RuntimeObject>& object) {
   if (object == nullptr) {
     return;
   }
-  gc_.register_allocation(object.get(), estimate_object_bytes(object));
+  gc_owned_objects_.push_back(object);
+  gc_.register_object(object.get(), estimate_object_bytes(object));
   maybe_collect_garbage();
 }
 
@@ -1262,7 +1273,7 @@ void Vm::trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcControl
   if (seen_objects != nullptr && !seen_objects->insert(key).second) {
     return;
   }
-  gc.mark_allocation(key);
+  gc.mark_object(object.get());
 
   if (const auto closure_obj = std::dynamic_pointer_cast<ClosureObject>(object);
       closure_obj != nullptr) {
@@ -1295,3 +1306,5 @@ void Vm::trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcControl
   }
 }
 }  // namespace ms
+
+
