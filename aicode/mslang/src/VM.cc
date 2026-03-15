@@ -1390,6 +1390,7 @@ dispatch_loop:
       if (is_obj_type(peek(0), ObjectType::OBJ_MODULE)) {
         ObjModule* module = as_module(peek(0));
         ObjString* name = READ_STRING();
+        READ_BYTE(); // skip IC slot (not used for modules)
         Value export_val;
         if (module->exports().get(name, &export_val)) {
           pop(); // Module
@@ -1403,6 +1404,7 @@ dispatch_loop:
       if (is_obj_type(peek(0), ObjectType::OBJ_CLASS)) {
         ObjClass* klass = as_class(peek(0));
         ObjString* name = READ_STRING();
+        READ_BYTE(); // skip IC slot (not used for class statics)
         Value method;
         if (klass->static_methods().get(name, &method)) {
           pop(); // Class
@@ -1414,65 +1416,140 @@ dispatch_loop:
       }
 
       if (!is_obj_type(peek(0), ObjectType::OBJ_INSTANCE)) {
+        READ_STRING(); // consume name operand
+        READ_BYTE();   // consume IC slot
         runtime_error("Only instances have properties.");
         goto handle_runtime_error;
       }
 
-      ObjInstance* instance = as_instance(peek(0));
-      ObjString* name = READ_STRING();
+      {
+        ObjInstance* instance = as_instance(peek(0));
+        ObjString* name = READ_STRING();
+        u8_t ic_slot = READ_BYTE();
+        ObjClass* klass = instance->klass();
+        InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-      Value field_val;
-      if (instance->fields().get(name, &field_val)) {
-        pop(); // Instance
-        push(field_val);
-        VM_DISPATCH();
-      }
-
-      // Check for getter
-      Value getter;
-      if (instance->klass()->getters().get(name, &getter)) {
-        // Call the getter with the instance as receiver (0 args)
-        if (!call(as_closure(getter), 0)) {
-          goto handle_runtime_error;
+        // IC fast path: class matches cached class
+        if (ic.klass == klass) {
+          if (ic.kind == ICKind::IC_FIELD) {
+            // Fields can't be cached, but we know to skip getter/method lookups
+            Value field_val;
+            if (instance->fields().get(name, &field_val)) {
+              pop();
+              push(field_val);
+              VM_DISPATCH();
+            }
+            // Field was removed — fall through to full lookup + update IC
+          } else if (ic.kind == ICKind::IC_METHOD) {
+            // Cached method — skip methods table lookup
+            ObjBoundMethod* bound = allocate<ObjBoundMethod>(peek(0), as_closure(ic.cached));
+            pop();
+            push(Value(static_cast<Object*>(bound)));
+            VM_DISPATCH();
+          } else if (ic.kind == ICKind::IC_GETTER) {
+            // Cached getter — skip getters table lookup
+            if (!call(as_closure(ic.cached), 0)) {
+              goto handle_runtime_error;
+            }
+            frame = &frames_[frame_count_ - 1];
+            VM_DISPATCH();
+          }
         }
-        frame = &frames_[frame_count_ - 1];
-        VM_DISPATCH();
-      }
 
-      bind_method(instance->klass(), name);
-      VM_DISPATCH();
+        // IC miss — full lookup + update cache
+        Value field_val;
+        if (instance->fields().get(name, &field_val)) {
+          ic.klass = klass;
+          ic.kind = ICKind::IC_FIELD;
+          ic.cached = Value();
+          pop();
+          push(field_val);
+          VM_DISPATCH();
+        }
+
+        Value getter;
+        if (klass->getters().get(name, &getter)) {
+          ic.klass = klass;
+          ic.kind = ICKind::IC_GETTER;
+          ic.cached = getter;
+          if (!call(as_closure(getter), 0)) {
+            goto handle_runtime_error;
+          }
+          frame = &frames_[frame_count_ - 1];
+          VM_DISPATCH();
+        }
+
+        Value method;
+        if (klass->methods().get(name, &method)) {
+          ic.klass = klass;
+          ic.kind = ICKind::IC_METHOD;
+          ic.cached = method;
+          ObjBoundMethod* bound = allocate<ObjBoundMethod>(peek(0), as_closure(method));
+          pop();
+          push(Value(static_cast<Object*>(bound)));
+          VM_DISPATCH();
+        }
+
+        runtime_error(std::format("Undefined property '{}'.", name->value()));
+        goto handle_runtime_error;
+      }
     }
 
     VM_CASE(OP_SET_PROPERTY) {
       if (!is_obj_type(peek(1), ObjectType::OBJ_INSTANCE)) {
+        READ_STRING(); // consume name operand
+        READ_BYTE();   // consume IC slot
         runtime_error("Only instances have fields.");
         goto handle_runtime_error;
       }
 
-      ObjInstance* instance = as_instance(peek(1));
-      ObjString* name = READ_STRING();
+      {
+        ObjInstance* instance = as_instance(peek(1));
+        ObjString* name = READ_STRING();
+        u8_t ic_slot = READ_BYTE();
+        ObjClass* klass = instance->klass();
+        InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-      // Check for setter
-      Value setter_val;
-      if (instance->klass()->setters().get(name, &setter_val)) {
-        // Stack: [..., instance, value]
-        // Rearrange: instance as receiver (slot 0), value as arg
-        Value assigned = peek(0);
-        Value recv = peek(1);
-        // Overwrite: [recv, value] → keep as-is for call(setter, 1)
-        // instance is already at stack_top_[-2], value at stack_top_[-1]
-        if (!call(as_closure(setter_val), 1)) {
-          goto handle_runtime_error;
+        // IC fast path: class matches
+        if (ic.klass == klass) {
+          if (ic.kind == ICKind::IC_SETTER) {
+            if (!call(as_closure(ic.cached), 1)) {
+              goto handle_runtime_error;
+            }
+            frame = &frames_[frame_count_ - 1];
+            VM_DISPATCH();
+          }
+          if (ic.kind == ICKind::IC_FIELD) {
+            instance->fields().set(name, peek(0));
+            Value value = pop();
+            pop();
+            push(value);
+            VM_DISPATCH();
+          }
         }
-        frame = &frames_[frame_count_ - 1];
+
+        // IC miss — full lookup + update cache
+        Value setter_val;
+        if (klass->setters().get(name, &setter_val)) {
+          ic.klass = klass;
+          ic.kind = ICKind::IC_SETTER;
+          ic.cached = setter_val;
+          if (!call(as_closure(setter_val), 1)) {
+            goto handle_runtime_error;
+          }
+          frame = &frames_[frame_count_ - 1];
+          VM_DISPATCH();
+        }
+
+        ic.klass = klass;
+        ic.kind = ICKind::IC_FIELD;
+        ic.cached = Value();
+        instance->fields().set(name, peek(0));
+        Value value = pop();
+        pop();
+        push(value);
         VM_DISPATCH();
       }
-
-      instance->fields().set(name, peek(0));
-      Value value = pop();
-      pop();
-      push(value);
-      VM_DISPATCH();
     }
 
     VM_CASE(OP_GET_SUPER) {
@@ -1626,9 +1703,48 @@ dispatch_loop:
     }
 
     VM_CASE(OP_INVOKE) {
-      ObjString* method = READ_STRING();
+      ObjString* method_name = READ_STRING();
       int arg_count = READ_BYTE();
-      if (!invoke(method, arg_count)) {
+      u8_t ic_slot = READ_BYTE();
+      Value receiver = peek(arg_count);
+
+      // IC fast path: monomorphic instance method dispatch
+      if (is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
+        ObjInstance* instance = as_instance(receiver);
+        ObjClass* klass = instance->klass();
+        InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
+
+        if (ic.klass == klass && ic.kind == ICKind::IC_METHOD) {
+          // Must still check field shadowing
+          Value field_val;
+          if (!instance->fields().get(method_name, &field_val)) {
+            // No field shadow — use cached method directly
+            if (!call(as_closure(ic.cached), arg_count)) {
+              goto handle_runtime_error;
+            }
+            frame = &frames_[frame_count_ - 1];
+            VM_DISPATCH();
+          }
+          // Field shadows method — fall through to full invoke
+        }
+
+        // IC miss for instances — try direct method lookup before full invoke
+        if (!invoke(method_name, arg_count)) {
+          goto handle_runtime_error;
+        }
+        // Update IC for instance method calls (only if it was a method, not a field)
+        Value method_val;
+        if (klass->methods().get(method_name, &method_val)) {
+          ic.klass = klass;
+          ic.kind = ICKind::IC_METHOD;
+          ic.cached = method_val;
+        }
+        frame = &frames_[frame_count_ - 1];
+        VM_DISPATCH();
+      }
+
+      // Non-instance receiver — no IC, full invoke path
+      if (!invoke(method_name, arg_count)) {
         goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];

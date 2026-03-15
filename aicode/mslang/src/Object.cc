@@ -74,6 +74,11 @@ void ObjFunction::trace_references() noexcept {
     // We need a non-const reference for marking
     mark_value(const_cast<Value&>(constant));
   }
+  // Mark inline cache entries (class pointers + cached closures)
+  for (auto& ic : ic_) {
+    mark_object(ic.klass);
+    mark_value(ic.cached);
+  }
 }
 
 sz_t ObjFunction::size() const noexcept {

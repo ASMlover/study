@@ -131,6 +131,7 @@ class Compiler {
   void emit_bytes(u8_t byte1, u8_t byte2) noexcept;
   void emit_op(OpCode op) noexcept;
   void emit_op_byte(OpCode op, u8_t byte) noexcept;
+  u8_t emit_ic_slot() noexcept;
   void emit_return() noexcept;
   void emit_constant(Value value) noexcept;
   sz_t emit_jump(OpCode op) noexcept;
@@ -523,6 +524,12 @@ void Compiler::emit_op(OpCode op) noexcept {
 void Compiler::emit_op_byte(OpCode op, u8_t byte) noexcept {
   emit_op(op);
   emit_byte(byte);
+}
+
+u8_t Compiler::emit_ic_slot() noexcept {
+  auto slot = static_cast<u8_t>(function_->add_ic());
+  emit_byte(slot);
+  return slot;
 }
 
 void Compiler::emit_return() noexcept {
@@ -1057,12 +1064,15 @@ void Compiler::dot(bool can_assign) noexcept {
   if (can_assign && match(TokenType::TOKEN_EQUAL)) {
     expression();
     emit_op_byte(OpCode::OP_SET_PROPERTY, name);
+    emit_ic_slot();
   } else if (match(TokenType::TOKEN_LEFT_PAREN)) {
     u8_t arg_count = argument_list();
     emit_bytes(static_cast<u8_t>(OpCode::OP_INVOKE), name);
     emit_byte(arg_count);
+    emit_ic_slot();
   } else {
     emit_op_byte(OpCode::OP_GET_PROPERTY, name);
+    emit_ic_slot();
   }
   invalidate_constants();
 }
@@ -1290,6 +1300,7 @@ void Compiler::list_comprehension_() noexcept {
     u8_t push_name = identifier_constant(Token{TokenType::TOKEN_IDENTIFIER, "push", ps_->previous.line});
     emit_bytes(static_cast<u8_t>(OpCode::OP_INVOKE), push_name);
     emit_byte(1);
+    emit_ic_slot();
     emit_op(OpCode::OP_POP); // discard nil
 
     sz_t end_jump = emit_jump(OpCode::OP_JUMP);
@@ -1308,6 +1319,7 @@ void Compiler::list_comprehension_() noexcept {
     u8_t push_name = identifier_constant(Token{TokenType::TOKEN_IDENTIFIER, "push", ps_->previous.line});
     emit_bytes(static_cast<u8_t>(OpCode::OP_INVOKE), push_name);
     emit_byte(1);
+    emit_ic_slot();
     emit_op(OpCode::OP_POP); // discard nil
   }
 

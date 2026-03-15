@@ -99,6 +99,23 @@ public:
   static u32_t hash_string(cstr_t chars, sz_t length) noexcept;
 };
 
+// --- Inline Cache ---
+class ObjClass;
+
+enum class ICKind : u8_t {
+  IC_NONE,    // Empty cache
+  IC_FIELD,   // Property is a field (skip getter/method lookups)
+  IC_METHOD,  // Cached method closure
+  IC_GETTER,  // Cached getter closure
+  IC_SETTER,  // Cached setter closure
+};
+
+struct InlineCache {
+  ObjClass* klass{nullptr};   // Cached class pointer (null = miss)
+  ICKind kind{ICKind::IC_NONE};
+  Value cached{};             // Cached closure value
+};
+
 // --- ObjFunction ---
 class ObjFunction final : public Object {
   int arity_{0};
@@ -106,6 +123,7 @@ class ObjFunction final : public Object {
   Chunk chunk_;
   ObjString* name_{nullptr};
   str_t script_path_;
+  std::vector<InlineCache> ic_;
 
 public:
   ObjFunction() noexcept;
@@ -124,6 +142,11 @@ public:
   void set_name(ObjString* name) noexcept { name_ = name; }
   const str_t& script_path() const noexcept { return script_path_; }
   void set_script_path(strv_t path) noexcept { script_path_ = str_t(path); }
+
+  // Inline cache support
+  sz_t add_ic() noexcept { ic_.emplace_back(); return ic_.size() - 1; }
+  InlineCache& ic_at(sz_t index) noexcept { return ic_[index]; }
+  sz_t ic_count() const noexcept { return ic_.size(); }
 };
 
 // --- ObjNative ---

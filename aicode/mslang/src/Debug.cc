@@ -63,12 +63,21 @@ static sz_t jump_instruction(cstr_t name, int sign, const Chunk& chunk, sz_t off
   return offset + 3;
 }
 
+static sz_t property_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
+  u8_t index = chunk.code_at(offset + 1);
+  u8_t ic_slot = chunk.code_at(offset + 2);
+  std::cout << std::format("{:<16s} {:4d} '{}' [ic:{}]\n",
+      name, index, chunk.constant_at(index).stringify(), ic_slot);
+  return offset + 3;
+}
+
 static sz_t invoke_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
   u8_t index = chunk.code_at(offset + 1);
   u8_t arg_count = chunk.code_at(offset + 2);
-  std::cout << std::format("{:<16s} ({} args) {:4d} '{}'\n",
-      name, arg_count, index, chunk.constant_at(index).stringify());
-  return offset + 3;
+  u8_t ic_slot = chunk.code_at(offset + 3);
+  std::cout << std::format("{:<16s} ({} args) {:4d} '{}' [ic:{}]\n",
+      name, arg_count, index, chunk.constant_at(index).stringify(), ic_slot);
+  return offset + 4;
 }
 
 static sz_t constant_long_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
@@ -168,13 +177,16 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_CONSTANT_LONG:
     return constant_long_instruction(opcode_name(op), chunk, offset);
 
+  // Property instructions (1 byte constant index + 1 byte IC slot)
+  case OpCode::OP_GET_PROPERTY:
+  case OpCode::OP_SET_PROPERTY:
+    return property_instruction(opcode_name(op), chunk, offset);
+
   // Constant instructions (1 byte operand = constant index)
   case OpCode::OP_CONSTANT:
   case OpCode::OP_GET_GLOBAL:
   case OpCode::OP_DEFINE_GLOBAL:
   case OpCode::OP_SET_GLOBAL:
-  case OpCode::OP_GET_PROPERTY:
-  case OpCode::OP_SET_PROPERTY:
   case OpCode::OP_GET_SUPER:
   case OpCode::OP_CLASS:
   case OpCode::OP_METHOD:
