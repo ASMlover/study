@@ -76,11 +76,11 @@ static int bracket_depth(const ms::str_t& source) noexcept {
 
 static void print_help() noexcept {
   std::cout << "Maple REPL commands:\n"
-            << "  :help          Show this help message\n"
-            << "  :quit          Exit the REPL\n"
-            << "  :load <file>   Load and execute a Maple script\n"
-            << "  :history       Show command history\n"
-            << "  :clear         Clear the screen\n"
+            << "  @help          Show this help message\n"
+            << "  @quit          Exit the REPL\n"
+            << "  @load <file>   Load and execute a Maple script\n"
+            << "  @history       Show command history\n"
+            << "  @clear         Clear the screen\n"
             << "\n"
             << "Multi-line input is supported: unmatched { ( [ will\n"
             << "continue reading on the next line.\n";
@@ -96,7 +96,7 @@ static void load_file(const ms::str_t& arg) noexcept {
   }
 
   if (path.empty()) {
-    std::cerr << "Usage: :load <file.ms>" << std::endl;
+    std::cerr << "Usage: @load <file.ms>" << std::endl;
     return;
   }
 
@@ -119,18 +119,18 @@ static void print_history(const std::vector<ms::str_t>& history) noexcept {
 static bool handle_meta_command(
     const ms::str_t& input, const std::vector<ms::str_t>& history) noexcept {
   ms::str_t cmd = trim(input);
-  if (cmd == ":quit" || cmd == ":q") return true;
+  if (cmd == "@quit" || cmd == "@q") return true;
 
-  if (cmd == ":help" || cmd == ":h") {
+  if (cmd == "@help" || cmd == "@h") {
     print_help();
-  } else if (cmd == ":history") {
+  } else if (cmd == "@history") {
     print_history(history);
-  } else if (cmd == ":clear") {
+  } else if (cmd == "@clear") {
     std::cout << "\033[2J\033[H" << std::flush;
-  } else if (cmd.starts_with(":load ")) {
+  } else if (cmd.starts_with("@load ")) {
     load_file(cmd.substr(6));
   } else {
-    std::cerr << "Unknown command: " << cmd << ". Type :help for help." << std::endl;
+    std::cerr << "Unknown command: " << cmd << ". Type @help for help." << std::endl;
   }
   return false;
 }
@@ -139,7 +139,7 @@ static void repl() noexcept {
   auto& vm = ms::VM::get_instance();
   std::vector<ms::str_t> history;
 
-  std::cout << "Maple v1.0 -- type :help for commands, :quit to exit.\n";
+  std::cout << "Maple v1.0 -- type @help for commands, @quit to exit.\n";
 
   for (;;) {
     std::cout << "maple> ";
@@ -153,7 +153,7 @@ static void repl() noexcept {
     if (trim(line).empty()) continue;
 
     // Meta-commands
-    if (trim(line)[0] == ':') {
+    if (trim(line)[0] == '@') {
       if (handle_meta_command(line, history)) break;
       continue;
     }

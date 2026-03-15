@@ -216,7 +216,7 @@ var f = io.open("data.txt", "r"); var content = f.read(); f.close();
 
 ### 16.1 REPL Enhancements
 - Multi-line input (detect unmatched `{`/`(`), history (readline), tab completion
-- Meta-commands: `:help`, `:quit`, `:load "file.ms"`
+- Meta-commands: `@help`, `@quit`, `@load "file.ms"`
 - **Files:** main.cc | **Scope:** Medium
 
 ### 16.2 Source Maps & Better Stack Traces
