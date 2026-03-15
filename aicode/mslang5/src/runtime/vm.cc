@@ -1,4 +1,4 @@
-﻿#include "runtime/vm.hh"
+#include "runtime/vm.hh"
 
 #include <algorithm>
 #include <cmath>

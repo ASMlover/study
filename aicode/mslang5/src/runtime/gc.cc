@@ -1,4 +1,4 @@
-﻿#include "runtime/gc.hh"
+#include "runtime/gc.hh"
 
 #include <algorithm>
 

@@ -1,4 +1,4 @@
-﻿# Maple Task Breakdown for `impove_02` (Executable/Build/Test Atomic Mode)
+# Maple Task Breakdown for `impove_02` (Executable/Build/Test Atomic Mode)
 
 Status: Proposal
 Date: 2026-03-15
