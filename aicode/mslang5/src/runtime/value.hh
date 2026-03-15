@@ -12,14 +12,14 @@ class RuntimeObject;
 class Value {
  public:
   using Storage = std::variant<std::monostate, bool, double, std::string,
-                               std::shared_ptr<Module>, std::shared_ptr<RuntimeObject>>;
+                               std::shared_ptr<Module>, RuntimeObject*>;
 
   Value() = default;
   explicit Value(bool v);
   explicit Value(double v);
   explicit Value(std::string v);
   explicit Value(std::shared_ptr<Module> module);
-  explicit Value(std::shared_ptr<RuntimeObject> object);
+  explicit Value(RuntimeObject* object);
 
   static Value nil() noexcept;
 
@@ -34,7 +34,7 @@ class Value {
   double as_number() const;
   const std::string& as_string() const;
   std::shared_ptr<Module> as_module() const;
-  std::shared_ptr<RuntimeObject> as_object() const;
+  RuntimeObject* as_object() const;
 
   std::string to_string() const;
 

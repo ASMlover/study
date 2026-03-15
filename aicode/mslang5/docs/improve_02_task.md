@@ -42,24 +42,23 @@ Script execution template:
 
 ## 4. Task Tracking Table
 
-| Task ID | Milestone | Atomic goal | Compile step | C++ tests | `.ms` scripts | Status | Owner | Evidence |
-|---|---|---|---|---|---|---|---|---|
-| T00 | Baseline | Freeze baseline and verify current green state | Full build | unit + integration + migration_debt + conformance + diagnostics | `tests/scripts/migration/m0_baseline_guardrails.ms` | done | Codex | 2026-03-15: `cmake -S . -B build`; `cmake --build build --config Debug`; all five `ctest` suites passed; `build\\Debug\\maple_cli.exe tests/scripts/migration/m0_baseline_guardrails.ms` => stdout `14` `15`. |
-| T01 | VM-only | Remove legacy interpreter build switch from CMake | Full build | unit + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex | 2026-03-15: removed `MAPLE_ENABLE_LEGACY_INTERPRETER` option/definitions from `CMakeLists.txt`; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest -R maple_tests_unit` passed; `ctest -R maple_tests_migration_debt` passed; `build\\Debug\\maple_cli.exe tests/scripts/migration/m6_vm_only_convergence.ms` => stdout `12` `34`. |
-| T02 | VM-only | Remove legacy interpreter source files and runtime hooks | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex | 2026-03-15: removed legacy fallback branches from `src/runtime/vm.cc`; deleted `src/runtime/script_interpreter.hh/.cc`; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest -R maple_tests_unit` passed; `ctest -R maple_tests_integration` passed; `ctest -R maple_tests_migration_debt` passed; `build\\Debug\\maple_cli.exe tests/scripts/migration/m6_vm_only_convergence.ms` => stdout `12` `34`. |
-| T03 | VM-only | Simplify source mode/route enums and update tests | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex | 2026-03-15: removed `SourceExecutionMode` and legacy route variants from `src/runtime/vm.hh/.cc`; updated integration/unit tests to VM-only execution contract; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest -R maple_tests_unit` passed; `ctest -R maple_tests_integration` passed; `ctest -R maple_tests_migration_debt` passed; `build\\Debug\\maple_cli.exe tests\\scripts\\migration\\m6_vm_only_convergence.ms` => stdout `12` `34`. |
-| T04 | GC | Introduce VM-owned object header and allocation list scaffolding | Full build | unit + integration | `tests/scripts/migration/m5_gc_stress_mix.ms` | done | Codex | 2026-03-16: added `GcObjectHeader` to `RuntimeObject` and object-chain tracking in `GcController`; VM now registers objects via `register_object` and marks via `mark_object`; `cmake -S . -B build`; `cmake --build build --config Debug`; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_unit` passed; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_integration` passed; `build\\Debug\\maple_cli.exe tests\\scripts\\migration\\m5_gc_stress_mix.ms` => stdout `785`. |
-| T05 | GC | Replace shared ownership paths for closure/class/instance core objects | Full build | integration + conformance | `tests/scripts/language/closure_capture.ms`, `tests/scripts/language/class_super_chain.ms` | todo | - | - |
-| T06 | GC | Complete root tracing and raw sweep reclamation | Full build | integration + diagnostics | `tests/scripts/migration/m5_gc_stress_mix.ms`, `tests/scripts/module/import_cache_and_alias.ms` | todo | - | - |
-| T07 | GC | Add GC stress assertions and observability checks | Full build | integration (`test_gc.cc`) + unit (`test_vm_compiler.cc`) | `tests/scripts/migration/m5_gc_stress_mix.ms` | todo | - | - |
-| T08 | Stdlib | Add native callable infrastructure in VM | Full build | unit + integration | `tests/scripts/cli_ok.ms` | todo | - | - |
-| T09 | Stdlib | Implement `std.io` and `std.math` modules | Full build | integration + conformance | new scripts under `tests/scripts/module/std/` | todo | - | - |
-| T10 | Stdlib | Implement `std.str`, `std.time`, `std.debug` modules | Full build | integration + conformance + diagnostics | new scripts under `tests/scripts/module/std/` | todo | - | - |
-| T11 | Newline | Add newline tokenization in lexer with compatibility mode | Full build | unit (`test_lexer.cc`) + integration | new scripts under `tests/scripts/migration/newline/` | todo | - | - |
-| T12 | Newline | Add parser/compiler statement-end abstraction (`consume_statement_end`) | Full build | unit (`test_vm_compiler.cc`) + integration + conformance | new scripts under `tests/scripts/migration/newline/` | todo | - | - |
-| T13 | Newline | Remove semicolon dependency in grammar and finalize migration | Full build | conformance + diagnostics + integration | convert representative scripts to newline style | todo | - | - |
-| T14 | Closeout | Run full regression and update design/spec docs | Full build | all suites | `tests/scripts/migration/m6_vm_only_convergence.ms` + newline/std scripts | todo | - | - |
-
+| Task ID | Milestone | Atomic goal | Compile step | C++ tests | `.ms` scripts | Status | Owner |
+|---|---|---|---|---|---|---|---|
+| T00 | Baseline | Freeze baseline and verify current green state | Full build | unit + integration + migration_debt + conformance + diagnostics | `tests/scripts/migration/m0_baseline_guardrails.ms` | done | Codex |
+| T01 | VM-only | Remove legacy interpreter build switch from CMake | Full build | unit + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex |
+| T02 | VM-only | Remove legacy interpreter source files and runtime hooks | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex |
+| T03 | VM-only | Simplify source mode/route enums and update tests | Full build | unit + integration + migration_debt | `tests/scripts/migration/m6_vm_only_convergence.ms` | done | Codex |
+| T04 | GC | Introduce VM-owned object header and allocation list scaffolding | Full build | unit + integration | `tests/scripts/migration/m5_gc_stress_mix.ms` | done | Codex |
+| T05 | GC | Replace shared ownership paths for closure/class/instance core objects | Full build | integration + conformance | `tests/scripts/language/closure_capture.ms`, `tests/scripts/language/class_super_chain.ms` | done | Codex |
+| T06 | GC | Complete root tracing and raw sweep reclamation | Full build | integration + diagnostics | `tests/scripts/migration/m5_gc_stress_mix.ms`, `tests/scripts/module/import_cache_and_alias.ms` | todo | - |
+| T07 | GC | Add GC stress assertions and observability checks | Full build | integration (`test_gc.cc`) + unit (`test_vm_compiler.cc`) | `tests/scripts/migration/m5_gc_stress_mix.ms` | todo | - |
+| T08 | Stdlib | Add native callable infrastructure in VM | Full build | unit + integration | `tests/scripts/cli_ok.ms` | todo | - |
+| T09 | Stdlib | Implement `std.io` and `std.math` modules | Full build | integration + conformance | new scripts under `tests/scripts/module/std/` | todo | - |
+| T10 | Stdlib | Implement `std.str`, `std.time`, `std.debug` modules | Full build | integration + conformance + diagnostics | new scripts under `tests/scripts/module/std/` | todo | - |
+| T11 | Newline | Add newline tokenization in lexer with compatibility mode | Full build | unit (`test_lexer.cc`) + integration | new scripts under `tests/scripts/migration/newline/` | todo | - |
+| T12 | Newline | Add parser/compiler statement-end abstraction (`consume_statement_end`) | Full build | unit (`test_vm_compiler.cc`) + integration + conformance | new scripts under `tests/scripts/migration/newline/` | todo | - |
+| T13 | Newline | Remove semicolon dependency in grammar and finalize migration | Full build | conformance + diagnostics + integration | convert representative scripts to newline style | todo | - |
+| T14 | Closeout | Run full regression and update design/spec docs | Full build | all suites | `tests/scripts/migration/m6_vm_only_convergence.ms` + newline/std scripts | todo | - |
 ## 5. Task Details (Atomic Execution Contract)
 
 Per-task fixed template:

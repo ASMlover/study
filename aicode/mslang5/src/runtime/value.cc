@@ -15,7 +15,7 @@ Value::Value(std::string v) : storage_(std::move(v)) {}
 
 Value::Value(std::shared_ptr<Module> module) : storage_(std::move(module)) {}
 
-Value::Value(std::shared_ptr<RuntimeObject> object) : storage_(std::move(object)) {}
+Value::Value(RuntimeObject* object) : storage_(object) {}
 
 Value Value::nil() noexcept { return Value(); }
 
@@ -32,7 +32,7 @@ bool Value::is_module() const noexcept {
 }
 
 bool Value::is_object() const noexcept {
-  return std::holds_alternative<std::shared_ptr<RuntimeObject>>(storage_);
+  return std::holds_alternative<RuntimeObject*>(storage_);
 }
 
 bool Value::as_bool() const { return std::get<bool>(storage_); }
@@ -45,8 +45,8 @@ std::shared_ptr<Module> Value::as_module() const {
   return std::get<std::shared_ptr<Module>>(storage_);
 }
 
-std::shared_ptr<RuntimeObject> Value::as_object() const {
-  return std::get<std::shared_ptr<RuntimeObject>>(storage_);
+RuntimeObject* Value::as_object() const {
+  return std::get<RuntimeObject*>(storage_);
 }
 
 std::string Value::to_string() const {

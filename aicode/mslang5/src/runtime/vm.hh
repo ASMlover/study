@@ -52,7 +52,7 @@ class Vm {
 
  private:
   struct CallFrame {
-    std::shared_ptr<ClosureObject> closure;
+    ClosureObject* closure = nullptr;
     std::size_t ip = 0;
     std::size_t slot_base = 0;
   };
@@ -68,26 +68,26 @@ class Vm {
   void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);
   void set_single_diagnostic(const Diagnostic& diagnostic, std::string* error);
 
-  bool call_closure(const std::shared_ptr<ClosureObject>& closure, int arg_count,
+  bool call_closure(ClosureObject* closure, int arg_count,
                     std::vector<CallFrame>* frames, std::string* error);
-  bool invoke_from_class(const std::shared_ptr<ClassObject>& klass, const std::string& name,
+  bool invoke_from_class(ClassObject* klass, const std::string& name,
                          int arg_count, std::vector<CallFrame>* frames, std::string* error);
   bool invoke_value(const Value& receiver, const std::string& name, int arg_count,
                     std::vector<CallFrame>* frames, std::string* error);
-  bool bind_method(const std::shared_ptr<ClassObject>& klass, const std::string& name,
+  bool bind_method(ClassObject* klass, const std::string& name,
                    const Value& receiver, std::string* error);
   bool call_value_at(std::size_t callee_index, int arg_count, std::vector<CallFrame>* frames,
                      std::string* error);
-  std::shared_ptr<UpvalueObject> capture_upvalue(std::size_t stack_index);
+  UpvalueObject* capture_upvalue(std::size_t stack_index);
   void close_upvalues(std::size_t min_stack_index);
-  Value read_upvalue(const std::shared_ptr<UpvalueObject>& upvalue) const;
-  void write_upvalue(const std::shared_ptr<UpvalueObject>& upvalue, Value value);
+  Value read_upvalue(const UpvalueObject* upvalue) const;
+  void write_upvalue(UpvalueObject* upvalue, Value value);
 
   void maybe_collect_garbage();
   void prune_untracked_owned_objects();
   void register_object_allocation(const std::shared_ptr<RuntimeObject>& object);
   void register_module_allocation(const std::shared_ptr<Module>& module);
-  std::size_t estimate_object_bytes(const std::shared_ptr<RuntimeObject>& object) const;
+  std::size_t estimate_object_bytes(const RuntimeObject* object) const;
   std::size_t estimate_module_bytes(const std::shared_ptr<Module>& module) const;
 
   void trace_gc_roots(GcController& gc) const;
@@ -100,13 +100,13 @@ class Vm {
   void trace_gc_module(const std::shared_ptr<Module>& module, GcController& gc,
                        std::unordered_set<const void*>* seen_modules,
                        std::unordered_set<const void*>* seen_objects) const;
-  void trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcController& gc,
+  void trace_gc_object(RuntimeObject* object, GcController& gc,
                        std::unordered_set<const void*>* seen_modules,
                        std::unordered_set<const void*>* seen_objects) const;
 
   std::vector<Value> stack_;
-  std::vector<std::shared_ptr<UpvalueObject>> open_upvalues_;
-  std::vector<std::shared_ptr<ClosureObject>> gc_frame_roots_;
+  std::vector<UpvalueObject*> open_upvalues_;
+  std::vector<ClosureObject*> gc_frame_roots_;
   std::vector<std::shared_ptr<RuntimeObject>> gc_owned_objects_;
   Table globals_;
   std::ostream* out_;
@@ -119,4 +119,3 @@ class Vm {
 };
 
 }  // namespace ms
-

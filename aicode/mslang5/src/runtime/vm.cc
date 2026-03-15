@@ -44,11 +44,11 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
   script_proto->chunk = std::make_shared<Chunk>(chunk);
   auto script_fn = std::make_shared<FunctionObject>(std::move(script_proto));
   register_object_allocation(script_fn);
-  auto script_closure = std::make_shared<ClosureObject>(std::move(script_fn));
+  auto script_closure = std::make_shared<ClosureObject>(script_fn.get());
   register_object_allocation(script_closure);
 
   std::vector<CallFrame> frames;
-  frames.push_back(CallFrame{script_closure, 0, 0});
+  frames.push_back(CallFrame{script_closure.get(), 0, 0});
 
   while (!frames.empty()) {
     CallFrame& frame = frames.back();
@@ -93,7 +93,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         const auto prototype = std::get<std::shared_ptr<FunctionPrototype>>(c);
         auto function = std::make_shared<FunctionObject>(prototype);
         register_object_allocation(function);
-        auto closure = std::make_shared<ClosureObject>(function);
+        auto closure = std::make_shared<ClosureObject>(function.get());
         register_object_allocation(closure);
         closure->upvalues.resize(static_cast<std::size_t>(prototype->upvalue_count));
 
@@ -122,7 +122,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
               frame.closure->upvalues[static_cast<std::size_t>(index)];
         }
 
-        push(Value(std::static_pointer_cast<RuntimeObject>(closure)));
+        push(Value(static_cast<RuntimeObject*>(closure.get())));
         break;
       }
       case OpCode::kEqual: {
@@ -337,7 +337,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
                                 error);
           return InterpretResult::kRuntimeError;
         }
-        const auto superclass = std::dynamic_pointer_cast<ClassObject>(super_value.as_object());
+        const auto superclass = dynamic_cast<ClassObject*>(super_value.as_object());
         if (superclass == nullptr) {
           set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
                                                   "runtime", "MS4003", current_source_name_),
@@ -375,7 +375,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         }
         auto klass = std::make_shared<ClassObject>(std::get<std::string>(c));
         register_object_allocation(klass);
-        push(Value(std::static_pointer_cast<RuntimeObject>(klass)));
+        push(Value(static_cast<RuntimeObject*>(klass.get())));
         break;
       }
       case OpCode::kInherit: {
@@ -390,10 +390,10 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         }
         const auto superclass =
             superclass_value.is_object()
-                ? std::dynamic_pointer_cast<ClassObject>(superclass_value.as_object())
+                ? dynamic_cast<ClassObject*>(superclass_value.as_object())
                 : nullptr;
         const auto subclass =
-            subclass_value.is_object() ? std::dynamic_pointer_cast<ClassObject>(subclass_value.as_object())
+            subclass_value.is_object() ? dynamic_cast<ClassObject*>(subclass_value.as_object())
                                        : nullptr;
         if (superclass == nullptr || subclass == nullptr) {
           set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
@@ -423,9 +423,9 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           return InterpretResult::kRuntimeError;
         }
         const auto klass =
-            class_value.is_object() ? std::dynamic_pointer_cast<ClassObject>(class_value.as_object()) : nullptr;
+            class_value.is_object() ? dynamic_cast<ClassObject*>(class_value.as_object()) : nullptr;
         const auto method = method_value.is_object()
-                                ? std::dynamic_pointer_cast<ClosureObject>(method_value.as_object())
+                                ? dynamic_cast<ClosureObject*>(method_value.as_object())
                                 : nullptr;
         if (klass == nullptr || method == nullptr) {
           set_single_diagnostic(
@@ -434,7 +434,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
               error);
           return InterpretResult::kRuntimeError;
         }
-        klass->methods.set(std::get<std::string>(c), Value(std::static_pointer_cast<RuntimeObject>(method)));
+        klass->methods.set(std::get<std::string>(c), Value(static_cast<RuntimeObject*>(method)));
         break;
       }
       case OpCode::kGetProperty: {
@@ -454,7 +454,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           return InterpretResult::kRuntimeError;
         }
         const auto instance =
-            receiver.is_object() ? std::dynamic_pointer_cast<InstanceObject>(receiver.as_object()) : nullptr;
+            receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
         if (instance == nullptr) {
           set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "only instances have properties"),
                                                   "runtime", "MS4003", current_source_name_),
@@ -491,7 +491,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           return InterpretResult::kRuntimeError;
         }
         const auto instance =
-            receiver.is_object() ? std::dynamic_pointer_cast<InstanceObject>(receiver.as_object()) : nullptr;
+            receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
         if (instance == nullptr) {
           set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "only instances have fields"),
                                                   "runtime", "MS4003", current_source_name_),
@@ -522,7 +522,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         }
         const auto superclass =
             superclass_value.is_object()
-                ? std::dynamic_pointer_cast<ClassObject>(superclass_value.as_object())
+                ? dynamic_cast<ClassObject*>(superclass_value.as_object())
                 : nullptr;
         if (superclass == nullptr) {
           set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
@@ -843,7 +843,7 @@ Value Vm::constant_to_value(const Constant& constant) {
   }
   auto function = std::make_shared<FunctionObject>(std::get<std::shared_ptr<FunctionPrototype>>(constant));
   register_object_allocation(function);
-  return Value(std::static_pointer_cast<RuntimeObject>(function));
+  return Value(static_cast<RuntimeObject*>(function.get()));
 }
 
 std::string Vm::last_segment(const std::string& dotted) const {
@@ -866,7 +866,7 @@ void Vm::set_single_diagnostic(const Diagnostic& diagnostic, std::string* error)
   diagnostics.push_back(diagnostic);
   set_diagnostics(std::move(diagnostics), error);
 }
-bool Vm::call_closure(const std::shared_ptr<ClosureObject>& closure, const int arg_count,
+bool Vm::call_closure(ClosureObject* closure, const int arg_count,
                       std::vector<CallFrame>* frames, std::string* error) {
   if (closure == nullptr || closure->function == nullptr || closure->function->prototype == nullptr ||
       closure->function->prototype->chunk == nullptr) {
@@ -900,7 +900,7 @@ bool Vm::call_closure(const std::shared_ptr<ClosureObject>& closure, const int a
   return true;
 }
 
-bool Vm::invoke_from_class(const std::shared_ptr<ClassObject>& klass, const std::string& name,
+bool Vm::invoke_from_class(ClassObject* klass, const std::string& name,
                            const int arg_count, std::vector<CallFrame>* frames,
                            std::string* error) {
   if (klass == nullptr) {
@@ -918,7 +918,7 @@ bool Vm::invoke_from_class(const std::shared_ptr<ClassObject>& klass, const std:
     return false;
   }
   const auto closure =
-      method.is_object() ? std::dynamic_pointer_cast<ClosureObject>(method.as_object()) : nullptr;
+      method.is_object() ? dynamic_cast<ClosureObject*>(method.as_object()) : nullptr;
   if (closure == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "method must be callable closure",
@@ -932,7 +932,7 @@ bool Vm::invoke_from_class(const std::shared_ptr<ClassObject>& klass, const std:
 bool Vm::invoke_value(const Value& receiver, const std::string& name, const int arg_count,
                       std::vector<CallFrame>* frames, std::string* error) {
   const auto instance =
-      receiver.is_object() ? std::dynamic_pointer_cast<InstanceObject>(receiver.as_object()) : nullptr;
+      receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
   if (instance == nullptr) {
     set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "only instances have methods"),
                                             "runtime", "MS4003", current_source_name_),
@@ -949,7 +949,7 @@ bool Vm::invoke_value(const Value& receiver, const std::string& name, const int 
   return invoke_from_class(instance->klass, name, arg_count, frames, error);
 }
 
-bool Vm::bind_method(const std::shared_ptr<ClassObject>& klass, const std::string& name,
+bool Vm::bind_method(ClassObject* klass, const std::string& name,
                      const Value& receiver, std::string* error) {
   if (klass == nullptr) {
     set_single_diagnostic(
@@ -966,7 +966,7 @@ bool Vm::bind_method(const std::shared_ptr<ClassObject>& klass, const std::strin
     return false;
   }
   const auto closure =
-      method.is_object() ? std::dynamic_pointer_cast<ClosureObject>(method.as_object()) : nullptr;
+      method.is_object() ? dynamic_cast<ClosureObject*>(method.as_object()) : nullptr;
   if (closure == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "method must be callable closure",
@@ -976,7 +976,7 @@ bool Vm::bind_method(const std::shared_ptr<ClassObject>& klass, const std::strin
   }
   auto bound = std::make_shared<BoundMethodObject>(receiver, closure);
   register_object_allocation(bound);
-  push(Value(std::static_pointer_cast<RuntimeObject>(bound)));
+  push(Value(static_cast<RuntimeObject*>(bound.get())));
   return true;
 }
 
@@ -998,14 +998,14 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
   }
 
   const auto object = callee.as_object();
-  if (const auto closure = std::dynamic_pointer_cast<ClosureObject>(object); closure != nullptr) {
+  if (auto* closure = dynamic_cast<ClosureObject*>(object); closure != nullptr) {
     return call_closure(closure, arg_count, frames, error);
   }
 
-  if (const auto klass = std::dynamic_pointer_cast<ClassObject>(object); klass != nullptr) {
+  if (auto* klass = dynamic_cast<ClassObject*>(object); klass != nullptr) {
     auto instance = std::make_shared<InstanceObject>(klass);
     register_object_allocation(instance);
-    stack_[callee_index] = Value(std::static_pointer_cast<RuntimeObject>(instance));
+    stack_[callee_index] = Value(static_cast<RuntimeObject*>(instance.get()));
 
     Value init_method;
     if (!klass->methods.get("init", &init_method)) {
@@ -1020,8 +1020,8 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
       return true;
     }
 
-    const auto init_closure = init_method.is_object()
-                                  ? std::dynamic_pointer_cast<ClosureObject>(init_method.as_object())
+    ClosureObject* init_closure = init_method.is_object()
+                                  ? dynamic_cast<ClosureObject*>(init_method.as_object())
                                   : nullptr;
     if (init_closure == nullptr) {
       set_single_diagnostic(
@@ -1033,7 +1033,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     return call_closure(init_closure, arg_count, frames, error);
   }
 
-  if (const auto bound = std::dynamic_pointer_cast<BoundMethodObject>(object); bound != nullptr) {
+  if (auto* bound = dynamic_cast<BoundMethodObject*>(object); bound != nullptr) {
     if (bound->method == nullptr) {
       set_single_diagnostic(
           make_diagnostic("runtime", "MS4003", "invalid bound method target",
@@ -1051,7 +1051,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
   return false;
 }
 
-std::shared_ptr<UpvalueObject> Vm::capture_upvalue(const std::size_t stack_index) {
+UpvalueObject* Vm::capture_upvalue(const std::size_t stack_index) {
   for (const auto& upvalue : open_upvalues_) {
     if (upvalue != nullptr && !upvalue->is_closed && upvalue->stack_index == stack_index) {
       return upvalue;
@@ -1059,8 +1059,8 @@ std::shared_ptr<UpvalueObject> Vm::capture_upvalue(const std::size_t stack_index
   }
   auto created = std::make_shared<UpvalueObject>(stack_index);
   register_object_allocation(created);
-  open_upvalues_.push_back(created);
-  return created;
+  open_upvalues_.push_back(created.get());
+  return created.get();
 }
 
 void Vm::close_upvalues(const std::size_t min_stack_index) {
@@ -1077,13 +1077,13 @@ void Vm::close_upvalues(const std::size_t min_stack_index) {
   }
   open_upvalues_.erase(
       std::remove_if(open_upvalues_.begin(), open_upvalues_.end(),
-                     [](const std::shared_ptr<UpvalueObject>& upvalue) {
+                     [](const UpvalueObject* upvalue) {
                        return upvalue == nullptr || upvalue->is_closed;
                      }),
       open_upvalues_.end());
 }
 
-Value Vm::read_upvalue(const std::shared_ptr<UpvalueObject>& upvalue) const {
+Value Vm::read_upvalue(const UpvalueObject* upvalue) const {
   if (upvalue == nullptr) {
     return Value::nil();
   }
@@ -1096,7 +1096,7 @@ Value Vm::read_upvalue(const std::shared_ptr<UpvalueObject>& upvalue) const {
   return stack_[upvalue->stack_index];
 }
 
-void Vm::write_upvalue(const std::shared_ptr<UpvalueObject>& upvalue, Value value) {
+void Vm::write_upvalue(UpvalueObject* upvalue, Value value) {
   if (upvalue == nullptr) {
     return;
   }
@@ -1118,7 +1118,6 @@ void Vm::maybe_collect_garbage() {
     return;
   }
   gc_.collect([this](GcController& gc) { trace_gc_roots(gc); });
-  prune_untracked_owned_objects();
 }
 
 void Vm::prune_untracked_owned_objects() {
@@ -1135,7 +1134,7 @@ void Vm::register_object_allocation(const std::shared_ptr<RuntimeObject>& object
     return;
   }
   gc_owned_objects_.push_back(object);
-  gc_.register_object(object.get(), estimate_object_bytes(object));
+  gc_.register_object(object.get(), estimate_object_bytes(object.get()));
   maybe_collect_garbage();
 }
 
@@ -1147,16 +1146,16 @@ void Vm::register_module_allocation(const std::shared_ptr<Module>& module) {
   maybe_collect_garbage();
 }
 
-std::size_t Vm::estimate_object_bytes(const std::shared_ptr<RuntimeObject>& object) const {
+std::size_t Vm::estimate_object_bytes(const RuntimeObject* object) const {
   if (object == nullptr) {
     return 0;
   }
   std::size_t bytes = sizeof(RuntimeObject);
-  if (const auto string_obj = std::dynamic_pointer_cast<StringObject>(object); string_obj != nullptr) {
+  if (const auto* string_obj = dynamic_cast<const StringObject*>(object); string_obj != nullptr) {
     bytes += sizeof(StringObject) + string_obj->value.capacity();
     return bytes;
   }
-  if (const auto function_obj = std::dynamic_pointer_cast<FunctionObject>(object);
+  if (const auto* function_obj = dynamic_cast<const FunctionObject*>(object);
       function_obj != nullptr) {
     bytes += sizeof(FunctionObject);
     if (function_obj->prototype != nullptr) {
@@ -1171,28 +1170,28 @@ std::size_t Vm::estimate_object_bytes(const std::shared_ptr<RuntimeObject>& obje
     }
     return bytes;
   }
-  if (const auto upvalue_obj = std::dynamic_pointer_cast<UpvalueObject>(object); upvalue_obj != nullptr) {
+  if (const auto* upvalue_obj = dynamic_cast<const UpvalueObject*>(object); upvalue_obj != nullptr) {
     bytes += sizeof(UpvalueObject);
     return bytes;
   }
-  if (const auto closure_obj = std::dynamic_pointer_cast<ClosureObject>(object); closure_obj != nullptr) {
+  if (const auto* closure_obj = dynamic_cast<const ClosureObject*>(object); closure_obj != nullptr) {
     bytes += sizeof(ClosureObject);
-    bytes += closure_obj->upvalues.capacity() * sizeof(std::shared_ptr<UpvalueObject>);
+    bytes += closure_obj->upvalues.capacity() * sizeof(UpvalueObject*);
     return bytes;
   }
-  if (const auto class_obj = std::dynamic_pointer_cast<ClassObject>(object); class_obj != nullptr) {
+  if (const auto* class_obj = dynamic_cast<const ClassObject*>(object); class_obj != nullptr) {
     bytes += sizeof(ClassObject);
     bytes += class_obj->name.capacity();
     bytes += class_obj->methods.size() * (sizeof(std::string) + sizeof(Value));
     return bytes;
   }
-  if (const auto instance_obj = std::dynamic_pointer_cast<InstanceObject>(object);
+  if (const auto* instance_obj = dynamic_cast<const InstanceObject*>(object);
       instance_obj != nullptr) {
     bytes += sizeof(InstanceObject);
     bytes += instance_obj->fields.size() * (sizeof(std::string) + sizeof(Value));
     return bytes;
   }
-  if (const auto bound_obj = std::dynamic_pointer_cast<BoundMethodObject>(object);
+  if (const auto* bound_obj = dynamic_cast<const BoundMethodObject*>(object);
       bound_obj != nullptr) {
     bytes += sizeof(BoundMethodObject);
     return bytes;
@@ -1263,19 +1262,19 @@ void Vm::trace_gc_module(const std::shared_ptr<Module>& module, GcController& gc
   trace_gc_table(module->exports, gc, seen_modules, seen_objects);
 }
 
-void Vm::trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcController& gc,
+void Vm::trace_gc_object(RuntimeObject* object, GcController& gc,
                          std::unordered_set<const void*>* seen_modules,
                          std::unordered_set<const void*>* seen_objects) const {
   if (object == nullptr) {
     return;
   }
-  const void* key = object.get();
+  const void* key = object;
   if (seen_objects != nullptr && !seen_objects->insert(key).second) {
     return;
   }
-  gc.mark_object(object.get());
+  gc.mark_object(object);
 
-  if (const auto closure_obj = std::dynamic_pointer_cast<ClosureObject>(object);
+  if (auto* closure_obj = dynamic_cast<ClosureObject*>(object);
       closure_obj != nullptr) {
     trace_gc_object(closure_obj->function, gc, seen_modules, seen_objects);
     for (const auto& upvalue : closure_obj->upvalues) {
@@ -1283,23 +1282,23 @@ void Vm::trace_gc_object(const std::shared_ptr<RuntimeObject>& object, GcControl
     }
     return;
   }
-  if (const auto upvalue_obj = std::dynamic_pointer_cast<UpvalueObject>(object);
+  if (auto* upvalue_obj = dynamic_cast<UpvalueObject*>(object);
       upvalue_obj != nullptr) {
     trace_gc_value(upvalue_obj->closed, gc, seen_modules, seen_objects);
     return;
   }
-  if (const auto class_obj = std::dynamic_pointer_cast<ClassObject>(object); class_obj != nullptr) {
+  if (const auto* class_obj = dynamic_cast<const ClassObject*>(object); class_obj != nullptr) {
     trace_gc_object(class_obj->superclass, gc, seen_modules, seen_objects);
     trace_gc_table(class_obj->methods, gc, seen_modules, seen_objects);
     return;
   }
-  if (const auto instance_obj = std::dynamic_pointer_cast<InstanceObject>(object);
+  if (const auto* instance_obj = dynamic_cast<const InstanceObject*>(object);
       instance_obj != nullptr) {
     trace_gc_object(instance_obj->klass, gc, seen_modules, seen_objects);
     trace_gc_table(instance_obj->fields, gc, seen_modules, seen_objects);
     return;
   }
-  if (const auto bound_obj = std::dynamic_pointer_cast<BoundMethodObject>(object);
+  if (const auto* bound_obj = dynamic_cast<const BoundMethodObject*>(object);
       bound_obj != nullptr) {
     trace_gc_value(bound_obj->receiver, gc, seen_modules, seen_objects);
     trace_gc_object(bound_obj->method, gc, seen_modules, seen_objects);

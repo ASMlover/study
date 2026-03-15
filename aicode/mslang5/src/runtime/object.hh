@@ -65,8 +65,7 @@ struct UpvalueObject : public RuntimeObject {
 };
 
 struct ClosureObject : public RuntimeObject {
-  inline explicit ClosureObject(std::shared_ptr<FunctionObject> fn)
-      : function(std::move(fn)) {}
+  inline explicit ClosureObject(FunctionObject* fn) : function(fn) {}
   inline std::string to_string() const override {
     if (function == nullptr) {
       return "<closure null>";
@@ -74,36 +73,36 @@ struct ClosureObject : public RuntimeObject {
     return function->to_string();
   }
 
-  std::shared_ptr<FunctionObject> function;
-  std::vector<std::shared_ptr<UpvalueObject>> upvalues;
+  FunctionObject* function = nullptr;
+  std::vector<UpvalueObject*> upvalues;
 };
 
 struct ClassObject : public RuntimeObject {
-  explicit ClassObject(std::string n, std::shared_ptr<ClassObject> parent = nullptr)
-      : name(std::move(n)), superclass(std::move(parent)) {}
+  explicit ClassObject(std::string n, ClassObject* parent = nullptr)
+      : name(std::move(n)), superclass(parent) {}
 
   inline std::string to_string() const override { return "<class " + name + ">"; }
 
   std::string name;
-  std::shared_ptr<ClassObject> superclass;
+  ClassObject* superclass = nullptr;
   Table methods;
 };
 
 struct InstanceObject : public RuntimeObject {
-  explicit InstanceObject(std::shared_ptr<ClassObject> k) : klass(std::move(k)) {}
+  explicit InstanceObject(ClassObject* k) : klass(k) {}
 
   inline std::string to_string() const override {
     const std::string class_name = klass != nullptr ? klass->name : "unknown";
     return "<" + class_name + " instance>";
   }
 
-  std::shared_ptr<ClassObject> klass;
+  ClassObject* klass = nullptr;
   Table fields;
 };
 
 struct BoundMethodObject : public RuntimeObject {
-  BoundMethodObject(Value recv, std::shared_ptr<ClosureObject> m)
-      : receiver(std::move(recv)), method(std::move(m)) {}
+  BoundMethodObject(Value recv, ClosureObject* m)
+      : receiver(std::move(recv)), method(m) {}
 
   inline std::string to_string() const override {
     if (method == nullptr) {
@@ -113,7 +112,7 @@ struct BoundMethodObject : public RuntimeObject {
   }
 
   Value receiver;
-  std::shared_ptr<ClosureObject> method;
+  ClosureObject* method = nullptr;
 };
 
 inline std::shared_ptr<StringObject> make_string_object(const std::string& value) {
