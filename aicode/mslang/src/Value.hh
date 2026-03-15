@@ -51,6 +51,10 @@ inline constexpr u64_t kQNAN     = static_cast<u64_t>(0x7FFC000000000000);
 inline constexpr u64_t kTAG_NIL   = 1;
 inline constexpr u64_t kTAG_FALSE = 2;
 inline constexpr u64_t kTAG_TRUE  = 3;
+// Integer tag: QNAN + bit 49 set, payload in bits 0-47 (48-bit signed)
+inline constexpr u64_t kINT_TAG   = kQNAN | (static_cast<u64_t>(1) << 49);
+inline constexpr u64_t kINT_MASK  = 0x0000FFFFFFFFFFFF; // lower 48 bits
+inline constexpr u64_t kINT_SIGN  = static_cast<u64_t>(1) << 47; // sign bit within payload
 
 class Value {
   u64_t bits_;
@@ -61,17 +65,24 @@ public:
   Value() noexcept : bits_(kQNAN | kTAG_NIL) {}
   Value(bool b) noexcept : bits_(kQNAN | (b ? kTAG_TRUE : kTAG_FALSE)) {}
   Value(double d) noexcept;
+  Value(i64_t i) noexcept;
   Value(Object* obj) noexcept;
 
   // Type checks
   bool is_nil() const noexcept { return bits_ == (kQNAN | kTAG_NIL); }
   bool is_boolean() const noexcept { return (bits_ | 1) == (kQNAN | kTAG_TRUE); }
-  bool is_number() const noexcept { return (bits_ & kQNAN) != kQNAN; }
+  bool is_double() const noexcept { return (bits_ & kQNAN) != kQNAN; }
+  bool is_integer() const noexcept {
+    return (bits_ & (kSIGN_BIT | kQNAN | (static_cast<u64_t>(1) << 49)))
+        == kINT_TAG;
+  }
+  bool is_number() const noexcept { return is_double() || is_integer(); }
   bool is_object() const noexcept { return (bits_ & (kQNAN | kSIGN_BIT)) == (kQNAN | kSIGN_BIT); }
 
   // Value extraction
   bool as_boolean() const noexcept { return bits_ == (kQNAN | kTAG_TRUE); }
   double as_number() const noexcept;
+  i64_t as_integer() const noexcept;
   Object* as_object() const noexcept;
 
   // Semantic operations
@@ -93,7 +104,7 @@ public:
 
 #include <variant>
 
-using ValueStorage = std::variant<std::monostate, bool, double, Object*>;
+using ValueStorage = std::variant<std::monostate, bool, double, i64_t, Object*>;
 
 class Value {
   ValueStorage storage_;
@@ -102,17 +113,21 @@ public:
   Value() noexcept : storage_(std::monostate{}) {}
   Value(bool b) noexcept : storage_(b) {}
   Value(double d) noexcept : storage_(d) {}
+  Value(i64_t i) noexcept : storage_(i) {}
   Value(Object* obj) noexcept : storage_(obj) {}
 
   // Type checks
   bool is_nil() const noexcept;
   bool is_boolean() const noexcept;
+  bool is_double() const noexcept;
+  bool is_integer() const noexcept;
   bool is_number() const noexcept;
   bool is_object() const noexcept;
 
   // Value extraction
   bool as_boolean() const noexcept;
   double as_number() const noexcept;
+  i64_t as_integer() const noexcept;
   Object* as_object() const noexcept;
 
   // Semantic operations

@@ -288,7 +288,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | **8 — Tooling** | 16.1 | REPL enhancements (multi-line/history/completion) | [x] |
 | | 16.3 | Bytecode serialization (`.msc`) | [x] |
 | **Backlog** | 10.7 | `switch` statement | [x] |
-| | 11.1 | Integer type + bitwise operators | [ ] |
+| | 11.1 | Integer type + bitwise operators | [x] |
 | | 11.4 | Tuple type + destructuring | [ ] |
 | | 13.3 | Abstract methods | [ ] |
 | | 14.2 | Register-based bytecode | [ ] |

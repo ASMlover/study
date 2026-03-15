@@ -77,8 +77,10 @@ VM::VM() noexcept {
     cstr_t type_str = "nil";
     if (val.is_boolean()) {
       type_str = "bool";
-    } else if (val.is_number()) {
-      type_str = "number";
+    } else if (val.is_integer()) {
+      type_str = "int";
+    } else if (val.is_double()) {
+      type_str = "float";
     } else if (val.is_object()) {
       switch (val.as_object()->type()) {
       case ObjectType::OBJ_STRING:       type_str = "string"; break;
@@ -249,11 +251,14 @@ VM::VM() noexcept {
       runtime_error("int() takes exactly 1 argument.");
       return Value();
     }
-    if (args[0].is_number()) {
-      return Value(static_cast<double>(static_cast<long long>(args[0].as_number())));
+    if (args[0].is_integer()) {
+      return args[0]; // already integer
+    }
+    if (args[0].is_double()) {
+      return Value(static_cast<i64_t>(args[0].as_number()));
     }
     if (args[0].is_boolean()) {
-      return Value(args[0].as_boolean() ? 1.0 : 0.0);
+      return Value(static_cast<i64_t>(args[0].as_boolean() ? 1 : 0));
     }
     if (args[0].is_string()) {
       const str_t& s = as_string(args[0])->value();
@@ -264,7 +269,7 @@ VM::VM() noexcept {
           runtime_error(std::format("Could not convert '{}' to an integer.", s));
           return Value();
         }
-        return Value(static_cast<double>(result));
+        return Value(static_cast<i64_t>(result));
       } catch (...) {
         runtime_error(std::format("Could not convert '{}' to an integer.", s));
         return Value();
@@ -1310,15 +1315,52 @@ InterpretResult VM::run() noexcept {
 #define READ_CONSTANT() \
     (frame->closure->function()->chunk().constant_at(READ_BYTE()))
 #define READ_STRING() as_string(READ_CONSTANT())
+// Integer-aware binary op: int×int→int, else promote to double
 #define BINARY_OP(value_type, op) \
     do { \
       if (!peek(0).is_number() || !peek(1).is_number()) { \
         runtime_error("Operands must be numbers."); \
         goto handle_runtime_error; \
       } \
-      double b = pop().as_number(); \
-      double a = pop().as_number(); \
-      push(value_type(a op b)); \
+      if (peek(0).is_integer() && peek(1).is_integer()) { \
+        i64_t b = pop().as_integer(); \
+        i64_t a = pop().as_integer(); \
+        push(value_type(static_cast<i64_t>(a op b))); \
+      } else { \
+        double b = pop().as_number(); \
+        double a = pop().as_number(); \
+        push(value_type(a op b)); \
+      } \
+    } while (false)
+
+// Comparison: always produce bool, promote to double if mixed
+#define COMPARE_OP(op) \
+    do { \
+      if (!peek(0).is_number() || !peek(1).is_number()) { \
+        runtime_error("Operands must be numbers."); \
+        goto handle_runtime_error; \
+      } \
+      if (peek(0).is_integer() && peek(1).is_integer()) { \
+        i64_t b = pop().as_integer(); \
+        i64_t a = pop().as_integer(); \
+        push(Value(a op b)); \
+      } else { \
+        double b = pop().as_number(); \
+        double a = pop().as_number(); \
+        push(Value(a op b)); \
+      } \
+    } while (false)
+
+// Bitwise op: integers only
+#define BITWISE_OP(op) \
+    do { \
+      if (!peek(0).is_integer() || !peek(1).is_integer()) { \
+        runtime_error("Operands must be integers."); \
+        goto handle_runtime_error; \
+      } \
+      i64_t b = pop().as_integer(); \
+      i64_t a = pop().as_integer(); \
+      push(Value(static_cast<i64_t>(a op b))); \
     } while (false)
 
   using u16_t = std::uint16_t;
@@ -1647,13 +1689,13 @@ dispatch_loop:
     VM_CASE(OP_GREATER) {
       if (peek(1).is_instance() && invoke_operator(op_gt_string_)) {
         frame = &frames_[frame_count_ - 1];
-      } else { BINARY_OP(Value, >); }
+      } else { COMPARE_OP(>); }
       VM_DISPATCH();
     }
     VM_CASE(OP_LESS) {
       if (peek(1).is_instance() && invoke_operator(op_lt_string_)) {
         frame = &frames_[frame_count_ - 1];
-      } else { BINARY_OP(Value, <); }
+      } else { COMPARE_OP(<); }
       VM_DISPATCH();
     }
 
@@ -1661,6 +1703,10 @@ dispatch_loop:
       if (is_obj_type(peek(0), ObjectType::OBJ_STRING) &&
           is_obj_type(peek(1), ObjectType::OBJ_STRING)) {
         concatenate();
+      } else if (peek(0).is_integer() && peek(1).is_integer()) {
+        i64_t b = pop().as_integer();
+        i64_t a = pop().as_integer();
+        push(Value(static_cast<i64_t>(a + b)));
       } else if (peek(0).is_number() && peek(1).is_number()) {
         double b = pop().as_number();
         double a = pop().as_number();
@@ -1687,15 +1733,27 @@ dispatch_loop:
       VM_DISPATCH();
     }
     VM_CASE(OP_DIVIDE) {
+      // int / int → float (always promote to avoid truncation confusion)
       if (peek(1).is_instance() && invoke_operator(op_div_string_)) {
         frame = &frames_[frame_count_ - 1];
-      } else { BINARY_OP(Value, /); }
+      } else if (!peek(0).is_number() || !peek(1).is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      } else {
+        double b = pop().as_number();
+        double a = pop().as_number();
+        push(Value(a / b));
+      }
       VM_DISPATCH();
     }
 
     VM_CASE(OP_MODULO) {
       if (peek(1).is_instance() && invoke_operator(op_mod_string_)) {
         frame = &frames_[frame_count_ - 1];
+      } else if (peek(0).is_integer() && peek(1).is_integer()) {
+        i64_t b = pop().as_integer();
+        i64_t a = pop().as_integer();
+        push(Value(static_cast<i64_t>(a % b)));
       } else if (peek(0).is_number() && peek(1).is_number()) {
         double b = pop().as_number();
         double a = pop().as_number();
@@ -1713,11 +1771,14 @@ dispatch_loop:
     }
 
     VM_CASE(OP_NEGATE) {
-      if (!peek(0).is_number()) {
+      if (peek(0).is_integer()) {
+        push(Value(static_cast<i64_t>(-pop().as_integer())));
+      } else if (peek(0).is_double()) {
+        push(Value(-pop().as_number()));
+      } else {
         runtime_error("Operand must be a number.");
         goto handle_runtime_error;
       }
-      push(Value(-pop().as_number()));
       VM_DISPATCH();
     }
 
@@ -1862,6 +1923,35 @@ dispatch_loop:
     VM_CASE(OP_DEFER) {
       Value closure_val = pop();
       frame->deferred.push_back(as_closure(closure_val));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_BITAND) {
+      BITWISE_OP(&);
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_BITOR) {
+      BITWISE_OP(|);
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_BITXOR) {
+      BITWISE_OP(^);
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_BITNOT) {
+      if (!peek(0).is_integer()) {
+        runtime_error("Operand must be an integer.");
+        goto handle_runtime_error;
+      }
+      push(Value(static_cast<i64_t>(~pop().as_integer())));
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_LSHIFT) {
+      BITWISE_OP(<<);
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_RSHIFT) {
+      BITWISE_OP(>>);
       VM_DISPATCH();
     }
 
@@ -2233,7 +2323,9 @@ dispatch_loop:
       u8_t slot2 = READ_BYTE();
       Value a = frame->slots[slot1];
       Value b = frame->slots[slot2];
-      if (a.is_number() && b.is_number()) {
+      if (a.is_integer() && b.is_integer()) {
+        push(Value(static_cast<i64_t>(a.as_integer() + b.as_integer())));
+      } else if (a.is_number() && b.is_number()) {
         push(Value(a.as_number() + b.as_number()));
       } else if (is_obj_type(a, ObjectType::OBJ_STRING) &&
                  is_obj_type(b, ObjectType::OBJ_STRING)) {
@@ -2255,7 +2347,11 @@ dispatch_loop:
         runtime_error("Operands must be numbers.");
         goto handle_runtime_error;
       }
-      push(Value(a.as_number() - b.as_number()));
+      if (a.is_integer() && b.is_integer()) {
+        push(Value(static_cast<i64_t>(a.as_integer() - b.as_integer())));
+      } else {
+        push(Value(a.as_number() - b.as_number()));
+      }
       VM_DISPATCH();
     }
 
@@ -2268,7 +2364,11 @@ dispatch_loop:
         runtime_error("Operands must be numbers.");
         goto handle_runtime_error;
       }
-      push(Value(a.as_number() * b.as_number()));
+      if (a.is_integer() && b.is_integer()) {
+        push(Value(static_cast<i64_t>(a.as_integer() * b.as_integer())));
+      } else {
+        push(Value(a.as_number() * b.as_number()));
+      }
       VM_DISPATCH();
     }
 
@@ -2294,7 +2394,11 @@ dispatch_loop:
         runtime_error("Operands must be numbers.");
         goto handle_runtime_error;
       }
-      push(Value(std::fmod(a.as_number(), b.as_number())));
+      if (a.is_integer() && b.is_integer()) {
+        push(Value(static_cast<i64_t>(a.as_integer() % b.as_integer())));
+      } else {
+        push(Value(std::fmod(a.as_number(), b.as_number())));
+      }
       VM_DISPATCH();
     }
 

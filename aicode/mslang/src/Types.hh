@@ -41,6 +41,7 @@ using byte_t = std::uint8_t;
 using u8_t   = std::uint8_t;
 using i32_t  = std::int32_t;
 using u32_t  = std::uint32_t;
+using i64_t  = std::int64_t;
 using u64_t  = std::uint64_t;
 using sz_t   = std::size_t;
 using str_t  = std::string;

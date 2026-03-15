@@ -40,11 +40,24 @@ namespace ms {
 Value::Value(double d) noexcept
     : bits_(std::bit_cast<u64_t>(d)) {}
 
+Value::Value(i64_t i) noexcept
+    : bits_(kINT_TAG | (static_cast<u64_t>(i) & kINT_MASK)) {}
+
 Value::Value(Object* obj) noexcept
     : bits_(kSIGN_BIT | kQNAN | static_cast<u64_t>(reinterpret_cast<uintptr_t>(obj))) {}
 
 double Value::as_number() const noexcept {
+  if (is_integer()) return static_cast<double>(as_integer());
   return std::bit_cast<double>(bits_);
+}
+
+i64_t Value::as_integer() const noexcept {
+  i64_t raw = static_cast<i64_t>(bits_ & kINT_MASK);
+  // Sign-extend from bit 47
+  if (raw & static_cast<i64_t>(kINT_SIGN)) {
+    raw |= static_cast<i64_t>(~kINT_MASK);
+  }
+  return raw;
 }
 
 Object* Value::as_object() const noexcept {
@@ -58,10 +71,11 @@ bool Value::is_truthy() const noexcept {
 }
 
 bool Value::is_equal(const Value& other) const noexcept {
-  // Fast path: bitwise equality covers nil, bools, objects (identity), and
-  // most numbers.  Only NaN != NaN needs special handling, but IEEE 754 NaN
-  // is never equal to itself, and our QNAN sentinel is distinct from any
-  // "real" double, so bitwise compare is correct for all encoded types.
+  // Both integers: compare directly
+  if (is_integer() && other.is_integer()) {
+    return as_integer() == other.as_integer();
+  }
+  // Cross-type int/double: promote to double
   if (is_number() && other.is_number()) {
     return as_number() == other.as_number();
   }
@@ -71,7 +85,10 @@ bool Value::is_equal(const Value& other) const noexcept {
 str_t Value::stringify() const noexcept {
   if (is_nil()) return "nil";
   if (is_boolean()) return as_boolean() ? "true" : "false";
-  if (is_number()) {
+  if (is_integer()) {
+    return std::format("{}", as_integer());
+  }
+  if (is_double()) {
     double val = as_number();
     if (val == std::floor(val) && !std::isinf(val) && !std::isnan(val)) {
       return std::format("{}", static_cast<long long>(val));
@@ -103,8 +120,16 @@ bool Value::is_boolean() const noexcept {
   return std::holds_alternative<bool>(storage_);
 }
 
-bool Value::is_number() const noexcept {
+bool Value::is_double() const noexcept {
   return std::holds_alternative<double>(storage_);
+}
+
+bool Value::is_integer() const noexcept {
+  return std::holds_alternative<i64_t>(storage_);
+}
+
+bool Value::is_number() const noexcept {
+  return is_double() || is_integer();
 }
 
 bool Value::is_object() const noexcept {
@@ -116,7 +141,12 @@ bool Value::as_boolean() const noexcept {
 }
 
 double Value::as_number() const noexcept {
+  if (is_integer()) return static_cast<double>(std::get<i64_t>(storage_));
   return std::get<double>(storage_);
+}
+
+i64_t Value::as_integer() const noexcept {
+  return std::get<i64_t>(storage_);
 }
 
 Object* Value::as_object() const noexcept {
@@ -133,11 +163,13 @@ bool Value::is_equal(const Value& other) const noexcept {
   if (is_nil() && other.is_nil()) return true;
   if (is_nil() || other.is_nil()) return false;
 
-  if (storage_.index() != other.storage_.index()) return false;
+  // Both integers
+  if (is_integer() && other.is_integer()) return as_integer() == other.as_integer();
+  // Cross-type int/double
+  if (is_number() && other.is_number()) return as_number() == other.as_number();
 
-  if (is_boolean()) return as_boolean() == other.as_boolean();
-  if (is_number()) return as_number() == other.as_number();
-  if (is_object()) return as_object() == other.as_object();
+  if (is_boolean() && other.is_boolean()) return as_boolean() == other.as_boolean();
+  if (is_object() && other.is_object()) return as_object() == other.as_object();
 
   return false;
 }
@@ -145,7 +177,10 @@ bool Value::is_equal(const Value& other) const noexcept {
 str_t Value::stringify() const noexcept {
   if (is_nil()) return "nil";
   if (is_boolean()) return as_boolean() ? "true" : "false";
-  if (is_number()) {
+  if (is_integer()) {
+    return std::format("{}", as_integer());
+  }
+  if (is_double()) {
     double val = as_number();
     if (val == std::floor(val) && !std::isinf(val) && !std::isnan(val)) {
       return std::format("{}", static_cast<long long>(val));

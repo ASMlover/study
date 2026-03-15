@@ -43,11 +43,15 @@ enum class Precedence : int {
   PREC_TERNARY,     // ?:
   PREC_OR,          // or
   PREC_AND,         // and
+  PREC_BIT_OR,      // |
+  PREC_BIT_XOR,     // ^
+  PREC_BIT_AND,     // &
   PREC_EQUALITY,    // == !=
   PREC_COMPARISON,  // < > <= >=
+  PREC_SHIFT,       // << >>
   PREC_TERM,        // + -
-  PREC_FACTOR,      // * /
-  PREC_UNARY,       // ! -
+  PREC_FACTOR,      // * / %
+  PREC_UNARY,       // ! - ~
   PREC_CALL,        // . ()
   PREC_PRIMARY,
 };
@@ -195,11 +199,13 @@ public:
   // Expression parsers — public so ParseRule table can take member-function pointers
   void grouping(bool can_assign) noexcept;
   void number(bool can_assign) noexcept;
+  void integer(bool can_assign) noexcept;
   void string(bool can_assign) noexcept;
   void string_interpolation(bool can_assign) noexcept;
   void variable(bool can_assign) noexcept;
   void unary(bool can_assign) noexcept;
   void binary(bool can_assign) noexcept;
+  void bitwise(bool can_assign) noexcept;
   void literal(bool can_assign) noexcept;
   void and_(bool can_assign) noexcept;
   void or_(bool can_assign) noexcept;
@@ -253,6 +259,14 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { nullptr,             &Compiler::binary,  Precedence::PREC_FACTOR },
   // TOKEN_PERCENT
   { nullptr,             &Compiler::binary,  Precedence::PREC_FACTOR },
+  // TOKEN_AMPERSAND
+  { nullptr,             &Compiler::bitwise, Precedence::PREC_BIT_AND },
+  // TOKEN_PIPE
+  { nullptr,             &Compiler::bitwise, Precedence::PREC_BIT_OR },
+  // TOKEN_CARET
+  { nullptr,             &Compiler::bitwise, Precedence::PREC_BIT_XOR },
+  // TOKEN_TILDE
+  { &Compiler::unary,    nullptr,            Precedence::PREC_NONE },
   // TOKEN_BANG
   { &Compiler::unary,    nullptr,            Precedence::PREC_NONE },
   // TOKEN_BANG_EQUAL
@@ -283,6 +297,10 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_PERCENT_EQUAL
   { nullptr,             nullptr,            Precedence::PREC_NONE },
+  // TOKEN_LEFT_SHIFT
+  { nullptr,             &Compiler::bitwise, Precedence::PREC_SHIFT },
+  // TOKEN_RIGHT_SHIFT
+  { nullptr,             &Compiler::bitwise, Precedence::PREC_SHIFT },
   // TOKEN_IDENTIFIER
   { &Compiler::variable, nullptr,            Precedence::PREC_NONE },
   // TOKEN_STRING
@@ -291,6 +309,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { &Compiler::string_interpolation, nullptr, Precedence::PREC_NONE },
   // TOKEN_NUMBER
   { &Compiler::number,   nullptr,            Precedence::PREC_NONE },
+  // TOKEN_INTEGER
+  { &Compiler::integer,  nullptr,            Precedence::PREC_NONE },
   // TOKEN_AND
   { nullptr,             &Compiler::and_,    Precedence::PREC_AND },
   // TOKEN_BREAK
@@ -402,13 +422,20 @@ bool Compiler::try_fold_unary(OpCode op) noexcept {
   const Value& operand = current_chunk().constant_at(last_const_.const_index);
 
   if (op == OpCode::OP_NEGATE) {
-    if (!operand.is_number()) return false;
-    double result = -operand.as_number();
-    // Roll back the OP_CONSTANT + OP_NEGATE (current_chunk already has OP_NEGATE)
-    current_chunk().truncate(last_const_.code_offset);
-    last_const_.valid = false;
-    emit_constant(Value(result));
-    return true;
+    if (operand.is_integer()) {
+      i64_t result = -operand.as_integer();
+      current_chunk().truncate(last_const_.code_offset);
+      last_const_.valid = false;
+      emit_constant(Value(result));
+      return true;
+    }
+    if (operand.is_double()) {
+      double result = -operand.as_number();
+      current_chunk().truncate(last_const_.code_offset);
+      last_const_.valid = false;
+      emit_constant(Value(result));
+      return true;
+    }
   }
   return false;
 }
@@ -419,7 +446,50 @@ bool Compiler::try_fold_binary(OpCode op) noexcept {
   const Value& right = current_chunk().constant_at(last_const_.const_index);
   const Value& left = current_chunk().constant_at(prev_const_.const_index);
 
-  // Number folding
+  // Integer folding (both operands are integers)
+  if (left.is_integer() && right.is_integer()) {
+    i64_t a = left.as_integer();
+    i64_t b = right.as_integer();
+
+    switch (op) {
+    case OpCode::OP_ADD: {
+      current_chunk().truncate(prev_const_.code_offset);
+      invalidate_constants();
+      emit_constant(Value(static_cast<i64_t>(a + b)));
+      return true;
+    }
+    case OpCode::OP_SUBTRACT: {
+      current_chunk().truncate(prev_const_.code_offset);
+      invalidate_constants();
+      emit_constant(Value(static_cast<i64_t>(a - b)));
+      return true;
+    }
+    case OpCode::OP_MULTIPLY: {
+      current_chunk().truncate(prev_const_.code_offset);
+      invalidate_constants();
+      emit_constant(Value(static_cast<i64_t>(a * b)));
+      return true;
+    }
+    case OpCode::OP_DIVIDE: {
+      if (b == 0) return false;
+      // int / int → float
+      current_chunk().truncate(prev_const_.code_offset);
+      invalidate_constants();
+      emit_constant(Value(static_cast<double>(a) / static_cast<double>(b)));
+      return true;
+    }
+    case OpCode::OP_MODULO: {
+      if (b == 0) return false;
+      current_chunk().truncate(prev_const_.code_offset);
+      invalidate_constants();
+      emit_constant(Value(static_cast<i64_t>(a % b)));
+      return true;
+    }
+    default: return false;
+    }
+  }
+
+  // Number folding (at least one double)
   if (left.is_number() && right.is_number()) {
     double a = left.as_number();
     double b = right.as_number();
@@ -859,6 +929,18 @@ void Compiler::number(bool /*can_assign*/) noexcept {
   emit_constant(Value(value));
 }
 
+void Compiler::integer(bool /*can_assign*/) noexcept {
+  i64_t value = 0;
+  auto [ptr, ec] = std::from_chars(
+      ps_->previous.lexeme.data(),
+      ps_->previous.lexeme.data() + ps_->previous.lexeme.size(),
+      value);
+  if (ec != std::errc{}) {
+    error("Invalid integer literal.");
+  }
+  emit_constant(Value(value));
+}
+
 void Compiler::string(bool /*can_assign*/) noexcept {
   // Trim the surrounding quotes
   const char* start = ps_->previous.lexeme.data() + 1;
@@ -986,6 +1068,10 @@ void Compiler::unary(bool /*can_assign*/) noexcept {
       invalidate_constants();
     }
     break;
+  case TokenType::TOKEN_TILDE:
+    emit_op(OpCode::OP_BITNOT);
+    invalidate_constants();
+    break;
   default: return;
   }
 }
@@ -1042,6 +1128,22 @@ void Compiler::binary(bool /*can_assign*/) noexcept {
   } else {
     invalidate_constants();
   }
+}
+
+void Compiler::bitwise(bool /*can_assign*/) noexcept {
+  TokenType operator_type = ps_->previous.type;
+  const ParseRule& rule = get_rule(operator_type);
+  parse_precedence(static_cast<Precedence>(static_cast<int>(rule.precedence) + 1));
+
+  switch (operator_type) {
+  case TokenType::TOKEN_AMPERSAND:   emit_op(OpCode::OP_BITAND); break;
+  case TokenType::TOKEN_PIPE:        emit_op(OpCode::OP_BITOR); break;
+  case TokenType::TOKEN_CARET:       emit_op(OpCode::OP_BITXOR); break;
+  case TokenType::TOKEN_LEFT_SHIFT:  emit_op(OpCode::OP_LSHIFT); break;
+  case TokenType::TOKEN_RIGHT_SHIFT: emit_op(OpCode::OP_RSHIFT); break;
+  default: return;
+  }
+  invalidate_constants();
 }
 
 void Compiler::literal(bool /*can_assign*/) noexcept {

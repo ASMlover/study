@@ -130,6 +130,7 @@ enum class ConstTag : u8_t {
   TAG_NUMBER   = 2,
   TAG_STRING   = 3,
   TAG_FUNCTION = 4,
+  TAG_INTEGER  = 5,
 };
 
 // -- Serialization -----------------------------------------------------------
@@ -181,7 +182,14 @@ static void write_function(ByteWriter& w, ObjFunction* fn,
     } else if (val.is_boolean()) {
       w.write_u8(static_cast<u8_t>(ConstTag::TAG_BOOL));
       w.write_u8(val.as_boolean() ? 1 : 0);
-    } else if (val.is_number()) {
+    } else if (val.is_integer()) {
+      w.write_u8(static_cast<u8_t>(ConstTag::TAG_INTEGER));
+      // Write i64 as 8 bytes big-endian
+      i64_t ival = val.as_integer();
+      u64_t uval = static_cast<u64_t>(ival);
+      for (int shift = 56; shift >= 0; shift -= 8)
+        w.write_u8(static_cast<u8_t>((uval >> shift) & 0xFF));
+    } else if (val.is_double()) {
       w.write_u8(static_cast<u8_t>(ConstTag::TAG_NUMBER));
       w.write_f64(val.as_number());
     } else if (val.is_object()) {
@@ -278,6 +286,13 @@ static ObjFunction* read_function(ByteReader& r,
     case ConstTag::TAG_NUMBER:
       fn->chunk().add_constant(Value(r.read_f64()));
       break;
+    case ConstTag::TAG_INTEGER: {
+      u64_t uval = 0;
+      for (int shift = 56; shift >= 0; shift -= 8)
+        uval |= static_cast<u64_t>(r.read_u8()) << shift;
+      fn->chunk().add_constant(Value(static_cast<i64_t>(uval)));
+      break;
+    }
     case ConstTag::TAG_STRING: {
       str_t s = r.read_str();
       ObjString* str = vm.copy_string(s.c_str(), s.size());

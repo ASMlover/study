@@ -168,6 +168,12 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_THROW:
   case OpCode::OP_END_TRY:
   case OpCode::OP_DEFER:
+  case OpCode::OP_BITAND:
+  case OpCode::OP_BITOR:
+  case OpCode::OP_BITXOR:
+  case OpCode::OP_BITNOT:
+  case OpCode::OP_LSHIFT:
+  case OpCode::OP_RSHIFT:
     return simple_instruction(opcode_name(op), offset);
 
   // Byte instructions (1 byte operand = slot index)

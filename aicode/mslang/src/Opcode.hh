@@ -87,6 +87,14 @@ enum class OpCode : u8_t {
   OP_END_TRY,
   OP_DEFER,
 
+  // Bitwise operators (integers only)
+  OP_BITAND,
+  OP_BITOR,
+  OP_BITXOR,
+  OP_BITNOT,
+  OP_LSHIFT,
+  OP_RSHIFT,
+
   // Superinstructions: fused GET_LOCAL+GET_LOCAL+binary_op
   OP_ADD_LOCAL_LOCAL,       // slot1, slot2 → push(locals[slot1] + locals[slot2])
   OP_SUBTRACT_LOCAL_LOCAL,  // slot1, slot2 → push(locals[slot1] - locals[slot2])
@@ -152,6 +160,12 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_TRY:            return "OP_TRY";
   case OpCode::OP_END_TRY:        return "OP_END_TRY";
   case OpCode::OP_DEFER:               return "OP_DEFER";
+  case OpCode::OP_BITAND:              return "OP_BITAND";
+  case OpCode::OP_BITOR:               return "OP_BITOR";
+  case OpCode::OP_BITXOR:              return "OP_BITXOR";
+  case OpCode::OP_BITNOT:              return "OP_BITNOT";
+  case OpCode::OP_LSHIFT:              return "OP_LSHIFT";
+  case OpCode::OP_RSHIFT:              return "OP_RSHIFT";
   case OpCode::OP_ADD_LOCAL_LOCAL:      return "OP_ADD_LOCAL_LOCAL";
   case OpCode::OP_SUBTRACT_LOCAL_LOCAL: return "OP_SUBTRACT_LOCAL_LOCAL";
   case OpCode::OP_MULTIPLY_LOCAL_LOCAL: return "OP_MULTIPLY_LOCAL_LOCAL";

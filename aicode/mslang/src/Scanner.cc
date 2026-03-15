@@ -209,9 +209,10 @@ Token Scanner::scan_number() noexcept {
   if (peek() == '.' && is_digit(peek_next())) {
     advance(); // consume '.'
     while (is_digit(peek())) advance();
+    return make_token(TokenType::TOKEN_NUMBER);
   }
 
-  return make_token(TokenType::TOKEN_NUMBER);
+  return make_token(TokenType::TOKEN_INTEGER);
 }
 
 TokenType Scanner::check_keyword(int start, int length, cstr_t rest, TokenType type) const noexcept {
@@ -383,12 +384,20 @@ Token Scanner::scan_token() noexcept {
   case '/': return make_token(match('=') ? TokenType::TOKEN_SLASH_EQUAL : TokenType::TOKEN_SLASH);
   case '*': return make_token(match('=') ? TokenType::TOKEN_STAR_EQUAL : TokenType::TOKEN_STAR);
   case '%': return make_token(match('=') ? TokenType::TOKEN_PERCENT_EQUAL : TokenType::TOKEN_PERCENT);
+  case '&': return make_token(TokenType::TOKEN_AMPERSAND);
+  case '|': return make_token(TokenType::TOKEN_PIPE);
+  case '^': return make_token(TokenType::TOKEN_CARET);
+  case '~': return make_token(TokenType::TOKEN_TILDE);
   case '?': return make_token(TokenType::TOKEN_QUESTION);
   case ':': return make_token(TokenType::TOKEN_COLON);
   case '!': return make_token(match('=') ? TokenType::TOKEN_BANG_EQUAL : TokenType::TOKEN_BANG);
   case '=': return make_token(match('=') ? TokenType::TOKEN_EQUAL_EQUAL : TokenType::TOKEN_EQUAL);
-  case '<': return make_token(match('=') ? TokenType::TOKEN_LESS_EQUAL : TokenType::TOKEN_LESS);
-  case '>': return make_token(match('=') ? TokenType::TOKEN_GREATER_EQUAL : TokenType::TOKEN_GREATER);
+  case '<':
+    if (match('<')) return make_token(TokenType::TOKEN_LEFT_SHIFT);
+    return make_token(match('=') ? TokenType::TOKEN_LESS_EQUAL : TokenType::TOKEN_LESS);
+  case '>':
+    if (match('>')) return make_token(TokenType::TOKEN_RIGHT_SHIFT);
+    return make_token(match('=') ? TokenType::TOKEN_GREATER_EQUAL : TokenType::TOKEN_GREATER);
   case '"': return scan_string();
   }
 
