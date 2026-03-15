@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maple Language 源码架构指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --surface-4: #252535;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --accent-4: #f59e0b;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 20s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Holographic Card Effect */
+        .holo-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(18, 18, 26, 0.9), rgba(10, 10, 16, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        
+        .holo-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                105deg,
+                transparent 40%,
+                rgba(0, 245, 212, 0.1) 45%,
+                rgba(168, 85, 247, 0.1) 50%,
+                rgba(255, 107, 107, 0.1) 55%,
+                transparent 60%
+            );
+            transform: translateX(-100%);
+            transition: transform 0.8s ease;
+            pointer-events: none;
+        }
+        
+        .holo-card:hover {
+            transform: translateY(-15px) rotateX(5deg) rotateY(5deg);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                0 0 30px rgba(0, 245, 212, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 245, 212, 0.3);
+        }
+        
+        .holo-card:hover::before {
+            transform: translateX(100%);
+        }
+        
+        /* Card Glow Effect */
+        .card-glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .holo-card:hover .card-glow {
+            opacity: 0.5;
+        }
+        
+        /* Floating Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-float-delay-1 { animation-delay: -1s; }
+        .animate-float-delay-2 { animation-delay: -2s; }
+        .animate-float-delay-3 { animation-delay: -3s; }
+        .animate-float-delay-4 { animation-delay: -4s; }
+        
+        /* Shimmer Text */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 25%, var(--accent-3) 50%, var(--accent) 75%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Step Demo Controls */
+        .step-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .step-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+        
+        .step-btn:hover {
+            background: rgba(0, 245, 212, 0.2);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .step-btn.active {
+            background: linear-gradient(135deg, var(--accent), #06b6d4);
+            color: var(--bg);
+            border-color: transparent;
+        }
+        
+        .step-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Progress Indicator */
+        .step-progress {
+            display: flex;
+            gap: 4px;
+            margin-top: 16px;
+        }
+        
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            transform: scale(1.3);
+        }
+        
+        .step-dot.completed {
+            background: var(--accent-3);
+        }
+        
+        /* Pipeline Animation */
+        .pipeline-container {
+            position: relative;
+        }
+        
+        .pipeline-step {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 20px var(--accent);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .pipeline-step.active {
+            opacity: 1;
+            animation: move-pipeline 3s linear infinite;
+        }
+        
+        @keyframes move-pipeline {
+            0% { left: 0; }
+            100% { left: 100%; }
+        }
+        
+        /* Navigation */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: rgba(0, 245, 212, 0.1);
+            border: 1px solid rgba(0, 245, 212, 0.3);
+            color: var(--accent);
+        }
+        
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        
+        /* Code Block Styling */
+        .code-preview {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        
+        .code-line {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 0;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+        
+        .code-line.active {
+            opacity: 1;
+            background: rgba(0, 245, 212, 0.1);
+            margin: 0 -20px;
+            padding: 4px 20px;
+            border-left: 3px solid var(--accent);
+        }
+        
+        .line-num {
+            color: var(--text-dim);
+            min-width: 24px;
+            text-align: right;
+            font-size: 11px;
+        }
+        
+        /* Demo Stage Display */
+        .demo-stage {
+            background: linear-gradient(135deg, rgba(18, 18, 26, 0.9), rgba(10, 10, 16, 0.95));
+            border: 1px solid rgba(0, 245, 212, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+            min-height: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .demo-stage::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+        
+        /* Connection Lines */
+        .connection-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            transform-origin: left center;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .connection-line.active {
+            opacity: 1;
+            animation: draw-line 1s ease forwards;
+        }
+        
+        @keyframes draw-line {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/30 group-hover:shadow-cyan-500/50 transition-all">M</div>
+                <span class="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Maple Language</span>
+            </a>
+            <div class="flex items-center gap-6 text-sm">
+                <a href="scanner.html" class="nav-link text-[#8b92a8] hover:text-white transition-colors">Scanner</a>
+                <a href="compiler.html" class="nav-link text-[#8b92a8] hover:text-white transition-colors">Compiler</a>
+                <a href="vm.html" class="nav-link text-[#8b92a8] hover:text-white transition-colors">VM</a>
+                <a href="gc.html" class="nav-link text-[#8b92a8] hover:text-white transition-colors">GC</a>
+                <a href="object.html" class="nav-link text-[#8b92a8] hover:text-white transition-colors">Object</a>
+                <a href="mslang-architecture.html" class="nav-link px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-cyan-400/50 transition-all">
+                    <span class="text-cyan-400">Overview</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="inline-flex items-center gap-2 mb-6 status-badge">
+                <span>C++23 字节码虚拟机脚本语言</span>
+            </div>
+            <h1 class="text-6xl md:text-8xl font-bold mb-6 leading-tight">
+                <span class="shimmer-text">Maple Language</span>
+                <br>
+                <span class="text-3xl md:text-5xl text-[#8b92a8] font-light">源码架构指南</span>
+            </h1>
+            <p class="text-xl text-[#8b92a8] max-w-3xl leading-relaxed mb-12">
+                深入理解 Maple 脚本语言的底层实现原理。从词法分析到字节码执行，
+                每个模块都有详细的<span class="text-cyan-400">单步交互式演示</span>。
+            </p>
+            
+            <!-- Interactive Pipeline Demo -->
+            <div class="glass rounded-2xl p-8 mb-16">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold">执行流程演示</h3>
+                    <div class="step-controls">
+                        <button class="step-btn" id="reset-demo" onclick="resetPipelineDemo()">重置</button>
+                        <button class="step-btn active" id="step-demo" onclick="stepPipelineDemo()">单步执行</button>
+                        <button class="step-btn" id="auto-demo" onclick="autoPipelineDemo()">自动播放</button>
+                    </div>
+                </div>
+                
+                <!-- Pipeline Visualization -->
+                <div class="relative h-24 mb-4" id="pipeline-container">
+                    <svg viewBox="0 0 900 100" class="w-full h-full">
+                        <defs>
+                            <linearGradient id="pipeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#00f5d4"/>
+                                <stop offset="50%" style="stop-color:#a855f7"/>
+                                <stop offset="100%" style="stop-color:#f59e0b"/>
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        
+                        <!-- Pipeline Track -->
+                        <rect x="50" y="40" width="800" height="20" rx="10" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.1)"/>
+                        
+                        <!-- Active Track (progressive reveal) -->
+                        <rect id="active-track" x="50" y="40" width="0" height="20" rx="10" fill="url(#pipeGrad)" opacity="0.3"/>
+                        
+                        <!-- Stations -->
+                        <g id="station-1" class="pipeline-station" opacity="0.3">
+                            <circle cx="100" cy="50" r="25" fill="#12121a" stroke="#00f5d4" stroke-width="2"/>
+                            <text x="100" y="55" text-anchor="middle" fill="#00f5d4" font-size="10" font-weight="bold">SC</text>
+                            <text x="100" y="90" text-anchor="middle" fill="#8b92a8" font-size="9">Scanner</text>
+                        </g>
+                        <g id="station-2" class="pipeline-station" opacity="0.3">
+                            <circle cx="300" cy="50" r="25" fill="#12121a" stroke="#a855f7" stroke-width="2"/>
+                            <text x="300" y="55" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="bold">CP</text>
+                            <text x="300" y="90" text-anchor="middle" fill="#8b92a8" font-size="9">Compiler</text>
+                        </g>
+                        <g id="station-3" class="pipeline-station" opacity="0.3">
+                            <circle cx="500" cy="50" r="25" fill="#12121a" stroke="#f59e0b" stroke-width="2"/>
+                            <text x="500" y="55" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="bold">BC</text>
+                            <text x="500" y="90" text-anchor="middle" fill="#8b92a8" font-size="9">Bytecode</text>
+                        </g>
+                        <g id="station-4" class="pipeline-station" opacity="0.3">
+                            <circle cx="700" cy="50" r="25" fill="#12121a" stroke="#ff6b6b" stroke-width="2"/>
+                            <text x="700" y="55" text-anchor="middle" fill="#ff6b6b" font-size="10" font-weight="bold">VM</text>
+                            <text x="700" y="90" text-anchor="middle" fill="#8b92a8" font-size="9">执行</text>
+                        </g>
+                        
+                        <!-- Moving Token -->
+                        <circle id="pipeline-token" cx="100" cy="50" r="8" fill="#00f5d4" filter="url(#glow)" opacity="0"/>
+                    </svg>
+                </div>
+                
+                <!-- Step Progress -->
+                <div class="step-progress" id="pipeline-progress">
+                    <div class="step-dot active"></div>
+                    <div class="step-dot"></div>
+                    <div class="step-dot"></div>
+                    <div class="step-dot"></div>
+                </div>
+                
+                <!-- Current Stage Description -->
+                <div class="demo-stage" id="stage-description">
+                    <div class="text-[#8b92a8] text-sm">点击"单步执行"开始演示 Maple 语言源码到执行的完整流程...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Module Cards -->
+    <section class="py-16 px-6 relative z-10">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-4 text-center">探索各个模块</h2>
+            <p class="text-[#8b92a8] text-center mb-12">每个模块都包含详细的交互式演示和单步调试功能</p>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Scanner Card -->
+                <a href="scanner.html" class="holo-card group animate-float animate-float-delay-1">
+                    <div class="card-glow" style="background: #00f5d4; top: -50px; right: -50px;"></div>
+                    <div class="p-6 relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30">
+                                <svg class="w-7 h-7 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs text-cyan-400 border border-cyan-400/30 px-2 py-1 rounded">Step-by-step</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-cyan-400 mb-2">Scanner</h3>
+                        <p class="text-sm text-[#8b92a8] mb-4">词法分析器</p>
+                        <p class="text-sm text-[#8b92a8] leading-relaxed">
+                            惰性词法分析，按需生成 Token。支持字符串插值、关键字 Trie 匹配。
+                        </p>
+                        <div class="mt-4 flex gap-2">
+                            <span class="px-2 py-1 rounded bg-cyan-400/10 text-cyan-400 text-xs">Token 生成</span>
+                            <span class="px-2 py-1 rounded bg-cyan-400/10 text-cyan-400 text-xs">状态机</span>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- Compiler Card -->
+                <a href="compiler.html" class="holo-card group animate-float animate-float-delay-2">
+                    <div class="card-glow" style="background: #a855f7; bottom: -50px; left: -50px;"></div>
+                    <div class="p-6 relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-400/20 to-purple-600/20 flex items-center justify-center border border-purple-400/30">
+                                <svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs text-purple-400 border border-purple-400/30 px-2 py-1 rounded">Step-by-step</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-purple-400 mb-2">Compiler</h3>
+                        <p class="text-sm text-[#8b92a8] mb-4">编译器</p>
+                        <p class="text-sm text-[#8b92a8] leading-relaxed">
+                            Pratt Parser 单遍编译，无 AST，直接生成字节码。支持闭包、类定义。
+                        </p>
+                        <div class="mt-4 flex gap-2">
+                            <span class="px-2 py-1 rounded bg-purple-400/10 text-purple-400 text-xs">Pratt Parser</span>
+                            <span class="px-2 py-1 rounded bg-purple-400/10 text-purple-400 text-xs">字节码</span>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- VM Card -->
+                <a href="vm.html" class="holo-card group animate-float animate-float-delay-3">
+                    <div class="card-glow" style="background: #f59e0b; top: -50px; left: -50px;"></div>
+                    <div class="p-6 relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400/20 to-amber-600/20 flex items-center justify-center border border-amber-400/30">
+                                <svg class="w-7 h-7 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs text-amber-400 border border-amber-400/30 px-2 py-1 rounded">Step-by-step</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-amber-400 mb-2">VM</h3>
+                        <p class="text-sm text-[#8b92a8] mb-4">虚拟机</p>
+                        <p class="text-sm text-[#8b92a8] leading-relaxed">
+                            栈式字节码虚拟机，指令分发循环，值栈与调用帧管理。
+                        </p>
+                        <div class="mt-4 flex gap-2">
+                            <span class="px-2 py-1 rounded bg-amber-400/10 text-amber-400 text-xs">指令分发</span>
+                            <span class="px-2 py-1 rounded bg-amber-400/10 text-amber-400 text-xs">栈式执行</span>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- GC Card -->
+                <a href="gc.html" class="holo-card group animate-float animate-float-delay-4">
+                    <div class="card-glow" style="background: #00f5d4; bottom: -50px; right: -50px;"></div>
+                    <div class="p-6 relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400/20 to-teal-600/20 flex items-center justify-center border border-cyan-400/30">
+                                <svg class="w-7 h-7 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs text-cyan-400 border border-cyan-400/30 px-2 py-1 rounded">Step-by-step</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-cyan-400 mb-2">GC</h3>
+                        <p class="text-sm text-[#8b92a8] mb-4">垃圾回收器</p>
+                        <p class="text-sm text-[#8b92a8] leading-relaxed">
+                            三色标记-清扫算法，追踪式垃圾回收，GC Roots 标记。
+                        </p>
+                        <div class="mt-4 flex gap-2">
+                            <span class="px-2 py-1 rounded bg-cyan-400/10 text-cyan-400 text-xs">Mark-Sweep</span>
+                            <span class="px-2 py-1 rounded bg-cyan-400/10 text-cyan-400 text-xs">三色标记</span>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- Object Card -->
+                <a href="object.html" class="holo-card group animate-float">
+                    <div class="card-glow" style="background: #ff6b6b; top: 50%; left: -50px;"></div>
+                    <div class="p-6 relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-400/20 to-pink-600/20 flex items-center justify-center border border-red-400/30">
+                                <svg class="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs text-red-400 border border-red-400/30 px-2 py-1 rounded">Interactive</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-red-400 mb-2">Object</h3>
+                        <p class="text-sm text-[#8b92a8] mb-4">对象系统</p>
+                        <p class="text-sm text-[#8b92a8] leading-relaxed">
+                            GC 管理对象层次，闭包与 Upvalue，类与实例，字符串驻留。
+                        </p>
+                        <div class="mt-4 flex gap-2">
+                            <span class="px-2 py-1 rounded bg-red-400/10 text-red-400 text-xs">对象层次</span>
+                            <span class="px-2 py-1 rounded bg-red-400/10 text-red-400 text-xs">闭包</span>
+                        </div>
+                    </div>
+                </a>
+                
+                <!-- Overview Card -->
+                <a href="mslang-architecture.html" class="holo-card group animate-float animate-float-delay-1">
+                    <div class="card-glow" style="background: linear-gradient(135deg, #ff6b35, #f7931e); top: -50px; right: 50%;"></div>
+                    <div class="p-6 relative z-10">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400/20 to-yellow-600/20 flex items-center justify-center border border-orange-400/30">
+                                <svg class="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.447-.894L15 7m0 13V7"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs text-orange-400 border border-orange-400/30 px-2 py-1 rounded">Full Guide</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-orange-400 mb-2">Overview</h3>
+                        <p class="text-sm text-[#8b92a8] mb-4">架构总览</p>
+                        <p class="text-sm text-[#8b92a8] leading-relaxed">
+                            完整的系统架构图，模块依赖关系，执行流程总览。
+                        </p>
+                        <div class="mt-4 flex gap-2">
+                            <span class="px-2 py-1 rounded bg-orange-400/10 text-orange-400 text-xs">架构图</span>
+                            <span class="px-2 py-1 rounded bg-orange-400/10 text-orange-400 text-xs">完整指南</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Preview Section -->
+    <section class="py-16 px-6 relative z-10">
+        <div class="max-w-4xl mx-auto">
+            <div class="glass rounded-2xl p-8">
+                <h3 class="text-2xl font-bold mb-6">代码示例</h3>
+                <div class="code-preview">
+                    <div class="code-line" data-line="1">
+                        <span class="line-num">01</span>
+                        <span><span class="text-purple-400">class</span> <span class="text-cyan-400">Person</span> {</span>
+                    </div>
+                    <div class="code-line" data-line="2">
+                        <span class="line-num">02</span>
+                        <span>  <span class="text-purple-400">init</span>(name) {</span>
+                    </div>
+                    <div class="code-line" data-line="3">
+                        <span class="line-num">03</span>
+                        <span>    <span class="text-purple-400">this</span>.name = name;</span>
+                    </div>
+                    <div class="code-line" data-line="4">
+                        <span class="line-num">04</span>
+                        <span>  }</span>
+                    </div>
+                    <div class="code-line" data-line="5">
+                        <span class="line-num">05</span>
+                        <span>  <span class="text-purple-400">greet</span>() {</span>
+                    </div>
+                    <div class="code-line" data-line="6">
+                        <span class="line-num">06</span>
+                        <span>    <span class="text-purple-400">print</span> <span class="text-green-400">"Hello, "</span> + <span class="text-purple-400">this</span>.name;</span>
+                    </div>
+                    <div class="code-line" data-line="7">
+                        <span class="line-num">07</span>
+                        <span>  }</span>
+                    </div>
+                    <div class="code-line" data-line="8">
+                        <span class="line-num">08</span>
+                        <span>}</span>
+                    </div>
+                    <div class="code-line" data-line="9">
+                        <span class="line-num">09</span>
+                        <span></span>
+                    </div>
+                    <div class="code-line" data-line="10">
+                        <span class="line-num">10</span>
+                        <span><span class="text-purple-400">var</span> p = <span class="text-cyan-400">Person</span>(<span class="text-green-400">"Maple"</span>);</span>
+                    </div>
+                    <div class="code-line" data-line="11">
+                        <span class="line-num">11</span>
+                        <span>p.<span class="text-cyan-400">greet</span>(); <span class="text-gray-500">// Hello, Maple</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 relative z-10 border-t border-white/5 mt-20">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center font-bold text-white text-xl">M</div>
+                <span class="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Maple Language</span>
+            </div>
+            <p class="text-sm text-[#8b92a8] mb-2">
+                基于 Crafting Interpreters (clox) 的现代 C++23 实现
+            </p>
+            <p class="text-xs text-[#8b92a8]/60">
+                栈式字节码虚拟机 | 单遍 Pratt 编译器 | Mark-and-Sweep GC
+            </p>
+        </div>
+    </footer>
+
+    <!-- Particle System -->
+    <script>
+        (function() {
+            const container = document.getElementById('particles');
+            const particleCount = 40;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 20 + 's';
+                p.style.animationDuration = (15 + Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+
+        // Pipeline Demo
+        let currentStep = 0;
+        let isAutoPlaying = false;
+        let autoPlayInterval;
+        
+        const stageDescriptions = [
+            { title: 'Source Code', desc: 'Maple 源码 (.ms) 输入，包含类定义、函数、表达式等语法元素。', color: '#00f5d4' },
+            { title: 'Scanner', desc: '词法分析器将源码转换为 Token 流。惰性求值策略，按需生成 Token。', color: '#a855f7' },
+            { title: 'Compiler', desc: 'Pratt Parser 单遍编译，无 AST，直接生成字节码指令序列。', color: '#f59e0b' },
+            { title: 'Bytecode', desc: '生成的字节码存储在 Chunk 中，包含指令流、常量池和行号映射。', color: '#ff6b6b' }
+        ];
+        
+        const stations = ['station-1', 'station-2', 'station-3', 'station-4'];
+        const trackWidths = ['0', '250', '450', '800'];
+        const tokenPositions = [100, 300, 500, 700];
+        
+        function updatePipelineVisuals() {
+            // Update track
+            const track = document.getElementById('active-track');
+            track.setAttribute('width', trackWidths[currentStep]);
+            
+            // Update stations
+            stations.forEach((id, idx) => {
+                const station = document.getElementById(id);
+                station.style.opacity = idx <= currentStep ? '1' : '0.3';
+                if (idx <= currentStep) {
+                    station.style.filter = `drop-shadow(0 0 10px ${stageDescriptions[idx]?.color || '#fff'})`;
+                }
+            });
+            
+            // Update token
+            const token = document.getElementById('pipeline-token');
+            token.setAttribute('cx', tokenPositions[currentStep]);
+            token.style.opacity = '1';
+            token.setAttribute('fill', stageDescriptions[currentStep]?.color || '#00f5d4');
+            
+            // Update progress dots
+            const dots = document.querySelectorAll('#pipeline-progress .step-dot');
+            dots.forEach((dot, idx) => {
+                dot.classList.remove('active', 'completed');
+                if (idx === currentStep) dot.classList.add('active');
+                else if (idx < currentStep) dot.classList.add('completed');
+            });
+            
+            // Update description
+            const desc = stageDescriptions[currentStep];
+            document.getElementById('stage-description').innerHTML = `
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="w-3 h-3 rounded-full" style="background: ${desc.color}; box-shadow: 0 0 10px ${desc.color};"></span>
+                    <span class="font-semibold text-lg" style="color: ${desc.color}">${desc.title}</span>
+                </div>
+                <p class="text-[#8b92a8] text-sm">${desc.desc}</p>
+            `;
+        }
+        
+        function stepPipelineDemo() {
+            if (currentStep < 3) {
+                currentStep++;
+                updatePipelineVisuals();
+            } else {
+                // Reset when complete
+                setTimeout(() => resetPipelineDemo(), 1000);
+            }
+        }
+        
+        function resetPipelineDemo() {
+            currentStep = 0;
+            updatePipelineVisuals();
+            document.getElementById('stage-description').innerHTML = 
+                '<div class="text-[#8b92a8] text-sm">点击"单步执行"开始演示 Maple 语言源码到执行的完整流程...</div>';
+            stopAutoPlay();
+        }
+        
+        function autoPipelineDemo() {
+            if (isAutoPlaying) {
+                stopAutoPlay();
+                return;
+            }
+            isAutoPlaying = true;
+            document.getElementById('auto-demo').classList.add('active');
+            resetPipelineDemo();
+            
+            autoPlayInterval = setInterval(() => {
+                if (currentStep < 3) {
+                    stepPipelineDemo();
+                } else {
+                    setTimeout(() => resetPipelineDemo(), 1000);
+                }
+            }, 1500);
+        }
+        
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+            document.getElementById('auto-demo').classList.remove('active');
+            clearInterval(autoPlayInterval);
+        }
+        
+        // Code line highlighting animation
+        function highlightCodeLines() {
+            const lines = document.querySelectorAll('.code-line');
+            let currentLine = 0;
+            
+            setInterval(() => {
+                lines.forEach(l => l.classList.remove('active'));
+                lines[currentLine].classList.add('active');
+                currentLine = (currentLine + 1) % lines.length;
+            }, 1500);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            highlightCodeLines();
+        });
+    </script>
+</body>
+</html>

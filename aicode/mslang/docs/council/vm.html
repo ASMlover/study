@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM 虚拟机 - Maple Language</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface-2: #1a1a25;
+            --accent: #f7931e;
+            --accent-2: #00d4aa;
+            --accent-3: #7c3aed;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --border: #2d2d44;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        @keyframes stack-pop {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(-10px) scale(1.1); }
+            100% { transform: translateY(20px) scale(0); opacity: 0; }
+        }
+        @keyframes stack-push {
+            0% { transform: translateY(-20px) scale(0); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        @keyframes ip-move {
+            0% { left: var(--from); }
+            100% { left: var(--to); }
+        }
+        @keyframes instruction-execute {
+            0% { background: rgba(247, 147, 30, 0.3); }
+            50% { background: rgba(247, 147, 30, 0.6); box-shadow: 0 0 20px rgba(247, 147, 30, 0.4); }
+            100% { background: rgba(247, 147, 30, 0.1); }
+        }
+        @keyframes value-flow {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(var(--direction)) scale(0.8); opacity: 0; }
+        }
+        
+        .stack-slot {
+            transition: all 0.3s ease;
+        }
+        .stack-slot.pushing {
+            animation: stack-push 0.3s ease-out;
+        }
+        .stack-slot.popping {
+            animation: stack-pop 0.3s ease-in forwards;
+        }
+        .stack-slot.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(247, 147, 30, 0.4);
+            transform: scale(1.05);
+        }
+        
+        .instruction-cell {
+            transition: all 0.2s ease;
+        }
+        .instruction-cell.active {
+            background: rgba(247, 147, 30, 0.3);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(247, 147, 30, 0.3);
+            animation: instruction-execute 0.5s ease;
+        }
+        .instruction-cell.executed {
+            background: rgba(247, 147, 30, 0.1);
+            border-color: rgba(247, 147, 30, 0.3);
+        }
+        
+        .ip-indicator {
+            transition: left 0.3s ease;
+        }
+        
+        .call-frame {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .call-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+        .call-frame.active {
+            border-color: var(--accent-2);
+            background: rgba(0, 212, 170, 0.15);
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.3);
+            transform: scale(1.02);
+        }
+        .call-frame.active::before {
+            left: 100%;
+        }
+        
+        /* Enhanced stack slot effects */
+        .stack-slot {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .stack-slot::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            background: radial-gradient(circle at center, rgba(247, 147, 30, 0.3), transparent);
+        }
+        .stack-slot.active::after {
+            opacity: 1;
+            animation: pulse-ring 1s ease-out infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        
+        /* Instruction flow animation */
+        .instruction-flow {
+            position: absolute;
+            width: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            animation: flow-right 1s linear infinite;
+            opacity: 0.6;
+        }
+        
+        @keyframes flow-right {
+            0% { transform: translateX(-100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(400px); opacity: 0; }
+        }
+        
+        /* Opcode category colors */
+        .op-constant { border-color: #00d4aa; background: rgba(0, 212, 170, 0.1); }
+        .op-arithmetic { border-color: #f7931e; background: rgba(247, 147, 30, 0.1); }
+        .op-comparison { border-color: #7c3aed; background: rgba(124, 58, 237, 0.1); }
+        .op-control { border-color: #ec4899; background: rgba(236, 72, 153, 0.1); }
+        .op-variable { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+    </style>
+
+    <!-- Enhanced Visual Effects -->
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 15s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-strong {
+            background: rgba(10, 10, 16, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        
+        /* Enhanced Animations */
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow), 0 0 20px var(--glow), 0 0 40px rgba(0, 245, 212, 0.2);
+                border-color: var(--accent);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow), 0 0 40px var(--glow), 0 0 80px rgba(0, 245, 212, 0.4);
+                border-color: #fff;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Shimmer text effect */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        /* Gradient border effect */
+        .gradient-border {
+            position: relative;
+            background: var(--surface-2);
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Button effects */
+        .btn-enhanced {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-enhanced:hover::before {
+            left: 100%;
+        }
+        
+        .btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        /* Navigation glow */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Card hover effects */
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        /* Enhanced scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+<body class="min-h-screen">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center font-bold text-white">M</div>
+                <span class="text-xl font-bold">Maple Language</span>
+            </a>
+            <div class="flex gap-6 text-sm">
+                <a href="scanner.html" class="hover:text-[#f7931e] transition-colors">Scanner</a>
+                <a href="compiler.html" class="hover:text-[#f7931e] transition-colors">Compiler</a>
+                <a href="vm.html" class="text-[#f7931e] font-semibold">VM</a>
+                <a href="gc.html" class="hover:text-[#f7931e] transition-colors">GC</a>
+                <a href="object.html" class="hover:text-[#f7931e] transition-colors">Object</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="inline-block mb-4 px-4 py-2 rounded-full border border-[#f7931e]/30 bg-[#f7931e]/10 text-[#f7931e] text-sm font-medium">
+                运行时层 / Runtime Layer
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                <span class="text-[#f7931e]">VM</span>
+                <span class="text-[#94a3b8] text-4xl">虚拟机</span>
+            </h1>
+            <p class="text-xl text-[#94a3b8] max-w-3xl leading-relaxed">
+                栈式字节码虚拟机，通过 <strong>指令分发循环 (Dispatch Loop)</strong> 解释执行字节码。
+                包含值栈、调用帧栈、全局变量表，支持函数调用、闭包、方法调用等高级特性。
+            </p>
+        </div>
+    </section>
+
+    <!-- Interactive VM Demo -->
+    <section class="py-12 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-[#f7931e]/20 flex items-center justify-center text-[#f7931e]">▶</span>
+                VM 执行过程可视化
+            </h2>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Bytecode Display -->
+                <div class="lg:col-span-1 p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-medium text-[#94a3b8]">字节码</label>
+                        <div class="flex gap-2">
+                            <button onclick="loadBytecode('arithmetic')" class="px-2 py-1 rounded bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#f7931e]">算术</button>
+                            <button onclick="loadBytecode('call')" class="px-2 py-1 rounded bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#f7931e]">函数调用</button>
+                        </div>
+                    </div>
+                    
+                    <div id="bytecode-display" class="relative font-mono text-sm space-y-1 max-h-[400px] overflow-y-auto pl-10 pr-2">
+                        <!-- IP Indicator - positioned inside bytecode-display for accurate alignment -->
+                        <div id="ip-indicator" class="absolute left-1 w-7 h-7 rounded-full bg-[#f7931e] flex items-center justify-center text-[#0a0a0f] text-xs font-bold opacity-0 transition-all duration-300 z-10 pointer-events-none" style="top: 4px; box-shadow: 0 0 15px rgba(247, 147, 30, 0.6);">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                        <!-- Instructions will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Stack Visualization -->
+                <div class="lg:col-span-1 p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-medium text-[#94a3b8]">值栈</label>
+                        <span id="stack-depth" class="text-xs text-[#94a3b8]">depth: 0</span>
+                    </div>
+                    
+                    <div class="flex flex-col-reverse gap-2" id="stack-visualization">
+                        <!-- Stack slots will be populated here -->
+                        <div class="text-center text-[#94a3b8]/30 text-sm py-8">Stack empty</div>
+                    </div>
+                    
+                    <div class="mt-4 p-3 rounded-lg bg-[#12121a] border border-[#2d2d44]">
+                        <div class="text-xs text-[#94a3b8] mb-1">栈底 ← → 栈顶</div>
+                        <div class="h-1 rounded-full bg-gradient-to-r from-[#00d4aa] to-[#f7931e]"></div>
+                    </div>
+                </div>
+                
+                <!-- Call Stack -->
+                <div class="lg:col-span-1 p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-medium text-[#94a3b8]">调用帧栈</label>
+                        <span id="frame-count" class="text-xs text-[#94a3b8]">frames: 0</span>
+                    </div>
+                    
+                    <div id="call-stack" class="space-y-2">
+                        <!-- Call frames will be populated here -->
+                        <div class="text-center text-[#94a3b8]/30 text-sm py-8">No active calls</div>
+                    </div>
+                    
+                    <!-- Execution Controls -->
+                    <div class="mt-6 flex gap-2">
+                        <button onclick="startExecution()" id="exec-btn" class="flex-1 py-2 rounded-lg bg-[#f7931e] text-[#0a0a0f] font-semibold hover:bg-[#f7931e]/90 transition-all text-sm">
+                            执行
+                        </button>
+                        <button onclick="stepExecution()" id="step-btn" class="flex-1 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] hover:border-[#00d4aa] transition-all text-sm">
+                            单步
+                        </button>
+                        <button onclick="resetExecution()" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] hover:border-[#ec4899] transition-all text-sm">
+                            ↺
+                        </button>
+                    </div>
+                    
+                    <div id="execution-log" class="mt-4 p-3 rounded-lg bg-[#12121a] h-24 overflow-y-auto font-mono text-xs text-[#94a3b8]">
+                        <div class="text-[#94a3b8]/50">Ready to execute...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VM Architecture -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">VM 架构详解</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- VM State Visualization -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">VM 状态结构</h3>
+                    
+                    <svg viewBox="0 0 400 340" class="w-full h-auto">
+                        <!-- Main VM Box -->
+                        <rect x="50" y="10" width="300" height="310" rx="12" fill="#0a0a0f" stroke="#f7931e" stroke-width="2"/>
+                        <text x="200" y="35" text-anchor="middle" fill="#f7931e" font-size="14" font-weight="600">VM</text>
+                        
+                        <!-- Call Frame Stack -->
+                        <rect x="70" y="50" width="120" height="80" rx="6" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="130" y="70" text-anchor="middle" fill="#94a3b8" font-size="10">调用帧栈</text>
+                        <text x="130" y="88" text-anchor="middle" fill="#7c3aed" font-size="9">frames_[64]</text>
+                        <rect x="80" y="95" width="100" height="8" rx="2" fill="#7c3aed" fill-opacity="0.3"/>
+                        <rect x="80" y="106" width="100" height="8" rx="2" fill="#7c3aed" fill-opacity="0.2"/>
+                        <rect x="80" y="117" width="100" height="8" rx="2" fill="#7c3aed" fill-opacity="0.1"/>
+                        
+                        <!-- Value Stack -->
+                        <rect x="210" y="50" width="120" height="80" rx="6" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="270" y="70" text-anchor="middle" fill="#94a3b8" font-size="10">值栈</text>
+                        <text x="270" y="88" text-anchor="middle" fill="#00d4aa" font-size="9">stack_[8192]</text>
+                        <rect x="220" y="95" width="100" height="8" rx="2" fill="#00d4aa" fill-opacity="0.3"/>
+                        <rect x="220" y="106" width="100" height="8" rx="2" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="270" y="125" text-anchor="middle" fill="#94a3b8" font-size="8">stack_top_</text>
+                        
+                        <!-- Global State -->
+                        <rect x="70" y="145" width="260" height="70" rx="6" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                        <text x="200" y="165" text-anchor="middle" fill="#94a3b8" font-size="10">全局状态</text>
+                        <rect x="80" y="175" width="70" height="12" rx="2" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="115" y="184" text-anchor="middle" fill="#f7931e" font-size="8">globals_</text>
+                        <rect x="160" y="175" width="70" height="12" rx="2" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="195" y="184" text-anchor="middle" fill="#f7931e" font-size="8">strings_</text>
+                        <rect x="240" y="175" width="80" height="12" rx="2" fill="#ec4899" fill-opacity="0.2"/>
+                        <text x="280" y="184" text-anchor="middle" fill="#ec4899" font-size="8">open_upvalues_</text>
+                        <text x="200" y="200" text-anchor="middle" fill="#64748b" font-size="8">全局变量 | 字符串驻留 | 打开的上值</text>
+                        
+                        <!-- GC State -->
+                        <rect x="70" y="225" width="260" height="80" rx="6" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                        <text x="200" y="245" text-anchor="middle" fill="#94a3b8" font-size="10">GC 状态</text>
+                        <circle cx="130" cy="270" r="15" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="130" y="275" text-anchor="middle" fill="#00d4aa" font-size="8">obj</text>
+                        <circle cx="170" cy="270" r="15" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="170" y="275" text-anchor="middle" fill="#00d4aa" font-size="8">obj</text>
+                        <circle cx="210" cy="270" r="15" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="210" y="275" text-anchor="middle" fill="#00d4aa" font-size="8">obj</text>
+                        <text x="260" y="275" fill="#64748b" font-size="10">→ objects_</text>
+                        <text x="200" y="295" text-anchor="middle" fill="#94a3b8" font-size="8">对象链表 | bytes_allocated_</text>
+                    </svg>
+                </div>
+                
+                <!-- CallFrame Visualization -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">CallFrame 调用帧</h3>
+                    
+                    <svg viewBox="0 0 400 280" class="w-full h-auto">
+                        <!-- CallFrame Box -->
+                        <rect x="20" y="10" width="160" height="120" rx="8" fill="#0a0a0f" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="100" y="30" text-anchor="middle" fill="#00d4aa" font-size="12" font-weight="600">CallFrame</text>
+                        
+                        <!-- Fields -->
+                        <rect x="35" y="45" width="130" height="22" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="1"/>
+                        <text x="50" y="60" fill="#94a3b8" font-size="9">closure</text>
+                        <text x="120" y="60" fill="#7c3aed" font-size="8">ObjClosure*</text>
+                        
+                        <rect x="35" y="72" width="130" height="22" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="1"/>
+                        <text x="50" y="87" fill="#94a3b8" font-size="9">ip</text>
+                        <text x="120" y="87" fill="#f7931e" font-size="8">u8_t*</text>
+                        
+                        <rect x="35" y="99" width="130" height="22" rx="4" fill="#1a1a25" stroke="#00d4aa" stroke-width="1"/>
+                        <text x="50" y="114" fill="#94a3b8" font-size="9">slots</text>
+                        <text x="120" y="114" fill="#00d4aa" font-size="8">Value*</text>
+                        
+                        <!-- Stack Layout -->
+                        <rect x="200" y="10" width="170" height="250" rx="8" fill="#0a0a0f" stroke="#2d2d44" stroke-width="1"/>
+                        <text x="285" y="30" text-anchor="middle" fill="#94a3b8" font-size="11">栈布局 f(a, b)</text>
+                        
+                        <!-- Stack slots -->
+                        <rect x="215" y="45" width="140" height="28" rx="4" fill="#f7931e" fill-opacity="0.2" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="235" y="63" fill="#f7931e" font-size="10" font-weight="600">f (closure)</text>
+                        <text x="340" y="63" fill="#94a3b8" font-size="9">← slots</text>
+                        
+                        <rect x="215" y="80" width="140" height="28" rx="4" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1"/>
+                        <text x="235" y="98" fill="#00d4aa" font-size="10">a (arg 0)</text>
+                        <text x="330" y="98" fill="#64748b" font-size="8">[1]</text>
+                        
+                        <rect x="215" y="115" width="140" height="28" rx="4" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1"/>
+                        <text x="235" y="133" fill="#00d4aa" font-size="10">b (arg 1)</text>
+                        <text x="330" y="133" fill="#64748b" font-size="8">[2]</text>
+                        
+                        <rect x="215" y="150" width="140" height="28" rx="4" fill="#7c3aed" fill-opacity="0.2" stroke="#7c3aed" stroke-width="1"/>
+                        <text x="235" y="168" fill="#7c3aed" font-size="10">local x</text>
+                        <text x="330" y="168" fill="#64748b" font-size="8">[3]</text>
+                        
+                        <rect x="215" y="185" width="140" height="28" rx="4" fill="#7c3aed" fill-opacity="0.2" stroke="#7c3aed" stroke-width="1"/>
+                        <text x="235" y="203" fill="#7c3aed" font-size="10">local y</text>
+                        <text x="330" y="203" fill="#64748b" font-size="8">[4]</text>
+                        
+                        <text x="285" y="235" text-anchor="middle" fill="#64748b" font-size="9">...</text>
+                        
+                        <!-- Connection arrow -->
+                        <path d="M 165 108 L 210 59" stroke="#00d4aa" stroke-width="2" stroke-dasharray="4" marker-end="url(#arrow-v)"/>
+                        
+                        <defs>
+                            <marker id="arrow-v" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0,0 L0,8 L7,4 z" fill="#00d4aa"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dispatch Loop Visualization -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">指令分发循环可视化</h2>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Dispatch Flow Diagram -->
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">VM::run() 执行流程</h3>
+                    
+                    <svg viewBox="0 0 420 500" class="w-full h-auto">
+                        <!-- Layer 0: Main Loop -->
+                        <rect x="160" y="10" width="100" height="40" rx="20" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="210" y="35" text-anchor="middle" fill="#e2e8f0" font-size="11">for(;;)</text>
+                        
+                        <!-- Layer 1: Read Byte -->
+                        <rect x="160" y="70" width="100" height="40" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="210" y="90" text-anchor="middle" fill="#f7931e" font-size="10">READ_BYTE()</text>
+                        <text x="210" y="102" text-anchor="middle" fill="#94a3b8" font-size="8">*frame->ip++</text>
+                        
+                        <!-- Layer 2: Switch -->
+                        <polygon points="210,130 260,160 210,190 160,160" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="210" y="155" text-anchor="middle" fill="#7c3aed" font-size="10">switch</text>
+                        <text x="210" y="170" text-anchor="middle" fill="#94a3b8" font-size="8">opcode</text>
+                        
+                        <!-- Layer 3: Instruction Nodes (side by side) -->
+                        <!-- OP_CONSTANT (left) -->
+                        <rect x="10" y="210" width="110" height="45" rx="4" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="65" y="232" text-anchor="middle" fill="#00d4aa" font-size="9">OP_CONSTANT</text>
+                        <text x="65" y="247" text-anchor="middle" fill="#94a3b8" font-size="7">push constant</text>
+                        
+                        <!-- OP_ADD (center) -->
+                        <rect x="155" y="210" width="110" height="45" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="210" y="232" text-anchor="middle" fill="#f7931e" font-size="9">OP_ADD</text>
+                        <text x="210" y="247" text-anchor="middle" fill="#94a3b8" font-size="7">pop, add, push</text>
+                        
+                        <!-- OP_CALL (right) -->
+                        <rect x="300" y="210" width="110" height="45" rx="4" fill="#1a1a25" stroke="#ec4899" stroke-width="1.5"/>
+                        <text x="355" y="232" text-anchor="middle" fill="#ec4899" font-size="9">OP_CALL</text>
+                        <text x="355" y="247" text-anchor="middle" fill="#94a3b8" font-size="7">new frame</text>
+                        
+                        <!-- Layer 4: OP_RETURN (only from OP_ADD) -->
+                        <rect x="160" y="280" width="100" height="45" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="210" y="302" text-anchor="middle" fill="#7c3aed" font-size="9">OP_RETURN</text>
+                        <text x="210" y="317" text-anchor="middle" fill="#94a3b8" font-size="7">pop frame</text>
+                        
+                        <!-- Layer 5: Frame Check -->
+                        <polygon points="210,350 255,375 210,400 165,375" fill="#1a1a25" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="210" y="372" text-anchor="middle" fill="#f7931e" font-size="8">frame</text>
+                        <text x="210" y="385" text-anchor="middle" fill="#f7931e" font-size="8">count==0?</text>
+                        
+                        <!-- Layer 6: End States -->
+                        <!-- Return OK (left) -->
+                        <rect x="10" y="360" width="90" height="40" rx="4" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="55" y="385" text-anchor="middle" fill="#00d4aa" font-size="9">return OK</text>
+                        
+                        <!-- Continue/Loop (right) -->
+                        <rect x="320" y="360" width="90" height="40" rx="4" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                        <text x="365" y="385" text-anchor="middle" fill="#94a3b8" font-size="9">continue</text>
+                        
+                        <!-- Connection Lines - using L-shaped paths -->
+                        <!-- Main flow down -->
+                        <path d="M 210 50 L 210 70" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-v)"/>
+                        <path d="M 210 110 L 210 130" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-v)"/>
+                        
+                        <!-- Switch to instructions -->
+                        <path d="M 160 160 L 65 160 L 65 210" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrow-v)"/>
+                        <path d="M 210 190 L 210 210" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-v)"/>
+                        <path d="M 260 160 L 355 160 L 355 210" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrow-v)"/>
+                        
+                        <!-- Instructions to next layer -->
+                        <path d="M 65 255 L 65 275 L 160 275 L 160 280" stroke="#2d2d44" stroke-width="1.5" fill="none"/>
+                        <path d="M 210 255 L 210 280" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-v)"/>
+                        <path d="M 355 255 L 355 275 L 260 275 L 260 380 L 320 380" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrow-v)"/>
+                        
+                        <!-- OP_RETURN to frame check -->
+                        <path d="M 210 325 L 210 350" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-v)"/>
+                        
+                        <!-- Frame check branches -->
+                        <path d="M 165 375 L 100 375 L 100 360" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-v)"/>
+                        <path d="M 255 375 L 320 380" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-v)"/>
+                        
+                        <!-- Loop back paths -->
+                        <!-- Left side return -->
+                        <path d="M 55 400 L 55 440 L 160 440" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-v)"/>
+                        <!-- Right side continue -->
+                        <path d="M 365 400 L 365 440 L 260 440" stroke="#2d2d44" stroke-width="1.5"/>
+                        <!-- Main loop back -->
+                        <path d="M 210 440 L 210 460 Q 400 460 400 30 Q 400 30 260 30" stroke="#00d4aa" stroke-width="2" stroke-dasharray="4" fill="none" marker-end="url(#arrow-loop)"/>
+                        
+                        <defs>
+                            <marker id="arrow-v" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0,0 L0,8 L7,4 z" fill="#2d2d44"/>
+                            </marker>
+                            <marker id="arrow-loop" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0,0 L0,8 L7,4 z" fill="#00d4aa"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                
+                <!-- Stack Operations & Macros -->
+                <div class="space-y-4">
+                    <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h4 class="font-semibold mb-3 text-[#00d4aa]">栈操作可视化</h4>
+                        <svg viewBox="0 0 300 120" class="w-full h-auto">
+                            <!-- push -->
+                            <rect x="10" y="10" width="130" height="45" rx="6" fill="#1a1a25" stroke="#00d4aa" stroke-width="1"/>
+                            <text x="75" y="30" text-anchor="middle" fill="#00d4aa" font-size="11">push(val)</text>
+                            <text x="75" y="45" text-anchor="middle" fill="#94a3b8" font-size="9">*stack_top_++ = val</text>
+                            
+                            <!-- pop -->
+                            <rect x="160" y="10" width="130" height="45" rx="6" fill="#1a1a25" stroke="#f7931e" stroke-width="1"/>
+                            <text x="225" y="30" text-anchor="middle" fill="#f7931e" font-size="11">pop()</text>
+                            <text x="225" y="45" text-anchor="middle" fill="#94a3b8" font-size="9">*--stack_top_</text>
+                            
+                            <!-- peek -->
+                            <rect x="85" y="70" width="130" height="40" rx="6" fill="#1a1a25" stroke="#7c3aed" stroke-width="1"/>
+                            <text x="150" y="88" text-anchor="middle" fill="#7c3aed" font-size="11">peek(n)</text>
+                            <text x="150" y="102" text-anchor="middle" fill="#94a3b8" font-size="9">stack_top_[-1-n]</text>
+                        </svg>
+                    </div>
+                    
+                    <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h4 class="font-semibold mb-3 text-[#f7931e]">宏展开示意</h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center gap-3">
+                                <span class="text-[#f7931e] font-mono text-xs">READ_BYTE()</span>
+                                <span class="text-[#64748b]">→</span>
+                                <span class="text-[#00d4aa] font-mono text-xs">(*frame->ip++)</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[#f7931e] font-mono text-xs">READ_CONSTANT()</span>
+                                <span class="text-[#64748b]">→</span>
+                                <span class="text-[#00d4aa] font-mono text-xs">frame->closure->function->chunk->constants[idx]</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h4 class="font-semibold mb-3 text-[#7c3aed]">分发方式对比</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center gap-2 p-2 rounded bg-[#12121a]">
+                                <span class="w-2 h-2 rounded-full bg-[#00d4aa]"></span>
+                                <span class="text-[#e2e8f0]">Switch-based</span>
+                                <span class="ml-auto text-[#94a3b8]">Maple 采用</span>
+                            </div>
+                            <div class="flex items-center gap-2 p-2 rounded bg-[#12121a]">
+                                <span class="w-2 h-2 rounded-full bg-[#64748b]"></span>
+                                <span class="text-[#94a3b8]">Direct Threading</span>
+                                <span class="ml-auto text-[#64748b]">GCC 扩展</span>
+                            </div>
+                            <div class="flex items-center gap-2 p-2 rounded bg-[#12121a]">
+                                <span class="w-2 h-2 rounded-full bg-[#64748b]"></span>
+                                <span class="text-[#94a3b8]">Computed Goto</span>
+                                <span class="ml-auto text-[#64748b]">最高效</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Instruction Stats -->
+                    <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h4 class="font-semibold mb-3 text-[#ec4899]">指令统计</h4>
+                        <div class="grid grid-cols-2 gap-3 text-center">
+                            <div class="p-3 rounded-lg bg-[#12121a]">
+                                <div class="text-2xl font-bold text-[#00d4aa]">40+</div>
+                                <div class="text-xs text-[#94a3b8]">操作码</div>
+                            </div>
+                            <div class="p-3 rounded-lg bg-[#12121a]">
+                                <div class="text-2xl font-bold text-[#f7931e]">1</div>
+                                <div class="text-xs text-[#94a3b8]">字节/指令</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Opcode Reference -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">指令集参考</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Constants -->
+                <div class="p-5 rounded-2xl bg-[#12121a] border border-[#00d4aa]/30">
+                    <h3 class="font-semibold mb-3 text-[#00d4aa] flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#00d4aa]"></span>
+                        常量操作
+                    </h3>
+                    <div class="space-y-2 text-sm font-mono">
+                        <div class="p-2 rounded bg-[#0a0a0f] op-constant">
+                            <div class="text-[#00d4aa]">OP_CONSTANT</div>
+                            <div class="text-xs text-[#94a3b8]">idx → push const[idx]</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-constant">
+                            <div class="text-[#00d4aa]">OP_NIL</div>
+                            <div class="text-xs text-[#94a3b8]">→ push nil</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-constant">
+                            <div class="text-[#00d4aa]">OP_TRUE</div>
+                            <div class="text-xs text-[#94a3b8]">→ push true</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-constant">
+                            <div class="text-[#00d4aa]">OP_FALSE</div>
+                            <div class="text-xs text-[#94a3b8]">→ push false</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Arithmetic -->
+                <div class="p-5 rounded-2xl bg-[#12121a] border border-[#f7931e]/30">
+                    <h3 class="font-semibold mb-3 text-[#f7931e] flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#f7931e]"></span>
+                        算术运算
+                    </h3>
+                    <div class="space-y-2 text-sm font-mono">
+                        <div class="p-2 rounded bg-[#0a0a0f] op-arithmetic">
+                            <div class="text-[#f7931e]">OP_ADD</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a+b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-arithmetic">
+                            <div class="text-[#f7931e]">OP_SUBTRACT</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a-b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-arithmetic">
+                            <div class="text-[#f7931e]">OP_MULTIPLY</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a*b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-arithmetic">
+                            <div class="text-[#f7931e]">OP_DIVIDE</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a/b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-arithmetic">
+                            <div class="text-[#f7931e]">OP_NEGATE</div>
+                            <div class="text-xs text-[#94a3b8]">a → -a</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comparison -->
+                <div class="p-5 rounded-2xl bg-[#12121a] border border-[#7c3aed]/30">
+                    <h3 class="font-semibold mb-3 text-[#7c3aed] flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#7c3aed]"></span>
+                        比较与逻辑
+                    </h3>
+                    <div class="space-y-2 text-sm font-mono">
+                        <div class="p-2 rounded bg-[#0a0a0f] op-comparison">
+                            <div class="text-[#7c3aed]">OP_EQUAL</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a==b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-comparison">
+                            <div class="text-[#7c3aed]">OP_GREATER</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a>b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-comparison">
+                            <div class="text-[#7c3aed]">OP_LESS</div>
+                            <div class="text-xs text-[#94a3b8]">a b → a&lt;b</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-comparison">
+                            <div class="text-[#7c3aed]">OP_NOT</div>
+                            <div class="text-xs text-[#94a3b8]">a → !a</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Control Flow -->
+                <div class="p-5 rounded-2xl bg-[#12121a] border border-[#ec4899]/30">
+                    <h3 class="font-semibold mb-3 text-[#ec4899] flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-[#ec4899]"></span>
+                        控制流
+                    </h3>
+                    <div class="space-y-2 text-sm font-mono">
+                        <div class="p-2 rounded bg-[#0a0a0f] op-control">
+                            <div class="text-[#ec4899]">OP_JUMP</div>
+                            <div class="text-xs text-[#94a3b8]">offset → ip += offset</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-control">
+                            <div class="text-[#ec4899]">OP_JUMP_IF_FALSE</div>
+                            <div class="text-xs text-[#94a3b8]">if !pop() ip += offset</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-control">
+                            <div class="text-[#ec4899]">OP_LOOP</div>
+                            <div class="text-xs text-[#94a3b8]">offset → ip -= offset</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-control">
+                            <div class="text-[#ec4899]">OP_CALL</div>
+                            <div class="text-xs text-[#94a3b8]">argc → call fn</div>
+                        </div>
+                        <div class="p-2 rounded bg-[#0a0a0f] op-control">
+                            <div class="text-[#ec4899]">OP_RETURN</div>
+                            <div class="text-xs text-[#94a3b8]">val → return val</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Variable Operations -->
+            <div class="mt-6 p-5 rounded-2xl bg-[#12121a] border border-[#3b82f6]/30">
+                <h3 class="font-semibold mb-4 text-[#3b82f6] flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+                    变量操作
+                </h3>
+                <div class="grid md:grid-cols-3 gap-3 text-sm font-mono">
+                    <div class="p-3 rounded bg-[#0a0a0f] op-variable">
+                        <div class="text-[#3b82f6] mb-1">全局变量</div>
+                        <div class="text-xs text-[#94a3b8]">OP_GET_GLOBAL idx</div>
+                        <div class="text-xs text-[#94a3b8]">OP_SET_GLOBAL idx</div>
+                        <div class="text-xs text-[#94a3b8]">OP_DEFINE_GLOBAL idx</div>
+                    </div>
+                    <div class="p-3 rounded bg-[#0a0a0f] op-variable">
+                        <div class="text-[#3b82f6] mb-1">局部变量</div>
+                        <div class="text-xs text-[#94a3b8]">OP_GET_LOCAL slot</div>
+                        <div class="text-xs text-[#94a3b8]">OP_SET_LOCAL slot</div>
+                    </div>
+                    <div class="p-3 rounded bg-[#0a0a0f] op-variable">
+                        <div class="text-[#3b82f6] mb-1">Upvalue</div>
+                        <div class="text-xs text-[#94a3b8]">OP_GET_UPVALUE idx</div>
+                        <div class="text-xs text-[#94a3b8]">OP_SET_UPVALUE idx</div>
+                        <div class="text-xs text-[#94a3b8]">OP_CLOSE_UPVALUE</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Function Call Deep Dive -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">函数调用机制</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">OP_CALL 执行流程</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] text-sm flex-shrink-0">1</span>
+                            <div>
+                                <div class="font-semibold">检查栈溢出</div>
+                                <div class="text-sm text-[#94a3b8]">确保 frame_count_ < kFRAMES_MAX</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] text-sm flex-shrink-0">2</span>
+                            <div>
+                                <div class="font-semibold">创建新 CallFrame</div>
+                                <div class="text-sm text-[#94a3b8]">frame = &frames_[frame_count_++]</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] text-sm flex-shrink-0">3</span>
+                            <div>
+                                <div class="font-semibold">初始化 Frame</div>
+                                <div class="text-sm text-[#94a3b8]">closure, ip = chunk->code, slots = stack_top - argc - 1</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] text-sm flex-shrink-0">4</span>
+                            <div>
+                                <div class="font-semibold">参数检查</div>
+                                <div class="text-sm text-[#94a3b8]">验证 arg_count == function->arity</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <span class="w-8 h-8 rounded-full bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] text-sm flex-shrink-0">5</span>
+                            <div>
+                                <div class="font-semibold">初始化局部变量</div>
+                                <div class="text-sm text-[#94a3b8]">将参数后的栈槽初始化为 nil</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">调用栈可视化</h3>
+                    <svg viewBox="0 0 400 280" class="w-full h-auto">
+                        <!-- Stack grows upward -->
+                        <text x="10" y="20" fill="#94a3b8" font-size="10">栈顶 ↑</text>
+                        
+                        <!-- Frame 2 (current) - highlighted -->
+                        <rect x="50" y="35" width="260" height="85" rx="5" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="180" y="55" text-anchor="middle" fill="#00d4aa" font-size="11" font-weight="bold">Frame 2: add(a, b)</text>
+                        
+                        <!-- Frame 2 slots -->
+                        <rect x="65" y="70" width="55" height="40" rx="3" fill="#0a0a0f" stroke="#2d2d44"/>
+                        <text x="92" y="88" text-anchor="middle" fill="#e2e8f0" font-size="9">closure</text>
+                        <text x="92" y="102" text-anchor="middle" fill="#94a3b8" font-size="7">[0]</text>
+                        
+                        <rect x="125" y="70" width="55" height="40" rx="3" fill="#0a0a0f" stroke="#00d4aa"/>
+                        <text x="152" y="88" text-anchor="middle" fill="#00d4aa" font-size="9">3</text>
+                        <text x="152" y="102" text-anchor="middle" fill="#94a3b8" font-size="7">a [1]</text>
+                        
+                        <rect x="185" y="70" width="55" height="40" rx="3" fill="#0a0a0f" stroke="#00d4aa"/>
+                        <text x="212" y="88" text-anchor="middle" fill="#00d4aa" font-size="9">4</text>
+                        <text x="212" y="102" text-anchor="middle" fill="#94a3b8" font-size="7">b [2]</text>
+                        
+                        <rect x="245" y="70" width="55" height="40" rx="3" fill="#0a0a0f" stroke="#7c3aed"/>
+                        <text x="272" y="92" text-anchor="middle" fill="#7c3aed" font-size="9">result</text>
+                        
+                        <!-- Frame 1 (caller) -->
+                        <rect x="50" y="135" width="260" height="65" rx="5" fill="#1a1a25" stroke="#f7931e" stroke-width="2" stroke-dasharray="5"/>
+                        <text x="180" y="155" text-anchor="middle" fill="#f7931e" font-size="11" font-weight="bold">Frame 1: main()</text>
+                        
+                        <rect x="65" y="170" width="80" height="20" rx="3" fill="#0a0a0f" stroke="#2d2d44"/>
+                        <text x="105" y="184" text-anchor="middle" fill="#94a3b8" font-size="8">...</text>
+                        
+                        <!-- Call arrow - curved from main to add -->
+                        <path d="M 330 160 Q 370 160 370 100 Q 370 77 320 77" stroke="#f7931e" stroke-width="2" fill="none" marker-end="url(#arrow-call)"/>
+                        <text x="375" y="120" fill="#f7931e" font-size="9">调用 add(3,4)</text>
+                        
+                        <!-- Legend -->
+                        <text x="50" y="230" fill="#94a3b8" font-size="9">实线框 = 当前帧</text>
+                        <text x="180" y="230" fill="#94a3b8" font-size="9">虚线框 = 调用者</text>
+                        <text x="50" y="250" fill="#94a3b8" font-size="9">数字 = 栈槽索引</text>
+                        
+                        <defs>
+                            <marker id="arrow-call" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                                <path d="M0,0 L0,10 L9,5 z" fill="#f7931e"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-6 bg-[#0a0a0f] border-t border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto text-center text-sm text-[#94a3b8]">
+            <p>Maple Language VM Module | 栈式字节码虚拟机详解</p>
+        </div>
+    </footer>
+
+    <script>
+        // Bytecode examples
+        const bytecodeExamples = {
+            arithmetic: [
+                { op: 'OP_CONSTANT', operand: '1', type: 'constant', desc: 'push 1' },
+                { op: 'OP_CONSTANT', operand: '2', type: 'constant', desc: 'push 2' },
+                { op: 'OP_CONSTANT', operand: '3', type: 'constant', desc: 'push 3' },
+                { op: 'OP_MULTIPLY', type: 'arithmetic', desc: '2 * 3 = 6' },
+                { op: 'OP_ADD', type: 'arithmetic', desc: '1 + 6 = 7' },
+                { op: 'OP_RETURN', type: 'control', desc: 'return 7' }
+            ],
+            call: [
+                { op: 'OP_CONSTANT', operand: '<fn add>', type: 'constant', desc: 'push fn' },
+                { op: 'OP_CONSTANT', operand: '3', type: 'constant', desc: 'push arg0' },
+                { op: 'OP_CONSTANT', operand: '4', type: 'constant', desc: 'push arg1' },
+                { op: 'OP_CALL', operand: '2', type: 'control', desc: 'call add(3,4)' },
+                { op: 'OP_PRINT', type: 'control', desc: 'print result' },
+                { op: 'OP_RETURN', type: 'control', desc: 'return' }
+            ]
+        };
+        
+        let currentBytecode = [];
+        let ip = 0;
+        let stack = [];
+        let isExecuting = false;
+        
+        function loadBytecode(type) {
+            resetExecution();
+            currentBytecode = [...bytecodeExamples[type]];
+            renderBytecode();
+        }
+        
+        function renderBytecode() {
+            const display = document.getElementById('bytecode-display');
+            const ipIndicator = document.getElementById('ip-indicator');
+            
+            // Generate instruction cells
+            const instructionsHtml = currentBytecode.map((instr, i) => `
+                <div class="instruction-cell flex items-center gap-3 p-2 rounded op-${instr.type}" data-index="${i}">
+                    <span class="text-[#7c3aed] w-6">${String(i).padStart(2, '0')}</span>
+                    <span class="text-[${getOpColor(instr.type)}] w-32">${instr.op}</span>
+                    ${instr.operand ? `<span class="text-[#94a3b8] w-16">${instr.operand}</span>` : '<span class="w-16"></span>'}
+                    <span class="text-[#94a3b8]/60 text-xs">; ${instr.desc}</span>
+                </div>
+            `).join('');
+            
+            // Keep IP indicator and add instructions
+            if (ipIndicator) {
+                display.innerHTML = ipIndicator.outerHTML + instructionsHtml;
+            } else {
+                display.innerHTML = instructionsHtml;
+            }
+        }
+        
+        function getOpColor(type) {
+            const colors = {
+                constant: '#00d4aa',
+                arithmetic: '#f7931e',
+                comparison: '#7c3aed',
+                control: '#ec4899',
+                variable: '#3b82f6'
+            };
+            return colors[type] || '#e2e8f0';
+        }
+        
+        function renderStack() {
+            const container = document.getElementById('stack-visualization');
+            if (stack.length === 0) {
+                container.innerHTML = '<div class="text-center text-[#94a3b8]/30 text-sm py-8">Stack empty</div>';
+            } else {
+                container.innerHTML = stack.map((val, i) => `
+                    <div class="stack-slot p-3 rounded-lg bg-[#12121a] border border-[#2d2d44] flex items-center justify-between ${i === stack.length - 1 ? 'active' : ''}">
+                        <span class="text-[#94a3b8] text-xs">[${i}]</span>
+                        <span class="font-mono text-[${val.color || '#e2e8f0'}]">${val.value}</span>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('stack-depth').textContent = `depth: ${stack.length}`;
+        }
+        
+        function log(msg) {
+            const logEl = document.getElementById('execution-log');
+            const entry = document.createElement('div');
+            entry.className = 'mb-1';
+            entry.innerHTML = `<span class="text-[#f7931e]">[${ip}]</span> ${msg}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        function resetExecution() {
+            ip = 0;
+            stack = [];
+            isExecuting = false;
+            renderStack();
+            document.querySelectorAll('.instruction-cell').forEach(cell => {
+                cell.classList.remove('active', 'executed');
+            });
+            document.getElementById('ip-indicator').style.opacity = '0';
+            document.getElementById('execution-log').innerHTML = '<div class="text-[#94a3b8]/50">Ready to execute...</div>';
+        }
+        
+        function startExecution() {
+            if (isExecuting) return;
+            resetExecution();
+            isExecuting = true;
+            document.getElementById('exec-btn').textContent = '执行中...';
+            
+            function step() {
+                if (!isExecuting || ip >= currentBytecode.length) {
+                    isExecuting = false;
+                    document.getElementById('exec-btn').textContent = '执行';
+                    return;
+                }
+                
+                executeInstruction();
+                
+                if (isExecuting) {
+                    setTimeout(step, 500);
+                }
+            }
+            
+            step();
+        }
+        
+        function stepExecution() {
+            if (ip >= currentBytecode.length) {
+                resetExecution();
+                return;
+            }
+            executeInstruction();
+        }
+        
+        function executeInstruction() {
+            const instr = currentBytecode[ip];
+            if (!instr) return;
+            
+            // Highlight instruction
+            document.querySelectorAll('.instruction-cell').forEach(cell => cell.classList.remove('active'));
+            const cell = document.querySelector(`[data-index="${ip}"]`);
+            if (cell) {
+                cell.classList.add('active');
+                cell.classList.add('executed');
+            }
+            
+            // Show IP indicator - align with current instruction cell
+            const ipIndicator = document.getElementById('ip-indicator');
+            const display = document.getElementById('bytecode-display');
+            
+            // Position IP indicator to align vertically with the instruction cell
+            // IP indicator height is 28px (w-7 h-7), cell height varies
+            const top = cell.offsetTop + (cell.offsetHeight - 28) / 2;
+            
+            ipIndicator.style.opacity = '1';
+            ipIndicator.style.top = `${top}px`;
+            
+            // Scroll into view if needed
+            cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            
+            // Execute
+            switch (instr.op) {
+                case 'OP_CONSTANT':
+                    stack.push({ value: instr.operand, color: '#00d4aa' });
+                    log(`push ${instr.operand}`);
+                    break;
+                case 'OP_ADD':
+                case 'OP_MULTIPLY': {
+                    const b = parseFloat(stack.pop()?.value || 0);
+                    const a = parseFloat(stack.pop()?.value || 0);
+                    const result = instr.op === 'OP_ADD' ? a + b : a * b;
+                    stack.push({ value: result.toString(), color: '#f7931e' });
+                    log(`${instr.op === 'OP_ADD' ? 'add' : 'multiply'} → ${result}`);
+                    break;
+                }
+                case 'OP_CALL':
+                    log(`call function with ${instr.operand} args`);
+                    break;
+                case 'OP_PRINT':
+                    log(`print ${stack[stack.length - 1]?.value}`);
+                    break;
+                case 'OP_RETURN':
+                    log(`return ${stack[stack.length - 1]?.value || 'nil'}`);
+                    isExecuting = false;
+                    document.getElementById('exec-btn').textContent = '执行';
+                    break;
+            }
+            
+            renderStack();
+            ip++;
+        }
+        
+        // Load initial example
+        loadBytecode('arithmetic');
+    </script>
+
+    <!-- Particle System -->
+    <script>
+        (function() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 15 + 's';
+                p.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+    </script>
+
+</body>
+</html>

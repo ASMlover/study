@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner 词法分析器 - Maple Language</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* Animated particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 15s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% {
+                transform: translateY(100vh) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% {
+                transform: translateY(-100px) translateX(100px);
+                opacity: 0;
+            }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-strong {
+            background: rgba(10, 10, 16, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+        
+        /* Enhanced Animations */
+        @keyframes scan-beam {
+            0% { 
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            50% { opacity: 1; }
+            100% { 
+                transform: translateX(calc(100% + 20px));
+                opacity: 0;
+            }
+        }
+        
+        @keyframes token-emerge {
+            0% { 
+                transform: scale(0) rotate(-10deg) translateY(30px);
+                opacity: 0;
+                filter: blur(10px);
+            }
+            60% { 
+                transform: scale(1.1) rotate(2deg) translateY(-5px);
+                opacity: 1;
+                filter: blur(0);
+            }
+            100% { 
+                transform: scale(1) rotate(0) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow), 0 0 20px var(--glow), 0 0 40px rgba(0, 245, 212, 0.2);
+                border-color: var(--accent);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow), 0 0 40px var(--glow), 0 0 80px rgba(0, 245, 212, 0.4);
+                border-color: #fff;
+            }
+        }
+        
+        @keyframes char-scan {
+            0% { 
+                background: transparent;
+                text-shadow: none;
+                transform: scale(1);
+            }
+            50% { 
+                background: linear-gradient(90deg, transparent, rgba(0, 245, 212, 0.4), transparent);
+                text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent);
+                transform: scale(1.15);
+            }
+            100% { 
+                background: rgba(0, 245, 212, 0.1);
+                text-shadow: none;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Character cell effects */
+        .char-cell {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .char-cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 245, 212, 0.4), transparent);
+            transition: left 0.3s ease;
+        }
+        
+        .char-cell.active {
+            background: rgba(0, 245, 212, 0.2);
+            border-color: var(--accent);
+            animation: neon-pulse 0.8s ease-in-out infinite;
+            transform: scale(1.15);
+            z-index: 10;
+        }
+        
+        .char-cell.active::before {
+            left: 100%;
+            transition: left 0.5s ease;
+        }
+        
+        .char-cell.scanned {
+            background: linear-gradient(135deg, rgba(0, 245, 212, 0.08), rgba(168, 85, 247, 0.05));
+            border-color: rgba(0, 245, 212, 0.2);
+            color: var(--text-dim);
+        }
+        
+        /* Token card with glass effect */
+        .token-card {
+            animation: token-emerge 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .token-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Gradient border effect */
+        .gradient-border {
+            position: relative;
+            background: var(--surface-2);
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Scanner beam effect */
+        .scanner-beam {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, var(--accent), transparent);
+            box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent);
+            animation: scan-beam 2s ease-in-out infinite;
+        }
+        
+        /* State indicators with glow */
+        .state-indicator {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .state-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .state-indicator.active {
+            background: linear-gradient(135deg, var(--accent), rgba(0, 245, 212, 0.7));
+            color: var(--bg);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        .state-indicator.active::before {
+            left: 100%;
+        }
+        
+        /* Token type colors with neon glow */
+        .token-keyword { 
+            border-color: #ff6b6b; 
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.05));
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.2);
+        }
+        .token-string { 
+            border-color: #f472b6; 
+            background: linear-gradient(135deg, rgba(244, 114, 182, 0.15), rgba(244, 114, 182, 0.05));
+            box-shadow: 0 0 20px rgba(244, 114, 182, 0.2);
+        }
+        .token-number { 
+            border-color: #a855f7; 
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+        }
+        .token-identifier { 
+            border-color: #00f5d4; 
+            background: linear-gradient(135deg, rgba(0, 245, 212, 0.15), rgba(0, 245, 212, 0.05));
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.2);
+        }
+        .token-operator { 
+            border-color: #60a5fa; 
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(96, 165, 250, 0.05));
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+        }
+        
+        /* DFA visualization */
+        .dfa-node {
+            transition: all 0.4s ease;
+            filter: drop-shadow(0 0 5px rgba(0, 245, 212, 0.3));
+        }
+        .dfa-node.active {
+            fill: var(--accent);
+            filter: drop-shadow(0 0 20px var(--accent));
+            animation: neon-pulse 1s ease-in-out infinite;
+        }
+        .dfa-edge {
+            stroke-dasharray: 8;
+            animation: dash-flow 2s linear infinite;
+        }
+        @keyframes dash-flow {
+            to { stroke-dashoffset: -16; }
+        }
+        
+        /* Shimmer text effect */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        /* Button effects */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #06b6d4);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        /* Navigation glow */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/30 group-hover:shadow-cyan-500/50 transition-all">M</div>
+                <span class="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Maple Language</span>
+            </a>
+            <div class="flex gap-6 text-sm">
+                <a href="scanner.html" class="nav-link text-[#00f5d4] font-semibold">Scanner</a>
+                <a href="compiler.html" class="nav-link text-[#94a3b8] hover:text-white transition-colors">Compiler</a>
+                <a href="vm.html" class="nav-link text-[#94a3b8] hover:text-white transition-colors">VM</a>
+                <a href="gc.html" class="nav-link text-[#94a3b8] hover:text-white transition-colors">GC</a>
+                <a href="object.html" class="nav-link text-[#94a3b8] hover:text-white transition-colors">Object</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-16 px-6 content-wrapper">
+        <div class="max-w-6xl mx-auto">
+            <div class="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full glass border border-[#00f5d4]/30 text-[#00f5d4] text-sm font-medium">
+                <span class="w-2 h-2 rounded-full bg-[#00f5d4] animate-pulse"></span>
+                前端层 / Frontend Layer
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold mb-6">
+                <span class="shimmer-text">Scanner</span>
+                <span class="text-3xl md:text-4xl text-[#8b92a8] font-light">词法分析器</span>
+            </h1>
+            <p class="text-xl text-[#8b92a8] max-w-3xl leading-relaxed">
+                Scanner 是 Maple 语言的前端入口，负责将原始源码字符流转换为结构化的 Token 序列。
+                采用<strong class="text-[#00f5d4]">惰性求值 (Lazy Evaluation)</strong> 策略，按需生成 Token，配合单遍编译器实现高效编译。
+            </p>
+        </div>
+    </section>
+
+    <!-- Live Scanner Demo -->
+    <section class="py-12 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa]">▶</span>
+                交互式扫描演示
+            </h2>
+            
+            <div class="grid lg:grid-cols-2 gap-8">
+                <!-- Source Code Input -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm font-medium text-[#94a3b8]">输入源码</label>
+                        <div class="flex gap-2">
+                            <button onclick="loadExample('simple')" class="px-3 py-1 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#00d4aa] transition-colors">简单示例</button>
+                            <button onclick="loadExample('function')" class="px-3 py-1 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#00d4aa] transition-colors">函数定义</button>
+                            <button onclick="loadExample('string')" class="px-3 py-1 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#00d4aa] transition-colors">字符串</button>
+                        </div>
+                    </div>
+                    <textarea id="source-input" class="w-full h-40 p-4 rounded-xl bg-[#0a0a0f] border border-[#2d2d44] font-mono text-sm focus:border-[#00d4aa] focus:outline-none resize-none" placeholder="输入 Maple 代码...">var message = "Hello, World!";
+print message;</textarea>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="startScanning()" id="scan-btn" class="flex-1 py-3 rounded-xl btn-primary text-[#0a0a0f] font-semibold flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            自动扫描
+                        </button>
+                        <button onclick="stepScanning()" id="step-btn" class="flex-1 py-3 rounded-xl bg-[#1a1a25] border border-[#2d2d44] hover:border-[#00d4aa] hover:text-[#00d4aa] transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            单步执行
+                        </button>
+                        <button onclick="resetScanning()" class="px-6 py-3 rounded-xl bg-[#1a1a25] border border-[#2d2d44] hover:border-[#f7931e] hover:text-[#f7931e] transition-all">
+                            重置
+                        </button>
+                    </div>
+                    
+                    <!-- Step Progress -->
+                    <div class="mt-4 p-4 rounded-xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-[#94a3b8]">扫描进度</span>
+                            <span id="scan-progress-text" class="text-xs text-[#00f5d4]">准备就绪</span>
+                        </div>
+                        <div class="h-2 rounded-full bg-[#1a1a25] overflow-hidden">
+                            <div id="scan-progress-bar" class="h-full rounded-full bg-gradient-to-r from-[#00f5d4] to-[#a855f7] w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Character Stream Visualization -->
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-medium text-[#94a3b8]">字符流可视化</label>
+                        <div class="flex items-center gap-4 text-xs">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded bg-[#00d4aa]/30 border border-[#00d4aa]"></div>
+                                <span class="text-[#94a3b8]">当前</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded bg-[#00d4aa]/10 border border-[#00d4aa]/30"></div>
+                                <span class="text-[#94a3b8]">已扫描</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="char-stream" class="flex flex-wrap gap-1 p-4 rounded-xl bg-[#12121a] min-h-[120px] font-mono text-lg relative overflow-hidden">
+                        <!-- Characters will be inserted here -->
+                        <div class="absolute inset-0 flex items-center justify-center text-[#94a3b8]/30 text-sm">
+                            点击"开始扫描"查看字符流动画
+                        </div>
+                    </div>
+                    
+                    <!-- Scanner State -->
+                    <div class="mt-4 grid grid-cols-4 gap-2">
+                        <div id="state-start" class="state-indicator p-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-center text-xs">
+                            <div class="font-semibold">START</div>
+                            <div class="text-[#94a3b8] scale-75">初始状态</div>
+                        </div>
+                        <div id="state-skip" class="state-indicator p-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-center text-xs">
+                            <div class="font-semibold">SKIP_WS</div>
+                            <div class="text-[#94a3b8] scale-75">跳过空白</div>
+                        </div>
+                        <div id="state-scan" class="state-indicator p-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-center text-xs">
+                            <div class="font-semibold">SCANNING</div>
+                            <div class="text-[#94a3b8] scale-75">扫描中</div>
+                        </div>
+                        <div id="state-emit" class="state-indicator p-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-center text-xs">
+                            <div class="font-semibold">EMIT</div>
+                            <div class="text-[#94a3b8] scale-75">输出 Token</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Token Output Stream -->
+            <div class="mt-8 p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                <div class="flex items-center justify-between mb-4">
+                    <label class="text-sm font-medium text-[#94a3b8]">Token 输出流</label>
+                    <div id="token-count" class="text-xs text-[#94a3b8]">0 tokens generated</div>
+                </div>
+                <div id="token-stream" class="flex flex-wrap gap-3 min-h-[80px]">
+                    <div class="text-[#94a3b8]/30 text-sm italic">Tokens will appear here...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scanner Internal Structure -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">Scanner 内部结构</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Scanner Structure Visualization -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">Scanner 结构可视化</h3>
+                    
+                    <!-- Interactive Scanner Diagram -->
+                    <div class="relative">
+                        <svg viewBox="0 0 400 320" class="w-full h-auto" id="scanner-svg">
+                            <!-- Main Scanner Box -->
+                            <rect x="50" y="10" width="300" height="280" rx="12" fill="#0a0a0f" stroke="#00d5d4" stroke-width="2"/>
+                            <text x="200" y="35" text-anchor="middle" fill="#00d5d4" font-size="14" font-weight="600">Scanner</text>
+                            
+                            <!-- Position Tracking Section -->
+                            <rect x="70" y="50" width="120" height="70" rx="6" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                            <text x="130" y="70" text-anchor="middle" fill="#94a3b8" font-size="10">位置追踪</text>
+                            <rect x="80" y="80" width="100" height="12" rx="2" fill="#00d5d4" fill-opacity="0.2"/>
+                            <text x="85" y="90" fill="#00d5d4" font-size="8">start_</text>
+                            <rect x="80" y="96" width="100" height="12" rx="2" fill="#00d5d4" fill-opacity="0.2"/>
+                            <text x="85" y="106" fill="#00d5d4" font-size="8">current_</text>
+                            
+                            <!-- Line Counter -->
+                            <rect x="210" y="50" width="120" height="40" rx="6" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                            <text x="270" y="70" text-anchor="middle" fill="#94a3b8" font-size="10">行号</text>
+                            <text x="270" y="82" text-anchor="middle" fill="#f7931e" font-size="12">line_</text>
+                            
+                            <!-- String Interpolation Stack -->
+                            <rect x="210" y="100" width="120" height="60" rx="6" fill="#1a1a25" stroke="#ec4899" stroke-width="1"/>
+                            <text x="270" y="120" text-anchor="middle" fill="#94a3b8" font-size="9">插值追踪</text>
+                            <rect x="220" y="128" width="100" height="24" rx="2" fill="#ec4899" fill-opacity="0.1"/>
+                            <text x="270" y="144" text-anchor="middle" fill="#ec4899" font-size="8">interp_braces_[8]</text>
+                            
+                            <!-- Public Methods -->
+                            <rect x="70" y="140" width="120" height="60" rx="6" fill="#1a1a25" stroke="#7c3aed" stroke-width="1"/>
+                            <text x="130" y="160" text-anchor="middle" fill="#94a3b8" font-size="10">Public 方法</text>
+                            <circle cx="90" cy="175" r="3" fill="#7c3aed"/>
+                            <text x="100" y="178" fill="#e2e8f0" font-size="9">scan_token()</text>
+                            <circle cx="90" cy="188" r="3" fill="#7c3aed"/>
+                            <text x="100" y="191" fill="#e2e8f0" font-size="9">skip_whitespace()</text>
+                            
+                            <!-- Private Methods -->
+                            <rect x="70" y="215" width="260" height="65" rx="6" fill="#1a1a25" stroke="#f7931e" stroke-width="1"/>
+                            <text x="200" y="235" text-anchor="middle" fill="#94a3b8" font-size="10">Private 扫描方法</text>
+                            
+                            <circle cx="90" cy="250" r="3" fill="#f7931e"/>
+                            <text x="100" y="253" fill="#e2e8f0" font-size="9">scan_string()</text>
+                            <circle cx="90" cy="265" r="3" fill="#f7931e"/>
+                            <text x="100" y="268" fill="#e2e8f0" font-size="9">scan_number()</text>
+                            
+                            <circle cx="210" cy="250" r="3" fill="#f7931e"/>
+                            <text x="220" y="253" fill="#e2e8f0" font-size="9">scan_identifier()</text>
+                            <circle cx="210" cy="265" r="3" fill="#f7931e"/>
+                            <text x="220" y="268" fill="#e2e8f0" font-size="9">advance() / peek()</text>
+                            
+                            <!-- Interactive hover areas -->
+                            <rect x="70" y="50" width="120" height="70" rx="6" fill="transparent" class="scanner-part" data-part="position"/>
+                            <rect x="210" y="50" width="120" height="40" rx="6" fill="transparent" class="scanner-part" data-part="line"/>
+                            <rect x="70" y="140" width="120" height="60" rx="6" fill="transparent" class="scanner-part" data-part="public"/>
+                            <rect x="70" y="215" width="260" height="65" rx="6" fill="transparent" class="scanner-part" data-part="private"/>
+                        </svg>
+                        
+                        <!-- Info Panel -->
+                        <div class="mt-3 p-3 rounded-lg bg-[#0a0a0f] border border-[#2d2d44]">
+                            <div id="scanner-info" class="text-sm text-[#94a3b8]">
+                                悬停查看各部分功能说明
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- State Machine Interactive Demo -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">状态机流程演示</h3>
+                    
+                    <!-- Input for state machine demo -->
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="text" id="state-machine-input" value='var x = "hello" 123' 
+                                class="flex-1 px-3 py-2 rounded-lg bg-[#0a0a0f] border border-[#2d2d44] font-mono text-sm focus:border-[#f7931e] focus:outline-none"
+                                placeholder="输入字符串测试状态机...">
+                            <button onclick="runStateMachine()" class="px-4 py-2 rounded-lg bg-[#f7931e] text-[#0a0a0f] font-semibold text-sm hover:bg-[#f7931e]/80 transition-colors">
+                                运行
+                            </button>
+                            <button onclick="stepStateMachine()" id="state-step-btn" class="px-4 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-sm hover:border-[#f7931e] transition-colors">
+                                单步
+                            </button>
+                            <button onclick="resetStateMachine()" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-sm hover:border-[#ff6b6b] transition-colors">
+                                重置
+                            </button>
+                        </div>
+                        <div class="flex gap-2 text-xs">
+                            <button onclick="setStateMachineInput('var x = 42')" class="px-2 py-1 rounded bg-[#1a1a25] border border-[#2d2d44] hover:border-[#f7931e]">变量+数字</button>
+                            <button onclick="setStateMachineInput('print "hello"')" class="px-2 py-1 rounded bg-[#1a1a25] border border-[#2d2d44] hover:border-[#f7931e]">字符串</button>
+                            <button onclick="setStateMachineInput('foo_bar_123')" class="px-2 py-1 rounded bg-[#1a1a25] border border-[#2d2d44] hover:border-[#f7931e]">标识符</button>
+                        </div>
+                    </div>
+                    
+                    <!-- State Machine Visualization -->
+                    <div class="relative overflow-hidden">
+                        <svg viewBox="0 0 520 280" class="w-full h-auto" id="state-machine-svg" style="max-height: 320px;">
+                            <!-- Arrow marker -->
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                    <path d="M0,0 L0,6 L9,3 z" fill="#2d2d44"/>
+                                </marker>
+                                <marker id="arrowhead-active" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                    <path d="M0,0 L0,6 L9,3 z" fill="#f7931e"/>
+                                </marker>
+                            </defs>
+                            
+                            <!-- States (repositioned for better layout) -->
+                            <!-- START: Left side -->
+                            <circle cx="60" cy="140" r="28" fill="#1a1a25" stroke="#00d4aa" stroke-width="2" class="state-node" id="state-start"/>
+                            <text x="60" y="145" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">START</text>
+                            
+                            <!-- SKIP: Center -->
+                            <rect x="140" y="110" width="70" height="60" rx="10" fill="#1a1a25" stroke="#f7931e" stroke-width="2" class="state-node" id="state-skip"/>
+                            <text x="175" y="135" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">SKIP</text>
+                            <text x="175" y="152" text-anchor="middle" fill="#94a3b8" font-size="8">whitespace</text>
+                            
+                            <!-- STRING: Top right -->
+                            <rect x="280" y="30" width="90" height="50" rx="10" fill="#1a1a25" stroke="#ec4899" stroke-width="2" class="state-node" id="state-string"/>
+                            <text x="325" y="52" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">STRING</text>
+                            <text x="325" y="68" text-anchor="middle" fill="#94a3b8" font-size="8">scan_string()</text>
+                            
+                            <!-- NUMBER: Middle right -->
+                            <rect x="280" y="105" width="90" height="50" rx="10" fill="#1a1a25" stroke="#7c3aed" stroke-width="2" class="state-node" id="state-number"/>
+                            <text x="325" y="127" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">NUMBER</text>
+                            <text x="325" y="143" text-anchor="middle" fill="#94a3b8" font-size="8">scan_number()</text>
+                            
+                            <!-- IDENT: Bottom right -->
+                            <rect x="280" y="180" width="90" height="50" rx="10" fill="#1a1a25" stroke="#00d4aa" stroke-width="2" class="state-node" id="state-ident"/>
+                            <text x="325" y="202" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">IDENT</text>
+                            <text x="325" y="218" text-anchor="middle" fill="#94a3b8" font-size="8">scan_identifier()</text>
+                            
+                            <!-- Transition Paths -->
+                            <!-- START to SKIP (whitespace) -->
+                            <path d="M 88 140 L 140 140" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="transition-path" id="path-start-skip"/>
+                            
+                            <!-- SKIP to STRING (") -->
+                            <path d="M 210 120 L 280 55" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="transition-path" id="path-skip-string"/>
+                            
+                            <!-- SKIP to NUMBER (0-9) -->
+                            <path d="M 210 140 L 280 130" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="transition-path" id="path-skip-number"/>
+                            
+                            <!-- SKIP to IDENT (a-zA-Z_) -->
+                            <path d="M 210 160 L 280 205" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="transition-path" id="path-skip-ident"/>
+                            
+                            <!-- SKIP self loop (more whitespace) -->
+                            <path d="M 175 110 Q 175 70 210 90" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-skip-self"/>
+                            
+                            <!-- STRING self loop (until ") -->
+                            <path d="M 370 55 Q 410 30 410 55 Q 410 80 370 65" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-string-self"/>
+                            
+                            <!-- NUMBER self loop (more digits) -->
+                            <path d="M 370 130 Q 410 105 410 130 Q 410 155 370 140" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-number-self"/>
+                            
+                            <!-- IDENT self loop (more alphanum) -->
+                            <path d="M 370 205 Q 410 180 410 205 Q 410 230 370 215" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-ident-self"/>
+                            
+                            <!-- Return to START paths (emit token) -->
+                            <!-- STRING to START -->
+                            <path d="M 325 80 Q 325 10 60 10 Q 60 112 60 112" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-string-start"/>
+                            
+                            <!-- NUMBER to START -->
+                            <path d="M 280 130 Q 220 130 88 140" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-number-start"/>
+                            
+                            <!-- IDENT to START -->
+                            <path d="M 280 205 Q 200 250 88 155" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-ident-start"/>
+                            
+                            <!-- START self (single char tokens) -->
+                            <path d="M 60 168 Q 30 200 60 200 Q 90 200 60 168" stroke="#2d2d44" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)" class="transition-path" id="path-start-self"/>
+                            
+                            <!-- Labels -->
+                            <text x="115" y="132" fill="#64748b" font-size="9">ws</text>
+                            <text x="240" y="80" fill="#ec4899" font-size="9">"</text>
+                            <text x="240" y="132" fill="#7c3aed" font-size="9">0-9</text>
+                            <text x="235" y="188" fill="#00d4aa" font-size="9">a-z_</text>
+                            <text x="215" y="78" fill="#64748b" font-size="8">more</text>
+                            <text x="415" y="50" fill="#64748b" font-size="8">until "</text>
+                            <text x="415" y="125" fill="#64748b" font-size="8">0-9.</text>
+                            <text x="415" y="200" fill="#64748b" font-size="8">alphanum</text>
+                            <text x="80" y="25" fill="#64748b" font-size="8">emit token</text>
+                            <text x="30" y="215" fill="#64748b" font-size="8">single</text>
+                            
+                            <!-- Current character indicator -->
+                            <g id="current-char-indicator" style="display: none;">
+                                <circle cx="260" cy="255" r="18" fill="#f7931e" stroke="#f7931e" stroke-width="2"/>
+                                <text id="current-char-text" x="260" y="261" text-anchor="middle" fill="#0a0a0f" font-size="14" font-weight="bold">a</text>
+                            </g>
+                        </svg>
+                    </div>
+                    
+                    <!-- Status Panel -->
+                    <div class="mt-4 p-3 rounded-lg bg-[#0a0a0f] border border-[#2d2d44]">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-[#94a3b8]">当前状态</span>
+                            <span id="state-machine-status" class="text-xs text-[#f7931e] font-mono">READY</span>
+                        </div>
+                        <div id="state-machine-info" class="text-xs text-[#64748b]">点击"运行"开始状态机演示</div>
+                    </div>
+                    
+                    <!-- Character Queue -->
+                    <div class="mt-3 p-3 rounded-lg bg-[#0a0a0f] border border-[#2d2d44]">
+                        <div class="text-xs text-[#94a3b8] mb-2">输入队列</div>
+                        <div id="char-queue" class="flex flex-wrap gap-1 font-mono text-sm">
+                            <span class="text-[#64748b]">等待输入...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-4 flex flex-wrap gap-3 text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border-2 border-[#00d4aa] bg-[#00d4aa]/20"></div>
+                            <span class="text-[#94a3b8]">Start</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border-2 border-[#f7931e] bg-[#f7931e]/20"></div>
+                            <span class="text-[#94a3b8]">Skip</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border-2 border-[#ec4899] bg-[#ec4899]/20"></div>
+                            <span class="text-[#94a3b8]">String</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border-2 border-[#7c3aed] bg-[#7c3aed]/20"></div>
+                            <span class="text-[#94a3b8]">Number</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded border-2 border-[#00d4aa] bg-[#00d4aa]/20"></div>
+                            <span class="text-[#94a3b8]">Ident</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Token Types -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">Token 类型详解</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Keywords -->
+                <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#f7931e]/30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-3 h-3 rounded-full bg-[#f7931e]"></div>
+                        <h3 class="font-semibold text-[#f7931e]">关键字</h3>
+                    </div>
+                    <div class="font-mono text-sm space-y-1">
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">and</span><span class="text-[#94a3b8] text-xs">逻辑与</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">class</span><span class="text-[#94a3b8] text-xs">类定义</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">else</span><span class="text-[#94a3b8] text-xs">否则</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">false</span><span class="text-[#94a3b8] text-xs">假</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">for</span><span class="text-[#94a3b8] text-xs">循环</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">fun</span><span class="text-[#94a3b8] text-xs">函数</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">if</span><span class="text-[#94a3b8] text-xs">条件</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">nil</span><span class="text-[#94a3b8] text-xs">空值</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">or</span><span class="text-[#94a3b8] text-xs">逻辑或</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">print</span><span class="text-[#94a3b8] text-xs">输出</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">return</span><span class="text-[#94a3b8] text-xs">返回</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">super</span><span class="text-[#94a3b8] text-xs">父类</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">this</span><span class="text-[#94a3b8] text-xs">自身</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">true</span><span class="text-[#94a3b8] text-xs">真</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">var</span><span class="text-[#94a3b8] text-xs">变量</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">while</span><span class="text-[#94a3b8] text-xs">当循环</span></div>
+                    </div>
+                </div>
+                
+                <!-- Literals -->
+                <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#7c3aed]/30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-3 h-3 rounded-full bg-[#7c3aed]"></div>
+                        <h3 class="font-semibold text-[#7c3aed]">字面量</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-xs text-[#94a3b8] mb-1">NUMBER</div>
+                            <div class="font-mono text-sm text-[#7c3aed]">3.14159</div>
+                            <div class="text-xs text-[#94a3b8] mt-1">双精度浮点数</div>
+                        </div>
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-xs text-[#94a3b8] mb-1">STRING</div>
+                            <div class="font-mono text-sm text-[#ec4899]">"hello"</div>
+                            <div class="text-xs text-[#94a3b8] mt-1">支持插值: "a: ${a}"</div>
+                        </div>
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-xs text-[#94a3b8] mb-1">IDENTIFIER</div>
+                            <div class="font-mono text-sm text-[#00d4aa]">variable_name</div>
+                            <div class="text-xs text-[#94a3b8] mt-1">[a-zA-Z_][a-zA-Z0-9_]*</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Operators -->
+                <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#3b82f6]/30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-3 h-3 rounded-full bg-[#3b82f6]"></div>
+                        <h3 class="font-semibold text-[#3b82f6]">运算符</h3>
+                    </div>
+                    <div class="font-mono text-sm space-y-1">
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">+</span><span class="text-[#94a3b8] text-xs">加/拼接</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">-</span><span class="text-[#94a3b8] text-xs">减/负</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">*</span><span class="text-[#94a3b8] text-xs">乘</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">/</span><span class="text-[#94a3b8] text-xs">除</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">!</span><span class="text-[#94a3b8] text-xs">非</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">!=</span><span class="text-[#94a3b8] text-xs">不等</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">==</span><span class="text-[#94a3b8] text-xs">相等</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">&gt;</span><span class="text-[#94a3b8] text-xs">大于</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">&gt;=</span><span class="text-[#94a3b8] text-xs">大于等于</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">&lt;</span><span class="text-[#94a3b8] text-xs">小于</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">&lt;=</span><span class="text-[#94a3b8] text-xs">小于等于</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">=</span><span class="text-[#94a3b8] text-xs">赋值</span></div>
+                    </div>
+                </div>
+                
+                <!-- Delimiters -->
+                <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#94a3b8]/30">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-3 h-3 rounded-full bg-[#94a3b8]"></div>
+                        <h3 class="font-semibold text-[#94a3b8]">分隔符</h3>
+                    </div>
+                    <div class="font-mono text-sm space-y-1">
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">(</span><span class="text-[#94a3b8] text-xs">左括号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">)</span><span class="text-[#94a3b8] text-xs">右括号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">{</span><span class="text-[#94a3b8] text-xs">左花括号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">}</span><span class="text-[#94a3b8] text-xs">右花括号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">[</span><span class="text-[#94a3b8] text-xs">左方括号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">]</span><span class="text-[#94a3b8] text-xs">右方括号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">;</span><span class="text-[#94a3b8] text-xs">分号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">,</span><span class="text-[#94a3b8] text-xs">逗号</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">.</span><span class="text-[#94a3b8] text-xs">点</span></div>
+                        <div class="flex justify-between"><span class="text-[#e2e8f0]">EOF</span><span class="text-[#94a3b8] text-xs">文件结束</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Implementation Details -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">核心实现详解</h2>
+            
+            <div class="space-y-6">
+                <!-- skip_whitespace -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">1. 空白字符处理</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-[#94a3b8] mb-4">
+                                Scanner 首先调用 <code class="text-[#00d4aa]">skip_whitespace()</code> 跳过所有空白字符（空格、制表符、换行）。
+                                同时处理注释：// 开头的行注释会被跳过。
+                            </p>
+                            <div class="p-4 rounded-xl bg-[#0a0a0f] font-mono text-sm">
+                                <div class="text-[#94a3b8]">// 跳过空白和注释</div>
+                                <div><span class="text-[#f7931e]">while</span> (<span class="text-[#f7931e]">true</span>) {</div>
+                                <div class="ml-4"><span class="text-[#f7931e]">char</span> c = <span class="text-[#00d4aa]">peek</span>();</div>
+                                <div class="ml-4"><span class="text-[#f7931e]">switch</span> (c) {</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">' '</span>:</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'\t'</span>:</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'\r'</span>:</div>
+                                <div class="ml-12"><span class="text-[#00d4aa]">advance</span>(); <span class="text-[#f7931e]">break</span>;</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'\n'</span>:</div>
+                                <div class="ml-12">line_++; <span class="text-[#00d4aa]">advance</span>(); <span class="text-[#f7931e]">break</span>;</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'/'</span>:</div>
+                                <div class="ml-12"><span class="text-[#f7931e]">if</span> (<span class="text-[#00d4aa]">peek_next</span>() == <span class="text-[#ec4899]">'/'</span>)</div>
+                                <div class="ml-16"><span class="text-[#00d4aa]">skip_line_comment</span>();</div>
+                                <div class="ml-4">}</div>
+                                <div>}</div>
+                            </div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-[#0a0a0f]">
+                            <div class="text-sm text-[#94a3b8] mb-3">状态可视化</div>
+                            <div class="space-y-2 font-mono text-sm">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[#94a3b8]">输入:</span>
+                                    <span class="px-2 py-1 rounded bg-[#00d4aa]/20 text-[#00d4aa]">\t\t  var</span>
+                                </div>
+                                <div class="text-[#94a3b8]">↓</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[#94a3b8]">跳过:</span>
+                                    <span class="px-2 py-1 rounded bg-[#94a3b8]/20 text-[#94a3b8] line-through">\t\t  </span>
+                                    <span class="text-[#f7931e]">→</span>
+                                    <span class="px-2 py-1 rounded bg-[#00d4aa]/20 text-[#00d4aa]">var</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- scan_identifier with trie -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">2. 关键字识别 - Trie 结构</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-[#94a3b8] mb-4">
+                                识别标识符后，使用类似 Trie 的结构检查是否是关键字。
+                                通过 <code class="text-[#f7931e]">check_keyword()</code> 逐步匹配字符，
+                                避免字符串比较开销。
+                            </p>
+                            <div class="p-4 rounded-xl bg-[#0a0a0f] font-mono text-sm">
+                                <div><span class="text-[#7c3aed]">TokenType</span> <span class="text-[#00d4aa]">identifier_type</span>() {</div>
+                                <div class="ml-4"><span class="text-[#f7931e]">switch</span> (start_[0]) {</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'a'</span>: <span class="text-[#f7931e]">return</span> <span class="text-[#00d4aa]">check_keyword</span>(<span class="text-[#7c3aed]">1</span>, <span class="text-[#7c3aed]">2</span>, <span class="text-[#ec4899]">"nd"</span>, TOKEN_AND);</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'c'</span>:</div>
+                                <div class="ml-12"><span class="text-[#f7931e]">if</span> (current_ - start_ &gt; <span class="text-[#7c3aed]">1</span>) {</div>
+                                <div class="ml-16"><span class="text-[#f7931e]">switch</span> (start_[<span class="text-[#7c3aed]">1</span>]) {</div>
+                                <div class="ml-20"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'l'</span>: <span class="text-[#f7931e]">return</span> <span class="text-[#00d4aa]">check_keyword</span>(<span class="text-[#7c3aed]">2</span>, <span class="text-[#7c3aed]">3</span>, <span class="text-[#ec4899]">"ass"</span>, TOKEN_CLASS);</div>
+                                <div class="ml-20"><span class="text-[#f7931e]">case</span> <span class="text-[#ec4899]">'a'</span>: <span class="text-[#f7931e]">return</span> <span class="text-[#00d4aa]">check_keyword</span>(<span class="text-[#7c3aed]">2</span>, <span class="text-[#7c3aed]">2</span>, <span class="text-[#ec4899]">"se"</span>, TOKEN_CASE);</div>
+                                <div class="ml-16">}</div>
+                                <div class="ml-12">}</div>
+                                <div class="ml-12"><span class="text-[#f7931e]">break</span>;</div>
+                                <div class="ml-8">}</div>
+                                <div class="ml-4"><span class="text-[#f7931e]">return</span> TOKEN_IDENTIFIER;</div>
+                                <div>}</div>
+                            </div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-[#0a0a0f]">
+                            <div class="text-sm text-[#94a3b8] mb-3">关键字 Trie 结构</div>
+                            <svg viewBox="0 0 300 200" class="w-full h-auto">
+                                <!-- Root -->
+                                <circle cx="150" cy="20" r="15" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                                <text x="150" y="25" text-anchor="middle" fill="#e2e8f0" font-size="10">start</text>
+                                
+                                <!-- Level 1 -->
+                                <circle cx="50" cy="70" r="12" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                                <text x="50" y="74" text-anchor="middle" fill="#e2e8f0" font-size="10">a</text>
+                                <line x1="138" y1="30" x2="62" y2="60" stroke="#2d2d44" stroke-width="1"/>
+                                
+                                <circle cx="150" cy="70" r="12" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                                <text x="150" y="74" text-anchor="middle" fill="#e2e8f0" font-size="10">c</text>
+                                <line x1="150" y1="35" x2="150" y2="58" stroke="#2d2d44" stroke-width="1"/>
+                                
+                                <circle cx="250" cy="70" r="12" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                                <text x="250" y="74" text-anchor="middle" fill="#e2e8f0" font-size="10">v</text>
+                                <line x1="162" y1="30" x2="238" y2="60" stroke="#2d2d44" stroke-width="1"/>
+                                
+                                <!-- Level 2 -->
+                                <circle cx="150" cy="120" r="12" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                                <text x="150" y="124" text-anchor="middle" fill="#e2e8f0" font-size="10">l</text>
+                                <line x1="150" y1="82" x2="150" y2="108" stroke="#2d2d44" stroke-width="1"/>
+                                
+                                <circle cx="230" cy="120" r="12" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                                <text x="230" y="124" text-anchor="middle" fill="#e2e8f0" font-size="10">a</text>
+                                <line x1="245" y1="80" x2="238" y2="108" stroke="#2d2d44" stroke-width="1"/>
+                                
+                                <!-- Level 3 - Keywords -->
+                                <rect x="120" y="160" width="60" height="25" rx="5" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1"/>
+                                <text x="150" y="177" text-anchor="middle" fill="#00d4aa" font-size="10">class</text>
+                                <line x1="150" y1="132" x2="150" y2="160" stroke="#2d2d44" stroke-width="1"/>
+                                
+                                <rect x="200" y="160" width="60" height="25" rx="5" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1"/>
+                                <text x="230" y="177" text-anchor="middle" fill="#00d4aa" font-size="10">var</text>
+                                <line x1="230" y1="132" x2="230" y2="160" stroke="#2d2d44" stroke-width="1"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- String interpolation -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#ec4899]">3. 字符串插值处理</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-[#94a3b8] mb-4">
+                                Maple 支持字符串插值语法 <code class="text-[#ec4899]">"Hello, ${name}!"</code>。
+                                Scanner 使用栈来追踪嵌套的插值大括号层级。
+                            </p>
+                            <div class="p-4 rounded-xl bg-[#0a0a0f] font-mono text-sm">
+                                <div><span class="text-[#94a3b8]">// 插值语法解析</span></div>
+                                <div><span class="text-[#f7931e]">if</span> (c == <span class="text-[#ec4899]">'$'</span> && <span class="text-[#00d4aa]">peek_next</span>() == <span class="text-[#ec4899]">'{'</span>) {</div>
+                                <div class="ml-4">interp_braces_[interp_count_++] = <span class="text-[#7c3aed]">1</span>;</div>
+                                <div class="ml-4"><span class="text-[#00d4aa]">advance</span>(); <span class="text-[#00d4aa]">advance</span>();</div>
+                                <div class="ml-4"><span class="text-[#f7931e]">return</span> <span class="text-[#00d4aa]">make_token</span>(TOKEN_INTERP_BEGIN);</div>
+                                <div>}</div>
+                                <div class="mt-2"><span class="text-[#94a3b8]">// 追踪嵌套大括号</span></div>
+                                <div><span class="text-[#f7931e]">if</span> (c == <span class="text-[#ec4899]">'{'</span>) {</div>
+                                <div class="ml-4">interp_braces_[interp_count_-<span class="text-[#7c3aed]">1</span>]++;</div>
+                                <div>} <span class="text-[#f7931e]">else if</span> (c == <span class="text-[#ec4899]">'}'</span>) {</div>
+                                <div class="ml-4"><span class="text-[#f7931e]">if</span> (--interp_braces_[interp_count_-<span class="text-[#7c3aed]">1</span>] == <span class="text-[#7c3aed]">0</span>) {</div>
+                                <div class="ml-8">interp_count_--;</div>
+                                <div class="ml-8"><span class="text-[#f7931e]">return</span> <span class="text-[#00d4aa]">make_token</span>(TOKEN_INTERP_END);</div>
+                                <div class="ml-4">}</div>
+                                <div>}</div>
+                            </div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-[#0a0a0f]">
+                            <div class="text-sm text-[#94a3b8] mb-3">插值解析过程</div>
+                            <div class="space-y-3 font-mono text-sm">
+                                <div class="p-3 rounded-lg bg-[#12121a]">
+                                    <div class="text-[#ec4899]">"a: ${a + b}"</div>
+                                    <div class="mt-2 flex items-center gap-2 text-xs">
+                                        <span class="px-2 py-1 rounded bg-[#ec4899]/20 text-[#ec4899]">STRING</span>
+                                        <span class="text-[#94a3b8]">"a: "</span>
+                                    </div>
+                                </div>
+                                <div class="text-center text-[#94a3b8]">↓</div>
+                                <div class="p-3 rounded-lg bg-[#12121a]">
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="px-2 py-1 rounded bg-[#f7931e]/20 text-[#f7931e]">INTERP_BEGIN</span>
+                                        <span class="text-[#94a3b8]">${</span>
+                                    </div>
+                                </div>
+                                <div class="text-center text-[#94a3b8]">↓</div>
+                                <div class="p-3 rounded-lg bg-[#12121a]">
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="px-2 py-1 rounded bg-[#00d4aa]/20 text-[#00d4aa]">IDENTIFIER</span>
+                                        <span class="text-[#94a3b8]">a</span>
+                                        <span class="px-2 py-1 rounded bg-[#3b82f6]/20 text-[#3b82f6]">+</span>
+                                        <span class="px-2 py-1 rounded bg-[#00d4aa]/20 text-[#00d4aa]">IDENTIFIER</span>
+                                        <span class="text-[#94a3b8]">b</span>
+                                    </div>
+                                </div>
+                                <div class="text-center text-[#94a3b8]">↓</div>
+                                <div class="p-3 rounded-lg bg-[#12121a]">
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="px-2 py-1 rounded bg-[#f7931e]/20 text-[#f7931e]">INTERP_END</span>
+                                        <span class="text-[#94a3b8]">}</span>
+                                        <span class="px-2 py-1 rounded bg-[#ec4899]/20 text-[#ec4899]">STRING</span>
+                                        <span class="text-[#94a3b8]">""</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-6 bg-[#0a0a0f] border-t border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto text-center text-sm text-[#94a3b8]">
+            <p>Maple Language Scanner Module | 词法分析器详解</p>
+        </div>
+    </footer>
+
+    <script>
+        let isScanning = false;
+        let scanTimeout;
+        
+        const examples = {
+            simple: 'var message = "Hello, World!";\nprint message;',
+            function: 'fun add(a, b) {\n  return a + b;\n}\n\nprint add(3, 4);',
+            string: 'var name = "Maple";\nvar greeting = "Hello, ${name}!";\nprint greeting;'
+        };
+        
+        function loadExample(type) {
+            document.getElementById('source-input').value = examples[type];
+            resetScanning();
+        }
+        
+        function resetScanning() {
+            isScanning = false;
+            isStepMode = false;
+            waitingForStep = false;
+            clearTimeout(scanTimeout);
+            cells = [];
+            pos = 0;
+            tokenCount = 0;
+            currentSource = '';
+            
+            document.getElementById('scan-btn').disabled = false;
+            document.getElementById('scan-btn').innerHTML = `
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                自动扫描
+            `;
+            document.getElementById('char-stream').innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-[#94a3b8]/30 text-sm">输入代码并点击"单步执行"或"自动扫描"</div>';
+            document.getElementById('token-stream').innerHTML = '<div class="text-[#94a3b8]/30 text-sm italic">Tokens will appear here...</div>';
+            document.getElementById('token-count').textContent = '0 tokens generated';
+            document.getElementById('scan-progress-text').textContent = '准备就绪';
+            document.getElementById('scan-progress-bar').style.width = '0%';
+            updateState('start');
+        }
+        
+        function updateState(state) {
+            document.querySelectorAll('.state-indicator').forEach(el => el.classList.remove('active'));
+            document.getElementById('state-' + state)?.classList.add('active');
+        }
+        
+        let cells = [];
+        let pos = 0;
+        let tokenCount = 0;
+        let isStepMode = false;
+        let currentSource = '';
+        let waitingForStep = false;
+        
+        const tokenPatterns = [
+            { regex: /^(var|fun|if|else|while|for|return|print|class|this|super|and|or|true|false|nil)\b/, type: 'keyword', color: '#f7931e' },
+            { regex: /^"([^"\\]|\\.)*"/, type: 'string', color: '#ec4899' },
+            { regex: /^[0-9]+(\.[0-9]+)?/, type: 'number', color: '#7c3aed' },
+            { regex: /^[a-zA-Z_][a-zA-Z0-9_]*/, type: 'identifier', color: '#00d4aa' },
+            { regex: /^[(){}\[\];,.]/, type: 'delimiter', color: '#94a3b8' },
+            { regex: /^[+\-*/=!<>]=?|&&|\|\|/, type: 'operator', color: '#3b82f6' }
+        ];
+        
+        async function initScanning() {
+            currentSource = document.getElementById('source-input').value;
+            const charStream = document.getElementById('char-stream');
+            const tokenStream = document.getElementById('token-stream');
+            
+            charStream.innerHTML = '';
+            tokenStream.innerHTML = '';
+            cells = [];
+            pos = 0;
+            tokenCount = 0;
+            
+            // Create character cells
+            const chars = currentSource.split('');
+            chars.forEach((char, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'char-cell w-8 h-10 flex items-center justify-center rounded border border-[#2d2d44] font-mono text-sm';
+                cell.textContent = char === ' ' ? '·' : char === '\n' ? '↵' : char;
+                if (char === '\n') cell.classList.add('text-[#94a3b8]', 'text-xs');
+                charStream.appendChild(cell);
+                cells.push(cell);
+            });
+            
+            updateProgress();
+        }
+        
+        async function stepScanning() {
+            if (pos === 0 && !isScanning) {
+                // First step - initialize
+                isScanning = true;
+                isStepMode = true;
+                await initScanning();
+                document.getElementById('scan-progress-text').textContent = '单步模式';
+            }
+            
+            if (pos >= currentSource.length) {
+                // Finished
+                finishScanning();
+                return;
+            }
+            
+            waitingForStep = false;
+            await processNextToken();
+            updateProgress();
+            
+            if (pos >= currentSource.length) {
+                finishScanning();
+            }
+        }
+        
+        async function processNextToken() {
+            // Skip whitespace
+            updateState('skip');
+            let skipped = false;
+            while (pos < currentSource.length && /\s/.test(currentSource[pos])) {
+                cells[pos]?.classList.add('scanned');
+                pos++;
+                skipped = true;
+            }
+            
+            if (skipped) {
+                await sleep(50);
+            }
+            
+            if (pos >= currentSource.length) return;
+            
+            // Find token
+            updateState('scan');
+            const remaining = currentSource.slice(pos);
+            let matched = null;
+            let matchedType = null;
+            let matchedColor = null;
+            
+            for (const pattern of tokenPatterns) {
+                const match = remaining.match(pattern.regex);
+                if (match) {
+                    matched = match[0];
+                    matchedType = pattern.type;
+                    matchedColor = pattern.color;
+                    break;
+                }
+            }
+            
+            const tokenStream = document.getElementById('token-stream');
+            
+            if (matched) {
+                // Highlight characters
+                for (let i = 0; i < matched.length; i++) {
+                    cells[pos + i]?.classList.add('active');
+                }
+                await sleep(300);
+                
+                // Create token
+                updateState('emit');
+                const token = document.createElement('div');
+                token.className = `token-card px-3 py-2 rounded-lg border font-mono text-sm token-${matchedType}`;
+                token.style.borderColor = matchedColor;
+                token.innerHTML = `
+                    <div class="text-xs opacity-70 mb-1">${matchedType.toUpperCase()}</div>
+                    <div style="color: ${matchedColor}">${matched.slice(0, 15)}${matched.length > 15 ? '...' : ''}</div>
+                `;
+                tokenStream.appendChild(token);
+                tokenStream.scrollLeft = tokenStream.scrollWidth;
+                
+                tokenCount++;
+                document.getElementById('token-count').textContent = `${tokenCount} tokens generated`;
+                
+                await sleep(200);
+                
+                // Mark as scanned
+                for (let i = 0; i < matched.length; i++) {
+                    cells[pos + i]?.classList.remove('active');
+                    cells[pos + i]?.classList.add('scanned');
+                }
+                
+                pos += matched.length;
+            } else {
+                // Unknown character
+                cells[pos]?.classList.add('active');
+                await sleep(300);
+                cells[pos]?.classList.remove('active');
+                cells[pos]?.classList.add('scanned');
+                pos++;
+            }
+        }
+        
+        function updateProgress() {
+            const progress = currentSource.length > 0 ? (pos / currentSource.length) * 100 : 0;
+            document.getElementById('scan-progress-bar').style.width = `${progress}%`;
+        }
+        
+        function finishScanning() {
+            isScanning = false;
+            document.getElementById('scan-btn').disabled = false;
+            document.getElementById('scan-btn').innerHTML = `
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                自动扫描
+            `;
+            document.getElementById('scan-progress-text').textContent = '扫描完成';
+            updateState('start');
+        }
+        
+        async function startScanning() {
+            if (isScanning) return;
+            isScanning = true;
+            isStepMode = false;
+            document.getElementById('scan-btn').disabled = true;
+            document.getElementById('scan-btn').innerHTML = '扫描中...';
+            document.getElementById('scan-progress-text').textContent = '自动扫描中...';
+            
+            await initScanning();
+            
+            async function autoScan() {
+                if (!isScanning || pos >= currentSource.length) {
+                    finishScanning();
+                    return;
+                }
+                
+                await processNextToken();
+                updateProgress();
+                
+                if (pos < currentSource.length) {
+                    setTimeout(autoScan, 100);
+                } else {
+                    finishScanning();
+                }
+            }
+            
+            autoScan();
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // ============================================
+        // State Machine Interactive Demo
+        // ============================================
+        let stateMachineState = {
+            input: '',
+            pos: 0,
+            currentState: 'start',
+            isRunning: false,
+            isStepMode: false,
+            stepResolve: null,
+            history: []
+        };
+        
+        const stateTransitions = {
+            start: {
+                ' ': { next: 'skip', action: '跳过空白' },
+                '\t': { next: 'skip', action: '跳过制表符' },
+                '\n': { next: 'skip', action: '跳过换行' },
+                '"': { next: 'string', action: '开始字符串' },
+                default: (char) => {
+                    if (/[0-9]/.test(char)) return { next: 'number', action: '开始数字' };
+                    if (/[a-zA-Z_]/.test(char)) return { next: 'ident', action: '开始标识符' };
+                    return { next: 'start', action: '单字符Token' };
+                }
+            },
+            skip: {
+                ' ': { next: 'skip', action: '继续跳过' },
+                '\t': { next: 'skip', action: '继续跳过' },
+                '\n': { next: 'skip', action: '继续跳过' },
+                '"': { next: 'string', action: '开始字符串' },
+                default: (char) => {
+                    if (/[0-9]/.test(char)) return { next: 'number', action: '开始数字' };
+                    if (/[a-zA-Z_]/.test(char)) return { next: 'ident', action: '开始标识符' };
+                    return { next: 'start', action: '返回开始' };
+                }
+            },
+            string: {
+                '"': { next: 'start', action: '字符串结束' },
+                default: { next: 'string', action: '继续字符串' }
+            },
+            number: {
+                default: (char) => {
+                    if (/[0-9.]/.test(char)) return { next: 'number', action: '继续数字' };
+                    return { next: 'start', action: '数字结束' };
+                }
+            },
+            ident: {
+                default: (char) => {
+                    if (/[a-zA-Z0-9_]/.test(char)) return { next: 'ident', action: '继续标识符' };
+                    return { next: 'start', action: '标识符结束' };
+                }
+            }
+        };
+        
+        const stateColors = {
+            start: '#00d4aa',
+            skip: '#f7931e',
+            string: '#ec4899',
+            number: '#7c3aed',
+            ident: '#00d4aa'
+        };
+        
+        function setStateMachineInput(text) {
+            document.getElementById('state-machine-input').value = text;
+            resetStateMachine();
+        }
+        
+        function resetStateMachine() {
+            stateMachineState = {
+                input: '',
+                pos: 0,
+                currentState: 'start',
+                isRunning: false,
+                isStepMode: false,
+                stepResolve: null,
+                history: []
+            };
+            
+            // Reset visual states
+            document.querySelectorAll('.state-node').forEach(node => {
+                node.style.filter = '';
+                node.style.strokeWidth = '2';
+            });
+            document.querySelectorAll('.transition-path').forEach(path => {
+                path.setAttribute('stroke', '#2d2d44');
+                path.setAttribute('stroke-width', '1.5');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+            });
+            
+            document.getElementById('state-start').style.filter = 'drop-shadow(0 0 10px #00d4aa)';
+            document.getElementById('state-start').style.strokeWidth = '3';
+            
+            document.getElementById('state-machine-status').textContent = 'READY';
+            document.getElementById('state-machine-status').style.color = '#94a3b8';
+            document.getElementById('state-machine-info').textContent = '点击"运行"开始状态机演示';
+            document.getElementById('char-queue').innerHTML = '<span class="text-[#64748b]">等待输入...</span>';
+            document.getElementById('current-char-indicator').style.display = 'none';
+            document.getElementById('state-step-btn').textContent = '单步';
+        }
+        
+        function updateCharQueue() {
+            const queue = document.getElementById('char-queue');
+            const chars = stateMachineState.input.split('');
+            
+            if (chars.length === 0) {
+                queue.innerHTML = '<span class="text-[#64748b]">等待输入...</span>';
+                return;
+            }
+            
+            queue.innerHTML = chars.map((char, i) => {
+                let display = char === ' ' ? '␣' : char === '\t' ? '→' : char === '\n' ? '↵' : char;
+                if (i === stateMachineState.pos) {
+                    return `<span class="px-2 py-1 rounded bg-[#f7931e] text-[#0a0a0f] font-bold animate-pulse">${display}</span>`;
+                } else if (i < stateMachineState.pos) {
+                    return `<span class="px-2 py-1 rounded bg-[#1a1a25] text-[#64748b] line-through">${display}</span>`;
+                } else {
+                    return `<span class="px-2 py-1 rounded bg-[#1a1a25] text-[#e2e8f0]">${display}</span>`;
+                }
+            }).join('');
+            
+            // Update current char indicator
+            const currentChar = chars[stateMachineState.pos];
+            if (currentChar !== undefined) {
+                const indicator = document.getElementById('current-char-indicator');
+                const indicatorText = document.getElementById('current-char-text');
+                indicator.style.display = 'block';
+                indicatorText.textContent = currentChar === ' ' ? '␣' : currentChar;
+            }
+        }
+        
+        function highlightState(state) {
+            // Reset all states
+            document.querySelectorAll('.state-node').forEach(node => {
+                node.style.filter = '';
+                node.style.strokeWidth = '2';
+            });
+            
+            // Highlight current state
+            const stateEl = document.getElementById(`state-${state}`);
+            if (stateEl) {
+                const color = stateColors[state] || '#00d4aa';
+                stateEl.style.filter = `drop-shadow(0 0 15px ${color})`;
+                stateEl.style.strokeWidth = '4';
+            }
+        }
+        
+        function highlightTransition(from, to) {
+            // Reset all paths
+            document.querySelectorAll('.transition-path').forEach(path => {
+                path.setAttribute('stroke', '#2d2d44');
+                path.setAttribute('stroke-width', '1.5');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+            });
+            
+            // Try to find and highlight the specific path
+            let pathId = `path-${from}-${to}`;
+            let path = document.getElementById(pathId);
+            
+            // Handle special cases
+            if (!path) {
+                if (to === 'start') {
+                    // Return paths are specific to the source state
+                    const returnPathIds = {
+                        'string': 'path-string-start',
+                        'number': 'path-number-start',
+                        'ident': 'path-ident-start'
+                    };
+                    path = document.getElementById(returnPathIds[from]);
+                } else if (from === to) {
+                    // Self loops
+                    const selfLoopIds = {
+                        'start': 'path-start-self',
+                        'skip': 'path-skip-self',
+                        'string': 'path-string-self',
+                        'number': 'path-number-self',
+                        'ident': 'path-ident-self'
+                    };
+                    path = document.getElementById(selfLoopIds[from]);
+                }
+            }
+            
+            if (path) {
+                path.setAttribute('stroke', '#f7931e');
+                path.setAttribute('stroke-width', '3');
+                path.setAttribute('marker-end', 'url(#arrowhead-active)');
+            }
+        }
+        
+        function getTransition(state, char) {
+            const transitions = stateTransitions[state];
+            if (!transitions) return null;
+            
+            const exact = transitions[char];
+            if (exact) return exact;
+            
+            if (typeof transitions.default === 'function') {
+                return transitions.default(char);
+            }
+            
+            return transitions.default;
+        }
+        
+        function stateMachineSleep(ms) {
+            return new Promise(resolve => {
+                if (stateMachineState.isStepMode) {
+                    stateMachineState.stepResolve = resolve;
+                } else {
+                    setTimeout(resolve, ms);
+                }
+            });
+        }
+        
+        // ============================================
+        // Scanner Structure Visualization
+        // ============================================
+        const scannerPartInfo = {
+            position: {
+                title: '位置追踪',
+                desc: 'start_: Token 起始位置指针 | current_: 当前扫描位置指针'
+            },
+            line: {
+                title: '行号追踪',
+                desc: 'line_: 当前行号，用于错误报告和调试信息'
+            },
+            public: {
+                title: 'Public 方法',
+                desc: 'scan_token(): 扫描下一个 Token | skip_whitespace(): 跳过空白字符'
+            },
+            private: {
+                title: 'Private 扫描方法',
+                desc: 'scan_string(): 扫描字符串 | scan_number(): 扫描数字 | scan_identifier(): 扫描标识符 | advance/peek: 字符操作'
+            }
+        };
+        
+        document.querySelectorAll('.scanner-part').forEach(part => {
+            part.addEventListener('mouseenter', () => {
+                const partName = part.getAttribute('data-part');
+                const info = scannerPartInfo[partName];
+                const infoEl = document.getElementById('scanner-info');
+                if (info && infoEl) {
+                    infoEl.innerHTML = `<span class="text-[#00d5d4] font-semibold">${info.title}:</span> <span class="text-[#e2e8f0]">${info.desc}</span>`;
+                }
+                
+                // Highlight the part
+                part.style.fill = 'rgba(0, 213, 212, 0.1)';
+            });
+            
+            part.addEventListener('mouseleave', () => {
+                const infoEl = document.getElementById('scanner-info');
+                if (infoEl) {
+                    infoEl.textContent = '悬停查看各部分功能说明';
+                }
+                part.style.fill = 'transparent';
+            });
+        });
+        
+        async function runStateMachine() {
+            if (stateMachineState.isRunning && stateMachineState.isStepMode) {
+                // Continue from step mode
+                stateMachineState.isStepMode = false;
+                if (stateMachineState.stepResolve) {
+                    stateMachineState.stepResolve();
+                    stateMachineState.stepResolve = null;
+                }
+                return;
+            }
+            
+            resetStateMachine();
+            stateMachineState.isRunning = true;
+            stateMachineState.isStepMode = false;
+            stateMachineState.input = document.getElementById('state-machine-input').value;
+            
+            document.getElementById('state-machine-status').textContent = 'RUNNING';
+            document.getElementById('state-machine-status').style.color = '#00d4aa';
+            
+            updateCharQueue();
+            highlightState('start');
+            
+            await stateMachineSleep(500);
+            
+            while (stateMachineState.isRunning && stateMachineState.pos < stateMachineState.input.length) {
+                const char = stateMachineState.input[stateMachineState.pos];
+                const transition = getTransition(stateMachineState.currentState, char);
+                
+                if (!transition) break;
+                
+                // Update info
+                document.getElementById('state-machine-info').innerHTML = 
+                    `状态 <span class="text-[${stateColors[stateMachineState.currentState]}]">${stateMachineState.currentState.toUpperCase()}</span> ` +
+                    `读取字符 <span class="text-[#f7931e] font-mono">${char === ' ' ? '␣' : char === '\t' ? '→' : char === '\n' ? '↵' : char}</span> ` +
+                    `→ ${transition.action}`;
+                
+                // Visual feedback
+                highlightTransition(stateMachineState.currentState, transition.next);
+                await stateMachineSleep(600);
+                
+                // Update state
+                stateMachineState.currentState = transition.next;
+                stateMachineState.pos++;
+                highlightState(stateMachineState.currentState);
+                updateCharQueue();
+                
+                await stateMachineSleep(600);
+            }
+            
+            if (stateMachineState.pos >= stateMachineState.input.length) {
+                document.getElementById('state-machine-status').textContent = 'COMPLETED';
+                document.getElementById('state-machine-status').style.color = '#a855f7';
+                document.getElementById('state-machine-info').textContent = '状态机运行完成';
+            }
+            
+            stateMachineState.isRunning = false;
+        }
+        
+        async function stepStateMachine() {
+            if (!stateMachineState.isRunning) {
+                resetStateMachine();
+                stateMachineState.isRunning = true;
+                stateMachineState.isStepMode = true;
+                stateMachineState.input = document.getElementById('state-machine-input').value;
+                
+                document.getElementById('state-machine-status').textContent = 'STEP';
+                document.getElementById('state-machine-status').style.color = '#f7931e';
+                document.getElementById('state-step-btn').textContent = '下一步';
+                
+                updateCharQueue();
+                highlightState('start');
+            } else {
+                // Execute one step
+                if (stateMachineState.stepResolve) {
+                    stateMachineState.stepResolve();
+                    stateMachineState.stepResolve = null;
+                }
+                
+                if (stateMachineState.pos >= stateMachineState.input.length) {
+                    document.getElementById('state-machine-status').textContent = 'COMPLETED';
+                    document.getElementById('state-machine-status').style.color = '#a855f7';
+                    document.getElementById('state-machine-info').textContent = '状态机运行完成';
+                    document.getElementById('state-step-btn').textContent = '单步';
+                    stateMachineState.isRunning = false;
+                    return;
+                }
+                
+                const char = stateMachineState.input[stateMachineState.pos];
+                const transition = getTransition(stateMachineState.currentState, char);
+                
+                if (transition) {
+                    document.getElementById('state-machine-info').innerHTML = 
+                        `状态 <span class="text-[${stateColors[stateMachineState.currentState]}]">${stateMachineState.currentState.toUpperCase()}</span> ` +
+                        `读取字符 <span class="text-[#f7931e] font-mono">${char === ' ' ? '␣' : char === '\t' ? '→' : char === '\n' ? '↵' : char}</span> ` +
+                        `→ ${transition.action}`;
+                    
+                    highlightTransition(stateMachineState.currentState, transition.next);
+                    
+                    setTimeout(() => {
+                        stateMachineState.currentState = transition.next;
+                        stateMachineState.pos++;
+                        highlightState(stateMachineState.currentState);
+                        updateCharQueue();
+                    }, 300);
+                }
+            }
+        }
+        
+        // Initialize state machine demo
+        resetStateMachine();
+    </script>
+</body>
+</html>

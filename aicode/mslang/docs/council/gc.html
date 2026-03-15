@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GC 垃圾回收器 - Maple Language</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface-2: #1a1a25;
+            --accent: #00d4aa;
+            --accent-2: #ec4899;
+            --accent-3: #f7931e;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --border: #2d2d44;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        @keyframes mark-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(0, 212, 170, 0); }
+        }
+        @keyframes sweep-fade {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        @keyframes trace-flow {
+            0% { stroke-dashoffset: 100; }
+            100% { stroke-dashoffset: 0; }
+        }
+        @keyframes gray-push {
+            0% { transform: translateX(-20px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        
+        .object-node {
+            transition: all 0.4s ease;
+        }
+        .object-node.white { border-color: #2d2d44; background: #1a1a25; }
+        .object-node.gray { 
+            border-color: #f7931e; 
+            background: rgba(247, 147, 30, 0.1); 
+            animation: mark-pulse 1s ease infinite;
+        }
+        .object-node.black { 
+            border-color: #00d4aa; 
+            background: rgba(0, 212, 170, 0.1); 
+        }
+        .object-node.swept {
+            animation: sweep-fade 0.5s ease forwards;
+        }
+        
+        .gc-phase {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .gc-phase::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+        .gc-phase.active {
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.15), rgba(0, 212, 170, 0.05));
+            border-color: #00d4aa;
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.3);
+            transform: translateX(10px);
+        }
+        .gc-phase.active::before {
+            left: 100%;
+        }
+        
+        /* Enhanced object node states */
+        .object-node {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .object-node:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+        .object-node.white { 
+            border-color: #2d2d44; 
+            background: radial-gradient(circle at 30% 30%, #2a2a35, #1a1a25);
+        }
+        .object-node.gray { 
+            border-color: #f7931e; 
+            background: radial-gradient(circle at 30% 30%, rgba(247, 147, 30, 0.2), rgba(247, 147, 30, 0.05));
+            animation: mark-pulse 1.5s ease infinite;
+            box-shadow: 0 0 30px rgba(247, 147, 30, 0.3);
+        }
+        .object-node.black { 
+            border-color: #00d4aa; 
+            background: radial-gradient(circle at 30% 30%, rgba(0, 212, 170, 0.25), rgba(0, 212, 170, 0.08));
+            box-shadow: 0 0 30px rgba(0, 212, 170, 0.4);
+        }
+        .object-node.swept {
+            animation: sweep-fade 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        /* Tracing particle effect */
+        .trace-particle {
+            fill: #00d4aa;
+            filter: drop-shadow(0 0 5px #00d4aa);
+            animation: trace-move 2s linear infinite;
+        }
+        
+        @keyframes trace-move {
+            0% { offset-distance: 0%; opacity: 1; }
+            100% { offset-distance: 100%; opacity: 0; }
+        }
+        
+        .reference-line {
+            stroke-dasharray: 8;
+            animation: trace-flow 2s linear infinite;
+        }
+        
+        /* Gray stack item animation */
+        .gray-stack-item {
+            animation: gray-push 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
+
+    <!-- Enhanced Visual Effects -->
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 15s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-strong {
+            background: rgba(10, 10, 16, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        
+        /* Enhanced Animations */
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow), 0 0 20px var(--glow), 0 0 40px rgba(0, 245, 212, 0.2);
+                border-color: var(--accent);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow), 0 0 40px var(--glow), 0 0 80px rgba(0, 245, 212, 0.4);
+                border-color: #fff;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Shimmer text effect */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        /* Gradient border effect */
+        .gradient-border {
+            position: relative;
+            background: var(--surface-2);
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Button effects */
+        .btn-enhanced {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-enhanced:hover::before {
+            left: 100%;
+        }
+        
+        .btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        /* Navigation glow */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Card hover effects */
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        /* Enhanced scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+<body class="min-h-screen">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center font-bold text-white">M</div>
+                <span class="text-xl font-bold">Maple Language</span>
+            </a>
+            <div class="flex gap-6 text-sm">
+                <a href="scanner.html" class="hover:text-[#00d4aa] transition-colors">Scanner</a>
+                <a href="compiler.html" class="hover:text-[#00d4aa] transition-colors">Compiler</a>
+                <a href="vm.html" class="hover:text-[#00d4aa] transition-colors">VM</a>
+                <a href="gc.html" class="text-[#00d4aa] font-semibold">GC</a>
+                <a href="object.html" class="hover:text-[#00d4aa] transition-colors">Object</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="inline-block mb-4 px-4 py-2 rounded-full border border-[#00d4aa]/30 bg-[#00d4aa]/10 text-[#00d4aa] text-sm font-medium">
+                运行时层 / Runtime Layer
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                <span class="text-[#00d4aa]">GC</span>
+                <span class="text-[#94a3b8] text-4xl">垃圾回收器</span>
+            </h1>
+            <p class="text-xl text-[#94a3b8] max-w-3xl leading-relaxed">
+                采用 <strong>三色标记-清扫 (Tri-color Mark-and-Sweep)</strong> 算法，
+                追踪式垃圾回收。暂停式执行，简单但正确，适合教学和小型语言实现。
+            </p>
+        </div>
+    </section>
+
+    <!-- Interactive GC Demo -->
+    <section class="py-12 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa]">▶</span>
+                GC 过程交互演示
+            </h2>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Object Graph -->
+                <div class="lg:col-span-2 p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-medium text-[#94a3b8]">对象图</label>
+                        <div class="flex gap-2 text-xs">
+                            <div class="flex items-center gap-1">
+                                <div class="w-3 h-3 rounded border-2 border-[#2d2d44] bg-[#1a1a25]"></div>
+                                <span class="text-[#94a3b8]">White (未标记)</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-3 h-3 rounded border-2 border-[#f7931e] bg-[#f7931e]/10"></div>
+                                <span class="text-[#94a3b8]">Gray (处理中)</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-3 h-3 rounded border-2 border-[#00d4aa] bg-[#00d4aa]/10"></div>
+                                <span class="text-[#94a3b8]">Black (已标记)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <svg id="object-graph" viewBox="0 0 600 350" class="w-full h-auto">
+                        <!-- References -->
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                <path d="M0,0 L0,6 L9,3 z" fill="#2d2d44"/>
+                            </marker>
+                        </defs>
+                        
+                        <!-- VM Root -> A -->
+                        <path d="M 100 50 L 150 100" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="ref-line"/>
+                        <!-- A -> B -->
+                        <path d="M 180 140 L 220 180" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="ref-line"/>
+                        <!-- A -> C -->
+                        <path d="M 200 120 L 280 120" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="ref-line"/>
+                        <!-- B -> D -->
+                        <path d="M 250 220 L 320 250" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="ref-line"/>
+                        <!-- C -> E -->
+                        <path d="M 320 150 L 350 200" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrowhead)" class="ref-line"/>
+                        <!-- F (unreachable) -->
+                        
+                        <!-- VM Root -->
+                        <rect x="40" y="20" width="80" height="40" rx="8" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="80" y="45" text-anchor="middle" fill="#7c3aed" font-size="11" font-weight="bold">VM Root</text>
+                        
+                        <!-- Objects -->
+                        <g id="obj-A" class="object-node" data-refs="B,C">
+                            <circle cx="170" cy="130" r="35" fill="#1a1a25" stroke="#2d2d44" stroke-width="2"/>
+                            <text x="170" y="125" text-anchor="middle" fill="#e2e8f0" font-size="11">ObjA</text>
+                            <text x="170" y="140" text-anchor="middle" fill="#94a3b8" font-size="9">String</text>
+                        </g>
+                        
+                        <g id="obj-B" class="object-node" data-refs="D">
+                            <circle cx="240" cy="210" r="35" fill="#1a1a25" stroke="#2d2d44" stroke-width="2"/>
+                            <text x="240" y="205" text-anchor="middle" fill="#e2e8f0" font-size="11">ObjB</text>
+                            <text x="240" y="220" text-anchor="middle" fill="#94a3b8" font-size="9">Function</text>
+                        </g>
+                        
+                        <g id="obj-C" class="object-node" data-refs="E">
+                            <circle cx="310" cy="130" r="35" fill="#1a1a25" stroke="#2d2d44" stroke-width="2"/>
+                            <text x="310" y="125" text-anchor="middle" fill="#e2e8f0" font-size="11">ObjC</text>
+                            <text x="310" y="140" text-anchor="middle" fill="#94a3b8" font-size="9">Closure</text>
+                        </g>
+                        
+                        <g id="obj-D" class="object-node" data-refs="">
+                            <circle cx="360" cy="280" r="35" fill="#1a1a25" stroke="#2d2d44" stroke-width="2"/>
+                            <text x="360" y="275" text-anchor="middle" fill="#e2e8f0" font-size="11">ObjD</text>
+                            <text x="360" y="290" text-anchor="middle" fill="#94a3b8" font-size="9">String</text>
+                        </g>
+                        
+                        <g id="obj-E" class="object-node" data-refs="">
+                            <circle cx="380" cy="230" r="35" fill="#1a1a25" stroke="#2d2d44" stroke-width="2"/>
+                            <text x="380" y="225" text-anchor="middle" fill="#e2e8f0" font-size="11">ObjE</text>
+                            <text x="380" y="240" text-anchor="middle" fill="#94a3b8" font-size="9">Instance</text>
+                        </g>
+                        
+                        <g id="obj-F" class="object-node" data-refs="">
+                            <circle cx="500" cy="150" r="35" fill="#1a1a25" stroke="#2d2d44" stroke-width="2" stroke-dasharray="5"/>
+                            <text x="500" y="145" text-anchor="middle" fill="#94a3b8" font-size="11">ObjF</text>
+                            <text x="500" y="160" text-anchor="middle" fill="#94a3b8" font-size="9">Unreachable</text>
+                        </g>
+                    </svg>
+                    
+                    <div class="mt-4 p-3 rounded-xl bg-[#12121a]">
+                        <div class="text-xs text-[#94a3b8] mb-2">图例说明</div>
+                        <div class="flex flex-wrap gap-4 text-xs">
+                            <span class="text-[#94a3b8]">VM Root: 全局变量、栈、调用帧</span>
+                            <span class="text-[#94a3b8]">实线: 对象引用</span>
+                            <span class="text-[#94a3b8]">虚线: 不可达对象(将被回收)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- GC Controls -->
+                <div class="space-y-4">
+                    <!-- Phase Indicators -->
+                    <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h3 class="font-semibold mb-4">GC 阶段</h3>
+                        <div class="space-y-2">
+                            <div id="phase-mark" class="gc-phase p-3 rounded-lg border border-[#2d2d44] flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full bg-[#f7931e]/20 flex items-center justify-center text-[#f7931e] text-sm">1</span>
+                                <div>
+                                    <div class="font-medium text-sm">标记阶段</div>
+                                    <div class="text-xs text-[#94a3b8]">Mark Roots (White → Gray)</div>
+                                </div>
+                            </div>
+                            <div id="phase-trace" class="gc-phase p-3 rounded-lg border border-[#2d2d44] flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full bg-[#7c3aed]/20 flex items-center justify-center text-[#7c3aed] text-sm">2</span>
+                                <div>
+                                    <div class="font-medium text-sm">追踪阶段</div>
+                                    <div class="text-xs text-[#94a3b8]">Trace References (Gray → Black)</div>
+                                </div>
+                            </div>
+                            <div id="phase-sweep" class="gc-phase p-3 rounded-lg border border-[#2d2d44] flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-full bg-[#ec4899]/20 flex items-center justify-center text-[#ec4899] text-sm">3</span>
+                                <div>
+                                    <div class="font-medium text-sm">清扫阶段</div>
+                                    <div class="text-xs text-[#94a3b8]">Sweep White Objects</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Gray Stack -->
+                    <div class="p-5 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h3 class="font-semibold mb-3">Gray Stack (工作列表)</h3>
+                        <div id="gray-stack" class="min-h-[80px] p-3 rounded-lg bg-[#12121a] flex flex-wrap gap-2 items-center">
+                            <span class="text-xs text-[#94a3b8]/50">Empty</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="flex gap-2">
+                        <button onclick="startGC()" id="gc-btn" class="flex-1 py-3 rounded-xl bg-[#00d4aa] text-[#0a0a0f] font-semibold hover:bg-[#00d4aa]/90 transition-all text-sm">
+                            执行 GC
+                        </button>
+                        <button onclick="stepGC()" id="gc-step-btn" class="flex-1 py-3 rounded-xl bg-[#1a1a25] border border-[#2d2d44] hover:border-[#f7931e] transition-all text-sm">
+                            单步
+                        </button>
+                        <button onclick="resetGC()" class="px-4 py-3 rounded-xl bg-[#1a1a25] border border-[#2d2d44] hover:border-[#ec4899] transition-all text-sm">
+                            ↺
+                        </button>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div id="gc-stats" class="p-4 rounded-xl bg-[#12121a] font-mono text-xs space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-[#94a3b8]">Bytes allocated:</span>
+                            <span class="text-[#00d4aa]">1,024</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-[#94a3b8]">Next GC threshold:</span>
+                            <span class="text-[#f7931e]">2,048</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-[#94a3b8]">Objects:</span>
+                            <span>6</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-[#94a3b8]">Marked:</span>
+                            <span id="marked-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GC Algorithm -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">GC 算法详解</h2>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Mark Phase -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#f7931e]/30">
+                    <div class="w-12 h-12 rounded-xl bg-[#f7931e]/20 flex items-center justify-center mb-4">
+                        <span class="text-2xl font-bold text-[#f7931e]">1</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-[#f7931e]">标记阶段</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        从所有 GC Roots 开始，将直接引用的对象标记为 Gray，加入工作列表。
+                    </p>
+                    <!-- Mark Phase Visualization -->
+                    <svg viewBox="0 0 260 160" class="w-full h-auto">
+                        <!-- Roots -->
+                        <text x="130" y="20" text-anchor="middle" fill="#94a3b8" font-size="10">GC Roots</text>
+                        <rect x="20" y="30" width="50" height="25" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="45" y="47" text-anchor="middle" fill="#f7931e" font-size="8">Stack</text>
+                        <rect x="90" y="30" width="50" height="25" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="115" y="47" text-anchor="middle" fill="#f7931e" font-size="8">Globals</text>
+                        <rect x="160" y="30" width="80" height="25" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="200" y="47" text-anchor="middle" fill="#f7931e" font-size="8">Upvalues</text>
+                        
+                        <!-- Arrows to Gray objects -->
+                        <path d="M 45 55 L 70 90" stroke="#f7931e" stroke-width="1.5" marker-end="url(#arrow-g)"/>
+                        <path d="M 115 55 L 100 90" stroke="#f7931e" stroke-width="1.5" marker-end="url(#arrow-g)"/>
+                        <path d="M 200 55 L 170 90" stroke="#f7931e" stroke-width="1.5" marker-end="url(#arrow-g)"/>
+                        
+                        <!-- Gray objects -->
+                        <circle cx="80" cy="100" r="18" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="80" y="105" text-anchor="middle" fill="#f7931e" font-size="9">Gray</text>
+                        
+                        <circle cx="130" cy="100" r="18" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="130" y="105" text-anchor="middle" fill="#f7931e" font-size="9">Gray</text>
+                        
+                        <circle cx="180" cy="100" r="18" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="180" y="105" text-anchor="middle" fill="#f7931e" font-size="9">Gray</text>
+                        
+                        <!-- Gray Stack -->
+                        <rect x="90" y="135" width="80" height="22" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="130" y="150" text-anchor="middle" fill="#7c3aed" font-size="9">gray_stack_</text>
+                        
+                        <defs>
+                            <marker id="arrow-g" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                                <path d="M0,0 L0,6 L5,3 z" fill="#f7931e"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                
+                <!-- Trace Phase -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#7c3aed]/30">
+                    <div class="w-12 h-12 rounded-xl bg-[#7c3aed]/20 flex items-center justify-center mb-4">
+                        <span class="text-2xl font-bold text-[#7c3aed]">2</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-[#7c3aed]">追踪阶段</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        从 Gray Stack 中取出对象，标记其引用的子对象，直到没有 Gray 对象。
+                    </p>
+                    <!-- Trace Phase Visualization -->
+                    <svg viewBox="0 0 260 180" class="w-full h-auto">
+                        <!-- Gray Stack -->
+                        <rect x="20" y="10" width="70" height="80" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="55" y="30" text-anchor="middle" fill="#7c3aed" font-size="9">Gray Stack</text>
+                        <circle cx="55" cy="50" r="12" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="55" y="54" text-anchor="middle" fill="#f7931e" font-size="7">Gray</text>
+                        <circle cx="55" cy="75" r="12" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="55" y="79" text-anchor="middle" fill="#f7931e" font-size="7">Gray</text>
+                        
+                        <!-- Pop arrow -->
+                        <path d="M 90 50 L 130 50" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrow-t)"/>
+                        <text x="110" y="42" fill="#94a3b8" font-size="8">pop</text>
+                        
+                        <!-- Processing -->
+                        <rect x="140" y="30" width="100" height="40" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="190" y="48" text-anchor="middle" fill="#7c3aed" font-size="9">blacken_object</text>
+                        <text x="190" y="62" text-anchor="middle" fill="#94a3b8" font-size="7">Gray → Black</text>
+                        
+                        <!-- Children -->
+                        <circle cx="150" cy="130" r="14" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="150" y="135" text-anchor="middle" fill="#00d4aa" font-size="8">Black</text>
+                        
+                        <circle cx="190" cy="130" r="14" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="190" y="135" text-anchor="middle" fill="#f7931e" font-size="8">Gray</text>
+                        
+                        <circle cx="230" cy="130" r="14" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="230" y="135" text-anchor="middle" fill="#00d4aa" font-size="8">Black</text>
+                        
+                        <!-- Arrows to children -->
+                        <path d="M 190 70 L 150 116" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arrow-t)"/>
+                        <path d="M 200 70 L 190 116" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arrow-t)"/>
+                        <path d="M 210 70 L 220 116" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arrow-t)"/>
+                        
+                        <defs>
+                            <marker id="arrow-t" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                                <path d="M0,0 L0,6 L5,3 z" fill="#7c3aed"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                
+                <!-- Sweep Phase -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#ec4899]/30">
+                    <div class="w-12 h-12 rounded-xl bg-[#ec4899]/20 flex items-center justify-center mb-4">
+                        <span class="text-2xl font-bold text-[#ec4899]">3</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3 text-[#ec4899]">清扫阶段</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        遍历对象链表，回收未标记的 White 对象，重置 Black 对象的标记位。
+                    </p>
+                    <!-- Sweep Phase Visualization -->
+                    <svg viewBox="0 0 260 140" class="w-full h-auto">
+                        <!-- Object list -->
+                        <circle cx="40" cy="50" r="18" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="40" y="54" text-anchor="middle" fill="#00d4aa" font-size="8">Black</text>
+                        
+                        <circle cx="100" cy="50" r="18" fill="#1a1a25" stroke="#2d2d44" stroke-width="1.5" stroke-dasharray="3"/>
+                        <text x="100" y="54" text-anchor="middle" fill="#64748b" font-size="8">White</text>
+                        <text x="100" y="85" text-anchor="middle" fill="#ec4899" font-size="9">✕ 回收</text>
+                        
+                        <circle cx="160" cy="50" r="18" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="160" y="54" text-anchor="middle" fill="#00d4aa" font-size="8">Black</text>
+                        <text x="160" y="85" text-anchor="middle" fill="#00d4aa" font-size="9">→ 重置</text>
+                        
+                        <circle cx="220" cy="50" r="18" fill="#1a1a25" stroke="#2d2d44" stroke-width="1.5" stroke-dasharray="3"/>
+                        <text x="220" y="54" text-anchor="middle" fill="#64748b" font-size="8">White</text>
+                        <text x="220" y="85" text-anchor="middle" fill="#ec4899" font-size="9">✕ 回收</text>
+                        
+                        <!-- Links -->
+                        <path d="M 58 50 L 82 50" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-s)"/>
+                        <path d="M 118 50 L 142 50" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-s)"/>
+                        <path d="M 178 50 L 202 50" stroke="#2d2d44" stroke-width="1.5" marker-end="url(#arrow-s)"/>
+                        
+                        <!-- Sweep arrow -->
+                        <path d="M 10 80 L 250 80" stroke="#ec4899" stroke-width="2" stroke-dasharray="4"/>
+                        <polygon points="250,75 260,80 250,85" fill="#ec4899"/>
+                        <text x="130" y="100" text-anchor="middle" fill="#ec4899" font-size="10">sweep 遍历</text>
+                        
+                        <text x="130" y="125" text-anchor="middle" fill="#94a3b8" font-size="9">Black → White | White → 删除</text>
+                        
+                        <defs>
+                            <marker id="arrow-s" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                                <path d="M0,0 L0,6 L5,3 z" fill="#2d2d44"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                        <div class="ml-3">}</div>
+                        <div>}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Object Tracing -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">对象引用追踪</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">各类型对象的追踪逻辑</h3>
+                    <div class="space-y-3 font-mono text-sm">
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-[#f7931e] mb-1">ObjFunction</div>
+                            <div class="text-xs text-[#94a3b8]">mark(name); mark(chunk.constants[])</div>
+                        </div>
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-[#f7931e] mb-1">ObjClosure</div>
+                            <div class="text-xs text-[#94a3b8]">mark(function); mark(upvalues[])</div>
+                        </div>
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-[#f7931e] mb-1">ObjClass</div>
+                            <div class="text-xs text-[#94a3b8]">mark(name); mark(methods[])</div>
+                        </div>
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-[#f7931e] mb-1">ObjInstance</div>
+                            <div class="text-xs text-[#94a3b8]">mark(klass); mark(fields[])</div>
+                        </div>
+                        <div class="p-3 rounded-lg bg-[#12121a]">
+                            <div class="text-[#f7931e] mb-1">ObjUpvalue</div>
+                            <div class="text-xs text-[#94a3b8]">mark(closed value)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#ec4899]">GC Roots 来源</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] flex-shrink-0">S</div>
+                            <div>
+                                <div class="font-semibold">值栈 (VM Stack)</div>
+                                <div class="text-sm text-[#94a3b8]">所有在栈上的 Value，包括临时计算结果</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-[#7c3aed]/20 flex items-center justify-center text-[#7c3aed] flex-shrink-0">G</div>
+                            <div>
+                                <div class="font-semibold">全局变量 (Globals)</div>
+                                <div class="text-sm text-[#94a3b8]">globals_ 哈希表中所有的全局变量</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-[#f7931e]/20 flex items-center justify-center text-[#f7931e] flex-shrink-0">F</div>
+                            <div>
+                                <div class="font-semibold">调用帧 (Frames)</div>
+                                <div class="text-sm text-[#94a3b8]">所有激活的 CallFrame 中的闭包</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-[#ec4899]/20 flex items-center justify-center text-[#ec4899] flex-shrink-0">U</div>
+                            <div>
+                                <div class="font-semibold">打开的上值 (Open Upvalues)</div>
+                                <div class="text-sm text-[#94a3b8]">指向栈上变量的 Upvalue 链表</div>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-[#3b82f6]/20 flex items-center justify-center text-[#3b82f6] flex-shrink-0">C</div>
+                            <div>
+                                <div class="font-semibold">编译器 (Compiler)</div>
+                                <div class="text-sm text-[#94a3b8]">当前正在编译的函数对象</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GC Trigger -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">GC 触发与调优</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">触发条件</h3>
+                    <div class="p-4 rounded-xl bg-[#0a0a0f] font-mono text-sm">
+                        <div class="text-[#94a3b8] mb-2">// 每次分配时检查</div>
+                        <div><span class="text-[#f7931e]">template</span> &lt;<span class="text-[#f7931e]">typename</span> T&gt;</div>
+                        <div>T* <span class="text-[#00d4aa]">allocate</span>(...) {</div>
+                        <div class="ml-3">bytes_allocated_ += <span class="text-[#f7931e]">sizeof</span>(T);</div>
+                        <div class="ml-3"><span class="text-[#f7931e]">if</span> (bytes_allocated_ > next_gc_) {</div>
+                        <div class="ml-6"><span class="text-[#00d4aa]">collect_garbage</span>();</div>
+                        <div class="ml-3">}</div>
+                        <div class="ml-3"><span class="text-[#f7931e]">return new</span> T(...);</div>
+                        <div>}</div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 rounded-xl bg-[#0a0a0f]">
+                        <div class="text-sm text-[#94a3b8] mb-2">GC 后调整阈值</div>
+                        <div class="font-mono text-xs">
+                            <div>next_gc_ = bytes_allocated_ * <span class="text-[#f7931e]">kGC_HEAP_GROW</span>;</div>
+                            <div class="text-[#94a3b8] mt-1">// kGC_HEAP_GROW = 2 (默认)</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">字符串表清理</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        Sweep 阶段之前需要清理字符串驻留表中指向已回收字符串的条目，
+                        防止 dangling pointer。
+                    </p>
+                    <div class="p-4 rounded-xl bg-[#0a0a0f] font-mono text-sm">
+                        <div class="text-[#94a3b8] mb-2">// 清理字符串表</div>
+                        <div><span class="text-[#f7931e]">void</span> <span class="text-[#00d4aa]">Table::remove_white</span>() {</div>
+                        <div class="ml-3"><span class="text-[#f7931e]">for</span> (<span class="text-[#f7931e]">auto</span>& entry : entries_) {</div>
+                        <div class="ml-6"><span class="text-[#f7931e]">if</span> (entry.key && !entry.key-><span class="text-[#00d4aa]">is_marked</span>()) {</div>
+                        <div class="ml-9"><span class="text-[#00d4aa]">remove</span>(entry.key);</div>
+                        <div class="ml-6">}</div>
+                        <div class="ml-3">}</div>
+                        <div>}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-6 bg-[#0a0a0f] border-t border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto text-center text-sm text-[#94a3b8]">
+            <p>Maple Language GC Module | 三色标记-清扫垃圾回收器详解</p>
+        </div>
+    </footer>
+
+    <script>
+        // Object graph state
+        const objects = [
+            { id: 'obj-A', refs: ['obj-B', 'obj-C'], marked: false, color: 'white' },
+            { id: 'obj-B', refs: ['obj-D'], marked: false, color: 'white' },
+            { id: 'obj-C', refs: ['obj-E'], marked: false, color: 'white' },
+            { id: 'obj-D', refs: [], marked: false, color: 'white' },
+            { id: 'obj-E', refs: [], marked: false, color: 'white' },
+            { id: 'obj-F', refs: [], marked: false, color: 'white', unreachable: true }
+        ];
+        
+        let grayStack = [];
+        let currentPhase = 0;
+        let isGCRunning = false;
+        
+        function updateObjectVisuals() {
+            objects.forEach(obj => {
+                const el = document.getElementById(obj.id);
+                if (el) {
+                    el.classList.remove('white', 'gray', 'black', 'swept');
+                    el.classList.add(obj.color);
+                    
+                    const circle = el.querySelector('circle');
+                    if (circle) {
+                        if (obj.color === 'white') {
+                            circle.setAttribute('stroke', obj.unreachable ? '#94a3b8' : '#2d2d44');
+                            circle.setAttribute('stroke-dasharray', obj.unreachable ? '5' : '0');
+                        } else if (obj.color === 'gray') {
+                            circle.setAttribute('stroke', '#f7931e');
+                            circle.setAttribute('stroke-dasharray', '0');
+                        } else if (obj.color === 'black') {
+                            circle.setAttribute('stroke', '#00d4aa');
+                            circle.setAttribute('stroke-dasharray', '0');
+                        }
+                    }
+                }
+            });
+            
+            // Update gray stack display
+            const grayStackEl = document.getElementById('gray-stack');
+            if (grayStack.length === 0) {
+                grayStackEl.innerHTML = '<span class="text-xs text-[#94a3b8]/50">Empty</span>';
+            } else {
+                grayStackEl.innerHTML = grayStack.map(id => 
+                    `<div class="px-2 py-1 rounded bg-[#f7931e]/20 text-[#f7931e] text-xs">${id.replace('obj-', '')}</div>`
+                ).join('');
+            }
+            
+            // Update marked count
+            const markedCount = objects.filter(o => o.marked).length;
+            document.getElementById('marked-count').textContent = markedCount;
+        }
+        
+        function updatePhase(phase) {
+            document.querySelectorAll('.gc-phase').forEach(el => el.classList.remove('active'));
+            if (phase === 1) document.getElementById('phase-mark').classList.add('active');
+            if (phase === 2) document.getElementById('phase-trace').classList.add('active');
+            if (phase === 3) document.getElementById('phase-sweep').classList.add('active');
+        }
+        
+        function resetGC() {
+            objects.forEach(obj => {
+                obj.marked = false;
+                obj.color = 'white';
+            });
+            grayStack = [];
+            currentPhase = 0;
+            isGCRunning = false;
+            updatePhase(0);
+            updateObjectVisuals();
+            document.getElementById('gc-btn').textContent = '执行 GC';
+        }
+        
+        async function startGC() {
+            if (isGCRunning) return;
+            resetGC();
+            isGCRunning = true;
+            document.getElementById('gc-btn').textContent = 'GC 运行中...';
+            
+            // Phase 1: Mark Roots
+            currentPhase = 1;
+            updatePhase(1);
+            await sleep(500);
+            
+            // Mark root-reachable objects as gray
+            objects.filter(o => !o.unreachable).forEach(obj => {
+                obj.color = 'gray';
+                grayStack.push(obj.id);
+            });
+            updateObjectVisuals();
+            await sleep(800);
+            
+            // Phase 2: Trace
+            currentPhase = 2;
+            updatePhase(2);
+            await sleep(500);
+            
+            while (grayStack.length > 0) {
+                const objId = grayStack.pop();
+                const obj = objects.find(o => o.id === objId);
+                if (obj) {
+                    obj.color = 'black';
+                    obj.marked = true;
+                    updateObjectVisuals();
+                    await sleep(600);
+                }
+            }
+            
+            // Phase 3: Sweep
+            currentPhase = 3;
+            updatePhase(3);
+            await sleep(500);
+            
+            // Sweep unreachable objects
+            const unreachable = objects.filter(o => o.color === 'white');
+            for (const obj of unreachable) {
+                obj.color = 'swept';
+                updateObjectVisuals();
+                await sleep(400);
+            }
+            
+            isGCRunning = false;
+            document.getElementById('gc-btn').textContent = '执行 GC';
+        }
+        
+        async function stepGC() {
+            if (!isGCRunning) {
+                await startGC();
+                return;
+            }
+            // Manual stepping would require more complex state machine
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        // Initialize
+        updateObjectVisuals();
+    </script>
+
+    <!-- Particle System -->
+    <script>
+        (function() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 15 + 's';
+                p.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+    </script>
+
+</body>
+</html>

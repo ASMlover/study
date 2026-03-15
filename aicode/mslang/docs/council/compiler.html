@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compiler 编译器 - Maple Language</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface-2: #1a1a25;
+            --accent: #7c3aed;
+            --accent-2: #f7931e;
+            --accent-3: #00d4aa;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --border: #2d2d44;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        @keyframes node-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
+        }
+        @keyframes bytecode-emit {
+            0% { transform: translateX(-20px) scale(0.8); opacity: 0; }
+            100% { transform: translateX(0) scale(1); opacity: 1; }
+        }
+        @keyframes stack-push {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes precedence-highlight {
+            0%, 100% { background: transparent; }
+            50% { background: rgba(124, 58, 237, 0.3); }
+        }
+        
+        .parse-node {
+            transition: all 0.3s ease;
+        }
+        .parse-node.active {
+            animation: node-pulse 1s ease-in-out infinite;
+            border-color: var(--accent);
+        }
+        
+        .bytecode-instruction {
+            animation: bytecode-emit 0.3s ease-out;
+        }
+        
+        .precedence-bar {
+            transition: all 0.3s ease;
+        }
+        .precedence-bar.active {
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+        }
+        
+        .pratt-table-row {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .pratt-table-row:hover {
+            background: rgba(124, 58, 237, 0.1);
+            transform: translateX(5px);
+        }
+        .pratt-table-row.active {
+            background: linear-gradient(90deg, rgba(124, 58, 237, 0.2), transparent);
+            border-left: 3px solid var(--accent);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.2);
+        }
+        .pratt-table-row::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            transition: width 0.3s ease;
+            opacity: 0.3;
+        }
+        .pratt-table-row:hover::before {
+            width: 100%;
+        }
+        
+        /* Enhanced precedence bars */
+        .precedence-bar {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .precedence-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s ease;
+        }
+        .precedence-bar.active {
+            background: linear-gradient(90deg, var(--accent), var(--accent-2));
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.6);
+            transform: scaleY(1.2);
+        }
+        .precedence-bar.active::after {
+            left: 100%;
+            animation: shimmer 1s ease;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        /* Floating animation for scope blocks */
+        @keyframes float-gentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .scope-block {
+            animation: float-gentle 4s ease-in-out infinite;
+            animation-delay: calc(var(--index, 0) * 0.5s);
+        }
+        
+        /* Scope visualization */
+        .scope-block {
+            transition: all 0.4s ease;
+            border: 2px dashed transparent;
+        }
+        .scope-block.active {
+            border-color: var(--accent-3);
+            background: rgba(0, 212, 170, 0.1);
+        }
+        
+        /* Upvalue visualization */
+        .upvalue-arrow {
+            stroke-dasharray: 5;
+            animation: dash-flow 1s linear infinite;
+        }
+        @keyframes dash-flow {
+            to { stroke-dashoffset: -10; }
+        }
+    </style>
+
+    <!-- Enhanced Visual Effects -->
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 15s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-strong {
+            background: rgba(10, 10, 16, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        
+        /* Enhanced Animations */
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow), 0 0 20px var(--glow), 0 0 40px rgba(0, 245, 212, 0.2);
+                border-color: var(--accent);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow), 0 0 40px var(--glow), 0 0 80px rgba(0, 245, 212, 0.4);
+                border-color: #fff;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Shimmer text effect */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        /* Gradient border effect */
+        .gradient-border {
+            position: relative;
+            background: var(--surface-2);
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Button effects */
+        .btn-enhanced {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-enhanced:hover::before {
+            left: 100%;
+        }
+        
+        .btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        /* Navigation glow */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Card hover effects */
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        /* Enhanced scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+<body class="min-h-screen">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center font-bold text-white">M</div>
+                <span class="text-xl font-bold">Maple Language</span>
+            </a>
+            <div class="flex gap-6 text-sm">
+                <a href="scanner.html" class="hover:text-[#7c3aed] transition-colors">Scanner</a>
+                <a href="compiler.html" class="text-[#7c3aed] font-semibold">Compiler</a>
+                <a href="vm.html" class="hover:text-[#7c3aed] transition-colors">VM</a>
+                <a href="gc.html" class="hover:text-[#7c3aed] transition-colors">GC</a>
+                <a href="object.html" class="hover:text-[#7c3aed] transition-colors">Object</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="inline-block mb-4 px-4 py-2 rounded-full border border-[#7c3aed]/30 bg-[#7c3aed]/10 text-[#7c3aed] text-sm font-medium">
+                前端层 / Frontend Layer
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                <span class="text-[#7c3aed]">Compiler</span>
+                <span class="text-[#94a3b8] text-4xl">编译器</span>
+            </h1>
+            <p class="text-xl text-[#94a3b8] max-w-3xl leading-relaxed">
+                采用 <strong>Pratt Parser (Top-Down Operator Precedence)</strong> 实现单遍编译，
+                无 AST，直接从 Token 流生成字节码。支持局部变量、闭包、类定义等高级特性。
+            </p>
+        </div>
+    </section>
+
+    <!-- Pratt Parser Interactive Demo -->
+    <section class="py-12 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 flex items-center gap-3">
+                <span class="w-10 h-10 rounded-xl bg-[#7c3aed]/20 flex items-center justify-center text-[#7c3aed]">▶</span>
+                Pratt Parser 交互演示
+            </h2>
+            
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Expression Input -->
+                <div class="lg:col-span-1 space-y-4">
+                    <label class="text-sm font-medium text-[#94a3b8]">输入表达式</label>
+                    <input type="text" id="expr-input" value="1 + 2 * 3" 
+                        class="w-full p-4 rounded-xl bg-[#0a0a0f] border border-[#2d2d44] font-mono text-lg focus:border-[#7c3aed] focus:outline-none"
+                        placeholder="输入表达式，如: 1 + 2 * 3">
+                    
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="setExpression('1 + 2')" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#7c3aed] transition-colors">1 + 2</button>
+                        <button onclick="setExpression('1 + 2 * 3')" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#7c3aed] transition-colors">1 + 2 * 3</button>
+                        <button onclick="setExpression('-5 + 3')" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#7c3aed] transition-colors">-5 + 3</button>
+                        <button onclick="setExpression('a = b + c')" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#7c3aed] transition-colors">a = b + c</button>
+                        <button onclick="setExpression('(1 + 2) * 3')" class="px-3 py-2 rounded-lg bg-[#1a1a25] border border-[#2d2d44] text-xs hover:border-[#7c3aed] transition-colors">(1 + 2) * 3</button>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="startParsing()" id="parse-btn" class="py-3 rounded-xl bg-[#7c3aed] text-white font-semibold hover:bg-[#7c3aed]/90 transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            自动解析
+                        </button>
+                        <button onclick="stepParsing()" id="step-parse-btn" class="py-3 rounded-xl bg-[#1a1a25] border border-[#2d2d44] text-white font-semibold hover:border-[#7c3aed] transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            单步执行
+                        </button>
+                    </div>
+                    
+                    <!-- Parse Progress -->
+                    <div class="mt-4 p-3 rounded-xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-[#94a3b8]">解析进度</span>
+                            <span id="parse-progress-text" class="text-xs text-[#7c3aed]">准备就绪</span>
+                        </div>
+                        <div class="h-1.5 rounded-full bg-[#1a1a25] overflow-hidden">
+                            <div id="parse-progress-bar" class="h-full rounded-full bg-gradient-to-r from-[#7c3aed] to-[#f7931e] w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Precedence Legend -->
+                    <div class="mt-6 p-4 rounded-xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <h4 class="text-sm font-semibold mb-3">优先级表</h4>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">=</div>
+                                <div class="flex-1 h-2 rounded bg-[#7c3aed]/30"></div>
+                                <span class="text-[#94a3b8]">1</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">or</div>
+                                <div class="flex-1 h-2 rounded bg-[#7c3aed]/40"></div>
+                                <span class="text-[#94a3b8]">2</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">and</div>
+                                <div class="flex-1 h-2 rounded bg-[#7c3aed]/50"></div>
+                                <span class="text-[#94a3b8]">3</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">== !=</div>
+                                <div class="flex-1 h-2 rounded bg-[#7c3aed]/60"></div>
+                                <span class="text-[#94a3b8]">4</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">&lt; &gt;</div>
+                                <div class="flex-1 h-2 rounded bg-[#7c3aed]/70"></div>
+                                <span class="text-[#94a3b8]">5</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#f7931e] font-semibold">+ -</div>
+                                <div id="prec-plus" class="flex-1 h-2 rounded bg-[#7c3aed]/80 precedence-bar"></div>
+                                <span class="text-[#94a3b8]">6</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#f7931e] font-semibold">* /</div>
+                                <div id="prec-mul" class="flex-1 h-2 rounded bg-[#7c3aed] precedence-bar"></div>
+                                <span class="text-[#94a3b8]">7</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">- !</div>
+                                <div class="flex-1 h-2 rounded bg-[#f7931e]"></div>
+                                <span class="text-[#94a3b8]">8</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-16 text-[#94a3b8]">.</div>
+                                <div class="flex-1 h-2 rounded bg-[#ec4899]"></div>
+                                <span class="text-[#94a3b8]">9</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parse Tree Visualization -->
+                <div class="lg:col-span-2 p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-sm font-medium text-[#94a3b8]">解析过程可视化</label>
+                        <div id="parse-status" class="text-xs text-[#94a3b8]">准备就绪</div>
+                    </div>
+                    
+                    <div id="parse-visualization" class="min-h-[300px] flex items-center justify-center">
+                        <div class="text-[#94a3b8]/30 text-sm">输入表达式并点击"解析"查看 Pratt Parser 工作过程</div>
+                    </div>
+                    
+                    <!-- Bytecode Output -->
+                    <div class="mt-6 p-4 rounded-xl bg-[#12121a] border border-[#2d2d44]">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-medium text-[#94a3b8]">生成的字节码</span>
+                            <span id="bytecode-count" class="text-xs text-[#94a3b8]">0 instructions</span>
+                        </div>
+                        <div id="bytecode-output" class="font-mono text-sm space-y-1">
+                            <div class="text-[#94a3b8]/30 italic">等待解析...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Parse Rules Table -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">ParseRule 映射表</h2>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-[#2d2d44]">
+                            <th class="text-left py-3 px-4 text-[#94a3b8] font-medium">Token</th>
+                            <th class="text-left py-3 px-4 text-[#94a3b8] font-medium">Prefix (前缀)</th>
+                            <th class="text-left py-3 px-4 text-[#94a3b8] font-medium">Infix (中缀)</th>
+                            <th class="text-left py-3 px-4 text-[#94a3b8] font-medium">Precedence</th>
+                            <th class="text-left py-3 px-4 text-[#94a3b8] font-medium">说明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pratt-table">
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="NUMBER">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">NUMBER</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">number()</code></td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">数字字面量</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="STRING">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">STRING</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">string()</code></td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">字符串字面量</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="IDENTIFIER">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">IDENTIFIER</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">variable()</code></td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">变量访问</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="LEFT_PAREN">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">(</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">grouping()</code></td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">call()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">CALL (10)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">分组 / 函数调用</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="MINUS">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">unary()</code></td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">binary()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">TERM (6)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">一元负号 / 减法</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="PLUS">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">+</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">binary()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">TERM (6)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">加法</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="STAR">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">*</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">binary()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">FACTOR (7)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">乘法</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="SLASH">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">/</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">binary()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">FACTOR (7)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">除法</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="BANG">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">!</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">unary()</code></td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">逻辑非</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="EQUAL_EQUAL">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">==</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">binary()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">EQUALITY (4)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">相等比较</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="GREATER">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">&gt;</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">binary()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">COMPARISON (5)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">大于</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="DOT">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">.</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4"><code class="text-[#00d4aa]">dot()</code></td>
+                            <td class="py-3 px-4 text-[#f7931e]">CALL (10)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">属性访问</td>
+                        </tr>
+                        <tr class="pratt-table-row border-b border-[#2d2d44]/50" data-token="EQUAL">
+                            <td class="py-3 px-4 font-mono text-[#7c3aed]">=</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">-</td>
+                            <td class="py-3 px-4 text-[#ec4899]">特殊处理</td>
+                            <td class="py-3 px-4 text-[#f7931e]">ASSIGNMENT (1)</td>
+                            <td class="py-3 px-4 text-[#94a3b8]">赋值</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Variable Resolution -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">变量解析与作用域</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">局部变量管理</h3>
+                    <p class="text-[#94a3b8] mb-6">
+                        Compiler 在编译期维护 locals[] 数组，将变量名映射到栈槽位(slot)。
+                        作用域深度(scope depth)用于管理变量生命周期。
+                    </p>
+                    
+                    <!-- Locals Array Visualization -->
+                    <div class="p-4 rounded-xl bg-[#12121a] border border-[#2d2d44]">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs text-[#94a3b8]">locals[] 数组</span>
+                            <div class="flex gap-3 text-xs">
+                                <span class="text-[#00d4aa]">local_count: <span id="local-count-viz">0</span></span>
+                                <span class="text-[#f7931e]">scope_depth: <span id="scope-depth-viz">0</span></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Interactive Locals Visualization -->
+                        <div id="locals-viz" class="space-y-2">
+                            <!-- Dynamic content will be inserted here -->
+                            <div class="text-[#64748b] text-sm text-center py-4">点击"添加变量"查看 locals 数组变化</div>
+                        </div>
+                        
+                        <!-- Controls -->
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="addLocalVariable()" class="px-3 py-1.5 rounded-lg bg-[#00d4aa]/20 text-[#00d4aa] text-xs hover:bg-[#00d4aa]/30 transition-colors">
+                                + 添加变量
+                            </button>
+                            <button onclick="enterScope()" class="px-3 py-1.5 rounded-lg bg-[#7c3aed]/20 text-[#7c3aed] text-xs hover:bg-[#7c3aed]/30 transition-colors">
+                                ↳ 进入作用域
+                            </button>
+                            <button onclick="exitScope()" class="px-3 py-1.5 rounded-lg bg-[#f7931e]/20 text-[#f7931e] text-xs hover:bg-[#f7931e]/30 transition-colors">
+                                ↰ 退出作用域
+                            </button>
+                            <button onclick="resetLocals()" class="px-3 py-1.5 rounded-lg bg-[#ef4444]/20 text-[#ef4444] text-xs hover:bg-[#ef4444]/30 transition-colors">
+                                重置
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="mt-4 flex gap-4 text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded bg-[#00d4aa]/30 border border-[#00d4aa]"></div>
+                            <span class="text-[#94a3b8]">当前作用域</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded bg-[#64748b]/30 border border-[#64748b]"></div>
+                            <span class="text-[#94a3b8]">外层作用域</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded bg-[#f7931e]/30 border border-[#f7931e]"></div>
+                            <span class="text-[#94a3b8]">被捕获</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">作用域层级可视化</h3>
+                    
+                    <!-- Interactive Scope Tree -->
+                    <div class="relative">
+                        <svg viewBox="0 0 400 280" class="w-full h-auto" id="scope-tree-svg">
+                            <!-- Scope 0: Global -->
+                            <rect x="150" y="10" width="100" height="50" rx="8" fill="#1a1a25" stroke="#00d4aa" stroke-width="2" class="scope-rect" id="scope-0"/>
+                            <text x="200" y="30" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">Global</text>
+                            <text x="200" y="45" text-anchor="middle" fill="#94a3b8" font-size="9">depth = 0</text>
+                            
+                            <!-- Scope 1: Function -->
+                            <rect x="80" y="100" width="100" height="50" rx="8" fill="#1a1a25" stroke="#7c3aed" stroke-width="2" class="scope-rect" id="scope-1"/>
+                            <text x="130" y="120" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">Function</text>
+                            <text x="130" y="135" text-anchor="middle" fill="#94a3b8" font-size="9">depth = 1</text>
+                            
+                            <!-- Scope 2: Block -->
+                            <rect x="220" y="100" width="100" height="50" rx="8" fill="#1a1a25" stroke="#f7931e" stroke-width="2" class="scope-rect" id="scope-2"/>
+                            <text x="270" y="120" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">Block (if)</text>
+                            <text x="270" y="135" text-anchor="middle" fill="#94a3b8" font-size="9">depth = 2</text>
+                            
+                            <!-- Scope 3: Nested Block -->
+                            <rect x="220" y="190" width="100" height="50" rx="8" fill="#1a1a25" stroke="#ec4899" stroke-width="2" class="scope-rect" id="scope-3"/>
+                            <text x="270" y="210" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">Nested</text>
+                            <text x="270" y="225" text-anchor="middle" fill="#94a3b8" font-size="9">depth = 3</text>
+                            
+                            <!-- Connection lines - connecting from bottom of parent to top of child -->
+                            <!-- Global bottom (200,60) to Function top (130,100) -->
+                            <path d="M 200 60 L 200 75 L 130 75 L 130 100" stroke="#2d2d44" stroke-width="2" fill="none" marker-end="url(#arrow-c)"/>
+                            
+                            <!-- Global bottom (200,60) to Block top (270,100) -->
+                            <path d="M 200 60 L 200 75 L 270 75 L 270 100" stroke="#2d2d44" stroke-width="2" fill="none" marker-end="url(#arrow-c)"/>
+                            
+                            <!-- Block bottom (270,150) to Nested top (270,190) -->
+                            <path d="M 270 150 L 270 190" stroke="#2d2d44" stroke-width="2" fill="none" marker-end="url(#arrow-c)"/>
+                            
+                            <!-- Variable indicators - inside Function scope (scope-1) -->
+                            <circle cx="100" cy="128" r="4" fill="#00d4aa" class="var-indicator" id="var-a"/>
+                            <circle cx="120" cy="128" r="4" fill="#00d4aa" class="var-indicator" id="var-b"/>
+                            <text x="100" y="122" text-anchor="middle" fill="#00d4aa" font-size="7">a</text>
+                            <text x="120" y="122" text-anchor="middle" fill="#00d4aa" font-size="7">b</text>
+                            
+                            <!-- Variable indicators - inside Block scope (scope-2) -->
+                            <circle cx="240" cy="128" r="4" fill="#f7931e" class="var-indicator" id="var-c"/>
+                            <circle cx="260" cy="128" r="4" fill="#f7931e" class="var-indicator" id="var-d"/>
+                            <text x="240" y="122" text-anchor="middle" fill="#f7931e" font-size="7">c</text>
+                            <text x="260" y="122" text-anchor="middle" fill="#f7931e" font-size="7">d</text>
+                            
+                            <!-- Arrow marker -->
+                            <defs>
+                                <marker id="arrow-c" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                    <path d="M0,0 L0,8 L7,4 z" fill="#2d2d44"/>
+                                </marker>
+                            </defs>
+                        </svg>
+                        
+                        <!-- Scope Info Panel -->
+                        <div class="mt-2 p-3 rounded-lg bg-[#12121a] border border-[#2d2d44]">
+                            <div id="scope-info" class="text-sm text-[#94a3b8]">
+                                悬停查看作用域详情
+                            </div>
+                        </div>
+                        
+                        <!-- Controls -->
+                        <div class="mt-3 flex gap-2">
+                            <button onclick="animateScopeEntry()" class="px-3 py-1.5 rounded-lg bg-[#7c3aed]/20 text-[#7c3aed] text-xs hover:bg-[#7c3aed]/30 transition-colors">
+                                动画演示进入作用域
+                            </button>
+                            <button onclick="highlightScopeChain()" class="px-3 py-1.5 rounded-lg bg-[#00d4aa]/20 text-[#00d4aa] text-xs hover:bg-[#00d4aa]/30 transition-colors">
+                                高亮作用域链
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Closures and Upvalues -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">闭包与 Upvalue</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#ec4899]">Upvalue 捕获机制</h3>
+                    <p class="text-[#94a3b8] mb-6">
+                        当内层函数引用外层函数的局部变量时，Compiler 会创建一个 Upvalue 来捕获该变量。
+                        编译期确定捕获方式：直接捕获局部变量，或传递外层 upvalue。
+                    </p>
+                    
+                    <!-- Upvalue Animation Demo -->
+                    <div class="relative p-4 rounded-xl bg-[#0a0a0f] border border-[#2d2d44]">
+                        <svg viewBox="0 0 400 200" class="w-full h-auto" id="upvalue-svg">
+                            <!-- Stack Frame: outer -->
+                            <rect x="20" y="20" width="100" height="140" rx="8" fill="#1a1a25" stroke="#7c3aed" stroke-width="2" class="upvalue-frame" id="frame-outer"/>
+                            <text x="70" y="40" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">outer()</text>
+                            
+                            <!-- Variable x in outer -->
+                            <rect x="35" y="55" width="70" height="25" rx="4" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1.5"/>
+                            <text x="70" y="72" text-anchor="middle" fill="#00d4aa" font-size="10" font-weight="600">x = 10</text>
+                            
+                            <!-- Stack Frame: inner -->
+                            <rect x="160" y="40" width="100" height="120" rx="8" fill="#1a1a25" stroke="#ec4899" stroke-width="2" class="upvalue-frame" id="frame-inner"/>
+                            <text x="210" y="60" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="600">inner()</text>
+                            
+                            <!-- Upvalue reference -->
+                            <rect x="175" y="80" width="70" height="25" rx="4" fill="#f7931e" fill-opacity="0.2" stroke="#f7931e" stroke-width="1.5" class="upvalue-box" id="upvalue-ref"/>
+                            <text x="210" y="97" text-anchor="middle" fill="#f7931e" font-size="9">↑ upvalue</text>
+                            
+                            <!-- Connection line -->
+                            <path d="M 105 67 L 175 92" stroke="#f7931e" stroke-width="2" stroke-dasharray="4" class="upvalue-arrow" id="upvalue-line"/>
+                            <circle cx="140" cy="80" r="4" fill="#f7931e" class="upvalue-dot" id="upvalue-dot"/>
+                            
+                            <!-- Heap Object: Closure -->
+                            <rect x="300" y="60" width="80" height="80" rx="8" fill="#1a1a25" stroke="#00d4aa" stroke-width="2" class="upvalue-frame" id="closure-obj"/>
+                            <text x="340" y="80" text-anchor="middle" fill="#e2e8f0" font-size="10" font-weight="600">Closure</text>
+                            <text x="340" y="100" text-anchor="middle" fill="#94a3b8" font-size="8">func: inner</text>
+                            <text x="340" y="115" text-anchor="middle" fill="#94a3b8" font-size="8">upvalues: [x]</text>
+                            
+                            <!-- Connection to closure -->
+                            <path d="M 260 92 L 300 100" stroke="#00d4aa" stroke-width="2" class="closure-arrow"/>
+                            
+                            <!-- Animation elements -->
+                            <circle cx="70" cy="67" r="6" fill="#f7931e" opacity="0" class="capture-particle" id="capture-particle">
+                                <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+                                <animate attributeName="cx" values="70;140;210" dur="2s" repeatCount="indefinite"/>
+                                <animate attributeName="cy" values="67;80;92" dur="2s" repeatCount="indefinite"/>
+                            </circle>
+                        </svg>
+                        
+                        <!-- Upvalue Type Legend -->
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+                            <div class="p-3 rounded-lg bg-[#12121a] border border-[#00d4aa]/30">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="w-3 h-3 rounded bg-[#00d4aa]"></div>
+                                    <span class="text-[#00d4aa] font-semibold">LOCAL</span>
+                                </div>
+                                <p class="text-[#94a3b8]">直接捕获外层局部变量</p>
+                            </div>
+                            <div class="p-3 rounded-lg bg-[#12121a] border border-[#f7931e]/30">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="w-3 h-3 rounded bg-[#f7931e]"></div>
+                                    <span class="text-[#f7931e] font-semibold">UPVALUE</span>
+                                </div>
+                                <p class="text-[#94a3b8]">传递外层函数的 upvalue</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Controls -->
+                        <div class="mt-3 flex gap-2">
+                            <button onclick="toggleUpvalueAnim()" class="px-3 py-1.5 rounded-lg bg-[#ec4899]/20 text-[#ec4899] text-xs hover:bg-[#ec4899]/30 transition-colors">
+                                切换动画
+                            </button>
+                            <button onclick="showCaptureProcess()" class="px-3 py-1.5 rounded-lg bg-[#f7931e]/20 text-[#f7931e] text-xs hover:bg-[#f7931e]/30 transition-colors">
+                                演示捕获过程
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">嵌套编译器结构</h3>
+                    <p class="text-[#94a3b8] mb-6">
+                        每个函数编译时创建新的 Compiler 实例，<code class="text-[#00d4aa]">enclosing_</code> 指向外层编译器，
+                        形成链表结构用于解析 upvalue。
+                    </p>
+                    
+                    <svg viewBox="0 0 400 280" class="w-full h-auto">
+                        <!-- Outer Compiler -->
+                        <rect x="50" y="20" width="300" height="90" rx="10" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="200" y="45" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="bold">Compiler (outer)</text>
+                        
+                        <!-- Variable x inside outer -->
+                        <rect x="70" y="60" width="50" height="35" rx="5" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="95" y="82" text-anchor="middle" fill="#00d4aa" font-size="12" font-weight="bold">x</text>
+                        <text x="95" y="100" text-anchor="middle" fill="#94a3b8" font-size="8">local@0</text>
+                        
+                        <text x="280" y="65" text-anchor="middle" fill="#94a3b8" font-size="10">upvalues: []</text>
+                        
+                        <!-- Inner Compiler -->
+                        <rect x="75" y="150" width="250" height="90" rx="10" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="200" y="175" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="bold">Compiler (inner)</text>
+                        
+                        <!-- Upvalue reference inside inner -->
+                        <rect x="100" y="190" width="80" height="35" rx="5" fill="#f7931e" fill-opacity="0.2" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="140" y="207" text-anchor="middle" fill="#f7931e" font-size="10" font-weight="bold">↑ upvalue</text>
+                        <text x="140" y="220" text-anchor="middle" fill="#94a3b8" font-size="8">x (local@0)</text>
+                        
+                        <text x="260" y="195" text-anchor="middle" fill="#94a3b8" font-size="10">locals: []</text>
+                        
+                        <!-- enclosing_ pointer connection -->
+                        <path d="M 200 110 L 200 150" stroke="#2d2d44" stroke-width="2" stroke-dasharray="5"/>
+                        <polygon points="200,155 195,145 205,145" fill="#00d4aa"/>
+                        <text x="250" y="135" fill="#00d4aa" font-size="10">enclosing_</text>
+                        
+                        <!-- Upvalue capture connection line -->
+                        <path d="M 120 95 L 120 120 L 140 120 L 140 190" stroke="#f7931e" stroke-width="2" fill="none" stroke-dasharray="4" marker-end="url(#arrow-u)"/>
+                        <text x="155" y="125" fill="#f7931e" font-size="9">capture</text>
+                        
+                        <defs>
+                            <marker id="arrow-u" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0,0 L0,8 L7,4 z" fill="#f7931e"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pratt Parser Visualization -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">Pratt Parser 可视化解析</h2>
+            
+            <!-- Parse Flow Diagram -->
+            <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44] mb-6">
+                <h3 class="text-xl font-semibold mb-4 text-[#7c3aed]">parse_precedence 执行流程</h3>
+                
+                <div class="relative overflow-x-auto">
+                    <svg viewBox="0 0 700 400" class="w-full min-w-[700px] h-auto">
+                        <!-- Flow chart nodes -->
+                        <!-- Start -->
+                        <rect x="300" y="10" width="100" height="40" rx="20" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="350" y="35" text-anchor="middle" fill="#e2e8f0" font-size="12">开始</text>
+                        
+                        <!-- Advance -->
+                        <rect x="300" y="70" width="100" height="40" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="350" y="95" text-anchor="middle" fill="#e2e8f0" font-size="11">advance()</text>
+                        
+                        <!-- Get prefix rule -->
+                        <rect x="300" y="130" width="100" height="40" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="350" y="150" text-anchor="middle" fill="#e2e8f0" font-size="10">获取 prefix</text>
+                        <text x="350" y="162" text-anchor="middle" fill="#94a3b8" font-size="8">规则</text>
+                        
+                        <!-- Execute prefix -->
+                        <rect x="300" y="190" width="100" height="40" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="350" y="215" text-anchor="middle" fill="#e2e8f0" font-size="11">执行 prefix</text>
+                        
+                        <!-- Check precedence -->
+                        <polygon points="350,250 400,280 350,310 300,280" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                        <text x="350" y="278" text-anchor="middle" fill="#e2e8f0" font-size="9">检查</text>
+                        <text x="350" y="290" text-anchor="middle" fill="#e2e8f0" font-size="9">优先级</text>
+                        
+                        <!-- Get infix -->
+                        <rect x="480" y="260" width="100" height="40" rx="4" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="530" y="285" text-anchor="middle" fill="#e2e8f0" font-size="11">获取 infix</text>
+                        
+                        <!-- Execute infix -->
+                        <rect x="480" y="190" width="100" height="40" rx="4" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="530" y="215" text-anchor="middle" fill="#e2e8f0" font-size="11">执行 infix</text>
+                        
+                        <!-- End -->
+                        <rect x="300" y="340" width="100" height="40" rx="20" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="350" y="365" text-anchor="middle" fill="#e2e8f0" font-size="12">结束</text>
+                        
+                        <!-- Connections -->
+                        <path d="M 350 50 L 350 70" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 350 110 L 350 130" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 350 170 L 350 190" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 350 230 L 350 250" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 400 280 L 480 280" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 530 260 L 530 230" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 480 210 L 400 210" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 350 230 L 200 210" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        <path d="M 350 310 L 350 340" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow-p)"/>
+                        
+                        <!-- Labels -->
+                        <text x="420" y="205" fill="#00d4aa" font-size="9">优先级 >=</text>
+                        <text x="220" y="205" fill="#ef4444" font-size="9">优先级 <</text>
+                        <text x="450" y="270" fill="#94a3b8" font-size="8">是</text>
+                        <text x="320" y="325" fill="#94a3b8" font-size="8">否</text>
+                        
+                        <!-- Side panel: prefix examples -->
+                        <rect x="50" y="100" width="120" height="140" rx="4" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                        <text x="110" y="120" text-anchor="middle" fill="#94a3b8" font-size="10">Prefix 示例</text>
+                        <text x="60" y="145" fill="#00d4aa" font-size="9">number()</text>
+                        <text x="60" y="165" fill="#00d4aa" font-size="9">string()</text>
+                        <text x="60" y="185" fill="#00d4aa" font-size="9">variable()</text>
+                        <text x="60" y="205" fill="#00d4aa" font-size="9">grouping()</text>
+                        <text x="60" y="225" fill="#f7931e" font-size="9">unary()</text>
+                        
+                        <!-- Side panel: infix examples -->
+                        <rect x="620" y="100" width="120" height="140" rx="4" fill="#1a1a25" stroke="#2d2d44" stroke-width="1"/>
+                        <text x="680" y="120" text-anchor="middle" fill="#94a3b8" font-size="10">Infix 示例</text>
+                        <text x="630" y="145" fill="#f7931e" font-size="9">binary()</text>
+                        <text x="630" y="165" fill="#f7931e" font-size="9">call()</text>
+                        <text x="630" y="185" fill="#f7931e" font-size="9">dot()</text>
+                        <text x="630" y="205" fill="#ec4899" font-size="9">and/or</text>
+                        
+                        <defs>
+                            <marker id="arrow-p" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                                <path d="M0,0 L0,8 L7,4 z" fill="#2d2d44"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+                
+                <!-- Flow description -->
+                <div class="mt-4 grid grid-cols-4 gap-3 text-sm">
+                    <div class="p-3 rounded-lg bg-[#12121a] border border-[#00d4aa]/30">
+                        <div class="text-[#00d4aa] font-semibold mb-1">1. 消费前缀</div>
+                        <p class="text-[#94a3b8] text-xs">读取第一个 token，查找并执行对应的 prefix 处理函数</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-[#12121a] border border-[#7c3aed]/30">
+                        <div class="text-[#7c3aed] font-semibold mb-1">2. 检查优先级</div>
+                        <p class="text-[#94a3b8] text-xs">比较下一个 token 的优先级与当前最小优先级</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-[#12121a] border border-[#f7931e]/30">
+                        <div class="text-[#f7931e] font-semibold mb-1">3. 处理中缀</div>
+                        <p class="text-[#94a3b8] text-xs">如果优先级足够，消费 token 并执行 infix 处理</p>
+                    </div>
+                    <div class="p-3 rounded-lg bg-[#12121a] border border-[#ec4899]/30">
+                        <div class="text-[#ec4899] font-semibold mb-1">4. 循环或返回</div>
+                        <p class="text-[#94a3b8] text-xs">继续检查直到遇到更低优先级的 token</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Associativity Visualization -->
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">左结合 vs 右结合</h3>
+                    
+                    <!-- Left associative -->
+                    <div class="mb-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="px-2 py-1 rounded bg-[#00d4aa]/20 text-[#00d4aa] text-xs">左结合</span>
+                            <span class="text-[#94a3b8] text-sm">a - b - c</span>
+                        </div>
+                        <svg viewBox="0 0 300 120" class="w-full h-auto">
+                            <!-- Tree structure -->
+                            <line x1="150" y1="20" x2="80" y2="60" stroke="#f7931e" stroke-width="2"/>
+                            <line x1="150" y1="20" x2="220" y2="60" stroke="#f7931e" stroke-width="2"/>
+                            <line x1="80" y1="60" x2="40" y2="100" stroke="#00d4aa" stroke-width="2"/>
+                            <line x1="80" y1="60" x2="120" y2="100" stroke="#00d4aa" stroke-width="2"/>
+                            
+                            <!-- Nodes -->
+                            <circle cx="150" cy="20" r="15" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                            <text x="150" y="25" text-anchor="middle" fill="#f7931e" font-size="12">-</text>
+                            
+                            <circle cx="80" cy="60" r="15" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                            <text x="80" y="65" text-anchor="middle" fill="#00d4aa" font-size="12">-</text>
+                            
+                            <circle cx="40" cy="100" r="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                            <text x="40" y="105" text-anchor="middle" fill="#e2e8f0" font-size="10">a</text>
+                            
+                            <circle cx="120" cy="100" r="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                            <text x="120" y="105" text-anchor="middle" fill="#e2e8f0" font-size="10">b</text>
+                            
+                            <circle cx="220" cy="60" r="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                            <text x="220" y="65" text-anchor="middle" fill="#e2e8f0" font-size="10">c</text>
+                        </svg>
+                        <p class="text-xs text-[#94a3b8] mt-2">precedence + 1 → (a - b) - c</p>
+                    </div>
+                    
+                    <!-- Right associative -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="px-2 py-1 rounded bg-[#ec4899]/20 text-[#ec4899] text-xs">右结合</span>
+                            <span class="text-[#94a3b8] text-sm">a = b = c</span>
+                        </div>
+                        <svg viewBox="0 0 300 120" class="w-full h-auto">
+                            <!-- Tree structure -->
+                            <line x1="80" y1="20" x2="40" y2="60" stroke="#ec4899" stroke-width="2"/>
+                            <line x1="80" y1="20" x2="150" y2="60" stroke="#ec4899" stroke-width="2"/>
+                            <line x1="150" y1="60" x2="120" y2="100" stroke="#00d4aa" stroke-width="2"/>
+                            <line x1="150" y1="60" x2="200" y2="100" stroke="#00d4aa" stroke-width="2"/>
+                            
+                            <!-- Nodes -->
+                            <circle cx="80" cy="20" r="15" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                            <text x="80" y="25" text-anchor="middle" fill="#ec4899" font-size="12">=</text>
+                            
+                            <circle cx="150" cy="60" r="15" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                            <text x="150" y="65" text-anchor="middle" fill="#00d4aa" font-size="12">=</text>
+                            
+                            <circle cx="40" cy="60" r="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                            <text x="40" y="65" text-anchor="middle" fill="#e2e8f0" font-size="10">a</text>
+                            
+                            <circle cx="120" cy="100" r="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                            <text x="120" y="105" text-anchor="middle" fill="#e2e8f0" font-size="10">b</text>
+                            
+                            <circle cx="200" cy="100" r="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                            <text x="200" y="105" text-anchor="middle" fill="#e2e8f0" font-size="10">c</text>
+                        </svg>
+                        <p class="text-xs text-[#94a3b8] mt-2">precedence (不加1) → a = (b = c)</p>
+                    </div>
+                </div>
+                
+                <!-- Bytecode Generation Sequence -->
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">字节码生成顺序</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Example 1: 1 + 2 * 3 -->
+                        <div class="p-4 rounded-lg bg-[#12121a] border border-[#2d2d44]">
+                            <div class="text-sm text-[#94a3b8] mb-3">表达式: <span class="text-[#e2e8f0]">1 + 2 * 3</span></div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-1 space-y-1">
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="w-6 h-6 rounded bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa]">1</span>
+                                        <span class="text-[#00d4aa]">CONSTANT 1</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="w-6 h-6 rounded bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa]">2</span>
+                                        <span class="text-[#00d4aa]">CONSTANT 2</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="w-6 h-6 rounded bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa]">3</span>
+                                        <span class="text-[#00d4aa]">CONSTANT 3</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="w-6 h-6 rounded bg-[#f7931e]/20 flex items-center justify-center text-[#f7931e]">4</span>
+                                        <span class="text-[#f7931e]">MULTIPLY</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs">
+                                        <span class="w-6 h-6 rounded bg-[#f7931e]/20 flex items-center justify-center text-[#f7931e]">5</span>
+                                        <span class="text-[#f7931e]">ADD</span>
+                                    </div>
+                                </div>
+                                <!-- Stack visualization -->
+                                <div class="w-16 space-y-1">
+                                    <div class="h-6 rounded bg-[#12121a] border border-[#2d2d44] flex items-center justify-center text-xs text-[#64748b]">[]</div>
+                                    <div class="h-6 rounded bg-[#00d4aa]/20 border border-[#00d4aa] flex items-center justify-center text-xs text-[#00d4aa]">[1]</div>
+                                    <div class="h-6 rounded bg-[#00d4aa]/20 border border-[#00d4aa] flex items-center justify-center text-xs text-[#00d4aa]">[1,2]</div>
+                                    <div class="h-6 rounded bg-[#00d4aa]/20 border border-[#00d4aa] flex items-center justify-center text-xs text-[#00d4aa]">[1,2,3]</div>
+                                    <div class="h-6 rounded bg-[#f7931e]/20 border border-[#f7931e] flex items-center justify-center text-xs text-[#f7931e]">[1,6]</div>
+                                    <div class="h-6 rounded bg-[#7c3aed]/20 border border-[#7c3aed] flex items-center justify-center text-xs text-[#7c3aed]">[7]</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Legend -->
+                        <div class="flex gap-4 text-xs">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded bg-[#00d4aa]/30 border border-[#00d4aa]"></div>
+                                <span class="text-[#94a3b8]">CONSTANT: 压栈</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded bg-[#f7931e]/30 border border-[#f7931e]"></div>
+                                <span class="text-[#94a3b8]">操作: 弹出运算再压栈</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-6 bg-[#0a0a0f] border-t border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto text-center text-sm text-[#94a3b8]">
+            <p>Maple Language Compiler Module | Pratt Parser 单遍编译器详解</p>
+        </div>
+    </footer>
+
+    <script>
+        // Step control state
+        let parseState = {
+            tokens: [],
+            bytecode: [],
+            steps: [],
+            pos: 0,
+            stack: [],
+            currentStep: 0,
+            isRunning: false,
+            isPaused: false,
+            isStepMode: false,
+            stepResolve: null,
+            minPrecStack: [0],
+            callDepth: 0
+        };
+        
+        const precedence = {
+            '=': 1,
+            'or': 2,
+            'and': 3,
+            '==': 4, '!=': 4,
+            '<': 5, '>': 5, '<=': 5, '>=': 5,
+            '+': 6, '-': 6,
+            '*': 7, '/': 7,
+            'unary': 8,
+            '.': 9,
+            'call': 10
+        };
+        
+        const opCodes = { 
+            '+': 'OP_ADD', 
+            '-': 'OP_SUB', 
+            '*': 'OP_MUL', 
+            '/': 'OP_DIV', 
+            '=': 'OP_SET_GLOBAL'
+        };
+        
+        function setExpression(expr) {
+            document.getElementById('expr-input').value = expr;
+            resetParse();
+        }
+        
+        function resetParse() {
+            parseState = {
+                tokens: [],
+                bytecode: [],
+                steps: [],
+                pos: 0,
+                stack: [],
+                currentStep: 0,
+                isRunning: false,
+                isPaused: false,
+                isStepMode: false,
+                stepResolve: null,
+                minPrecStack: [0],
+                callDepth: 0
+            };
+            document.getElementById('parse-visualization').innerHTML = 
+                '<div class="text-[#94a3b8]/30 text-sm">输入表达式并点击"解析"查看 Pratt Parser 工作过程</div>';
+            document.getElementById('bytecode-output').innerHTML = '<div class="text-[#94a3b8]/30 italic">等待解析...</div>';
+            document.getElementById('bytecode-count').textContent = '0 instructions';
+            document.getElementById('parse-status').textContent = '准备就绪';
+            document.getElementById('parse-progress-bar').style.width = '0%';
+            document.getElementById('parse-progress-text').textContent = '准备就绪';
+            document.querySelectorAll('.precedence-bar').forEach(bar => bar.classList.remove('active'));
+            updateParseButton();
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => {
+                if (parseState.isStepMode) {
+                    parseState.stepResolve = resolve;
+                } else if (!parseState.isPaused) {
+                    setTimeout(resolve, ms);
+                } else {
+                    parseState.stepResolve = resolve;
+                }
+            });
+        }
+        
+        function stepNext() {
+            if (parseState.stepResolve) {
+                parseState.stepResolve();
+                parseState.stepResolve = null;
+            }
+        }
+        
+        function togglePause() {
+            parseState.isPaused = !parseState.isPaused;
+            if (!parseState.isPaused && parseState.stepResolve) {
+                parseState.stepResolve();
+                parseState.stepResolve = null;
+            }
+            updateParseButton();
+        }
+        
+        function updateParseButton() {
+            const btn = document.getElementById('parse-btn');
+            if (parseState.isRunning) {
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> ${parseState.isPaused ? '继续' : '暂停'}`;
+                btn.onclick = togglePause;
+            } else {
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 自动解析`;
+                btn.onclick = startParsing;
+            }
+        }
+        
+        async function startParsing() {
+            if (parseState.isRunning && parseState.isPaused) {
+                parseState.isPaused = false;
+                parseState.isStepMode = false;
+                if (parseState.stepResolve) {
+                    parseState.stepResolve();
+                    parseState.stepResolve = null;
+                }
+                return;
+            }
+            
+            resetParse();
+            parseState.isRunning = true;
+            parseState.isStepMode = false;
+            updateParseButton();
+            
+            const expr = document.getElementById('expr-input').value;
+            document.getElementById('parse-status').textContent = '解析中...';
+            document.getElementById('parse-progress-text').textContent = '词法分析...';
+            
+            // Tokenize
+            parseState.tokens = tokenize(expr);
+            renderTokenStream();
+            await sleep(500);
+            
+            // Parse
+            document.getElementById('parse-progress-text').textContent = '语法分析...';
+            await parseExpressionStep();
+            
+            // Finalize
+            document.getElementById('parse-progress-bar').style.width = '100%';
+            document.getElementById('parse-progress-text').textContent = '解析完成';
+            document.getElementById('parse-status').textContent = '解析完成';
+            parseState.isRunning = false;
+            updateParseButton();
+        }
+        
+        async function stepParsing() {
+            if (!parseState.isRunning) {
+                resetParse();
+                parseState.isRunning = true;
+                parseState.isStepMode = true;
+                parseState.isPaused = true;
+                
+                const expr = document.getElementById('expr-input').value;
+                document.getElementById('parse-status').textContent = '单步模式';
+                document.getElementById('parse-progress-text').textContent = '词法分析...';
+                
+                parseState.tokens = tokenize(expr);
+                renderTokenStream();
+                
+                // Start parsing but paused
+                parseExpressionStep();
+            } else {
+                stepNext();
+            }
+            updateParseButton();
+        }
+        
+        function tokenize(expr) {
+            const tokens = [];
+            let i = 0;
+            while (i < expr.length) {
+                const c = expr[i];
+                if (/\s/.test(c)) { i++; continue; }
+                if (/\d/.test(c)) {
+                    let num = '';
+                    while (i < expr.length && /[\d.]/.test(expr[i])) num += expr[i++];
+                    tokens.push({ type: 'NUMBER', value: num });
+                } else if (/[a-zA-Z_]/.test(c)) {
+                    let id = '';
+                    while (i < expr.length && /[a-zA-Z0-9_]/.test(expr[i])) id += expr[i++];
+                    tokens.push({ type: 'IDENTIFIER', value: id });
+                } else if (c === '+' || c === '-' || c === '*' || c === '/' || c === '(' || c === ')') {
+                    tokens.push({ type: c, value: c });
+                    i++;
+                } else if (c === '=') {
+                    tokens.push({ type: '=', value: '=' });
+                    i++;
+                } else {
+                    i++;
+                }
+            }
+            return tokens;
+        }
+        
+        function renderTokenStream() {
+            const viz = document.getElementById('parse-visualization');
+            const tokenHtml = parseState.tokens.map((t, i) => 
+                `<span id="token-${i}" class="px-2 py-1 rounded bg-[#1a1a25] border border-[#2d2d44] font-mono text-sm transition-all duration-300">${t.value}</span>`
+            ).join(' ');
+            
+            viz.innerHTML = `
+                <div class="w-full">
+                    <div class="text-xs text-[#94a3b8] mb-2">Token 流</div>
+                    <div class="flex flex-wrap gap-2 p-4 rounded-xl bg-[#12121a] border border-[#2d2d44]">${tokenHtml}</div>
+                    <div id="parse-stack-area" class="mt-4 p-4 rounded-xl bg-[#12121a] border border-[#2d2d44] min-h-[80px]">
+                        <div class="text-xs text-[#94a3b8] mb-2">操作数栈</div>
+                        <div id="operand-stack" class="flex gap-2"></div>
+                    </div>
+                    <div id="parse-info" class="mt-4 p-3 rounded-lg bg-[#7c3aed]/10 border border-[#7c3aed]/30 text-sm">
+                        准备开始解析...
+                    </div>
+                </div>
+            `;
+        }
+        
+        function highlightToken(index, type = 'current') {
+            document.querySelectorAll('[id^="token-"]').forEach(el => {
+                el.classList.remove('bg-[#7c3aed]', 'border-[#7c3aed]', 'text-white', 'bg-[#00d4aa]', 'border-[#00d4aa]');
+                el.classList.add('bg-[#1a1a25]', 'border-[#2d2d44]');
+            });
+            const token = document.getElementById(`token-${index}`);
+            if (token) {
+                token.classList.remove('bg-[#1a1a25]', 'border-[#2d2d44]');
+                if (type === 'current') {
+                    token.classList.add('bg-[#7c3aed]', 'border-[#7c3aed]', 'text-white');
+                } else if (type === 'consumed') {
+                    token.classList.add('bg-[#00d4aa]/20', 'border-[#00d4aa]');
+                }
+            }
+        }
+        
+        function updateStack() {
+            const stackEl = document.getElementById('operand-stack');
+            if (stackEl) {
+                stackEl.innerHTML = parseState.stack.map(item => 
+                    `<div class="px-3 py-2 rounded-lg bg-[#00d4aa]/20 border border-[#00d4aa] text-[#00d4aa] font-mono text-sm animate-[stack-push_0.3s_ease-out]">${item}</div>`
+                ).join('');
+            }
+        }
+        
+        function addParseInfo(html) {
+            const info = document.getElementById('parse-info');
+            if (info) {
+                info.innerHTML = html;
+                info.classList.add('animate-pulse');
+                setTimeout(() => info.classList.remove('animate-pulse'), 300);
+            }
+        }
+        
+        function highlightPrecedence(op) {
+            document.querySelectorAll('.precedence-bar').forEach(bar => bar.classList.remove('active'));
+            if (op === '+' || op === '-') {
+                document.getElementById('prec-plus')?.classList.add('active');
+            } else if (op === '*' || op === '/') {
+                document.getElementById('prec-mul')?.classList.add('active');
+            }
+        }
+        
+        async function parseExpressionStep() {
+            async function parse(minPrec = 0) {
+                parseState.callDepth++;
+                parseState.minPrecStack.push(minPrec);
+                
+                if (parseState.pos >= parseState.tokens.length) {
+                    parseState.callDepth--;
+                    parseState.minPrecStack.pop();
+                    return;
+                }
+                
+                // Show current call
+                addParseInfo(`<span class="text-[#7c3aed]">parse_precedence(${minPrec})</span> - 调用深度: ${parseState.callDepth}`);
+                await sleep(parseState.isStepMode ? 0 : 800);
+                
+                let token = parseState.tokens[parseState.pos];
+                highlightToken(parseState.pos, 'current');
+                
+                addParseInfo(`读取前缀 token: <span class="text-[#00d4aa] font-mono">${token.value}</span>`);
+                await sleep(parseState.isStepMode ? 0 : 600);
+                
+                parseState.pos++;
+                highlightToken(parseState.pos - 1, 'consumed');
+                
+                // Prefix parsing
+                if (token.type === 'NUMBER') {
+                    addParseInfo(`数字字面量: push <span class="text-[#00d4aa] font-mono">${token.value}</span>`);
+                    parseState.stack.push(token.value);
+                    updateStack();
+                    parseState.bytecode.push({ op: 'OP_CONSTANT', operand: token.value, color: '#00d4aa' });
+                    updateBytecodeOutput();
+                    await sleep(parseState.isStepMode ? 0 : 600);
+                } else if (token.type === 'IDENTIFIER') {
+                    addParseInfo(`变量: get <span class="text-[#00d4aa] font-mono">${token.value}</span>`);
+                    parseState.stack.push(token.value);
+                    updateStack();
+                    parseState.bytecode.push({ op: 'OP_GET_GLOBAL', operand: token.value, color: '#00d4aa' });
+                    updateBytecodeOutput();
+                    await sleep(parseState.isStepMode ? 0 : 600);
+                } else if (token.type === '(') {
+                    addParseInfo(`分组表达式，递归解析...`);
+                    await sleep(parseState.isStepMode ? 0 : 400);
+                    await parse(0);
+                    if (parseState.tokens[parseState.pos]?.type === ')') {
+                        parseState.pos++;
+                    }
+                } else if (token.type === '-') {
+                    addParseInfo(`一元负号，递归解析操作数...`);
+                    await sleep(parseState.isStepMode ? 0 : 400);
+                    await parse(8);
+                    parseState.bytecode.push({ op: 'OP_NEGATE', color: '#f7931e' });
+                    updateBytecodeOutput();
+                    addParseInfo(`生成: <span class="text-[#f7931e] font-mono">OP_NEGATE</span>`);
+                    await sleep(parseState.isStepMode ? 0 : 600);
+                }
+                
+                // Infix parsing - precedence climbing
+                while (parseState.pos < parseState.tokens.length) {
+                    const next = parseState.tokens[parseState.pos];
+                    if (next.type === ')') break;
+                    
+                    const prec = precedence[next.type] || 0;
+                    addParseInfo(`检查中缀: <span class="font-mono">${next.value}</span> (优先级 ${prec}) >= ${minPrec}?`);
+                    highlightToken(parseState.pos, 'current');
+                    highlightPrecedence(next.type);
+                    await sleep(parseState.isStepMode ? 0 : 800);
+                    
+                    if (prec < minPrec) {
+                        addParseInfo(`优先级不足，返回上一层`);
+                        break;
+                    }
+                    
+                    parseState.pos++;
+                    highlightToken(parseState.pos - 1, 'consumed');
+                    addParseInfo(`消费操作符: <span class="text-[#f7931e] font-mono">${next.value}</span>`);
+                    await sleep(parseState.isStepMode ? 0 : 600);
+                    
+                    const nextMinPrec = prec + (next.type !== '=' ? 1 : 0);
+                    addParseInfo(`递归解析右操作数 (minPrec=${nextMinPrec})...`);
+                    await sleep(parseState.isStepMode ? 0 : 500);
+                    
+                    await parse(nextMinPrec);
+                    
+                    // Pop two operands, push result
+                    if (parseState.stack.length >= 2) {
+                        const right = parseState.stack.pop();
+                        const left = parseState.stack.pop();
+                        parseState.stack.push(`${left} ${next.value} ${right}`);
+                        updateStack();
+                    }
+                    
+                    parseState.bytecode.push({ op: opCodes[next.type], color: '#f7931e' });
+                    updateBytecodeOutput();
+                    addParseInfo(`生成: <span class="text-[#f7931e] font-mono">${opCodes[next.type]}</span>`);
+                    await sleep(parseState.isStepMode ? 0 : 600);
+                }
+                
+                parseState.callDepth--;
+                parseState.minPrecStack.pop();
+                
+                // Update progress
+                const progress = Math.min(100, (parseState.pos / parseState.tokens.length) * 100);
+                document.getElementById('parse-progress-bar').style.width = `${progress}%`;
+            }
+            
+            await parse(0);
+        }
+        
+        function updateBytecodeOutput() {
+            const output = document.getElementById('bytecode-output');
+            output.innerHTML = parseState.bytecode.map((instr, i) => 
+                `<div class="bytecode-instruction flex items-center gap-3" style="animation: bytecode-emit 0.3s ease-out ${i * 0.05}s both;">
+                    <span class="text-[#7c3aed] w-8">${String(i).padStart(2, '0')}</span>
+                    <span class="text-[${instr.color || '#e2e8f0'}]">${instr.op}</span>
+                    ${instr.operand ? `<span class="text-[#94a3b8]">${instr.operand}</span>` : ''}
+                </div>`
+            ).join('');
+            document.getElementById('bytecode-count').textContent = `${parseState.bytecode.length} instructions`;
+        }
+        
+        // Highlight table row on hover
+        document.querySelectorAll('.pratt-table-row').forEach(row => {
+            row.addEventListener('mouseenter', () => row.classList.add('active'));
+            row.addEventListener('mouseleave', () => row.classList.remove('active'));
+        });
+        
+        // Add keyframe for stack push
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes stack-push {
+                0% { transform: translateY(-10px) scale(0.9); opacity: 0; }
+                100% { transform: translateY(0) scale(1); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // ============================================
+        // Locals Array Visualization
+        // ============================================
+        let localsState = {
+            locals: [],
+            scopeDepth: 0,
+            varCounter: 0
+        };
+        
+        const localVarNames = ['x', 'y', 'z', 'count', 'index', 'name', 'value', 'result'];
+        
+        function updateLocalsViz() {
+            const container = document.getElementById('locals-viz');
+            const countEl = document.getElementById('local-count-viz');
+            const depthEl = document.getElementById('scope-depth-viz');
+            
+            if (countEl) countEl.textContent = localsState.locals.length;
+            if (depthEl) depthEl.textContent = localsState.scopeDepth;
+            
+            if (container) {
+                if (localsState.locals.length === 0) {
+                    container.innerHTML = '<div class="text-[#64748b] text-sm text-center py-4">点击"添加变量"查看 locals 数组变化</div>';
+                } else {
+                    container.innerHTML = localsState.locals.map((local, i) => `
+                        <div class="flex items-center gap-3 p-2 rounded-lg border ${local.depth === localsState.scopeDepth ? 'bg-[#00d4aa]/10 border-[#00d4aa]/50' : 'bg-[#64748b]/10 border-[#64748b]/30'} ${local.isCaptured ? 'ring-1 ring-[#f7931e]' : ''}">
+                            <span class="text-[#7c3aed] w-6 text-xs">[${i}]</span>
+                            <span class="font-mono text-sm ${local.depth === localsState.scopeDepth ? 'text-[#00d4aa]' : 'text-[#94a3b8]'}">${local.name}</span>
+                            <span class="text-xs text-[#64748b]">depth=${local.depth}</span>
+                            ${local.isCaptured ? '<span class="ml-auto text-[#f7931e] text-xs">captured</span>' : ''}
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+        
+        function addLocalVariable() {
+            if (localsState.locals.length >= 8) {
+                alert('locals[] 数组已满 (max 8 for demo)');
+                return;
+            }
+            const name = localVarNames[localsState.varCounter % localVarNames.length] + (localsState.varCounter >= 8 ? Math.floor(localsState.varCounter / 8) : '');
+            localsState.locals.push({
+                name: name,
+                depth: localsState.scopeDepth,
+                isCaptured: Math.random() > 0.7 // Randomly mark some as captured
+            });
+            localsState.varCounter++;
+            updateLocalsViz();
+        }
+        
+        function enterScope() {
+            localsState.scopeDepth++;
+            updateLocalsViz();
+        }
+        
+        function exitScope() {
+            if (localsState.scopeDepth > 0) {
+                localsState.scopeDepth--;
+                // Mark variables from exited scope as outer
+                updateLocalsViz();
+            }
+        }
+        
+        function resetLocals() {
+            localsState = {
+                locals: [],
+                scopeDepth: 0,
+                varCounter: 0
+            };
+            updateLocalsViz();
+        }
+        
+        // ============================================
+        // Scope Tree Visualization
+        // ============================================
+        function animateScopeEntry() {
+            const scopes = ['scope-0', 'scope-1', 'scope-2', 'scope-3'];
+            const info = document.getElementById('scope-info');
+            
+            scopes.forEach((id, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.filter = 'drop-shadow(0 0 10px currentColor)';
+                        el.style.strokeWidth = '4';
+                        if (info) info.textContent = `进入 ${id.replace('scope-', 'Scope ')}...`;
+                        
+                        setTimeout(() => {
+                            el.style.filter = '';
+                            el.style.strokeWidth = '2';
+                        }, 800);
+                    }
+                }, i * 1000);
+            });
+            
+            setTimeout(() => {
+                if (info) info.textContent = '作用域链演示完成';
+            }, scopes.length * 1000);
+        }
+        
+        function highlightScopeChain() {
+            const info = document.getElementById('scope-info');
+            if (info) info.textContent = '作用域链: Global → Function → Block → Nested';
+            
+            // Highlight the chain
+            ['scope-3', 'scope-2', 'scope-1', 'scope-0'].forEach((id, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.filter = 'drop-shadow(0 0 15px currentColor)';
+                        el.style.strokeWidth = '3';
+                    }
+                }, i * 200);
+            });
+            
+            setTimeout(() => {
+                ['scope-0', 'scope-1', 'scope-2', 'scope-3'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.filter = '';
+                        el.style.strokeWidth = '2';
+                    }
+                });
+            }, 2000);
+        }
+        
+        // ============================================
+        // Upvalue Animation
+        // ============================================
+        let upvalueAnimEnabled = true;
+        
+        function toggleUpvalueAnim() {
+            upvalueAnimEnabled = !upvalueAnimEnabled;
+            const particle = document.getElementById('capture-particle');
+            if (particle) {
+                const anims = particle.querySelectorAll('animate');
+                anims.forEach(anim => {
+                    if (upvalueAnimEnabled) {
+                        anim.beginElement();
+                    } else {
+                        anim.endElement();
+                    }
+                });
+                particle.style.opacity = upvalueAnimEnabled ? '1' : '0';
+            }
+        }
+        
+        function showCaptureProcess() {
+            const info = document.querySelector('#upvalue-svg').parentElement.querySelector('.text-sm');
+            
+            const steps = [
+                '1. inner() 引用外部变量 x',
+                '2. Compiler 创建 Upvalue 对象',
+                '3. Upvalue 指向 x 的栈位置',
+                '4. 闭包保存 upvalue 引用'
+            ];
+            
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= steps.length) {
+                    clearInterval(interval);
+                    return;
+                }
+                if (info) info.textContent = steps[i];
+                
+                // Highlight corresponding elements
+                if (i === 0) highlightUpvalueElement('frame-inner');
+                if (i === 1) highlightUpvalueElement('upvalue-ref');
+                if (i === 2) highlightUpvalueElement('upvalue-line');
+                if (i === 3) highlightUpvalueElement('closure-obj');
+                
+                i++;
+            }, 1000);
+        }
+        
+        function highlightUpvalueElement(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                const originalStroke = el.getAttribute('stroke');
+                el.style.filter = 'drop-shadow(0 0 10px currentColor)';
+                el.setAttribute('stroke-width', '4');
+                
+                setTimeout(() => {
+                    el.style.filter = '';
+                    el.setAttribute('stroke-width', id === 'frame-outer' || id === 'frame-inner' ? '2' : '1.5');
+                }, 800);
+            }
+        }
+        
+        // Initialize
+        updateLocalsViz();
+    </script>
+
+    <!-- Particle System -->
+    <script>
+        (function() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 15 + 's';
+                p.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+    </script>
+
+</body>
+</html>

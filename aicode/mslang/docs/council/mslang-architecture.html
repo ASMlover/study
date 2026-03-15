@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maple Language (mslang) 源码架构深度解析</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style type="text/tailwindcss">
+        @layer base {
+            :root {
+                --color-bg: #0a0a0f;
+                --color-surface: #12121a;
+                --color-surface-2: #1a1a25;
+                --color-surface-3: #252535;
+                --color-accent: #ff6b35;
+                --color-accent-2: #f7931e;
+                --color-accent-3: #00d4aa;
+                --color-accent-4: #7c3aed;
+                --color-accent-5: #ec4899;
+                --color-text: #e2e8f0;
+                --color-text-dim: #94a3b8;
+                --color-border: #2d2d44;
+            }
+            body {
+                font-family: 'Space Grotesk', sans-serif;
+                background: var(--color-bg);
+                color: var(--color-text);
+            }
+            .font-mono { font-family: 'JetBrains Mono', monospace; }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar { width: 8px; height: 8px; }
+            ::-webkit-scrollbar-track { background: var(--color-surface); }
+            ::-webkit-scrollbar-thumb { background: var(--color-surface-3); border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+            
+            /* Glow Effects */
+            .glow-orange { box-shadow: 0 0 30px rgba(255, 107, 53, 0.3); }
+            .glow-teal { box-shadow: 0 0 30px rgba(0, 212, 170, 0.3); }
+            .glow-purple { box-shadow: 0 0 30px rgba(124, 58, 237, 0.3); }
+            .glow-pink { box-shadow: 0 0 30px rgba(236, 72, 153, 0.3); }
+            
+            /* Animations */
+            @keyframes pulse-border {
+                0%, 100% { border-color: var(--color-accent); box-shadow: 0 0 20px rgba(255, 107, 53, 0.2); }
+                50% { border-color: var(--color-accent-2); box-shadow: 0 0 30px rgba(247, 147, 30, 0.4); }
+            }
+            @keyframes flow-line {
+                0% { stroke-dashoffset: 100; }
+                100% { stroke-dashoffset: 0; }
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+            @keyframes gradient-shift {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            
+            .animate-pulse-border { animation: pulse-border 2s ease-in-out infinite; }
+            .animate-flow { animation: flow-line 2s linear infinite; }
+            .animate-float { animation: float 3s ease-in-out infinite; }
+            
+            .gradient-text {
+                background: linear-gradient(135deg, var(--color-accent), var(--color-accent-2), var(--color-accent-3));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            .code-block {
+                background: var(--color-surface-2);
+                border: 1px solid var(--color-border);
+                border-radius: 12px;
+                overflow: hidden;
+            }
+            
+            .interactive-node {
+                cursor: pointer;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                filter: drop-shadow(0 0 10px rgba(255, 107, 53, 0.2));
+            }
+            .interactive-node:hover {
+                transform: scale(1.08) translateY(-3px);
+                filter: brightness(1.3) drop-shadow(0 0 25px rgba(255, 107, 53, 0.5));
+            }
+            
+            /* Flow line animation enhancement */
+            .flow-line {
+                stroke-dasharray: 10;
+                animation: dash-flow 1.5s linear infinite;
+                filter: drop-shadow(0 0 5px rgba(255, 107, 53, 0.5));
+            }
+            
+            @keyframes dash-flow {
+                to { stroke-dashoffset: -20; }
+            }
+            
+            /* Module card enhanced effects */
+            .module-card {
+                transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .module-card:hover {
+                transform: translateY(-10px);
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            }
+            .module-card::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                padding: 1px;
+                background: linear-gradient(135deg, var(--color-accent), var(--color-accent-3));
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+                mask-composite: exclude;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            .module-card:hover::before {
+                opacity: 1;
+            }
+            
+            /* Flow particle animation */
+            .flow-particle {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--color-accent);
+                box-shadow: 0 0 10px var(--color-accent);
+            }
+        }
+    </style>
+
+    <!-- Enhanced Visual Effects -->
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 15s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-strong {
+            background: rgba(10, 10, 16, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        
+        /* Enhanced Animations */
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow), 0 0 20px var(--glow), 0 0 40px rgba(0, 245, 212, 0.2);
+                border-color: var(--accent);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow), 0 0 40px var(--glow), 0 0 80px rgba(0, 245, 212, 0.4);
+                border-color: #fff;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Shimmer text effect */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        /* Gradient border effect */
+        .gradient-border {
+            position: relative;
+            background: var(--surface-2);
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Button effects */
+        .btn-enhanced {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-enhanced:hover::before {
+            left: 100%;
+        }
+        
+        .btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        /* Navigation glow */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Card hover effects */
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        /* Enhanced scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+<body class="min-h-screen overflow-x-hidden">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 bg-[var(--color-bg)]/90 backdrop-blur-md border-b border-[var(--color-border)]">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center font-bold text-white text-lg group-hover:shadow-lg group-hover:shadow-orange-500/30 transition-all">M</div>
+                <span class="text-xl font-bold group-hover:text-[var(--color-accent)] transition-colors">Maple Language</span>
+            </a>
+            <div class="flex items-center gap-6 text-sm">
+                <a href="#architecture" class="hover:text-[var(--color-accent)] transition-colors">架构概览</a>
+                <a href="#pipeline" class="hover:text-[var(--color-accent)] transition-colors">执行流程</a>
+                <a href="#vm-loop" class="hover:text-[var(--color-accent)] transition-colors">VM 循环</a>
+                <a href="#gc" class="hover:text-[var(--color-accent)] transition-colors">垃圾回收</a>
+                <a href="#modules" class="hover:text-[var(--color-accent)] transition-colors">模块详解</a>
+                <a href="index.html" class="px-4 py-2 rounded-lg bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/30 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 transition-all">
+                    ← 返回主页
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-6 relative overflow-hidden">
+        <!-- Background decoration -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-teal-500/5 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div class="max-w-6xl mx-auto text-center relative z-10">
+            <div class="inline-block mb-6 px-4 py-2 rounded-full border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-sm font-medium">
+                🍁 C++23 字节码虚拟机脚本语言
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                <span class="gradient-text">Maple Language</span>
+                <br>
+                <span class="text-3xl md:text-4xl text-[var(--color-text-dim)]">源码实现深度解析</span>
+            </h1>
+            <p class="text-xl text-[var(--color-text-dim)] max-w-3xl mx-auto mb-10 leading-relaxed">
+                基于 <span class="text-[var(--color-accent)]">clox</span> 架构的栈式字节码虚拟机，
+                采用单遍编译、<span class="text-[var(--color-accent-3)]">Pratt 解析器</span>、
+                <span class="text-[var(--color-accent-4)]">Mark-and-Sweep</span> 垃圾回收，
+                以现代 C++23 重新实现
+            </p>
+            
+            <!-- Key Stats -->
+            <div class="flex flex-wrap justify-center gap-6 mt-12">
+                <div class="px-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <div class="text-3xl font-bold text-[var(--color-accent)]">~40</div>
+                    <div class="text-sm text-[var(--color-text-dim)]">字节码指令</div>
+                </div>
+                <div class="px-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <div class="text-3xl font-bold text-[var(--color-accent-3)]">栈式</div>
+                    <div class="text-sm text-[var(--color-text-dim)]">虚拟机架构</div>
+                </div>
+                <div class="px-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <div class="text-3xl font-bold text-[var(--color-accent-4)]">O(1)</div>
+                    <div class="text-sm text-[var(--color-text-dim)]">字符串比较</div>
+                </div>
+                <div class="px-6 py-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                    <div class="text-3xl font-bold text-[var(--color-accent-5)]">三色</div>
+                    <div class="text-sm text-[var(--color-text-dim)]">标记-清扫 GC</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Overview -->
+    <section id="architecture" class="py-20 px-6 bg-[var(--color-surface)]">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">系统架构概览</h2>
+                <p class="text-[var(--color-text-dim)] max-w-2xl mx-auto">
+                    Maple 采用经典的编译器-虚拟机分离架构，源码经过词法分析、单遍编译生成字节码，
+                    再由栈式虚拟机解释执行
+                </p>
+            </div>
+
+            <!-- Interactive Architecture Diagram -->
+            <div class="relative bg-[var(--color-surface-2)] rounded-3xl p-8 border border-[var(--color-border)] overflow-hidden">
+                <!-- SVG Architecture Flow -->
+                <svg class="w-full h-[500px]" viewBox="0 0 1200 500" id="arch-svg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ff6b35" />
+                        </marker>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#f7931e;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Source Code -->
+                    <g class="interactive-node" onclick="highlightStage('source')">
+                        <rect x="50" y="200" width="140" height="100" rx="12" fill="#1a1a25" stroke="#ff6b35" stroke-width="2"/>
+                        <text x="120" y="240" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600">Source Code</text>
+                        <text x="120" y="265" text-anchor="middle" fill="#94a3b8" font-size="11">.ms 脚本文件</text>
+                        <text x="120" y="285" text-anchor="middle" fill="#ff6b35" font-size="10" class="font-mono">print "hello";</text>
+                    </g>
+                    
+                    <!-- Arrow 1 -->
+                    <line x1="190" y1="250" x2="260" y2="250" stroke="url(#grad1)" stroke-width="2" marker-end="url(#arrowhead)" class="flow-line"/>
+                    
+                    <!-- Scanner -->
+                    <g class="interactive-node" onclick="highlightStage('scanner')">
+                        <rect x="260" y="200" width="140" height="100" rx="12" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="330" y="240" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600">Scanner</text>
+                        <text x="330" y="265" text-anchor="middle" fill="#94a3b8" font-size="11">词法分析器</text>
+                        <text x="330" y="285" text-anchor="middle" fill="#00d4aa" font-size="10" class="font-mono">Token 流</text>
+                    </g>
+                    
+                    <!-- Arrow 2 -->
+                    <line x1="400" y1="250" x2="470" y2="250" stroke="url(#grad1)" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Compiler -->
+                    <g class="interactive-node" onclick="highlightStage('compiler')">
+                        <rect x="470" y="175" width="160" height="150" rx="12" fill="#1a1a25" stroke="#7c3aed" stroke-width="3" class="animate-pulse-border"/>
+                        <text x="550" y="220" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700">Compiler</text>
+                        <text x="550" y="245" text-anchor="middle" fill="#94a3b8" font-size="12">Pratt Parser</text>
+                        <text x="550" y="270" text-anchor="middle" fill="#7c3aed" font-size="10" class="font-mono">单遍编译，无 AST</text>
+                        <text x="550" y="290" text-anchor="middle" fill="#7c3aed" font-size="10" class="font-mono">递归下降 + 优先级</text>
+                    </g>
+                    
+                    <!-- Arrow 3 -->
+                    <line x1="630" y1="250" x2="700" y2="250" stroke="url(#grad1)" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- Bytecode Chunk -->
+                    <g class="interactive-node" onclick="highlightStage('chunk')">
+                        <rect x="700" y="200" width="140" height="100" rx="12" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                        <text x="770" y="240" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600">Bytecode</text>
+                        <text x="770" y="265" text-anchor="middle" fill="#94a3b8" font-size="11">Chunk 指令块</text>
+                        <text x="770" y="285" text-anchor="middle" fill="#ec4899" font-size="10" class="font-mono">OP_CONSTANT...</text>
+                    </g>
+                    
+                    <!-- Arrow 4 -->
+                    <line x1="840" y1="250" x2="910" y2="250" stroke="url(#grad1)" stroke-width="2" marker-end="url(#arrowhead)"/>
+                    
+                    <!-- VM -->
+                    <g class="interactive-node" onclick="highlightStage('vm')">
+                        <rect x="910" y="150" width="180" height="200" rx="12" fill="#1a1a25" stroke="#f7931e" stroke-width="3"/>
+                        <text x="1000" y="190" text-anchor="middle" fill="#e2e8f0" font-size="18" font-weight="700">VM</text>
+                        <text x="1000" y="220" text-anchor="middle" fill="#94a3b8" font-size="12">栈式虚拟机</text>
+                        <text x="1000" y="250" text-anchor="middle" fill="#f7931e" font-size="10" class="font-mono">值栈 + 调用帧</text>
+                        <text x="1000" y="275" text-anchor="middle" fill="#f7931e" font-size="10" class="font-mono">指令分发循环</text>
+                        <text x="1000" y="300" text-anchor="middle" fill="#f7931e" font-size="10" class="font-mono">闭包 & Upvalue</text>
+                    </g>
+                    
+                    <!-- GC Box -->
+                    <g class="interactive-node" onclick="highlightStage('gc')">
+                        <rect x="910" y="380" width="180" height="80" rx="12" fill="#1a1a25" stroke="#00d4aa" stroke-width="2" stroke-dasharray="5,5"/>
+                        <text x="1000" y="415" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="600">GC</text>
+                        <text x="1000" y="440" text-anchor="middle" fill="#00d4aa" font-size="10" class="font-mono">Mark-and-Sweep</text>
+                    </g>
+                    
+                    <!-- GC Connection -->
+                    <line x1="1000" y1="350" x2="1000" y2="380" stroke="#00d4aa" stroke-width="2" stroke-dasharray="5,5"/>
+                    <polygon points="1000,385 995,375 1005,375" fill="#00d4aa"/>
+                </svg>
+
+                <!-- Detail Panel -->
+                <div id="detail-panel" class="mt-6 p-6 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] min-h-[200px]">
+                    <div id="detail-content">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-3 h-3 rounded-full bg-[var(--color-accent)] animate-pulse"></div>
+                            <h3 class="text-xl font-bold">点击上方模块查看详情</h3>
+                        </div>
+                        <p class="text-[var(--color-text-dim)]">
+                            Maple 的执行流程如上图所示：源码首先经过 Scanner 进行词法分析生成 Token 流，
+                            然后 Compiler 使用 Pratt Parser 进行单遍编译直接生成字节码，
+                            最后 VM 通过指令分发循环解释执行字节码。GC 模块负责管理所有堆分配对象的生命周期。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pipeline Deep Dive -->
+    <section id="pipeline" class="py-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-12 text-center">执行流程详解</h2>
+            
+            <!-- Tab Navigation -->
+            <div class="flex justify-center mb-10">
+                <div class="inline-flex bg-[var(--color-surface)] rounded-2xl p-1.5 border border-[var(--color-border)]">
+                    <button onclick="switchTab('scanning')" id="tab-scanning" class="tab-btn px-6 py-3 rounded-xl font-medium transition-all bg-[var(--color-accent)] text-white">
+                        1. 词法分析
+                    </button>
+                    <button onclick="switchTab('compiling')" id="tab-compiling" class="tab-btn px-6 py-3 rounded-xl font-medium transition-all text-[var(--color-text-dim)] hover:text-white">
+                        2. 编译生成
+                    </button>
+                    <button onclick="switchTab('executing')" id="tab-executing" class="tab-btn px-6 py-3 rounded-xl font-medium transition-all text-[var(--color-text-dim)] hover:text-white">
+                        3. 解释执行
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content: Scanning -->
+            <div id="content-scanning" class="tab-content">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4 text-[var(--color-accent-3)]">Scanner 工作原理</h3>
+                        <p class="text-[var(--color-text-dim)] mb-6 leading-relaxed">
+                            Scanner 是一个按需生产的词法分析器（Lazy Lexer），它不会一次性扫描整个源码，
+                            而是在 Compiler 需要时逐个返回 Token。这种设计配合单遍编译，内存效率高。
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="w-8 h-8 rounded-lg bg-[var(--color-accent-3)]/20 flex items-center justify-center text-[var(--color-accent-3)] text-sm">1</span>
+                                    <span class="font-semibold">跳过空白字符</span>
+                                </div>
+                                <p class="text-sm text-[var(--color-text-dim)] pl-11">skip_whitespace() 跳过空格、换行、注释</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="w-8 h-8 rounded-lg bg-[var(--color-accent-3)]/20 flex items-center justify-center text-[var(--color-accent-3)] text-sm">2</span>
+                                    <span class="font-semibold">识别 Token 类型</span>
+                                </div>
+                                <p class="text-sm text-[var(--color-text-dim)] pl-11">根据首字符判断：标识符、数字、字符串、符号</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="w-8 h-8 rounded-lg bg-[var(--color-accent-3)]/20 flex items-center justify-center text-[var(--color-accent-3)] text-sm">3</span>
+                                    <span class="font-semibold">关键字检测</span>
+                                </div>
+                                <p class="text-sm text-[var(--color-text-dim)] pl-11">identifier_type() 使用 Trie 结构匹配关键字</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="code-block">
+                        <div class="flex items-center justify-between px-4 py-3 bg-[var(--color-surface-3)] border-b border-[var(--color-border)]">
+                            <span class="text-sm font-medium text-[var(--color-text-dim)]">Token 类型示例</span>
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                        </div>
+                        <div class="p-4 font-mono text-sm overflow-x-auto">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-4 p-2 rounded bg-[var(--color-surface-3)]/50">
+                                    <span class="text-[var(--color-accent-5)] w-32">TOKEN_PRINT</span>
+                                    <span class="text-[var(--color-text-dim)]">→</span>
+                                    <span class="text-[var(--color-accent-3)]">"print"</span>
+                                </div>
+                                <div class="flex items-center gap-4 p-2 rounded bg-[var(--color-surface-3)]/50">
+                                    <span class="text-[var(--color-accent-5)] w-32">TOKEN_STRING</span>
+                                    <span class="text-[var(--color-text-dim)]">→</span>
+                                    <span class="text-[var(--color-accent-3)]">"hello"</span>
+                                </div>
+                                <div class="flex items-center gap-4 p-2 rounded bg-[var(--color-surface-3)]/50">
+                                    <span class="text-[var(--color-accent-5)] w-32">TOKEN_SEMICOLON</span>
+                                    <span class="text-[var(--color-text-dim)]">→</span>
+                                    <span class="text-[var(--color-accent-3)]">;</span>
+                                </div>
+                                <div class="flex items-center gap-4 p-2 rounded bg-[var(--color-surface-3)]/50">
+                                    <span class="text-[var(--color-accent-5)] w-32">TOKEN_EOF</span>
+                                    <span class="text-[var(--color-text-dim)]">→</span>
+                                    <span class="text-[var(--color-accent-3)]">文件结束</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Compiling -->
+            <div id="content-compiling" class="tab-content hidden">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4 text-[var(--color-accent-4)]">Pratt Parser 单遍编译</h3>
+                        <p class="text-[var(--color-text-dim)] mb-6 leading-relaxed">
+                            Compiler 采用 Pratt Parser（也称为 Top-Down Operator Precedence），
+                            将表达式解析与代码生成合二为一，边解析边生成字节码，无需构建 AST。
+                        </p>
+                        
+                        <div class="mb-6 p-4 rounded-xl bg-[var(--color-accent-4)]/10 border border-[var(--color-accent-4)]/30">
+                            <h4 class="font-semibold mb-2 text-[var(--color-accent-4)]">ParseRule 结构</h4>
+                            <pre class="font-mono text-xs text-[var(--color-text-dim)]">
+struct ParseRule {
+    ParseFn prefix;      // 前缀解析（一元、字面量）
+    ParseFn infix;       // 中缀解析（二元运算）
+    Precedence precedence; // 优先级
+};</pre>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="w-24 text-[var(--color-text-dim)]">前缀</span>
+                                <span class="px-3 py-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)]">-5</span>
+                                <span class="px-3 py-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)]">!true</span>
+                                <span class="px-3 py-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)]">(expr)</span>
+                            </div>
+                            <div class="flex items-center gap-3 text-sm">
+                                <span class="w-24 text-[var(--color-text-dim)]">中缀</span>
+                                <span class="px-3 py-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)]">a + b</span>
+                                <span class="px-3 py-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)]">a * b</span>
+                                <span class="px-3 py-1 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)]">a.b</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="code-block">
+                        <div class="px-4 py-3 bg-[var(--color-surface-3)] border-b border-[var(--color-border)]">
+                            <span class="text-sm font-medium text-[var(--color-text-dim)]">编译示例: 1 + 2 * 3</span>
+                        </div>
+                        <div class="p-4 font-mono text-sm">
+                            <div class="text-[var(--color-text-dim)] mb-4">// 生成的字节码序列</div>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[var(--color-accent-5)] w-16">0000</span>
+                                    <span class="text-[var(--color-accent)]">OP_CONSTANT</span>
+                                    <span class="text-[var(--color-text-dim)]">0</span>
+                                    <span class="text-[var(--color-accent-3)] ml-auto">; 1</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[var(--color-accent-5)] w-16">0002</span>
+                                    <span class="text-[var(--color-accent)]">OP_CONSTANT</span>
+                                    <span class="text-[var(--color-text-dim)]">1</span>
+                                    <span class="text-[var(--color-accent-3)] ml-auto">; 2</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[var(--color-accent-5)] w-16">0004</span>
+                                    <span class="text-[var(--color-accent)]">OP_CONSTANT</span>
+                                    <span class="text-[var(--color-text-dim)]">2</span>
+                                    <span class="text-[var(--color-accent-3)] ml-auto">; 3</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[var(--color-accent-5)] w-16">0006</span>
+                                    <span class="text-[var(--color-accent-2)]">OP_MULTIPLY</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[var(--color-accent-5)] w-16">0007</span>
+                                    <span class="text-[var(--color-accent-2)]">OP_ADD</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-[var(--color-accent-5)] w-16">0008</span>
+                                    <span class="text-[var(--color-accent-4)]">OP_RETURN</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-4 border-t border-[var(--color-border)]">
+                                <div class="text-[var(--color-text-dim)] mb-2">// 常量池</div>
+                                <div class="text-sm">
+                                    <span class="text-[var(--color-accent-5)]">[0]</span> <span class="text-[var(--color-accent-3)]">1</span><br>
+                                    <span class="text-[var(--color-accent-5)]">[1]</span> <span class="text-[var(--color-accent-3)]">2</span><br>
+                                    <span class="text-[var(--color-accent-5)]">[2]</span> <span class="text-[var(--color-accent-3)]">3</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content: Executing -->
+            <div id="content-executing" class="tab-content hidden">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-4 text-[var(--color-accent-2)]">栈式虚拟机执行</h3>
+                        <p class="text-[var(--color-text-dim)] mb-6 leading-relaxed">
+                            VM 采用栈式架构，所有操作都在值栈上进行。指令短小紧凑，
+                            无需显式操作数地址，操作数隐式位于栈顶。
+                        </p>
+                        
+                        <div class="mb-6 p-4 rounded-xl bg-[var(--color-accent-2)]/10 border border-[var(--color-accent-2)]/30">
+                            <h4 class="font-semibold mb-3 text-[var(--color-accent-2)]">核心数据结构</h4>
+                            <pre class="font-mono text-xs text-[var(--color-text-dim)]">
+// 调用帧
+struct CallFrame {
+    ObjClosure* closure;  // 当前闭包
+    u8_t* ip;             // 指令指针
+    Value* slots;         // 栈帧基址
+};
+
+// VM 状态
+frames_[kFRAMES_MAX];     // 调用帧栈
+stack_[kSTACK_MAX];       // 值栈
+globals_;                 // 全局变量表</pre>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="px-2 py-1 rounded bg-[var(--color-accent-2)]/20 text-[var(--color-accent-2)] text-xs font-mono">OP_CONSTANT</span>
+                                </div>
+                                <p class="text-sm text-[var(--color-text-dim)]">从常量池加载值，压入栈顶</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="px-2 py-1 rounded bg-[var(--color-accent-2)]/20 text-[var(--color-accent-2)] text-xs font-mono">OP_ADD</span>
+                                </div>
+                                <p class="text-sm text-[var(--color-text-dim)]">弹出两个操作数，相加后压入结果</p>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="px-2 py-1 rounded bg-[var(--color-accent-2)]/20 text-[var(--color-accent-2)] text-xs font-mono">OP_CALL</span>
+                                </div>
+                                <p class="text-sm text-[var(--color-text-dim)]">调用函数，创建新调用帧</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="code-block mb-4">
+                            <div class="px-4 py-3 bg-[var(--color-surface-3)] border-b border-[var(--color-border)]">
+                                <span class="text-sm font-medium text-[var(--color-text-dim)]">栈状态可视化: 1 + 2 * 3</span>
+                            </div>
+                            <div class="p-4">
+                                <div class="space-y-4">
+                                    <!-- Step 1 -->
+                                    <div class="p-3 rounded-lg bg-[var(--color-surface-3)]/30">
+                                        <div class="text-xs text-[var(--color-text-dim)] mb-2">OP_CONSTANT 0 (push 1)</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 text-xs text-[var(--color-text-dim)]">Stack:</div>
+                                            <div class="flex gap-1">
+                                                <div class="w-12 h-10 rounded bg-[var(--color-accent)]/20 border border-[var(--color-accent)] flex items-center justify-center font-mono text-sm">1</div>
+                                            </div>
+                                            <div class="text-xs text-[var(--color-text-dim)] ml-2">← stack_top</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Step 2 -->
+                                    <div class="p-3 rounded-lg bg-[var(--color-surface-3)]/30">
+                                        <div class="text-xs text-[var(--color-text-dim)] mb-2">OP_CONSTANT 1 (push 2)</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 text-xs text-[var(--color-text-dim)]">Stack:</div>
+                                            <div class="flex gap-1">
+                                                <div class="w-12 h-10 rounded bg-[var(--color-surface-3)] border border-[var(--color-border)] flex items-center justify-center font-mono text-sm">1</div>
+                                                <div class="w-12 h-10 rounded bg-[var(--color-accent)]/20 border border-[var(--color-accent)] flex items-center justify-center font-mono text-sm">2</div>
+                                            </div>
+                                            <div class="text-xs text-[var(--color-text-dim)] ml-2">← stack_top</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Step 3 -->
+                                    <div class="p-3 rounded-lg bg-[var(--color-surface-3)]/30">
+                                        <div class="text-xs text-[var(--color-text-dim)] mb-2">OP_CONSTANT 2 (push 3)</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 text-xs text-[var(--color-text-dim)]">Stack:</div>
+                                            <div class="flex gap-1">
+                                                <div class="w-12 h-10 rounded bg-[var(--color-surface-3)] border border-[var(--color-border)] flex items-center justify-center font-mono text-sm">1</div>
+                                                <div class="w-12 h-10 rounded bg-[var(--color-surface-3)] border border-[var(--color-border)] flex items-center justify-center font-mono text-sm">2</div>
+                                                <div class="w-12 h-10 rounded bg-[var(--color-accent)]/20 border border-[var(--color-accent)] flex items-center justify-center font-mono text-sm">3</div>
+                                            </div>
+                                            <div class="text-xs text-[var(--color-text-dim)] ml-2">← stack_top</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Step 4 -->
+                                    <div class="p-3 rounded-lg bg-[var(--color-accent-3)]/10 border border-[var(--color-accent-3)]/30">
+                                        <div class="text-xs text-[var(--color-accent-3)] mb-2">OP_MULTIPLY (pop 2, pop 3, push 6)</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 text-xs text-[var(--color-text-dim)]">Stack:</div>
+                                            <div class="flex gap-1">
+                                                <div class="w-12 h-10 rounded bg-[var(--color-surface-3)] border border-[var(--color-border)] flex items-center justify-center font-mono text-sm">1</div>
+                                                <div class="w-12 h-10 rounded bg-[var(--color-accent-3)]/20 border border-[var(--color-accent-3)] flex items-center justify-center font-mono text-sm">6</div>
+                                            </div>
+                                            <div class="text-xs text-[var(--color-text-dim)] ml-2">← stack_top</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Step 5 -->
+                                    <div class="p-3 rounded-lg bg-[var(--color-accent-3)]/10 border border-[var(--color-accent-3)]/30">
+                                        <div class="text-xs text-[var(--color-accent-3)] mb-2">OP_ADD (pop 1, pop 6, push 7)</div>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 text-xs text-[var(--color-text-dim)]">Stack:</div>
+                                            <div class="flex gap-1">
+                                                <div class="w-12 h-10 rounded bg-[var(--color-accent-3)]/30 border-2 border-[var(--color-accent-3)] flex items-center justify-center font-mono text-lg font-bold text-[var(--color-accent-3)]">7</div>
+                                            </div>
+                                            <div class="text-xs text-[var(--color-text-dim)] ml-2">← stack_top</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VM Dispatch Loop -->
+    <section id="vm-loop" class="py-20 px-6 bg-[var(--color-surface)]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-12 text-center">VM 指令分发循环</h2>
+            
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Code Explanation -->
+                <div class="lg:col-span-2">
+                    <div class="code-block h-full">
+                        <div class="flex items-center justify-between px-4 py-3 bg-[var(--color-surface-3)] border-b border-[var(--color-border)]">
+                            <span class="text-sm font-medium text-[var(--color-text-dim)]">VM::run() - 核心执行循环</span>
+                            <div class="flex gap-2">
+                                <span class="px-2 py-1 rounded bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-xs">hot path</span>
+                            </div>
+                        </div>
+                        <div class="p-6 font-mono text-sm overflow-x-auto">
+                            <pre class="leading-relaxed"><span class="text-[var(--color-accent-5)]">InterpretResult</span> <span class="text-[var(--color-accent-2)]">VM::run</span>() {
+  <span class="text-[var(--color-accent-4)]">CallFrame</span>* frame = &frames_[frame_count_ - <span class="text-[var(--color-accent-3)]">1</span>];
+
+  <span class="text-[var(--color-text-dim)]">// 无限循环，直到遇到 OP_RETURN 或错误</span>
+  <span class="text-[var(--color-accent-5)]">for</span> (;;) {
+    <span class="text-[var(--color-accent-4)]">u8_t</span> instruction = <span class="text-[var(--color-accent-2)]">READ_BYTE</span>();  <span class="text-[var(--color-text-dim)]">// *frame->ip++</span>
+    
+    <span class="text-[var(--color-accent-5)]">switch</span> (<span class="text-[var(--color-accent-5)]">static_cast</span>&lt;OpCode&gt;(instruction)) {
+      <span class="text-[var(--color-accent-5)]">case</span> OpCode::OP_CONSTANT: {
+        <span class="text-[var(--color-accent-4)]">Value</span> constant = <span class="text-[var(--color-accent-2)]">READ_CONSTANT</span>();
+        <span class="text-[var(--color-accent-2)]">push</span>(constant);
+        <span class="text-[var(--color-accent-5)]">break</span>;
+      }
+      
+      <span class="text-[var(--color-accent-5)]">case</span> OpCode::OP_ADD: {
+        <span class="text-[var(--color-accent-5)]">if</span> (<span class="text-[var(--color-accent-2)]">peek</span>(<span class="text-[var(--color-accent-3)]">0</span>).<span class="text-[var(--color-accent-2)]">is_string</span>() && 
+            <span class="text-[var(--color-accent-2)]">peek</span>(<span class="text-[var(--color-accent-3)]">1</span>).<span class="text-[var(--color-accent-2)]">is_string</span>()) {
+          <span class="text-[var(--color-accent-2)]">concatenate</span>();  <span class="text-[var(--color-text-dim)]">// 字符串拼接</span>
+        } <span class="text-[var(--color-accent-5)]">else</span> {
+          <span class="text-[var(--color-accent-4)]">double</span> b = <span class="text-[var(--color-accent-2)]">pop</span>().<span class="text-[var(--color-accent-2)]">as_number</span>();
+          <span class="text-[var(--color-accent-4)]">double</span> a = <span class="text-[var(--color-accent-2)]">pop</span>().<span class="text-[var(--color-accent-2)]">as_number</span>();
+          <span class="text-[var(--color-accent-2)]">push</span>(<span class="text-[var(--color-accent-4)]">Value</span>(a + b));
+        }
+        <span class="text-[var(--color-accent-5)]">break</span>;
+      }
+      
+      <span class="text-[var(--color-accent-5)]">case</span> OpCode::OP_CALL: {
+        <span class="text-[var(--color-accent-4)]">int</span> arg_count = <span class="text-[var(--color-accent-2)]">READ_BYTE</span>();
+        <span class="text-[var(--color-accent-5)]">if</span> (!<span class="text-[var(--color-accent-2)]">call_value</span>(<span class="text-[var(--color-accent-2)]">peek</span>(arg_count), arg_count)) {
+          <span class="text-[var(--color-accent-5)]">return</span> INTERPRET_RUNTIME_ERROR;
+        }
+        frame = &frames_[frame_count_ - <span class="text-[var(--color-accent-3)]">1</span>];
+        <span class="text-[var(--color-accent-5)]">break</span>;
+      }
+      
+      <span class="text-[var(--color-accent-5)]">case</span> OpCode::OP_RETURN: {
+        <span class="text-[var(--color-accent-4)]">Value</span> result = <span class="text-[var(--color-accent-2)]">pop</span>();
+        <span class="text-[var(--color-accent-2)]">close_upvalues</span>(frame->slots);
+        frame_count_--;
+        <span class="text-[var(--color-accent-5)]">if</span> (frame_count_ == <span class="text-[var(--color-accent-3)]">0</span>) {
+          <span class="text-[var(--color-accent-2)]">pop</span>();  <span class="text-[var(--color-text-dim)]">// 弹出脚本函数</span>
+          <span class="text-[var(--color-accent-5)]">return</span> INTERPRET_OK;
+        }
+        <span class="text-[var(--color-accent-2)]">push</span>(result);
+        frame = &frames_[frame_count_ - <span class="text-[var(--color-accent-3)]">1</span>];
+        <span class="text-[var(--color-accent-5)]">break</span>;
+      }
+      <span class="text-[var(--color-text-dim)]">// ... 40+ 其他指令</span>
+    }
+  }
+}</pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Key Concepts -->
+                <div class="space-y-4">
+                    <div class="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
+                        <div class="w-10 h-10 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center mb-3">
+                            <svg class="w-5 h-5 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h4 class="font-semibold mb-2">READ_BYTE()</h4>
+                        <p class="text-sm text-[var(--color-text-dim)]">
+                            宏定义: <code class="text-[var(--color-accent)]">(*frame->ip++)</code>
+                            读取当前指令并递增指令指针
+                        </p>
+                    </div>
+                    
+                    <div class="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
+                        <div class="w-10 h-10 rounded-xl bg-[var(--color-accent-3)]/20 flex items-center justify-center mb-3">
+                            <svg class="w-5 h-5 text-[var(--color-accent-3)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                            </svg>
+                        </div>
+                        <h4 class="font-semibold mb-2">调用帧切换</h4>
+                        <p class="text-sm text-[var(--color-text-dim)]">
+                            OP_CALL 时 frame_count_++，OP_RETURN 时 frame_count_--，
+                            frame 指针始终指向当前帧
+                        </p>
+                    </div>
+                    
+                    <div class="p-5 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
+                        <div class="w-10 h-10 rounded-xl bg-[var(--color-accent-4)]/20 flex items-center justify-center mb-3">
+                            <svg class="w-5 h-5 text-[var(--color-accent-4)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h4 class="font-semibold mb-2">Dispatch 方式</h4>
+                        <p class="text-sm text-[var(--color-text-dim)]">
+                            使用 C++ switch-case 实现 Direct Threading，
+                            现代编译器会优化为跳转表，效率高
+                        </p>
+                    </div>
+                    
+                    <div class="p-5 rounded-2xl bg-[var(--color-accent-2)]/10 border border-[var(--color-accent-2)]/30">
+                        <h4 class="font-semibold mb-3 text-[var(--color-accent-2)]">辅助宏</h4>
+                        <div class="font-mono text-xs space-y-1 text-[var(--color-text-dim)]">
+                            <div>READ_SHORT() → 2字节</div>
+                            <div>READ_CONSTANT() → 常量池</div>
+                            <div>BINARY_OP(op) → 二元运算</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Garbage Collector -->
+    <section id="gc" class="py-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-12 text-center">垃圾回收机制</h2>
+            
+            <div class="grid md:grid-cols-3 gap-6 mb-12">
+                <!-- Phase 1 -->
+                <div class="p-6 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-[var(--color-accent)]/10 rounded-full -mr-10 -mt-10"></div>
+                    <div class="text-4xl font-bold text-[var(--color-accent)] mb-2">01</div>
+                    <h3 class="text-xl font-bold mb-3">标记根对象</h3>
+                    <p class="text-sm text-[var(--color-text-dim)] mb-4">
+                        遍历所有 GC Roots，将可达对象标记为灰色，加入处理队列
+                    </p>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
+                            <span>VM 值栈</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
+                            <span>全局变量表</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
+                            <span>调用帧闭包</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-[var(--color-accent)]"></div>
+                            <span>打开的 Upvalue</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Phase 2 -->
+                <div class="p-6 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-[var(--color-accent-3)]/10 rounded-full -mr-10 -mt-10"></div>
+                    <div class="text-4xl font-bold text-[var(--color-accent-3)] mb-2">02</div>
+                    <h3 class="text-xl font-bold mb-3">追踪引用</h3>
+                    <p class="text-sm text-[var(--color-text-dim)] mb-4">
+                        从灰色对象出发，递归标记所有引用对象，直到无灰色对象
+                    </p>
+                    <div class="font-mono text-xs p-3 rounded-lg bg-[var(--color-bg)]">
+                        <span class="text-[var(--color-accent-5)]">while</span> (!gray_stack_.<span class="text-[var(--color-accent-2)]">empty</span>()) {<br>
+                        &nbsp;&nbsp;obj = <span class="text-[var(--color-accent-2)]">pop_gray</span>();<br>
+                        &nbsp;&nbsp;<span class="text-[var(--color-accent-2)]">trace_references</span>(obj);<br>
+                        &nbsp;&nbsp;obj-><span class="text-[var(--color-accent-2)]">set_marked</span>(<span class="text-[var(--color-accent-3)]">true</span>);<br>
+                        }
+                    </div>
+                </div>
+                
+                <!-- Phase 3 -->
+                <div class="p-6 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-[var(--color-accent-4)]/10 rounded-full -mr-10 -mt-10"></div>
+                    <div class="text-4xl font-bold text-[var(--color-accent-4)] mb-2">03</div>
+                    <h3 class="text-xl font-bold mb-3">清扫回收</h3>
+                    <p class="text-sm text-[var(--color-text-dim)] mb-4">
+                        遍历对象链表，回收未标记对象，重置已标记对象的标记位
+                    </p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <div class="text-center">
+                            <div class="w-12 h-12 rounded-full bg-[var(--color-accent-3)]/20 border-2 border-[var(--color-accent-3)] flex items-center justify-center mb-1">
+                                <span class="text-xs">存活</span>
+                            </div>
+                            <span class="text-xs text-[var(--color-text-dim)]">黑色</span>
+                        </div>
+                        <div class="flex-1 h-0.5 bg-[var(--color-border)]"></div>
+                        <div class="text-center">
+                            <div class="w-12 h-12 rounded-full border-2 border-dashed border-[var(--color-text-dim)]/30 flex items-center justify-center mb-1">
+                                <span class="text-xs text-[var(--color-text-dim)]">回收</span>
+                            </div>
+                            <span class="text-xs text-[var(--color-text-dim)]">白色</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Object Structure -->
+            <div class="code-block">
+                <div class="px-4 py-3 bg-[var(--color-surface-3)] border-b border-[var(--color-border)]">
+                    <span class="text-sm font-medium text-[var(--color-text-dim)]">Object 基类与 GC 链表</span>
+                </div>
+                <div class="p-6 font-mono text-sm">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <pre class="leading-relaxed"><span class="text-[var(--color-accent-5)]">class</span> <span class="text-[var(--color-accent-2)]">Object</span> {
+  <span class="text-[var(--color-accent-4)]">ObjectType</span> type_;        <span class="text-[var(--color-text-dim)]">// 类型标签</span>
+  <span class="text-[var(--color-accent-4)]">bool</span> is_marked_;       <span class="text-[var(--color-text-dim)]">// GC 标记位</span>
+  <span class="text-[var(--color-accent-4)]">Object</span>* next_;         <span class="text-[var(--color-text-dim)]">// 侵入式链表</span>
+  
+  <span class="text-[var(--color-accent-5)]">virtual</span> <span class="text-[var(--color-accent-2)]">trace_references</span>() = <span class="text-[var(--color-accent-3)]">0</span>;
+};
+
+<span class="text-[var(--color-text-dim)]">// VM 中管理的对象链表</span>
+<span class="text-[var(--color-accent-4)]">Object</span>* objects_ = <span class="text-[var(--color-accent-3)]">nullptr</span>;  <span class="text-[var(--color-text-dim)]">// 链表头</span>
+
+<span class="text-[var(--color-text-dim)]">// 新对象插入链表头部</span>
+obj->next = objects_;
+objects_ = obj;</pre>
+                        </div>
+                        <div>
+                            <div class="text-[var(--color-text-dim)] mb-4">// 对象类型层次</div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-3 h-3 rounded-full bg-[var(--color-accent)]"></div>
+                                    <span class="text-[var(--color-accent-5)]">Object</span>
+                                    <span class="text-[var(--color-text-dim)]">(abstract)</span>
+                                </div>
+                                <div class="ml-6 space-y-1 border-l-2 border-[var(--color-border)] pl-4">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[var(--color-accent-3)]">├─</span>
+                                        <span>ObjString</span>
+                                        <span class="text-xs text-[var(--color-text-dim)]">字符串 + hash</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[var(--color-accent-3)]">├─</span>
+                                        <span>ObjFunction</span>
+                                        <span class="text-xs text-[var(--color-text-dim)]">函数 (arity, chunk)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[var(--color-accent-3)]">├─</span>
+                                        <span>ObjClosure</span>
+                                        <span class="text-xs text-[var(--color-text-dim)]">闭包 + upvalues</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[var(--color-accent-3)]">├─</span>
+                                        <span>ObjClass</span>
+                                        <span class="text-xs text-[var(--color-text-dim)]">类定义</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[var(--color-accent-3)]">├─</span>
+                                        <span>ObjInstance</span>
+                                        <span class="text-xs text-[var(--color-text-dim)]">实例 + fields</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[var(--color-accent-3)]">└─</span>
+                                        <span>...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Module Details -->
+    <section id="modules" class="py-20 px-6 bg-[var(--color-surface)]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-4xl font-bold mb-12 text-center">核心模块详解</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Module Cards -->
+                <div class="group p-6 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold">VM</div>
+                        <div>
+                            <h3 class="font-bold">VM.hh/cc</h3>
+                            <p class="text-xs text-[var(--color-text-dim)]">虚拟机核心</p>
+                        </div>
+                    </div>
+                    <ul class="text-sm text-[var(--color-text-dim)] space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>指令分发循环 run()</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>值栈与调用帧管理</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>函数调用与返回</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>全局变量表</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="group p-6 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent-4)] transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[var(--color-accent-4)]/20 flex items-center justify-center text-[var(--color-accent-4)] font-bold">CP</div>
+                        <div>
+                            <h3 class="font-bold">Compiler.hh/cc</h3>
+                            <p class="text-xs text-[var(--color-text-dim)]">单遍编译器</p>
+                        </div>
+                    </div>
+                    <ul class="text-sm text-[var(--color-text-dim)] space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-4)]">•</span>
+                            <span>Pratt Parser 实现</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-4)]">•</span>
+                            <span>局部变量作用域</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-4)]">•</span>
+                            <span>Upvalue 捕获分析</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-4)]">•</span>
+                            <span>字节码生成</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="group p-6 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent-3)] transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[var(--color-accent-3)]/20 flex items-center justify-center text-[var(--color-accent-3)] font-bold">SC</div>
+                        <div>
+                            <h3 class="font-bold">Scanner.hh/cc</h3>
+                            <p class="text-xs text-[var(--color-text-dim)]">词法分析器</p>
+                        </div>
+                    </div>
+                    <ul class="text-sm text-[var(--color-text-dim)] space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-3)]">•</span>
+                            <span>惰性 Token 生成</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-3)]">•</span>
+                            <span>关键字识别</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-3)]">•</span>
+                            <span>字符串插值支持</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-3)]">•</span>
+                            <span>行号追踪</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="group p-6 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent-5)] transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[var(--color-accent-5)]/20 flex items-center justify-center text-[var(--color-accent-5)] font-bold">CH</div>
+                        <div>
+                            <h3 class="font-bold">Chunk.hh/cc</h3>
+                            <p class="text-xs text-[var(--color-text-dim)]">字节码容器</p>
+                        </div>
+                    </div>
+                    <ul class="text-sm text-[var(--color-text-dim)] space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-5)]">•</span>
+                            <span>指令数组 code[]</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-5)]">•</span>
+                            <span>常量池 constants[]</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-5)]">•</span>
+                            <span>行号映射 lines[]</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-5)]">•</span>
+                            <span>指令写入接口</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="group p-6 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent-2)] transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[var(--color-accent-2)]/20 flex items-center justify-center text-[var(--color-accent-2)] font-bold">OB</div>
+                        <div>
+                            <h3 class="font-bold">Object.hh/cc</h3>
+                            <p class="text-xs text-[var(--color-text-dim)]">对象系统</p>
+                        </div>
+                    </div>
+                    <ul class="text-sm text-[var(--color-text-dim)] space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-2)]">•</span>
+                            <span>GC 对象基类</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-2)]">•</span>
+                            <span>String, Function, Class</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-2)]">•</span>
+                            <span>Closure & Upvalue</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent-2)]">•</span>
+                            <span>Instance & Method</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="group p-6 rounded-2xl bg-[var(--color-surface-2)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all hover:-translate-y-1">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[var(--color-accent)]/20 flex items-center justify-center text-[var(--color-accent)] font-bold">TB</div>
+                        <div>
+                            <h3 class="font-bold">Table.hh/cc</h3>
+                            <p class="text-xs text-[var(--color-text-dim)]">哈希表</p>
+                        </div>
+                    </div>
+                    <ul class="text-sm text-[var(--color-text-dim)] space-y-2">
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>开放寻址哈希</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>字符串驻留 (Interning)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>Tombstone 删除</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-[var(--color-accent)]">•</span>
+                            <span>动态扩容</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Memory Management Detail -->
+            <div class="mt-12 p-8 rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)]">
+                <h3 class="text-2xl font-bold mb-6">内存管理策略对比</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="p-4 rounded-xl bg-[var(--color-surface)]">
+                        <h4 class="font-semibold mb-3 text-[var(--color-accent-3)]">Value 表示</h4>
+                        <div class="font-mono text-xs space-y-2 text-[var(--color-text-dim)]">
+                            <p>// std::variant 版本</p>
+                            <p class="text-[var(--color-accent-3)]">variant&lt;monostate, bool, double, Object*&gt;</p>
+                            <p class="mt-2">// 或 NaN Boxing</p>
+                            <p class="text-[var(--color-accent-3)]">u64_t bits_ (8 bytes)</p>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-[var(--color-surface)]">
+                        <h4 class="font-semibold mb-3 text-[var(--color-accent-4)]">GC 触发条件</h4>
+                        <div class="font-mono text-xs space-y-2 text-[var(--color-text-dim)]">
+                            <p>if (bytes_allocated_ &gt; next_gc_)</p>
+                            <p class="mt-2">collect_garbage();</p>
+                            <p class="mt-2 text-[var(--color-accent-4)]">// GC 后调整阈值</p>
+                            <p>next_gc_ = bytes * kGC_HEAP_GROW;</p>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-[var(--color-surface)]">
+                        <h4 class="font-semibold mb-3 text-[var(--color-accent)]">String Interning</h4>
+                        <div class="font-mono text-xs space-y-2 text-[var(--color-text-dim)]">
+                            <p>// 相同内容字符串</p>
+                            <p>// 共享同一对象</p>
+                            <p class="mt-2 text-[var(--color-accent)]">// O(1) 字符串比较</p>
+                            <p>if (a == b) // 指针比较</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 bg-[var(--color-bg)] border-t border-[var(--color-border)]">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center font-bold text-white">M</div>
+                <span class="text-lg font-bold">Maple Language</span>
+            </div>
+            <p class="text-sm text-[var(--color-text-dim)] mb-2">
+                基于 Crafting Interpreters (clox) 的现代 C++23 实现
+            </p>
+            <p class="text-xs text-[var(--color-text-dim)]/60">
+                栈式字节码虚拟机 | 单遍 Pratt 编译器 | Mark-and-Sweep GC
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab Switching
+        function switchTab(tabName) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Show selected content
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            
+            // Update button styles
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-[var(--color-accent)]', 'text-white');
+                btn.classList.add('text-[var(--color-text-dim)]');
+            });
+            
+            document.getElementById('tab-' + tabName).classList.add('bg-[var(--color-accent)]', 'text-white');
+            document.getElementById('tab-' + tabName).classList.remove('text-[var(--color-text-dim)]');
+        }
+        
+        // Architecture Detail Panel
+        const stageDetails = {
+            source: {
+                title: 'Source Code - 源码输入',
+                content: `Maple 脚本使用 .ms 扩展名，语法类似于 Lua 和 JavaScript 的混合体。
+                <br><br>
+                <strong>示例代码：</strong>
+                <pre class="mt-2 p-3 rounded bg-[var(--color-surface-2)] font-mono text-sm">fun fib(n) {
+  if (n <= 1) return n;
+  return fib(n - 1) + fib(n - 2);
+}
+
+print fib(10);  // 55</pre>`
+            },
+            scanner: {
+                title: 'Scanner - 词法分析器',
+                content: `Scanner 按需（on-demand）从源码生成 Token，不会一次性扫描全部内容。
+                <br><br>
+                <strong>核心方法：</strong>
+                <ul class="mt-2 space-y-1 text-sm">
+                    <li>• <code>scan_token()</code> - 返回下一个 Token</li>
+                    <li>• <code>skip_whitespace()</code> - 跳过空白和注释</li>
+                    <li>• <code>scan_string/number/identifier()</code> - 扫描具体类型</li>
+                </ul>`
+            },
+            compiler: {
+                title: 'Compiler - 单遍编译器 (Pratt Parser)',
+                content: `Compiler 是最复杂的模块，使用 Pratt Parser 技术实现单遍编译。
+                <br><br>
+                <strong>关键特性：</strong>
+                <ul class="mt-2 space-y-1 text-sm">
+                    <li>• 无 AST，直接生成字节码</li>
+                    <li>• 递归下降 + 优先级解析</li>
+                    <li>• 局部变量在编译期解析为栈槽位</li>
+                    <li>• Upvalue 捕获分析</li>
+                </ul>`
+            },
+            chunk: {
+                title: 'Bytecode Chunk - 字节码块',
+                content: `Chunk 包含三部分：指令流、常量池、行号映射。
+                <br><br>
+                <strong>结构：</strong>
+                <ul class="mt-2 space-y-1 text-sm">
+                    <li>• <code>code_</code>: vector&lt;u8_t&gt; 指令字节流</li>
+                    <li>• <code>constants_</code>: vector&lt;Value&gt; 常量池</li>
+                    <li>• <code>lines_</code>: vector&lt;int&gt; 源码行号</li>
+                </ul>`
+            },
+            vm: {
+                title: 'VM - 栈式虚拟机',
+                content: `VM 是执行引擎，包含值栈、调用帧栈和指令分发循环。
+                <br><br>
+                <strong>核心组件：</strong>
+                <ul class="mt-2 space-y-1 text-sm">
+                    <li>• <code>frames_[]</code>: 调用帧栈（函数调用链）</li>
+                    <li>• <code>stack_[]</code>: 值栈（操作数存储）</li>
+                    <li>• <code>globals_</code>: 全局变量哈希表</li>
+                    <li>• <code>run()</code>: 指令分发循环</li>
+                </ul>`
+            },
+            gc: {
+                title: 'GC - 垃圾回收器',
+                content: `使用经典的 Mark-and-Sweep 算法，三色标记法追踪可达对象。
+                <br><br>
+                <strong>GC Roots 包括：</strong>
+                <ul class="mt-2 space-y-1 text-sm">
+                    <li>• VM 值栈中的所有 Value</li>
+                    <li>• 全局变量表 (globals_)</li>
+                    <li>• 调用帧中的闭包 (frames_)</li>
+                    <li>• 打开的 Upvalue 链表</li>
+                    <li>• 编译器中的函数对象</li>
+                </ul>`
+            }
+        };
+        
+        function highlightStage(stage) {
+            const detail = stageDetails[stage];
+            if (detail) {
+                document.getElementById('detail-content').innerHTML = `
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-3 h-3 rounded-full bg-[var(--color-accent)] animate-pulse"></div>
+                        <h3 class="text-xl font-bold">${detail.title}</h3>
+                    </div>
+                    <div class="text-[var(--color-text-dim)] leading-relaxed">
+                        ${detail.content}
+                    </div>
+                `;
+            }
+        }
+        
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add scroll-based animations
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observe elements for animation
+        document.querySelectorAll('.group').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+
+    <!-- Particle System -->
+    <script>
+        (function() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 15 + 's';
+                p.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+    </script>
+
+</body>
+</html>

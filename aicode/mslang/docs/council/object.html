@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object 对象系统 - Maple Language</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface-2: #1a1a25;
+            --accent: #ec4899;
+            --accent-2: #00d4aa;
+            --accent-3: #f7931e;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --border: #2d2d44;
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        
+        .object-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .object-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.6s ease;
+        }
+        .object-card:hover::before {
+            left: 100%;
+        }
+        .object-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 60px rgba(236, 72, 153, 0.3);
+        }
+        
+        /* Inheritance line glow */
+        .inheritance-line {
+            stroke-dasharray: 8;
+            animation: dash-flow 3s linear infinite;
+            filter: drop-shadow(0 0 3px rgba(236, 72, 153, 0.5));
+        }
+        
+        /* Field tag animations */
+        .field-tag {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .field-tag::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .field-tag:hover {
+            transform: scale(1.08) rotate(-2deg);
+            box-shadow: 0 5px 20px rgba(236, 72, 153, 0.3);
+        }
+        .field-tag:hover::after {
+            opacity: 1;
+        }
+        
+        .inheritance-line {
+            stroke-dasharray: 5;
+            animation: dash-flow 2s linear infinite;
+        }
+        @keyframes dash-flow {
+            to { stroke-dashoffset: -10; }
+        }
+        
+        .field-tag {
+            transition: all 0.2s ease;
+        }
+        .field-tag:hover {
+            transform: scale(1.05);
+        }
+    </style>
+
+    <!-- Enhanced Visual Effects -->
+    <style>
+        :root {
+            --bg: #050508;
+            --surface: #0a0a10;
+            --surface-2: #12121a;
+            --surface-3: #1a1a25;
+            --accent: #00f5d4;
+            --accent-2: #ff6b6b;
+            --accent-3: #a855f7;
+            --text: #fafafa;
+            --text-dim: #8b92a8;
+            --border: #2a2a3a;
+            --glow: rgba(0, 245, 212, 0.5);
+        }
+        
+        /* Dynamic Grid Background */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 245, 212, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 212, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 212, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float-particle 15s infinite;
+        }
+        
+        @keyframes float-particle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(18, 18, 26, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-strong {
+            background: rgba(10, 10, 16, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 245, 212, 0.15);
+        }
+        
+        /* Enhanced Animations */
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow), 0 0 20px var(--glow), 0 0 40px rgba(0, 245, 212, 0.2);
+                border-color: var(--accent);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow), 0 0 40px var(--glow), 0 0 80px rgba(0, 245, 212, 0.4);
+                border-color: #fff;
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes border-flow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Shimmer text effect */
+        .shimmer-text {
+            background: linear-gradient(90deg, var(--text) 0%, var(--accent) 50%, var(--text) 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        /* Gradient border effect */
+        .gradient-border {
+            position: relative;
+            background: var(--surface-2);
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent));
+            background-size: 200% 200%;
+            animation: border-flow 3s ease infinite;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        /* Button effects */
+        .btn-enhanced {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .btn-enhanced:hover::before {
+            left: 100%;
+        }
+        
+        .btn-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 212, 0.4);
+        }
+        
+        /* Navigation glow */
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-3));
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Card hover effects */
+        .hover-lift {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.3);
+        }
+        
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+        }
+        
+        /* Enhanced scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent), var(--accent-3));
+            border-radius: 3px;
+        }
+    </style>
+
+</head>
+<body class="min-h-screen">
+    <!-- Dynamic Grid Background -->
+    <div class="grid-bg"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center font-bold text-white">M</div>
+                <span class="text-xl font-bold">Maple Language</span>
+            </a>
+            <div class="flex gap-6 text-sm">
+                <a href="scanner.html" class="hover:text-[#ec4899] transition-colors">Scanner</a>
+                <a href="compiler.html" class="hover:text-[#ec4899] transition-colors">Compiler</a>
+                <a href="vm.html" class="hover:text-[#ec4899] transition-colors">VM</a>
+                <a href="gc.html" class="hover:text-[#ec4899] transition-colors">GC</a>
+                <a href="object.html" class="text-[#ec4899] font-semibold">Object</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="inline-block mb-4 px-4 py-2 rounded-full border border-[#ec4899]/30 bg-[#ec4899]/10 text-[#ec4899] text-sm font-medium">
+                运行时层 / Runtime Layer
+            </div>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">
+                <span class="text-[#ec4899]">Object</span>
+                <span class="text-[#94a3b8] text-4xl">对象系统</span>
+            </h1>
+            <p class="text-xl text-[#94a3b8] max-w-3xl leading-relaxed">
+                所有堆分配类型的基类，采用 C++ 继承体系实现多态。通过侵入式链表追踪所有对象，
+                支持字符串驻留、闭包、类实例等丰富类型。
+            </p>
+        </div>
+    </section>
+
+    <!-- Object Hierarchy -->
+    <section class="py-12 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">对象类型层次</h2>
+            
+            <div class="flex justify-center">
+                <svg viewBox="0 0 900 500" class="w-full max-w-4xl h-auto">
+                    <!-- Root: Object -->
+                    <rect x="375" y="20" width="150" height="50" rx="10" fill="#1a1a25" stroke="#ec4899" stroke-width="3"/>
+                    <text x="450" y="45" text-anchor="middle" fill="#ec4899" font-size="14" font-weight="bold">Object</text>
+                    <text x="450" y="60" text-anchor="middle" fill="#94a3b8" font-size="10">abstract base</text>
+                    
+                    <!-- Connection lines from Object -->
+                    <line x1="450" y1="70" x2="450" y2="100" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="450" y1="100" x2="100" y2="100" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="450" y1="100" x2="250" y2="100" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="450" y1="100" x2="450" y2="100" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="450" y1="100" x2="650" y2="100" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="450" y1="100" x2="800" y2="100" stroke="#2d2d44" stroke-width="2"/>
+                    
+                    <line x1="100" y1="100" x2="100" y2="130" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="250" y1="100" x2="250" y2="130" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="450" y1="100" x2="450" y2="130" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="650" y1="100" x2="650" y2="130" stroke="#2d2d44" stroke-width="2"/>
+                    <line x1="800" y1="100" x2="800" y2="130" stroke="#2d2d44" stroke-width="2"/>
+                    
+                    <!-- Level 1: String, Function, Upvalue, Class, Instance -->
+                    <rect x="25" y="130" width="150" height="50" rx="8" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                    <text x="100" y="155" text-anchor="middle" fill="#00d4aa" font-size="12" font-weight="bold">ObjString</text>
+                    <text x="100" y="170" text-anchor="middle" fill="#94a3b8" font-size="9">+ hash</text>
+                    
+                    <rect x="175" y="130" width="150" height="50" rx="8" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                    <text x="250" y="155" text-anchor="middle" fill="#00d4aa" font-size="12" font-weight="bold">ObjFunction</text>
+                    <text x="250" y="170" text-anchor="middle" fill="#94a3b8" font-size="9">+ arity + chunk</text>
+                    
+                    <rect x="375" y="130" width="150" height="50" rx="8" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                    <text x="450" y="155" text-anchor="middle" fill="#f7931e" font-size="12" font-weight="bold">ObjUpvalue</text>
+                    <text x="450" y="170" text-anchor="middle" fill="#94a3b8" font-size="9">location / closed</text>
+                    
+                    <rect x="575" y="130" width="150" height="50" rx="8" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="650" y="155" text-anchor="middle" fill="#7c3aed" font-size="12" font-weight="bold">ObjClass</text>
+                    <text x="650" y="170" text-anchor="middle" fill="#94a3b8" font-size="9">+ methods</text>
+                    
+                    <rect x="725" y="130" width="150" height="50" rx="8" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="800" y="155" text-anchor="middle" fill="#7c3aed" font-size="12" font-weight="bold">ObjInstance</text>
+                    <text x="800" y="170" text-anchor="middle" fill="#94a3b8" font-size="9">+ fields</text>
+                    
+                    <!-- Level 2: From Function -->
+                    <line x1="250" y1="180" x2="250" y2="210" stroke="#2d2d44" stroke-width="1"/>
+                    <line x1="250" y1="210" x2="150" y2="210" stroke="#2d2d44" stroke-width="1"/>
+                    <line x1="250" y1="210" x2="350" y2="210" stroke="#2d2d44" stroke-width="1"/>
+                    <line x1="150" y1="210" x2="150" y2="240" stroke="#2d2d44" stroke-width="1"/>
+                    <line x1="350" y1="210" x2="350" y2="240" stroke="#2d2d44" stroke-width="1"/>
+                    
+                    <rect x="75" y="240" width="150" height="45" rx="8" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                    <text x="150" y="265" text-anchor="middle" fill="#00d4aa" font-size="11">ObjNative</text>
+                    
+                    <rect x="275" y="240" width="150" height="45" rx="8" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                    <text x="350" y="265" text-anchor="middle" fill="#00d4aa" font-size="11">ObjClosure</text>
+                    
+                    <!-- Level 2: From Class -->
+                    <line x1="650" y1="180" x2="650" y2="300" stroke="#2d2d44" stroke-width="1"/>
+                    <line x1="650" y1="220" x2="500" y2="220" stroke="#2d2d44" stroke-width="1"/>
+                    <line x1="500" y1="220" x2="500" y2="300" stroke="#2d2d44" stroke-width="1"/>
+                    
+                    <rect x="425" y="300" width="150" height="45" rx="8" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="500" y="325" text-anchor="middle" fill="#7c3aed" font-size="11">ObjBoundMethod</text>
+                    
+                    <!-- More types -->
+                    <rect x="575" y="300" width="150" height="45" rx="8" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                    <text x="650" y="320" text-anchor="middle" fill="#f7931e" font-size="11">ObjList</text>
+                    <text x="650" y="335" text-anchor="middle" fill="#94a3b8" font-size="8">elements[]</text>
+                    
+                    <rect x="725" y="300" width="150" height="45" rx="8" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                    <text x="800" y="320" text-anchor="middle" fill="#f7931e" font-size="11">ObjMap</text>
+                    <text x="800" y="335" text-anchor="middle" fill="#94a3b8" font-size="8">entries{}</text>
+                    
+                    <rect x="250" y="380" width="150" height="45" rx="8" fill="#1a1a25" stroke="#3b82f6" stroke-width="2"/>
+                    <text x="325" y="400" text-anchor="middle" fill="#3b82f6" font-size="11">ObjModule</text>
+                    <text x="325" y="415" text-anchor="middle" fill="#94a3b8" font-size="8">exports{}</text>
+                    
+                    <!-- Legend -->
+                    <rect x="50" y="450" width="800" height="40" rx="5" fill="#0a0a0f" stroke="#2d2d44"/>
+                    <text x="70" y="475" fill="#94a3b8" font-size="11">图例:</text>
+                    <rect x="120" y="462" width="20" height="15" fill="#1a1a25" stroke="#00d4aa"/>
+                    <text x="150" y="475" fill="#94a3b8" font-size="10">函数相关</text>
+                    <rect x="220" y="462" width="20" height="15" fill="#1a1a25" stroke="#7c3aed"/>
+                    <text x="250" y="475" fill="#94a3b8" font-size="10">类相关</text>
+                    <rect x="320" y="462" width="20" height="15" fill="#1a1a25" stroke="#f7931e"/>
+                    <text x="350" y="475" fill="#94a3b8" font-size="10">集合</text>
+                    <rect x="400" y="462" width="20" height="15" fill="#1a1a25" stroke="#3b82f6"/>
+                    <text x="430" y="475" fill="#94a3b8" font-size="10">模块</text>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Object Base Class -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">Object 基类</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#ec4899]">基类定义</h3>
+                    <pre class="font-mono text-sm leading-relaxed"><span class="text-[#f7931e]">class</span> <span class="text-[#ec4899]">Object</span> {
+<span class="text-[#f7931e]">protected</span>:
+  <span class="text-[#7c3aed]">ObjectType</span> type_;       <span class="text-[#94a3b8]">// 对象类型标签</span>
+  <span class="text-[#f7931e]">bool</span> is_marked_ = <span class="text-[#f7931e]">false</span>;  <span class="text-[#94a3b8]">// GC 标记位</span>
+  <span class="text-[#7c3aed]">Object</span>* next_ = <span class="text-[#f7931e]">nullptr</span>;   <span class="text-[#94a3b8]">// 侵入式链表</span>
+
+<span class="text-[#f7931e]">public</span>:
+  <span class="text-[#f7931e]">explicit</span> <span class="text-[#ec4899]">Object</span>(<span class="text-[#7c3aed]">ObjectType</span> type) : type_(type) {}
+  <span class="text-[#f7931e]">virtual</span> ~<span class="text-[#ec4899]">Object</span>() = <span class="text-[#f7931e]">default</span>;
+
+  <span class="text-[#94a3b8]">// 每个子类必须实现</span>
+  <span class="text-[#f7931e]">virtual</span> <span class="text-[#7c3aed]">str_t</span> <span class="text-[#00d4aa]">stringify</span>() <span class="text-[#f7931e]">const</span> = <span class="text-[#f7931e]">0</span>;
+  <span class="text-[#f7931e]">virtual</span> <span class="text-[#f7931e]">void</span> <span class="text-[#00d4aa]">trace_references</span>() {};
+  <span class="text-[#f7931e]">virtual</span> <span class="text-[#7c3aed]">sz_t</span> <span class="text-[#00d4aa]">size</span>() <span class="text-[#f7931e]">const</span> = <span class="text-[#f7931e]">0</span>;
+
+  <span class="text-[#94a3b8]">// 访问器</span>
+  <span class="text-[#7c3aed]">ObjectType</span> <span class="text-[#00d4aa]">type</span>() <span class="text-[#f7931e]">const</span> { <span class="text-[#f7931e]">return</span> type_; }
+  <span class="text-[#f7931e]">bool</span> <span class="text-[#00d4aa]">is_marked</span>() <span class="text-[#f7931e]">const</span> { <span class="text-[#f7931e]">return</span> is_marked_; }
+  <span class="text-[#f7931e]">void</span> <span class="text-[#00d4aa]">set_marked</span>(<span class="text-[#f7931e]">bool</span> m) { is_marked_ = m; }
+  <span class="text-[#7c3aed]">Object</span>* <span class="text-[#00d4aa]">next</span>() <span class="text-[#f7931e]">const</span> { <span class="text-[#f7931e]">return</span> next_; }
+  <span class="text-[#f7931e]">void</span> <span class="text-[#00d4aa]">set_next</span>(<span class="text-[#7c3aed]">Object</span>* n) { next_ = n; }
+};</pre>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">侵入式对象链表</h3>
+                    <p class="text-[#94a3b8] mb-6">
+                        所有 GC 管理的对象通过 <code class="text-[#ec4899]">next_</code> 指针链接成链表，
+                        VM 通过 <code class="text-[#00d4aa]">objects_</code> 链表头访问所有对象。
+                    </p>
+                    
+                    <svg viewBox="0 0 400 150" class="w-full h-auto">
+                        <!-- VM.objects_ -->
+                        <rect x="20" y="55" width="80" height="40" rx="5" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="60" y="80" text-anchor="middle" fill="#7c3aed" font-size="10">VM.objects_</text>
+                        
+                        <!-- Arrow to first object -->
+                        <path d="M 100 75 L 130 75" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow)"/>
+                        
+                        <!-- Object 1 -->
+                        <rect x="140" y="50" width="60" height="50" rx="5" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                        <text x="170" y="70" text-anchor="middle" fill="#e2e8f0" font-size="9">Obj1</text>
+                        <text x="170" y="85" text-anchor="middle" fill="#94a3b8" font-size="8">next_</text>
+                        
+                        <!-- Arrow to second -->
+                        <path d="M 200 75 L 230 75" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow)"/>
+                        
+                        <!-- Object 2 -->
+                        <rect x="240" y="50" width="60" height="50" rx="5" fill="#1a1a25" stroke="#ec4899" stroke-width="2"/>
+                        <text x="270" y="70" text-anchor="middle" fill="#e2e8f0" font-size="9">Obj2</text>
+                        <text x="270" y="85" text-anchor="middle" fill="#94a3b8" font-size="8">next_</text>
+                        
+                        <!-- Arrow to null -->
+                        <path d="M 300 75 L 330 75" stroke="#2d2d44" stroke-width="2"/>
+                        <text x="350" y="80" fill="#94a3b8" font-size="10">nullptr</text>
+                        
+                        <defs>
+                            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                                <path d="M0,0 L0,6 L7,3 z" fill="#2d2d44"/>
+                            </marker>
+                        </defs>
+                    </svg>
+                    
+                    <div class="mt-4 p-4 rounded-xl bg-[#0a0a0f] font-mono text-xs">
+                        <div><span class="text-[#94a3b8]">// 新对象插入链表头部</span></div>
+                        <div>obj-><span class="text-[#00d4aa]">set_next</span>(objects_);</div>
+                        <div>objects_ = obj;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Object Types Details -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">核心对象类型详解</h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- ObjString -->
+                <div class="object-card p-5 rounded-2xl bg-[#0a0a0f] border border-[#00d4aa]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] font-bold">S</div>
+                        <div>
+                            <h3 class="font-semibold text-[#00d4aa]">ObjString</h3>
+                            <p class="text-xs text-[#94a3b8]">字符串对象</p>
+                        </div>
+                    </div>
+                    <!-- Visual representation -->
+                    <svg viewBox="0 0 200 80" class="w-full h-auto mb-3">
+                        <rect x="20" y="15" width="160" height="50" rx="6" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="100" y="32" text-anchor="middle" fill="#e2e8f0" font-size="10">ObjString</text>
+                        <rect x="35" y="40" width="60" height="18" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="65" y="52" text-anchor="middle" fill="#00d4aa" font-size="8">value_</text>
+                        <rect x="105" y="40" width="60" height="18" rx="3" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="135" y="52" text-anchor="middle" fill="#f7931e" font-size="8">hash_</text>
+                    </svg>
+                    <div class="text-xs text-[#94a3b8]">
+                        <div class="mb-1">• 不可变字符串</div>
+                        <div class="mb-1">• 缓存 hash 用于快速比较</div>
+                        <div>• 字符串驻留保证唯一性</div>
+                    </div>
+                </div>
+                
+                <!-- ObjFunction -->
+                <div class="object-card p-5 rounded-2xl bg-[#0a0a0f] border border-[#00d4aa]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] font-bold">F</div>
+                        <div>
+                            <h3 class="font-semibold text-[#00d4aa]">ObjFunction</h3>
+                            <p class="text-xs text-[#94a3b8]">函数对象</p>
+                        </div>
+                    </div>
+                    <!-- Visual representation -->
+                    <svg viewBox="0 0 200 90" class="w-full h-auto mb-3">
+                        <rect x="20" y="10" width="160" height="70" rx="6" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="100" y="26" text-anchor="middle" fill="#e2e8f0" font-size="10">ObjFunction</text>
+                        <rect x="30" y="35" width="50" height="16" rx="3" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="55" y="46" text-anchor="middle" fill="#f7931e" font-size="8">arity_</text>
+                        <rect x="90" y="35" width="50" height="16" rx="3" fill="#7c3aed" fill-opacity="0.2"/>
+                        <text x="115" y="46" text-anchor="middle" fill="#7c3aed" font-size="8">chunk_</text>
+                        <rect x="30" y="56" width="110" height="16" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="85" y="67" text-anchor="middle" fill="#00d4aa" font-size="8">name_ → ObjString</text>
+                    </svg>
+                    <div class="text-xs text-[#94a3b8]">
+                        <div class="mb-1">• 存储编译后的字节码 (Chunk)</div>
+                        <div class="mb-1">• 记录参数数量 (arity)</div>
+                        <div>• 内联缓存优化属性访问</div>
+                    </div>
+                </div>
+                
+                <!-- ObjClosure -->
+                <div class="object-card p-5 rounded-2xl bg-[#0a0a0f] border border-[#00d4aa]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-[#00d4aa]/20 flex items-center justify-center text-[#00d4aa] font-bold">C</div>
+                        <div>
+                            <h3 class="font-semibold text-[#00d4aa]">ObjClosure</h3>
+                            <p class="text-xs text-[#94a3b8]">闭包对象</p>
+                        </div>
+                    </div>
+                    <!-- Visual representation -->
+                    <svg viewBox="0 0 200 90" class="w-full h-auto mb-3">
+                        <rect x="20" y="10" width="160" height="70" rx="6" fill="#1a1a25" stroke="#00d4aa" stroke-width="1.5"/>
+                        <text x="100" y="26" text-anchor="middle" fill="#e2e8f0" font-size="10">ObjClosure</text>
+                        <rect x="30" y="35" width="140" height="16" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="100" y="46" text-anchor="middle" fill="#00d4aa" font-size="8">function_ → ObjFunction</text>
+                        <rect x="30" y="56" width="140" height="16" rx="3" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="100" y="67" text-anchor="middle" fill="#f7931e" font-size="8">upvalues_[] → ObjUpvalue*</text>
+                    </svg>
+                    <div class="text-xs text-[#94a3b8]">
+                        <div class="mb-1">• 包装函数 + 捕获的变量</div>
+                        <div class="mb-1">• Upvalue 数组存储捕获值</div>
+                        <div>• 运行时实际执行单位</div>
+                    </div>
+                </div>
+                
+                <!-- ObjUpvalue -->
+                <div class="object-card p-5 rounded-2xl bg-[#0a0a0f] border border-[#f7931e]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-[#f7931e]/20 flex items-center justify-center text-[#f7931e] font-bold">U</div>
+                        <div>
+                            <h3 class="font-semibold text-[#f7931e]">ObjUpvalue</h3>
+                            <p class="text-xs text-[#94a3b8]">上值对象</p>
+                        </div>
+                    </div>
+                    <!-- Visual representation -->
+                    <svg viewBox="0 0 200 90" class="w-full h-auto mb-3">
+                        <rect x="20" y="10" width="160" height="70" rx="6" fill="#1a1a25" stroke="#f7931e" stroke-width="1.5"/>
+                        <text x="100" y="26" text-anchor="middle" fill="#e2e8f0" font-size="10">ObjUpvalue</text>
+                        <rect x="30" y="35" width="140" height="16" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="100" y="46" text-anchor="middle" fill="#00d4aa" font-size="8">location_ → Value* (栈)</text>
+                        <rect x="30" y="56" width="140" height="16" rx="3" fill="#7c3aed" fill-opacity="0.2"/>
+                        <text x="100" y="67" text-anchor="middle" fill="#7c3aed" font-size="8">closed_ (关闭后)</text>
+                    </svg>
+                    <div class="text-xs text-[#94a3b8]">
+                        <div class="mb-1">• Open: location_ 指向栈</div>
+                        <div class="mb-1">• Closed: 值移入 closed_</div>
+                        <div>• 链表管理所有 open upvalue</div>
+                    </div>
+                </div>
+                
+                <!-- ObjClass -->
+                <div class="object-card p-5 rounded-2xl bg-[#0a0a0f] border border-[#7c3aed]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-[#7c3aed]/20 flex items-center justify-center text-[#7c3aed] font-bold">K</div>
+                        <div>
+                            <h3 class="font-semibold text-[#7c3aed]">ObjClass</h3>
+                            <p class="text-xs text-[#94a3b8]">类对象</p>
+                        </div>
+                    </div>
+                    <!-- Visual representation -->
+                    <svg viewBox="0 0 200 100" class="w-full h-auto mb-3">
+                        <rect x="20" y="10" width="160" height="80" rx="6" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="100" y="26" text-anchor="middle" fill="#e2e8f0" font-size="10">ObjClass</text>
+                        <rect x="30" y="35" width="140" height="14" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="100" y="45" text-anchor="middle" fill="#00d4aa" font-size="8">name_ → ObjString</text>
+                        <rect x="30" y="53" width="140" height="14" rx="3" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="100" y="63" text-anchor="middle" fill="#f7931e" font-size="8">methods_ (Table)</text>
+                        <rect x="30" y="71" width="140" height="14" rx="3" fill="#ec4899" fill-opacity="0.2"/>
+                        <text x="100" y="81" text-anchor="middle" fill="#ec4899" font-size="8">getters_, setters_</text>
+                    </svg>
+                    <div class="text-xs text-[#94a3b8]">
+                        <div class="mb-1">• 方法表存储闭包</div>
+                        <div class="mb-1">• Getter/Setter 支持</div>
+                        <div>• 静态方法单独存储</div>
+                    </div>
+                </div>
+                
+                <!-- ObjInstance -->
+                <div class="object-card p-5 rounded-2xl bg-[#0a0a0f] border border-[#7c3aed]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-[#7c3aed]/20 flex items-center justify-center text-[#7c3aed] font-bold">I</div>
+                        <div>
+                            <h3 class="font-semibold text-[#7c3aed]">ObjInstance</h3>
+                            <p class="text-xs text-[#94a3b8]">实例对象</p>
+                        </div>
+                    </div>
+                    <!-- Visual representation -->
+                    <svg viewBox="0 0 200 80" class="w-full h-auto mb-3">
+                        <rect x="20" y="10" width="160" height="60" rx="6" fill="#1a1a25" stroke="#7c3aed" stroke-width="1.5"/>
+                        <text x="100" y="26" text-anchor="middle" fill="#e2e8f0" font-size="10">ObjInstance</text>
+                        <rect x="30" y="35" width="140" height="14" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="100" y="45" text-anchor="middle" fill="#00d4aa" font-size="8">klass_ → ObjClass</text>
+                        <rect x="30" y="53" width="140" height="14" rx="3" fill="#f7931e" fill-opacity="0.2"/>
+                        <text x="100" y="63" text-anchor="middle" fill="#f7931e" font-size="8">fields_ (Table)</text>
+                    </svg>
+                    <div class="text-xs text-[#94a3b8]">
+                        <div class="mb-1">• 指向所属类</div>
+                        <div class="mb-1">• fields 存储实例属性</div>
+                        <div>• 方法通过类查找</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upvalue State Transition -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">Upvalue 状态转换</h2>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Open State -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#00d4aa]/30">
+                    <h3 class="text-lg font-semibold mb-4 text-[#00d4aa]">Open 状态</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        变量仍在栈上，Upvalue 的 location_ 直接指向栈槽位。
+                    </p>
+                    <svg viewBox="0 0 200 180" class="w-full h-auto">
+                        <!-- Stack -->
+                        <rect x="20" y="20" width="60" height="140" rx="5" fill="#1a1a25" stroke="#2d2d44"/>
+                        <text x="50" y="15" text-anchor="middle" fill="#94a3b8" font-size="10">Stack</text>
+                        
+                        <!-- Stack slot x -->
+                        <rect x="30" y="80" width="40" height="30" rx="3" fill="#00d4aa" fill-opacity="0.2" stroke="#00d4aa"/>
+                        <text x="50" y="100" text-anchor="middle" fill="#00d4aa" font-size="11">x: 10</text>
+                        
+                        <!-- Upvalue -->
+                        <rect x="120" y="70" width="60" height="50" rx="5" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="150" y="90" text-anchor="middle" fill="#f7931e" font-size="10">Upvalue</text>
+                        <text x="150" y="105" text-anchor="middle" fill="#94a3b8" font-size="8">open</text>
+                        
+                        <!-- Arrow -->
+                        <path d="M 120 95 L 70 95" stroke="#f7931e" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="95" y="85" fill="#f7931e" font-size="8">location_</text>
+                    </svg>
+                    <div class="mt-3 text-xs text-[#94a3b8]">
+                        location_ → &stack[slot]
+                    </div>
+                </div>
+                
+                <!-- Close Transition -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#f7931e]/30">
+                    <h3 class="text-lg font-semibold mb-4 text-[#f7931e]">Close 过渡</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        当变量离开作用域时，将值从栈复制到 closed 字段。
+                    </p>
+                    <svg viewBox="0 0 200 180" class="w-full h-auto">
+                        <!-- Stack with X -->
+                        <rect x="20" y="20" width="60" height="140" rx="5" fill="#1a1a25" stroke="#2d2d44"/>
+                        <text x="50" y="15" text-anchor="middle" fill="#94a3b8" font-size="10">Stack (popped)</text>
+                        
+                        <line x1="30" y1="95" x2="70" y2="95" stroke="#ec4899" stroke-width="2"/>
+                        <text x="50" y="110" text-anchor="middle" fill="#ec4899" font-size="10">x gone</text>
+                        
+                        <!-- Arrow showing value move -->
+                        <path d="M 80 85 Q 100 60 120 85" stroke="#f7931e" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+                        <text x="100" y="65" text-anchor="middle" fill="#f7931e" font-size="8">copy</text>
+                        
+                        <!-- Upvalue now closed -->
+                        <rect x="120" y="70" width="60" height="50" rx="5" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="150" y="90" text-anchor="middle" fill="#f7931e" font-size="10">Upvalue</text>
+                        <text x="150" y="105" text-anchor="middle" fill="#00d4aa" font-size="8">closed: 10</text>
+                    </svg>
+                    <div class="mt-3 text-xs text-[#94a3b8]">
+                        closed = *location_; location_ = &closed;
+                    </div>
+                </div>
+                
+                <!-- Closed State -->
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#7c3aed]/30">
+                    <h3 class="text-lg font-semibold mb-4 text-[#7c3aed]">Closed 状态</h3>
+                    <p class="text-sm text-[#94a3b8] mb-4">
+                        变量已移至堆上，不再依赖栈，可被闭包长期引用。
+                    </p>
+                    <svg viewBox="0 0 200 180" class="w-full h-auto">
+                        <!-- Upvalue closed -->
+                        <rect x="70" y="60" width="100" height="70" rx="5" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="120" y="80" text-anchor="middle" fill="#7c3aed" font-size="11">ObjUpvalue</text>
+                        <text x="120" y="95" text-anchor="middle" fill="#94a3b8" font-size="8">state: CLOSED</text>
+                        
+                        <!-- Self reference arrow -->
+                        <path d="M 120 130 Q 140 150 120 170 Q 100 150 120 130" stroke="#00d4aa" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+                        <text x="155" y="150" fill="#00d4aa" font-size="8">location_</text>
+                        
+                        <!-- closed value inside -->
+                        <rect x="90" y="105" width="60" height="20" rx="3" fill="#00d4aa" fill-opacity="0.2"/>
+                        <text x="120" y="118" text-anchor="middle" fill="#00d4aa" font-size="9">closed_: 10</text>
+                    </svg>
+                    <div class="mt-3 text-xs text-[#94a3b8]">
+                        location_ → &closed_ (self-reference)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Method Dispatch -->
+    <section class="py-16 px-6 bg-[#12121a]">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">方法调用与绑定</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#7c3aed]">ObjBoundMethod</h3>
+                    <p class="text-[#94a3b8] mb-4">
+                        当访问实例方法时，创建一个绑定方法对象，将接收者 (receiver) 与方法闭包绑定。
+                    </p>
+                    <div class="p-4 rounded-xl bg-[#12121a] font-mono text-sm">
+                        <div><span class="text-[#f7931e]">class</span> <span class="text-[#00d4aa]">ObjBoundMethod</span> : <span class="text-[#f7931e]">public</span> <span class="text-[#ec4899]">Object</span> {</div>
+                        <div class="ml-3"><span class="text-[#7c3aed]">Value</span> receiver_;      <span class="text-[#94a3b8]">// 实例</span></div>
+                        <div class="ml-3"><span class="text-[#7c3aed]">ObjClosure</span>* method_;  <span class="text-[#94a3b8]">// 方法闭包</span></div>
+                        <div>};</div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 rounded-xl bg-[#12121a]">
+                        <div class="text-xs text-[#94a3b8] mb-2">调用过程</div>
+                        <div class="space-y-1 font-mono text-xs">
+                            <div>1. instance.<span class="text-[#00d4aa]">method</span> → 查找类方法表</div>
+                            <div>2. 创建 <span class="text-[#7c3aed]">ObjBoundMethod</span>(instance, method)</div>
+                            <div>3. 压入栈作为可调用值</div>
+                            <div>4. OP_CALL 时 receiver 作为 slot[0]</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#0a0a0f] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#00d4aa]">This 绑定机制</h3>
+                    <svg viewBox="0 0 350 200" class="w-full h-auto">
+                        <!-- Instance -->
+                        <rect x="30" y="80" width="80" height="80" rx="5" fill="#1a1a25" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="70" y="105" text-anchor="middle" fill="#7c3aed" font-size="10">Instance</text>
+                        <text x="70" y="125" text-anchor="middle" fill="#94a3b8" font-size="9">fields...</text>
+                        
+                        <!-- BoundMethod -->
+                        <rect x="150" y="60" width="100" height="60" rx="5" fill="#1a1a25" stroke="#f7931e" stroke-width="2"/>
+                        <text x="200" y="80" text-anchor="middle" fill="#f7931e" font-size="10">BoundMethod</text>
+                        <text x="200" y="95" text-anchor="middle" fill="#94a3b8" font-size="8">receiver</text>
+                        <text x="200" y="108" text-anchor="middle" fill="#94a3b8" font-size="8">method</text>
+                        
+                        <!-- Method Closure -->
+                        <rect x="280" y="50" width="60" height="50" rx="5" fill="#1a1a25" stroke="#00d4aa" stroke-width="2"/>
+                        <text x="310" y="72" text-anchor="middle" fill="#00d4aa" font-size="9">Closure</text>
+                        <text x="310" y="88" text-anchor="middle" fill="#94a3b8" font-size="7">greet()</text>
+                        
+                        <!-- Arrows -->
+                        <path d="M 110 120 L 150 90" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="125" y="100" fill="#94a3b8" font-size="8">receiver</text>
+                        
+                        <path d="M 250 90 L 280 75" stroke="#2d2d44" stroke-width="2" marker-end="url(#arrow)"/>
+                        <text x="260" y="70" fill="#94a3b8" font-size="8">method</text>
+                        
+                        <!-- Stack representation -->
+                        <rect x="150" y="150" width="140" height="40" rx="5" fill="#1a1a25" stroke="#2d2d44"/>
+                        <text x="220" y="165" text-anchor="middle" fill="#94a3b8" font-size="9">Call Frame Slots</text>
+                        <rect x="160" y="170" width="30" height="15" rx="2" fill="#7c3aed" fill-opacity="0.3"/>
+                        <text x="175" y="180" text-anchor="middle" fill="#e2e8f0" font-size="7">this</text>
+                        
+                        <path d="M 200 120 L 200 150" stroke="#7c3aed" stroke-width="1" stroke-dasharray="3"/>
+                        <text x="230" y="140" fill="#7c3aed" font-size="8">slot[0]</text>
+                    </svg>
+                    
+                    <div class="mt-4 p-3 rounded-lg bg-[#12121a]">
+                        <div class="text-xs text-[#94a3b8]">
+                            当调用 bound method 时，receiver 自动作为第一个参数 (this/self) 传入
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Collections -->
+    <section class="py-16 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8">集合类型</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">ObjList - 动态数组</h3>
+                    <pre class="font-mono text-sm mb-4"><span class="text-[#f7931e]">class</span> <span class="text-[#00d4aa]">ObjList</span> : <span class="text-[#f7931e]">public</span> <span class="text-[#ec4899]">Object</span> {
+  <span class="text-[#7c3aed]">std::vector</span>&lt;<span class="text-[#7c3aed]">Value</span>&gt; elements_;
+<span class="text-[#f7931e]">public</span>:
+  <span class="text-[#f7931e]">void</span> <span class="text-[#00d4aa]">trace_references</span>() {
+    <span class="text-[#f7931e]">for</span> (<span class="text-[#f7931e]">auto</span>& v : elements_)
+      <span class="text-[#00d4aa]">mark_value</span>(v);
+  }
+};</pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-2 py-1 rounded bg-[#f7931e]/10 text-[#f7931e] text-xs">O(1) 索引</span>
+                        <span class="px-2 py-1 rounded bg-[#f7931e]/10 text-[#f7931e] text-xs">动态扩容</span>
+                        <span class="px-2 py-1 rounded bg-[#f7931e]/10 text-[#f7931e] text-xs">可变长</span>
+                    </div>
+                </div>
+                
+                <div class="p-6 rounded-2xl bg-[#12121a] border border-[#2d2d44]">
+                    <h3 class="text-xl font-semibold mb-4 text-[#f7931e]">ObjMap - 哈希映射</h3>
+                    <pre class="font-mono text-sm mb-4"><span class="text-[#f7931e]">class</span> <span class="text-[#00d4aa]">ObjMap</span> : <span class="text-[#f7931e]">public</span> <span class="text-[#ec4899]">Object</span> {
+  <span class="text-[#7c3aed]">ValueMap</span> entries_;  <span class="text-[#94a3b8]">// unordered_map&lt;Value, Value&gt;</span>
+<span class="text-[#f7931e]">public</span>:
+  <span class="text-[#f7931e]">void</span> <span class="text-[#00d4aa]">trace_references</span>() {
+    <span class="text-[#f7931e]">for</span> (<span class="text-[#f7931e]">auto</span>& [k, v] : entries_) {
+      <span class="text-[#00d4aa]">mark_value</span>(k);
+      <span class="text-[#00d4aa]">mark_value</span>(v);
+    }
+  }
+};</pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-2 py-1 rounded bg-[#f7931e]/10 text-[#f7931e] text-xs">O(1) 查找</span>
+                        <span class="px-2 py-1 rounded bg-[#f7931e]/10 text-[#f7931e] text-xs">任意键类型</span>
+                        <span class="px-2 py-1 rounded bg-[#f7931e]/10 text-[#f7931e] text-xs">Value 哈希</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 px-6 bg-[#0a0a0f] border-t border-[#2d2d44]">
+        <div class="max-w-7xl mx-auto text-center text-sm text-[#94a3b8]">
+            <p>Maple Language Object System | GC 管理对象详解</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple interactive demo for object hierarchy
+        document.querySelectorAll('.object-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+    </script>
+
+    <!-- Particle System -->
+    <script>
+        (function() {
+            const container = document.getElementById('particles');
+            if (!container) return;
+            
+            const particleCount = 30;
+            for (let i = 0; i < particleCount; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 15 + 's';
+                p.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(p);
+            }
+        })();
+    </script>
+
+</body>
+</html>
