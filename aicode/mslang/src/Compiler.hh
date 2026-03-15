@@ -49,9 +49,10 @@ struct ParseState {
   bool panic_mode{false};
   ClassCompiler* current_class{nullptr};
   Compiler* current_compiler{nullptr};
+  str_t script_path{};
 };
 
-ObjFunction* compile(strv_t source) noexcept;
+ObjFunction* compile(strv_t source, strv_t script_path = "") noexcept;
 void mark_compiler_roots() noexcept;
 
 } // namespace ms

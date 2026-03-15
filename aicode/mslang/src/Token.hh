@@ -48,6 +48,7 @@ struct Token {
   TokenType type{TokenType::TOKEN_EOF};
   strv_t lexeme{};
   int line{1};
+  int column{1};
 };
 
 } // namespace ms

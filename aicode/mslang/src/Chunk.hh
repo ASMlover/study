@@ -34,20 +34,22 @@
 namespace ms {
 
 class Chunk {
-  struct LineRun {
+  struct SourceRun {
     int line;
+    int column;
+    int token_length;
     int count;
   };
 
   std::vector<u8_t> code_;
   std::vector<Value> constants_;
-  std::vector<LineRun> lines_;
+  std::vector<SourceRun> lines_;
 public:
   // Write a raw byte
-  void write(u8_t byte, int line) noexcept;
+  void write(u8_t byte, int line, int column = 0, int token_length = 0) noexcept;
 
   // Write an opcode
-  void write(OpCode op, int line) noexcept;
+  void write(OpCode op, int line, int column = 0, int token_length = 0) noexcept;
 
   // Add a constant and return its index
   sz_t add_constant(Value value) noexcept;
@@ -56,6 +58,8 @@ public:
   u8_t code_at(sz_t offset) const noexcept;
   const Value& constant_at(sz_t index) const noexcept;
   int line_at(sz_t offset) const noexcept;
+  int column_at(sz_t offset) const noexcept;
+  int token_length_at(sz_t offset) const noexcept;
   sz_t count() const noexcept;
 
   // For patching (jump offsets etc.)

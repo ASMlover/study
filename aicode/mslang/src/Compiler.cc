@@ -211,7 +211,7 @@ public:
   void ternary(bool can_assign) noexcept;
   u8_t argument_list() noexcept;
 
-  friend ObjFunction* compile(strv_t source) noexcept;
+  friend ObjFunction* compile(strv_t source, strv_t script_path) noexcept;
   friend void mark_compiler_roots() noexcept;
 };
 
@@ -357,6 +357,7 @@ Compiler::Compiler(ParseState& ps, FunctionType type) noexcept
   ps_->current_compiler = this;
 
   function_ = VM::get_instance().allocate<ObjFunction>();
+  function_->set_script_path(ps_->script_path);
 
   if (type != FunctionType::TYPE_SCRIPT) {
     function_->set_name(VM::get_instance().copy_string(
@@ -506,7 +507,8 @@ Chunk& Compiler::current_chunk() noexcept {
 }
 
 void Compiler::emit_byte(u8_t byte) noexcept {
-  current_chunk().write(byte, ps_->previous.line);
+  current_chunk().write(byte, ps_->previous.line,
+      ps_->previous.column, static_cast<int>(ps_->previous.lexeme.size()));
 }
 
 void Compiler::emit_bytes(u8_t byte1, u8_t byte2) noexcept {
@@ -2052,9 +2054,10 @@ ObjFunction* Compiler::end_compiler() noexcept {
   return function;
 }
 
-ObjFunction* compile(strv_t source) noexcept {
+ObjFunction* compile(strv_t source, strv_t script_path) noexcept {
   ParseState ps;
   ps.scanner.init(source);
+  ps.script_path = str_t(script_path);
   active_parse_state_ = &ps;
 
   Compiler compiler(ps, FunctionType::TYPE_SCRIPT);

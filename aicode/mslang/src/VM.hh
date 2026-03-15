@@ -87,6 +87,7 @@ class VM : public Singleton<VM> {
   Value pending_exception_;
 
   str_t current_script_path_;
+  std::unordered_map<str_t, str_t> source_cache_;
   std::unordered_map<str_t, ObjModule*> modules_;
 
   // Pending module import tracking
@@ -136,6 +137,7 @@ class VM : public Singleton<VM> {
 
   // Error reporting
   void runtime_error(strv_t message) noexcept;
+  str_t get_source_line(const str_t& script_path, int line) const noexcept;
 
   // String concatenation
   void concatenate() noexcept;

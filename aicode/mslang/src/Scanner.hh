@@ -33,6 +33,7 @@ namespace ms {
 struct ScannerState {
   cstr_t start;
   cstr_t current;
+  cstr_t line_start;
   int line;
 };
 
@@ -41,6 +42,7 @@ class Scanner {
 
   cstr_t start_{};
   cstr_t current_{};
+  cstr_t line_start_{};
   int line_{1};
   int interp_braces_[kMAX_INTERPOLATION_NESTING]{};
   int interp_count_{0};

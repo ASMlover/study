@@ -420,6 +420,28 @@ Value VM::peek(int distance) const noexcept {
   return stack_top_[-1 - distance];
 }
 
+str_t VM::get_source_line(const str_t& script_path, int line) const noexcept {
+  auto it = source_cache_.find(script_path);
+  if (it == source_cache_.end()) return "";
+
+  const str_t& source = it->second;
+  int current_line = 1;
+  sz_t line_start = 0;
+
+  for (sz_t i = 0; i < source.size(); i++) {
+    if (current_line == line) {
+      line_start = i;
+      sz_t line_end = source.find('\n', i);
+      if (line_end == str_t::npos) line_end = source.size();
+      // Trim trailing \r
+      if (line_end > line_start && source[line_end - 1] == '\r') line_end--;
+      return source.substr(line_start, line_end - line_start);
+    }
+    if (source[i] == '\n') current_line++;
+  }
+  return "";
+}
+
 void VM::runtime_error(strv_t message) noexcept {
   ObjString* msg_str = copy_string(message.data(), message.length());
   pending_exception_ = Value(static_cast<Object*>(msg_str));
@@ -428,18 +450,31 @@ void VM::runtime_error(strv_t message) noexcept {
     return;
   }
 
-  std::cerr << message << std::endl;
+  std::cerr << std::format("RuntimeError: {}", message) << std::endl;
 
   for (int i = frame_count_ - 1; i >= 0; i--) {
     CallFrame& frame = frames_[i];
     ObjFunction* function = frame.closure->function();
     sz_t instruction = static_cast<sz_t>(frame.ip - function->chunk().code_data() - 1);
-    std::cerr << std::format("[line {}] in ",
-        function->chunk().line_at(instruction));
-    if (function->name() == nullptr) {
-      std::cerr << "script" << std::endl;
-    } else {
-      std::cerr << function->name()->value() << "()" << std::endl;
+    int line = function->chunk().line_at(instruction);
+    int column = function->chunk().column_at(instruction);
+    int token_len = function->chunk().token_length_at(instruction);
+
+    const str_t& path = function->script_path();
+    strv_t func_name = function->name() != nullptr
+        ? strv_t(function->name()->value()) : strv_t("script");
+
+    std::cerr << std::format("  at {}() [{}:{}:{}]",
+        func_name, path, line, column) << std::endl;
+
+    str_t source_line = get_source_line(path, line);
+    if (!source_line.empty()) {
+      std::cerr << std::format("  |  {}", source_line) << std::endl;
+      if (column > 0 && token_len > 0) {
+        str_t indicator(static_cast<sz_t>(column - 1), ' ');
+        str_t carets(static_cast<sz_t>(token_len), '^');
+        std::cerr << std::format("  |  {}{}", indicator, carets) << std::endl;
+      }
     }
   }
 
@@ -1136,8 +1171,11 @@ void VM::import_module(ObjString* path) noexcept {
     return;
   }
 
+  // Cache module source for error reporting
+  source_cache_[resolved] = *source_opt;
+
   // Compile module
-  ObjFunction* function = compile(strv_t(*source_opt));
+  ObjFunction* function = compile(strv_t(*source_opt), resolved);
   if (function == nullptr) {
     runtime_error(std::format("Could not compile module '{}'.", resolved));
     return;
@@ -1176,7 +1214,10 @@ InterpretResult VM::interpret(strv_t source) noexcept {
 InterpretResult VM::interpret(strv_t source, strv_t script_path) noexcept {
   current_script_path_ = str_t(script_path);
 
-  ObjFunction* function = compile(source);
+  str_t path_key = current_script_path_.empty() ? "<repl>" : current_script_path_;
+  source_cache_[path_key] = str_t(source);
+
+  ObjFunction* function = compile(source, path_key);
   if (function == nullptr) return InterpretResult::INTERPRET_COMPILE_ERROR;
 
   push(Value(static_cast<Object*>(function)));

@@ -50,6 +50,7 @@ Scanner::Scanner(strv_t source) noexcept {
 void Scanner::init(strv_t source) noexcept {
   start_ = source.data();
   current_ = source.data();
+  line_start_ = source.data();
   line_ = 1;
   interp_count_ = 0;
 }
@@ -83,6 +84,7 @@ Token Scanner::make_token(TokenType type) const noexcept {
   token.type = type;
   token.lexeme = strv_t(start_, static_cast<sz_t>(current_ - start_));
   token.line = line_;
+  token.column = static_cast<int>(start_ - line_start_) + 1;
   return token;
 }
 
@@ -91,6 +93,7 @@ Token Scanner::error_token(cstr_t message) const noexcept {
   token.type = TokenType::TOKEN_ERROR;
   token.lexeme = strv_t(message);
   token.line = line_;
+  token.column = static_cast<int>(current_ - line_start_) + 1;
   return token;
 }
 
@@ -106,6 +109,7 @@ void Scanner::skip_whitespace() noexcept {
     case '\n':
       line_++;
       advance();
+      line_start_ = current_;
       break;
     case '/':
       if (peek_next() == '/') {
@@ -122,7 +126,7 @@ void Scanner::skip_whitespace() noexcept {
             advance(); advance();
             depth--;
           } else {
-            if (peek() == '\n') line_++;
+            if (peek() == '\n') { line_++; advance(); line_start_ = current_; continue; }
             advance();
           }
         }
@@ -140,8 +144,8 @@ Token Scanner::scan_string() noexcept {
   while (peek() != '"' && !is_at_end()) {
     if (peek() == '\\') {
       advance(); // skip the backslash
-      if (peek() == '\n') line_++;
-      if (!is_at_end()) advance(); // skip the escaped character
+      if (peek() == '\n') { line_++; advance(); line_start_ = current_; }
+      else if (!is_at_end()) advance(); // skip the escaped character
       continue;
     }
     // Check for string interpolation: ${
@@ -156,7 +160,7 @@ Token Scanner::scan_string() noexcept {
       interp_count_++;
       return token;
     }
-    if (peek() == '\n') line_++;
+    if (peek() == '\n') { line_++; advance(); line_start_ = current_; continue; }
     advance();
   }
 
@@ -172,8 +176,8 @@ Token Scanner::scan_string_continuation() noexcept {
   while (peek() != '"' && !is_at_end()) {
     if (peek() == '\\') {
       advance();
-      if (peek() == '\n') line_++;
-      if (!is_at_end()) advance();
+      if (peek() == '\n') { line_++; advance(); line_start_ = current_; }
+      else if (!is_at_end()) advance();
       continue;
     }
     if (peek() == '$' && peek_next() == '{') {
@@ -187,7 +191,7 @@ Token Scanner::scan_string_continuation() noexcept {
       interp_count_++;
       return token;
     }
-    if (peek() == '\n') line_++;
+    if (peek() == '\n') { line_++; advance(); line_start_ = current_; continue; }
     advance();
   }
 
@@ -306,12 +310,13 @@ Token Scanner::scan_identifier() noexcept {
 }
 
 ScannerState Scanner::save_state() const noexcept {
-  return {start_, current_, line_};
+  return {start_, current_, line_start_, line_};
 }
 
 void Scanner::restore_state(const ScannerState& state) noexcept {
   start_ = state.start;
   current_ = state.current;
+  line_start_ = state.line_start;
   line_ = state.line;
 }
 

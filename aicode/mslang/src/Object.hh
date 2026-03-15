@@ -105,6 +105,7 @@ class ObjFunction final : public Object {
   int upvalue_count_{0};
   Chunk chunk_;
   ObjString* name_{nullptr};
+  str_t script_path_;
 
 public:
   ObjFunction() noexcept;
@@ -121,6 +122,8 @@ public:
   const Chunk& chunk() const noexcept { return chunk_; }
   ObjString* name() const noexcept { return name_; }
   void set_name(ObjString* name) noexcept { name_ = name; }
+  const str_t& script_path() const noexcept { return script_path_; }
+  void set_script_path(strv_t path) noexcept { script_path_ = str_t(path); }
 };
 
 // --- ObjNative ---

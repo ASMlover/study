@@ -28,17 +28,19 @@
 
 namespace ms {
 
-void Chunk::write(u8_t byte, int line) noexcept {
+void Chunk::write(u8_t byte, int line, int column, int token_length) noexcept {
   code_.push_back(byte);
-  if (!lines_.empty() && lines_.back().line == line) {
+  if (!lines_.empty() && lines_.back().line == line
+      && lines_.back().column == column
+      && lines_.back().token_length == token_length) {
     lines_.back().count++;
   } else {
-    lines_.push_back({line, 1});
+    lines_.push_back({line, column, token_length, 1});
   }
 }
 
-void Chunk::write(OpCode op, int line) noexcept {
-  write(static_cast<u8_t>(op), line);
+void Chunk::write(OpCode op, int line, int column, int token_length) noexcept {
+  write(static_cast<u8_t>(op), line, column, token_length);
 }
 
 sz_t Chunk::add_constant(Value value) noexcept {
@@ -60,6 +62,28 @@ int Chunk::line_at(sz_t offset) const noexcept {
     cumulative += static_cast<sz_t>(run.count);
     if (offset < cumulative) {
       return run.line;
+    }
+  }
+  return 0;
+}
+
+int Chunk::column_at(sz_t offset) const noexcept {
+  sz_t cumulative = 0;
+  for (const auto& run : lines_) {
+    cumulative += static_cast<sz_t>(run.count);
+    if (offset < cumulative) {
+      return run.column;
+    }
+  }
+  return 0;
+}
+
+int Chunk::token_length_at(sz_t offset) const noexcept {
+  sz_t cumulative = 0;
+  for (const auto& run : lines_) {
+    cumulative += static_cast<sz_t>(run.count);
+    if (offset < cumulative) {
+      return run.token_length;
     }
   }
   return 0;
