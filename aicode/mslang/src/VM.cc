@@ -93,6 +93,7 @@ VM::VM() noexcept {
       case ObjectType::OBJ_LIST:         type_str = "list"; break;
       case ObjectType::OBJ_MAP:              type_str = "map"; break;
       case ObjectType::OBJ_STRING_BUILDER: type_str = "stringbuilder"; break;
+      case ObjectType::OBJ_TUPLE:           type_str = "tuple"; break;
       default:                              type_str = "object"; break;
       }
     }
@@ -1053,6 +1054,21 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
     return false;
   }
 
+  if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
+    ObjTuple* tuple = as_tuple(receiver);
+    strv_t method_name = name->value();
+    if (method_name == "len") {
+      if (arg_count != 0) {
+        runtime_error("len() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(static_cast<double>(tuple->len()));
+      return true;
+    }
+    runtime_error(std::format("Undefined tuple method '{}'.", method_name));
+    return false;
+  }
+
   if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
     ObjMap* map = as_map(receiver);
     strv_t method_name = name->value();
@@ -1403,7 +1419,7 @@ InterpretResult VM::run() noexcept {
     &&op_OP_CLOSURE,       &&op_OP_CLOSE_UPVALUE, &&op_OP_RETURN,
     &&op_OP_CLASS,         &&op_OP_INHERIT,       &&op_OP_METHOD,
     &&op_OP_STATIC_METHOD, &&op_OP_GETTER,        &&op_OP_SETTER,
-    &&op_OP_BUILD_LIST,    &&op_OP_BUILD_MAP,
+    &&op_OP_BUILD_LIST,    &&op_OP_BUILD_MAP,    &&op_OP_BUILD_TUPLE,
     &&op_OP_INDEX_GET,     &&op_OP_INDEX_SET,
     &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
     &&op_OP_FOR_ITER,
@@ -2110,6 +2126,17 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
+    VM_CASE(OP_BUILD_TUPLE) {
+      u8_t count = READ_BYTE();
+      std::vector<Value> elements(count);
+      for (int i = count - 1; i >= 0; i--) {
+        elements[static_cast<sz_t>(i)] = pop();
+      }
+      ObjTuple* tuple = allocate<ObjTuple>(std::move(elements));
+      push(Value(static_cast<Object*>(tuple)));
+      VM_DISPATCH();
+    }
+
     VM_CASE(OP_INDEX_GET) {
       Value index_val = pop();
       Value receiver = pop();
@@ -2133,6 +2160,18 @@ dispatch_loop:
           goto handle_runtime_error;
         }
         push(it->second);
+      } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
+        if (!index_val.is_number()) {
+          runtime_error("Tuple index must be a number.");
+          goto handle_runtime_error;
+        }
+        ObjTuple* tuple = as_tuple(receiver);
+        int index = static_cast<int>(index_val.as_number());
+        if (index < 0 || index >= static_cast<int>(tuple->len())) {
+          runtime_error("Tuple index out of bounds.");
+          goto handle_runtime_error;
+        }
+        push(tuple->elements()[static_cast<sz_t>(index)]);
       } else if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
         if (!index_val.is_number()) {
           runtime_error("String index must be a number.");
@@ -2146,7 +2185,7 @@ dispatch_loop:
         }
         push(Value(static_cast<Object*>(copy_string(&str->value()[static_cast<sz_t>(index)], 1))));
       } else {
-        runtime_error("Only lists and strings can be indexed.");
+        runtime_error("Only lists, tuples, and strings can be indexed.");
         goto handle_runtime_error;
       }
       VM_DISPATCH();
@@ -2171,6 +2210,9 @@ dispatch_loop:
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(receiver);
         map->entries()[index_val] = value;
+      } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
+        runtime_error("Tuples are immutable.");
+        goto handle_runtime_error;
       } else {
         runtime_error("Only lists and maps support index assignment.");
         goto handle_runtime_error;
@@ -2270,6 +2312,14 @@ dispatch_loop:
           push(list->elements()[static_cast<sz_t>(idx)]);
           index_val = Value(static_cast<double>(idx + 1));
         }
+      } else if (is_obj_type(iterable, ObjectType::OBJ_TUPLE)) {
+        ObjTuple* tuple = as_tuple(iterable);
+        if (idx >= static_cast<int>(tuple->len())) {
+          frame->ip += offset;
+        } else {
+          push(tuple->elements()[static_cast<sz_t>(idx)]);
+          index_val = Value(static_cast<double>(idx + 1));
+        }
       } else if (is_obj_type(iterable, ObjectType::OBJ_STRING)) {
         ObjString* str = as_string(iterable);
         if (idx >= static_cast<int>(str->value().length())) {
@@ -2291,7 +2341,7 @@ dispatch_loop:
           index_val = Value(static_cast<double>(idx + 1));
         }
       } else {
-        runtime_error("Can only iterate over lists, strings, and maps.");
+        runtime_error("Can only iterate over lists, tuples, strings, and maps.");
         goto handle_runtime_error;
       }
       VM_DISPATCH();

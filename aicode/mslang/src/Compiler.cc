@@ -913,8 +913,35 @@ void Compiler::expression() noexcept {
 }
 
 void Compiler::grouping(bool /*can_assign*/) noexcept {
+  // Empty tuple: ()
+  if (check(TokenType::TOKEN_RIGHT_PAREN)) {
+    consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after tuple.");
+    emit_op_byte(OpCode::OP_BUILD_TUPLE, 0);
+    invalidate_constants();
+    return;
+  }
+
   expression();
-  consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+
+  if (match(TokenType::TOKEN_COMMA)) {
+    // Tuple: (expr, ...) or (expr,)
+    u8_t count = 1;
+    if (!check(TokenType::TOKEN_RIGHT_PAREN)) {
+      do {
+        expression();
+        if (count == 255) {
+          error("Can't have more than 255 elements in a tuple literal.");
+        }
+        count++;
+      } while (match(TokenType::TOKEN_COMMA));
+    }
+    consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after tuple elements.");
+    emit_op_byte(OpCode::OP_BUILD_TUPLE, count);
+    invalidate_constants();
+  } else {
+    // Plain grouping: (expr)
+    consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+  }
 }
 
 void Compiler::number(bool /*can_assign*/) noexcept {
@@ -1547,6 +1574,57 @@ void Compiler::block() noexcept {
 }
 
 void Compiler::var_declaration() noexcept {
+  // Destructuring: var (x, y, z) = expr;
+  if (match(TokenType::TOKEN_LEFT_PAREN)) {
+    std::vector<Token> names;
+    do {
+      consume(TokenType::TOKEN_IDENTIFIER, "Expect variable name in destructuring.");
+      names.push_back(ps_->previous);
+    } while (match(TokenType::TOKEN_COMMA));
+    consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after destructuring variables.");
+    consume(TokenType::TOKEN_EQUAL, "Expect '=' after destructuring pattern.");
+
+    // Compile the RHS expression (should produce a tuple/list)
+    expression();
+
+    if (scope_depth_ > 0) {
+      // Local scope: tuple becomes a hidden local, then index into it
+      Token tmp_token{TokenType::TOKEN_IDENTIFIER, " __destruct", ps_->previous.line};
+      add_local(tmp_token);
+      mark_initialized();
+      int tmp_slot = local_count_ - 1;
+
+      for (sz_t i = 0; i < names.size(); i++) {
+        emit_op_byte(OpCode::OP_GET_LOCAL, static_cast<u8_t>(tmp_slot));
+        emit_constant(Value(static_cast<i64_t>(i)));
+        emit_op(OpCode::OP_INDEX_GET);
+        add_local(names[i]);
+        mark_initialized();
+      }
+    } else {
+      // Global scope: use a temporary scope to hold the tuple
+      begin_scope();
+      Token tmp_token{TokenType::TOKEN_IDENTIFIER, " __destruct", ps_->previous.line};
+      add_local(tmp_token);
+      mark_initialized();
+      int tmp_slot = local_count_ - 1;
+
+      for (sz_t i = 0; i < names.size(); i++) {
+        emit_op_byte(OpCode::OP_GET_LOCAL, static_cast<u8_t>(tmp_slot));
+        emit_constant(Value(static_cast<i64_t>(i)));
+        emit_op(OpCode::OP_INDEX_GET);
+        u8_t global = identifier_constant(names[i]);
+        emit_op_byte(OpCode::OP_DEFINE_GLOBAL, global);
+      }
+
+      end_scope();
+    }
+
+    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+    invalidate_constants();
+    return;
+  }
+
   u8_t global = parse_variable("Expect variable name.");
 
   if (match(TokenType::TOKEN_EQUAL)) {

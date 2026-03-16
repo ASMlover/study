@@ -79,6 +79,16 @@ bool Value::is_equal(const Value& other) const noexcept {
   if (is_number() && other.is_number()) {
     return as_number() == other.as_number();
   }
+  // Structural equality for tuples
+  if (is_tuple() && other.is_tuple()) {
+    auto* a = as_obj<ObjTuple>(as_object());
+    auto* b = as_obj<ObjTuple>(other.as_object());
+    if (a->len() != b->len()) return false;
+    for (sz_t i = 0; i < a->len(); i++) {
+      if (!a->elements()[i].is_equal(b->elements()[i])) return false;
+    }
+    return true;
+  }
   return bits_ == other.bits_;
 }
 
@@ -109,6 +119,7 @@ bool Value::is_class() const noexcept { return is_obj_type(*this, ObjectType::OB
 bool Value::is_instance() const noexcept { return is_obj_type(*this, ObjectType::OBJ_INSTANCE); }
 bool Value::is_list() const noexcept { return is_obj_type(*this, ObjectType::OBJ_LIST); }
 bool Value::is_map() const noexcept { return is_obj_type(*this, ObjectType::OBJ_MAP); }
+bool Value::is_tuple() const noexcept { return is_obj_type(*this, ObjectType::OBJ_TUPLE); }
 
 #else // !MAPLE_NAN_BOXING
 
@@ -169,7 +180,19 @@ bool Value::is_equal(const Value& other) const noexcept {
   if (is_number() && other.is_number()) return as_number() == other.as_number();
 
   if (is_boolean() && other.is_boolean()) return as_boolean() == other.as_boolean();
-  if (is_object() && other.is_object()) return as_object() == other.as_object();
+  if (is_object() && other.is_object()) {
+    // Structural equality for tuples
+    if (is_tuple() && other.is_tuple()) {
+      auto* a = as_obj<ObjTuple>(as_object());
+      auto* b = as_obj<ObjTuple>(other.as_object());
+      if (a->len() != b->len()) return false;
+      for (sz_t i = 0; i < a->len(); i++) {
+        if (!a->elements()[i].is_equal(b->elements()[i])) return false;
+      }
+      return true;
+    }
+    return as_object() == other.as_object();
+  }
 
   return false;
 }
@@ -201,6 +224,7 @@ bool Value::is_class() const noexcept { return is_obj_type(*this, ObjectType::OB
 bool Value::is_instance() const noexcept { return is_obj_type(*this, ObjectType::OBJ_INSTANCE); }
 bool Value::is_list() const noexcept { return is_obj_type(*this, ObjectType::OBJ_LIST); }
 bool Value::is_map() const noexcept { return is_obj_type(*this, ObjectType::OBJ_MAP); }
+bool Value::is_tuple() const noexcept { return is_obj_type(*this, ObjectType::OBJ_TUPLE); }
 
 #endif // MAPLE_NAN_BOXING
 

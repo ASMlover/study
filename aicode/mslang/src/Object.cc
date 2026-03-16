@@ -248,6 +248,9 @@ sz_t ValueHash::operator()(const Value& v) const noexcept {
     if (v.as_object()->type() == ObjectType::OBJ_STRING) {
       return as_obj<ObjString>(v.as_object())->hash();
     }
+    if (v.as_object()->type() == ObjectType::OBJ_TUPLE) {
+      return as_obj<ObjTuple>(v.as_object())->hash();
+    }
     return std::hash<void*>{}(v.as_object());
   }
   return 0;
@@ -323,6 +326,49 @@ str_t ObjStringBuilder::stringify() const noexcept {
 
 sz_t ObjStringBuilder::size() const noexcept {
   return sizeof(ObjStringBuilder) + buffer_.capacity();
+}
+
+// --- ObjTuple ---
+
+ObjTuple::ObjTuple(std::vector<Value> elements) noexcept
+    : Object(ObjectType::OBJ_TUPLE), elements_(std::move(elements)) {
+  hash_ = compute_hash();
+}
+
+str_t ObjTuple::stringify() const noexcept {
+  str_t result = "(";
+  for (sz_t i = 0; i < elements_.size(); i++) {
+    if (i > 0) result += ", ";
+    if (is_obj_type(elements_[i], ObjectType::OBJ_STRING)) {
+      result += "\"" + elements_[i].stringify() + "\"";
+    } else {
+      result += elements_[i].stringify();
+    }
+  }
+  if (elements_.size() == 1) result += ",";
+  result += ")";
+  return result;
+}
+
+void ObjTuple::trace_references() noexcept {
+  for (auto& element : elements_) {
+    mark_value(element);
+  }
+}
+
+sz_t ObjTuple::size() const noexcept {
+  return sizeof(ObjTuple) + elements_.capacity() * sizeof(Value);
+}
+
+u32_t ObjTuple::compute_hash() const noexcept {
+  u32_t h = 2166136261u;
+  ValueHash hasher;
+  for (const auto& elem : elements_) {
+    sz_t elem_hash = hasher(elem);
+    h ^= static_cast<u32_t>(elem_hash);
+    h *= 16777619u;
+  }
+  return h;
 }
 
 } // namespace ms

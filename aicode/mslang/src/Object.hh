@@ -48,6 +48,7 @@ enum class ObjectType : int {
   OBJ_MAP,
   OBJ_MODULE,
   OBJ_STRING_BUILDER,
+  OBJ_TUPLE,
 };
 
 class Object {
@@ -331,6 +332,25 @@ public:
   void clear() noexcept { buffer_.clear(); }
 };
 
+// --- ObjTuple ---
+class ObjTuple final : public Object {
+  std::vector<Value> elements_;
+  u32_t hash_{0};
+
+public:
+  explicit ObjTuple(std::vector<Value> elements) noexcept;
+  str_t stringify() const noexcept override;
+  void trace_references() noexcept override;
+  sz_t size() const noexcept override;
+
+  const std::vector<Value>& elements() const noexcept { return elements_; }
+  sz_t len() const noexcept { return elements_.size(); }
+  u32_t hash() const noexcept { return hash_; }
+
+private:
+  u32_t compute_hash() const noexcept;
+};
+
 // --- Convenience helpers for Value ---
 inline ObjString* as_string(const Value& v) noexcept {
   return as_obj<ObjString>(v.as_object());
@@ -374,6 +394,10 @@ inline ObjModule* as_module(const Value& v) noexcept {
 
 inline ObjStringBuilder* as_string_builder(const Value& v) noexcept {
   return as_obj<ObjStringBuilder>(v.as_object());
+}
+
+inline ObjTuple* as_tuple(const Value& v) noexcept {
+  return as_obj<ObjTuple>(v.as_object());
 }
 
 inline strv_t as_cppstring(const Value& v) noexcept {

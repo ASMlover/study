@@ -98,6 +98,7 @@ public:
   bool is_instance() const noexcept;
   bool is_list() const noexcept;
   bool is_map() const noexcept;
+  bool is_tuple() const noexcept;
 };
 
 #else // !MAPLE_NAN_BOXING
@@ -143,6 +144,7 @@ public:
   bool is_instance() const noexcept;
   bool is_list() const noexcept;
   bool is_map() const noexcept;
+  bool is_tuple() const noexcept;
 };
 
 #endif // MAPLE_NAN_BOXING

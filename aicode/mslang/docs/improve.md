@@ -289,7 +289,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 16.3 | Bytecode serialization (`.msc`) | [x] |
 | **Backlog** | 10.7 | `switch` statement | [x] |
 | | 11.1 | Integer type + bitwise operators | [x] |
-| | 11.4 | Tuple type + destructuring | [ ] |
+| | 11.4 | Tuple type + destructuring | [x] |
 | | 13.3 | Abstract methods | [ ] |
 | | 14.2 | Register-based bytecode | [ ] |
 | | 15.2 | File I/O module | [ ] |
