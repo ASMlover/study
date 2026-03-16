@@ -89,6 +89,8 @@ class Vm {
   void register_module_allocation(const std::shared_ptr<Module>& module);
   std::size_t estimate_object_bytes(const RuntimeObject* object) const;
   std::size_t estimate_module_bytes(const std::shared_ptr<Module>& module) const;
+  bool register_native(const std::string& name, int arity, NativeCallable callable);
+  void install_core_natives();
 
   void trace_gc_roots(GcController& gc) const;
   void trace_gc_table(const Table& table, GcController& gc,
@@ -108,6 +110,7 @@ class Vm {
   std::vector<UpvalueObject*> open_upvalues_;
   std::vector<ClosureObject*> gc_frame_roots_;
   std::vector<std::shared_ptr<RuntimeObject>> gc_owned_objects_;
+  std::vector<std::unique_ptr<NativeFunctionObject>> native_owned_objects_;
   Table globals_;
   std::ostream* out_;
   ModuleLoader modules_;

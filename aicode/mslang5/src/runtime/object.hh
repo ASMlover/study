@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,6 +15,7 @@
 namespace ms {
 
 class RuntimeObject;
+class Vm;
 
 struct GcObjectHeader {
   RuntimeObject* next = nullptr;
@@ -113,6 +116,26 @@ struct BoundMethodObject : public RuntimeObject {
 
   Value receiver;
   ClosureObject* method = nullptr;
+};
+
+using NativeCallable = std::function<bool(Vm&, std::span<const Value>, Value*, std::string*)>;
+
+struct NativeFunctionObject : public RuntimeObject {
+  NativeFunctionObject(std::string native_name, int expected_arity, NativeCallable native_callable)
+      : name(std::move(native_name)),
+        arity(expected_arity),
+        callable(std::move(native_callable)) {}
+
+  inline std::string to_string() const override {
+    if (name.empty()) {
+      return "<native fn>";
+    }
+    return "<native fn " + name + ">";
+  }
+
+  std::string name;
+  int arity = 0;
+  NativeCallable callable;
 };
 
 inline std::shared_ptr<StringObject> make_string_object(const std::string& value) {

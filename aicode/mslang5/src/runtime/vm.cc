@@ -1,10 +1,12 @@
 #include "runtime/vm.hh"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <unordered_set>
 #include <utility>
 
@@ -28,7 +30,7 @@ Diagnostic ParseWithFallback(const std::string& text, const std::string& phase,
 
 }  // namespace
 
-Vm::Vm() : out_(&std::cout), gc_(1024 * 64) {}
+Vm::Vm() : out_(&std::cout), gc_(1024 * 64) { install_core_natives(); }
 
 void Vm::set_output(std::ostream& out) noexcept { out_ = &out; }
 
@@ -1017,6 +1019,32 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     return call_closure(closure, arg_count, frames, error);
   }
 
+  if (auto* native = dynamic_cast<NativeFunctionObject*>(object); native != nullptr) {
+    if (native->arity != arg_count) {
+      set_single_diagnostic(
+          ParseWithFallback(RuntimeError("MS4002", "expected " + std::to_string(native->arity) +
+                                                      " arguments but got " + std::to_string(arg_count)),
+                            "runtime", "MS4002", current_source_name_),
+          error);
+      return false;
+    }
+    Value result = Value::nil();
+    const std::span<const Value> args(stack_.data() + callee_index + 1,
+                                      static_cast<std::size_t>(arg_count));
+    std::string native_error;
+    if (!native->callable || !native->callable(*this, args, &result, &native_error)) {
+      const std::string reason =
+          native_error.empty() ? "native callable execution failed" : native_error;
+      set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", reason),
+                                              "runtime", "MS4003", current_source_name_),
+                            error);
+      return false;
+    }
+    stack_.resize(callee_index);
+    push(result);
+    return true;
+  }
+
   if (auto* klass = dynamic_cast<ClassObject*>(object); klass != nullptr) {
     auto instance = std::make_shared<InstanceObject>(klass);
     register_object_allocation(instance);
@@ -1162,6 +1190,51 @@ void Vm::register_module_allocation(const std::shared_ptr<Module>& module) {
   gc_.register_allocation(module.get(), estimate_module_bytes(module));
 }
 
+bool Vm::register_native(const std::string& name, const int arity, NativeCallable callable) {
+  if (name.empty() || callable == nullptr) {
+    return false;
+  }
+
+  auto native = std::make_unique<NativeFunctionObject>(name, arity, std::move(callable));
+  RuntimeObject* native_ptr = native.get();
+  native_owned_objects_.push_back(std::move(native));
+  return globals_.set(name, Value(native_ptr));
+}
+
+void Vm::install_core_natives() {
+  register_native("native_clock", 0,
+                  [](Vm&, std::span<const Value>, Value* out, std::string*) {
+                    const auto now = std::chrono::system_clock::now();
+                    const auto millis =
+                        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch())
+                            .count();
+                    if (out != nullptr) {
+                      *out = Value(static_cast<double>(millis));
+                    }
+                    return true;
+                  });
+
+  register_native("native_require_number", 1,
+                  [](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+                    if (args.size() != 1) {
+                      if (native_error != nullptr) {
+                        *native_error = "expected one argument";
+                      }
+                      return false;
+                    }
+                    if (!args[0].is_number()) {
+                      if (native_error != nullptr) {
+                        *native_error = "argument 1 must be number";
+                      }
+                      return false;
+                    }
+                    if (out != nullptr) {
+                      *out = args[0];
+                    }
+                    return true;
+                  });
+}
+
 std::size_t Vm::estimate_object_bytes(const RuntimeObject* object) const {
   if (object == nullptr) {
     return 0;
@@ -1210,6 +1283,12 @@ std::size_t Vm::estimate_object_bytes(const RuntimeObject* object) const {
   if (const auto* bound_obj = dynamic_cast<const BoundMethodObject*>(object);
       bound_obj != nullptr) {
     bytes += sizeof(BoundMethodObject);
+    return bytes;
+  }
+  if (const auto* native_obj = dynamic_cast<const NativeFunctionObject*>(object);
+      native_obj != nullptr) {
+    bytes += sizeof(NativeFunctionObject);
+    bytes += native_obj->name.capacity();
     return bytes;
   }
   return bytes;

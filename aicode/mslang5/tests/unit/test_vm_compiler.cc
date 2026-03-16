@@ -84,6 +84,36 @@ int RunVmCompilerTests() {
   Expect(error.find("undefined variable") != std::string::npos,
          "runtime error should retain undefined variable detail");
 
+  out.str("");
+  out.clear();
+  error.clear();
+  const ms::InterpretResult native_ok = vm.execute_source(
+      "print native_require_number(41);\n"
+      "print native_clock() > 0;\n",
+      &error);
+  Expect(native_ok == ms::InterpretResult::kOk, "native callable script should execute");
+  Expect(out.str().find("41") != std::string::npos,
+         "native callable should return valid value");
+  Expect(out.str().find("true") != std::string::npos,
+         "native clock should be callable and produce comparable number");
+
+  error.clear();
+  const ms::InterpretResult native_arity_error = vm.execute_source("native_clock(1);\n", &error);
+  Expect(native_arity_error == ms::InterpretResult::kRuntimeError,
+         "native arity mismatch should raise runtime error");
+  Expect(error.find("MS4002") != std::string::npos,
+         "native arity mismatch should expose MS4002 code");
+
+  error.clear();
+  const ms::InterpretResult native_type_error =
+      vm.execute_source("native_require_number(\"oops\");\n", &error);
+  Expect(native_type_error == ms::InterpretResult::kRuntimeError,
+         "native type mismatch should raise runtime error");
+  Expect(error.find("MS4003") != std::string::npos,
+         "native type mismatch should expose MS4003 code");
+  Expect(error.find("number") != std::string::npos,
+         "native type mismatch should keep argument-kind detail");
+
   const std::string gc_round_script =
       "class Node { init(v, next) { this.v = v; this.next = next; } }\n"
       "fun build(limit) {\n"
