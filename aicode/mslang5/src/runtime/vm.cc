@@ -38,6 +38,16 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
   last_diagnostics_.clear();
   stack_.clear();
   open_upvalues_.clear();
+  gc_frame_roots_.clear();
+
+  struct FrameRootsCleanup {
+    std::vector<ClosureObject*>* roots = nullptr;
+    ~FrameRootsCleanup() {
+      if (roots != nullptr) {
+        roots->clear();
+      }
+    }
+  } frame_roots_cleanup{&gc_frame_roots_};
 
   auto script_proto = std::make_shared<FunctionPrototype>();
   script_proto->name = "<script>";
@@ -49,6 +59,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
 
   std::vector<CallFrame> frames;
   frames.push_back(CallFrame{script_closure.get(), 0, 0});
+  gc_frame_roots_.push_back(script_closure.get());
 
   while (!frames.empty()) {
     CallFrame& frame = frames.back();
@@ -664,6 +675,9 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         close_upvalues(frame.slot_base);
         stack_.resize(frame.slot_base);
         frames.pop_back();
+        if (!gc_frame_roots_.empty()) {
+          gc_frame_roots_.pop_back();
+        }
         if (frames.empty()) {
           return InterpretResult::kOk;
         }
@@ -897,6 +911,7 @@ bool Vm::call_closure(ClosureObject* closure, const int arg_count,
 
   const std::size_t slot_base = stack_.size() - static_cast<std::size_t>(arg_count) - 1;
   frames->push_back(CallFrame{closure, 0, slot_base});
+  gc_frame_roots_.push_back(closure);
   return true;
 }
 
@@ -1118,6 +1133,7 @@ void Vm::maybe_collect_garbage() {
     return;
   }
   gc_.collect([this](GcController& gc) { trace_gc_roots(gc); });
+  prune_untracked_owned_objects();
 }
 
 void Vm::prune_untracked_owned_objects() {
@@ -1133,17 +1149,17 @@ void Vm::register_object_allocation(const std::shared_ptr<RuntimeObject>& object
   if (object == nullptr) {
     return;
   }
+  maybe_collect_garbage();
   gc_owned_objects_.push_back(object);
   gc_.register_object(object.get(), estimate_object_bytes(object.get()));
-  maybe_collect_garbage();
 }
 
 void Vm::register_module_allocation(const std::shared_ptr<Module>& module) {
   if (module == nullptr) {
     return;
   }
-  gc_.register_allocation(module.get(), estimate_module_bytes(module));
   maybe_collect_garbage();
+  gc_.register_allocation(module.get(), estimate_module_bytes(module));
 }
 
 std::size_t Vm::estimate_object_bytes(const RuntimeObject* object) const {
@@ -1216,6 +1232,9 @@ void Vm::trace_gc_roots(GcController& gc) const {
   }
   for (const auto& upvalue : open_upvalues_) {
     trace_gc_object(upvalue, gc, &seen_modules, &seen_objects);
+  }
+  for (auto* closure : gc_frame_roots_) {
+    trace_gc_object(closure, gc, &seen_modules, &seen_objects);
   }
   trace_gc_table(globals_, gc, &seen_modules, &seen_objects);
 
