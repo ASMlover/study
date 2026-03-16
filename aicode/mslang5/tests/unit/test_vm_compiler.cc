@@ -1,5 +1,7 @@
 #include "test_common.hh"
 
+#include <algorithm>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -82,16 +84,53 @@ int RunVmCompilerTests() {
   Expect(error.find("undefined variable") != std::string::npos,
          "runtime error should retain undefined variable detail");
 
-  vm.gc().set_threshold(1);
-  error.clear();
-  const ms::InterpretResult gc_probe_result = vm.execute_source(
-      "class Box { init(v) { this.value = v; } }\n"
-      "fun make() { var box = Box(1); return box; }\n"
-      "var keep = make();\n",
-      &error);
-  Expect(gc_probe_result == ms::InterpretResult::kOk,
-         "gc probe script should execute without semantic regression");
-  Expect(vm.gc().stats().collections > 0, "gc collection should trigger");
-  Expect(vm.gc().stats().bytes_live > 0, "gc should report live bytes after tracing roots");
+  const std::string gc_round_script =
+      "class Node { init(v, next) { this.v = v; this.next = next; } }\n"
+      "fun build(limit) {\n"
+      "  var head = nil;\n"
+      "  var i = 0;\n"
+      "  while (i < limit) {\n"
+      "    head = Node(i, head);\n"
+      "    i = i + 1;\n"
+      "  }\n"
+      "  return head;\n"
+      "}\n"
+      "var keep = build(120);\n"
+      "var churn = 0;\n"
+      "while (churn < 35) { build(40); churn = churn + 1; }\n"
+      "print keep.v;\n";
+
+  constexpr int kGcRounds = 4;
+  std::size_t min_collections = std::numeric_limits<std::size_t>::max();
+  std::size_t max_collections = 0;
+  std::size_t min_reclaimed = std::numeric_limits<std::size_t>::max();
+  std::size_t max_reclaimed = 0;
+
+  for (int round = 0; round < kGcRounds; ++round) {
+    ms::Vm gc_vm;
+    std::ostringstream gc_out;
+    gc_vm.set_output(gc_out);
+    gc_vm.gc().set_threshold(128);
+
+    error.clear();
+    const ms::InterpretResult gc_round_result = gc_vm.execute_source(gc_round_script, &error);
+    Expect(gc_round_result == ms::InterpretResult::kOk,
+           "gc stress round script should execute successfully");
+
+    const ms::GcStats stats = gc_vm.gc().stats();
+    Expect(stats.collections > 0, "gc stress round should trigger collections");
+    Expect(stats.bytes_reclaimed > 0, "gc stress round should reclaim bytes");
+    Expect(stats.objects_reclaimed > 0, "gc stress round should reclaim objects");
+
+    min_collections = std::min(min_collections, stats.collections);
+    max_collections = std::max(max_collections, stats.collections);
+    min_reclaimed = std::min(min_reclaimed, stats.bytes_reclaimed);
+    max_reclaimed = std::max(max_reclaimed, stats.bytes_reclaimed);
+  }
+
+  Expect(max_collections <= min_collections * 2 + 2,
+         "gc collection count should remain stable across repeated runs");
+  Expect(max_reclaimed <= min_reclaimed * 4 + 4096,
+         "gc reclaimed-byte metrics should remain stable across repeated runs");
   return 0;
 }

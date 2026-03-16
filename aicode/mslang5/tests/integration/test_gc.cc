@@ -1,5 +1,7 @@
 #include "test_common.hh"
 
+#include <algorithm>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -48,17 +50,34 @@ int RunGcIntegrationTests() {
       "churn(240);\n"
       "print keep.value;\n";
 
-  error.clear();
-  r = vm.execute_source(churn_script, &error);
-  Expect(r == ms::InterpretResult::kOk, "gc churn script should execute");
-  Expect(vm.last_source_execution_route() == ms::SourceExecutionRoute::kVmPipeline,
-         "gc churn script should run on VM pipeline");
+  constexpr int kRounds = 4;
+  std::size_t min_live_bytes = std::numeric_limits<std::size_t>::max();
+  std::size_t max_live_bytes = 0;
 
-  const ms::GcStats stats = vm.gc().stats();
-  Expect(stats.collections > 0, "gc churn should trigger collections");
-  Expect(stats.bytes_reclaimed > 0, "gc churn should reclaim unreachable bytes");
-  Expect(stats.objects_reclaimed > 0, "gc churn should reclaim unreachable object records");
-  Expect(stats.bytes_live > 0, "gc should retain reachable objects as live bytes");
+  for (int round = 0; round < kRounds; ++round) {
+    const ms::GcStats before = vm.gc().stats();
+
+    error.clear();
+    r = vm.execute_source(churn_script, &error);
+    Expect(r == ms::InterpretResult::kOk, "gc churn script should execute");
+    Expect(vm.last_source_execution_route() == ms::SourceExecutionRoute::kVmPipeline,
+           "gc churn script should run on VM pipeline");
+
+    const ms::GcStats after = vm.gc().stats();
+    Expect(after.collections > before.collections,
+           "gc churn should trigger at least one collection per stress round");
+    Expect(after.bytes_reclaimed > before.bytes_reclaimed,
+           "gc churn should reclaim unreachable bytes per stress round");
+    Expect(after.objects_reclaimed > before.objects_reclaimed,
+           "gc churn should reclaim object records per stress round");
+    Expect(after.bytes_live > 0, "gc should retain reachable objects as live bytes");
+
+    min_live_bytes = std::min(min_live_bytes, after.bytes_live);
+    max_live_bytes = std::max(max_live_bytes, after.bytes_live);
+  }
+
+  Expect(max_live_bytes <= min_live_bytes * 4 + 4096,
+         "gc live-byte metrics should remain stable across repeated rounds");
 
   error.clear();
   r = vm.execute_source("import side;\n", &error);
@@ -67,7 +86,7 @@ int RunGcIntegrationTests() {
   const std::string output = out.str();
   Expect(CountOccurrences(output, "init") == 1,
          "module cache should survive gc stress without re-initialization");
-  Expect(output.find("999") != std::string::npos,
-         "reachable object graph should remain semantically valid after gc");
+  Expect(CountOccurrences(output, "999") == kRounds,
+         "repeated stress rounds should preserve reachable values each time");
   return 0;
 }
