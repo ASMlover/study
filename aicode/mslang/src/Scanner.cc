@@ -228,6 +228,7 @@ TokenType Scanner::identifier_type() const noexcept {
   case 'a':
     if (current_ - start_ > 1) {
       switch (start_[1]) {
+      case 'b': return check_keyword(2, 6, "stract", TokenType::TOKEN_ABSTRACT);
       case 'n': return check_keyword(2, 1, "d", TokenType::TOKEN_AND);
       case 's': return check_keyword(2, 0, "", TokenType::TOKEN_AS);
       }

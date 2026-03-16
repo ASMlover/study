@@ -158,7 +158,7 @@ enable_testing()
 
 file(GLOB MSLANG_TEST_SCRIPTS tests/*.ms)
 # Tests that expect a runtime error (non-zero exit)
-set(MSLANG_RUNTIME_ERROR_TESTS stack_overflow)
+set(MSLANG_RUNTIME_ERROR_TESTS stack_overflow abstract_methods_error abstract_methods_inherit_error)
 
 foreach(test_script ${MSLANG_TEST_SCRIPTS})
   get_filename_component(test_name "${test_script}" NAME_WE)

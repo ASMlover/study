@@ -781,6 +781,13 @@ bool VM::invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noex
     runtime_error(std::format("Undefined property '{}'.", name->value()));
     return false;
   }
+
+  Value dummy;
+  if (klass->abstract_methods().get(name, &dummy)) {
+    runtime_error(std::format("Cannot call abstract method '{}' on '{}'.", name->value(), klass->name()->value()));
+    return false;
+  }
+
   return call(as_closure(method), arg_count);
 }
 
@@ -1191,6 +1198,12 @@ void VM::bind_method(ObjClass* klass, ObjString* name) noexcept {
   Value method;
   if (!klass->methods().get(name, &method)) {
     runtime_error(std::format("Undefined property '{}'.", name->value()));
+    return;
+  }
+
+  Value dummy;
+  if (klass->abstract_methods().get(name, &dummy)) {
+    runtime_error(std::format("Cannot call abstract method '{}' on '{}'.", name->value(), klass->name()->value()));
     return;
   }
 
@@ -2063,6 +2076,7 @@ dispatch_loop:
       subclass->static_methods().add_all(super->static_methods());
       subclass->getters().add_all(super->getters());
       subclass->setters().add_all(super->setters());
+      subclass->abstract_methods().add_all(super->abstract_methods());
       pop(); // Subclass
       VM_DISPATCH();
     }
@@ -2072,6 +2086,7 @@ dispatch_loop:
       Value method = peek(0);
       ObjClass* klass = as_class(peek(1));
       klass->methods().set(name, method);
+      klass->abstract_methods().remove(name);
       pop();
       VM_DISPATCH();
     }
@@ -2099,6 +2114,16 @@ dispatch_loop:
       Value method = peek(0);
       ObjClass* klass = as_class(peek(1));
       klass->setters().set(name, method);
+      pop();
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_ABSTRACT_METHOD) {
+      ObjString* name = READ_STRING();
+      Value method = peek(0);
+      ObjClass* klass = as_class(peek(1));
+      klass->methods().set(name, method);
+      klass->abstract_methods().set(name, Value(true));
       pop();
       VM_DISPATCH();
     }

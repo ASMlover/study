@@ -311,6 +311,8 @@ static std::array<ParseRule, kTOKEN_COUNT> rules = {{
   { &Compiler::number,   nullptr,            Precedence::PREC_NONE },
   // TOKEN_INTEGER
   { &Compiler::integer,  nullptr,            Precedence::PREC_NONE },
+  // TOKEN_ABSTRACT
+  { nullptr,             nullptr,            Precedence::PREC_NONE },
   // TOKEN_AND
   { nullptr,             &Compiler::and_,    Precedence::PREC_AND },
   // TOKEN_BREAK
@@ -1731,7 +1733,17 @@ void Compiler::class_declaration() noexcept {
   named_variable(class_name, false);
   consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' before class body.");
   while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
-    if (match(TokenType::TOKEN_STATIC)) {
+    if (match(TokenType::TOKEN_ABSTRACT)) {
+      consume(TokenType::TOKEN_IDENTIFIER, "Expect abstract method name.");
+      u8_t constant = identifier_constant(ps_->previous);
+
+      if (ps_->previous.lexeme == "init") {
+        error("Initializer can't be abstract.");
+      }
+
+      function(FunctionType::TYPE_METHOD);
+      emit_op_byte(OpCode::OP_ABSTRACT_METHOD, constant);
+    } else if (match(TokenType::TOKEN_STATIC)) {
       consume(TokenType::TOKEN_IDENTIFIER, "Expect static method name.");
       u8_t constant = identifier_constant(ps_->previous);
 

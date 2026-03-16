@@ -157,6 +157,7 @@ void ObjClass::trace_references() noexcept {
   static_methods_.mark_table();
   getters_.mark_table();
   setters_.mark_table();
+  abstract_methods_.mark_table();
 }
 
 sz_t ObjClass::size() const noexcept {

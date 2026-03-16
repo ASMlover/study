@@ -209,6 +209,7 @@ class ObjClass final : public Object {
   Table static_methods_;
   Table getters_;
   Table setters_;
+  Table abstract_methods_;
 
 public:
   explicit ObjClass(ObjString* name) noexcept;
@@ -225,6 +226,8 @@ public:
   const Table& getters() const noexcept { return getters_; }
   Table& setters() noexcept { return setters_; }
   const Table& setters() const noexcept { return setters_; }
+  Table& abstract_methods() noexcept { return abstract_methods_; }
+  const Table& abstract_methods() const noexcept { return abstract_methods_; }
 };
 
 // --- ObjInstance ---

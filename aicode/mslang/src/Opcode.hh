@@ -74,6 +74,7 @@ enum class OpCode : u8_t {
   OP_STATIC_METHOD,
   OP_GETTER,
   OP_SETTER,
+  OP_ABSTRACT_METHOD,
   OP_BUILD_LIST,
   OP_BUILD_MAP,
   OP_BUILD_TUPLE,
@@ -147,8 +148,9 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_INHERIT:        return "OP_INHERIT";
   case OpCode::OP_METHOD:         return "OP_METHOD";
   case OpCode::OP_STATIC_METHOD:  return "OP_STATIC_METHOD";
-  case OpCode::OP_GETTER:         return "OP_GETTER";
-  case OpCode::OP_SETTER:         return "OP_SETTER";
+  case OpCode::OP_GETTER:           return "OP_GETTER";
+  case OpCode::OP_SETTER:           return "OP_SETTER";
+  case OpCode::OP_ABSTRACT_METHOD:  return "OP_ABSTRACT_METHOD";
   case OpCode::OP_BUILD_LIST:     return "OP_BUILD_LIST";
   case OpCode::OP_BUILD_MAP:      return "OP_BUILD_MAP";
   case OpCode::OP_BUILD_TUPLE:    return "OP_BUILD_TUPLE";
