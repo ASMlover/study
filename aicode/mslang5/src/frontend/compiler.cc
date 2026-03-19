@@ -30,6 +30,10 @@ class CompilerImpl {
 
   CompileResult compile() {
     while (!parser_.is_at_end()) {
+      skip_statement_separators();
+      if (parser_.is_at_end()) {
+        break;
+      }
       declaration();
     }
     emit_op(OpCode::kReturn, current_line());
@@ -233,8 +237,17 @@ class CompilerImpl {
     }
     emit_name_op(OpCode::kGetGlobal, name, line);
   }
+  void skip_statement_separators() { parser_.skip_newline_tokens(); }
+
+  bool consume_statement_end(const std::string& message) {
+    return parser_.consume_statement_end(message);
+  }
 
   void declaration() {
+    skip_statement_separators();
+    if (parser_.is_at_end()) {
+      return;
+    }
     if (parser_.match(TokenType::kClass)) {
       class_declaration();
       return;
@@ -295,9 +308,14 @@ class CompilerImpl {
 
     parser_.consume(TokenType::kLeftBrace, "expected '{' before class body");
     while (!parser_.check(TokenType::kRightBrace) && !parser_.is_at_end()) {
+      skip_statement_separators();
+      if (parser_.check(TokenType::kRightBrace) || parser_.is_at_end()) {
+        break;
+      }
       method();
     }
     parser_.consume(TokenType::kRightBrace, "expected '}' after class body");
+    skip_statement_separators();
 
     emit_op(OpCode::kPop, current_line());
     current_class_ = current_class_->enclosing;
@@ -365,9 +383,14 @@ class CompilerImpl {
     parser_.consume(TokenType::kRightParen, "expected ')' after parameters");
     parser_.consume(TokenType::kLeftBrace, "expected '{' before function body");
     while (!parser_.check(TokenType::kRightBrace) && !parser_.is_at_end()) {
+      skip_statement_separators();
+      if (parser_.check(TokenType::kRightBrace) || parser_.is_at_end()) {
+        break;
+      }
       declaration();
     }
     parser_.consume(TokenType::kRightBrace, "expected '}' after function body");
+    skip_statement_separators();
 
     if (type == FunctionType::kInitializer) {
       emit_op(OpCode::kGetLocal, current_line());
@@ -390,6 +413,10 @@ class CompilerImpl {
   }
 
   void statement() {
+    skip_statement_separators();
+    if (parser_.is_at_end() || parser_.check(TokenType::kRightBrace)) {
+      return;
+    }
     if (parser_.match(TokenType::kPrint)) {
       print_statement();
       return;
@@ -433,14 +460,19 @@ class CompilerImpl {
 
   void block() {
     while (!parser_.check(TokenType::kRightBrace) && !parser_.is_at_end()) {
+      skip_statement_separators();
+      if (parser_.check(TokenType::kRightBrace) || parser_.is_at_end()) {
+        break;
+      }
       declaration();
     }
     parser_.consume(TokenType::kRightBrace, "expected '}' after block");
+    skip_statement_separators();
   }
 
   void print_statement() {
     expression();
-    parser_.consume(TokenType::kSemicolon, "expected ';' after print");
+    consume_statement_end("expected statement end after print");
     emit_op(OpCode::kPrint, current_line());
   }
 
@@ -448,14 +480,17 @@ class CompilerImpl {
     const std::size_t return_line = parser_.previous().line;
     if (current_->type == FunctionType::kScript) {
       report_resolve_error(return_line, "MS3001", "cannot return from top-level code");
-      while (!parser_.check(TokenType::kSemicolon) && !parser_.is_at_end()) {
+      while (!parser_.check(TokenType::kSemicolon) && !parser_.check(TokenType::kNewline) &&
+             !parser_.check(TokenType::kRightBrace) && !parser_.is_at_end()) {
         parser_.advance();
       }
-      parser_.consume(TokenType::kSemicolon, "expected ';' after return");
+      consume_statement_end("expected statement end after return");
       return;
     }
 
-    if (parser_.match(TokenType::kSemicolon)) {
+    if (parser_.match(TokenType::kSemicolon) || parser_.match(TokenType::kNewline) ||
+        parser_.check(TokenType::kRightBrace) || parser_.is_at_end()) {
+      parser_.skip_newline_tokens();
       if (current_->type == FunctionType::kInitializer) {
         emit_op(OpCode::kGetLocal, return_line);
         emit_byte(0, return_line);
@@ -467,7 +502,7 @@ class CompilerImpl {
     }
 
     expression();
-    parser_.consume(TokenType::kSemicolon, "expected ';' after return value");
+    consume_statement_end("expected statement end after return value");
     if (current_->type == FunctionType::kInitializer) {
       emit_op(OpCode::kPop, return_line);
       emit_op(OpCode::kGetLocal, return_line);
@@ -478,7 +513,7 @@ class CompilerImpl {
 
   void expression_statement() {
     expression();
-    parser_.consume(TokenType::kSemicolon, "expected ';' after expression");
+    consume_statement_end("expected statement end after expression");
     emit_op(OpCode::kPop, current_line());
   }
 
@@ -582,7 +617,7 @@ class CompilerImpl {
     } else {
       emit_constant(std::monostate{}, current_line());
     }
-    parser_.consume(TokenType::kSemicolon, "expected ';' after variable declaration");
+    consume_statement_end("expected statement end after variable declaration");
 
     if (current_->scope_depth == 0) {
       emit_name_op(OpCode::kDefineGlobal, name, current_line());
@@ -597,12 +632,12 @@ class CompilerImpl {
     parser_.consume(TokenType::kEqual, "expected '=' in assignment");
     expression();
     emit_assignment(name);
-    parser_.consume(TokenType::kSemicolon, "expected ';' after assignment");
+    consume_statement_end("expected statement end after assignment");
   }
 
   void import_statement() {
     const std::string module = parser_.parse_dotted_name();
-    parser_.consume(TokenType::kSemicolon, "expected ';' after import statement");
+    consume_statement_end("expected statement end after import statement");
     emit_name_op(OpCode::kImportModule, module, current_line());
   }
 
@@ -616,7 +651,7 @@ class CompilerImpl {
       parser_.consume(TokenType::kIdentifier, "expected alias name after 'as'");
       alias = parser_.previous().lexeme;
     }
-    parser_.consume(TokenType::kSemicolon, "expected ';' after from-import statement");
+    consume_statement_end("expected statement end after from-import statement");
 
     const std::size_t line = current_line();
     emit_op(OpCode::kImportSymbol, line);
@@ -854,7 +889,7 @@ class CompilerImpl {
 }  // namespace
 
 CompileResult compile_to_chunk(const std::string& source) {
-  Lexer lexer(source);
+  Lexer lexer(source, true);
   Parser parser(lexer.scan_all_tokens());
   CompilerImpl compiler(std::move(parser));
   return compiler.compile();

@@ -69,6 +69,38 @@ int RunVmCompilerTests() {
          "closure script should execute on VM pipeline");
   Expect(out.str() == "11\n12\n", "closure script output should be stable");
 
+  out.str("");
+  out.clear();
+  error.clear();
+  const std::string newline_script =
+      "var n = 1\n"
+      "print n\n"
+      "n = n + 2\n"
+      "if (n == 3) {\n"
+      "  print n\n"
+      "}\n"
+      "print n";
+  const ms::InterpretResult newline_result = vm.execute_source(newline_script, &error);
+  Expect(newline_result == ms::InterpretResult::kOk,
+         "newline-terminated statements should compile and execute");
+  Expect(vm.last_source_execution_route() == ms::SourceExecutionRoute::kVmPipeline,
+         "newline-terminated statements should execute on VM pipeline");
+  Expect(out.str() == "1\n3\n3\n",
+         "newline-terminated statement output should match expected values");
+
+  out.str("");
+  out.clear();
+  error.clear();
+  const ms::InterpretResult mixed_terminator_result = vm.execute_source(
+      "var a = 2;\n"
+      "a = a + 3\n"
+      "print a\n",
+      &error);
+  Expect(mixed_terminator_result == ms::InterpretResult::kOk,
+         "semicolon/newline mixed compatibility mode should execute");
+  Expect(out.str() == "5\n",
+         "mixed terminator output should preserve statement semantics");
+
   error.clear();
   const ms::InterpretResult compile_error = vm.execute_source("var x = ;\n", &error);
   Expect(compile_error == ms::InterpretResult::kCompileError,

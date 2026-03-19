@@ -23,6 +23,7 @@ enum class TokenType {
   kStar,
   kSlash,
   kSemicolon,
+  kNewline,
   kDot,
   kEqual,
   kIdentifier,

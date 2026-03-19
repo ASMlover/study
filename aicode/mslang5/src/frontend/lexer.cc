@@ -5,17 +5,27 @@
 
 namespace ms {
 
-Lexer::Lexer(std::string source) : source_(std::move(source)) {}
+Lexer::Lexer(std::string source, const bool emit_newline_tokens)
+    : source_(std::move(source)), emit_newline_tokens_(emit_newline_tokens) {}
 
 std::vector<Token> Lexer::scan_all_tokens() {
   std::vector<Token> tokens;
   while (!is_at_end()) {
-    skip_whitespace_and_comments();
+    skip_horizontal_whitespace_and_comments();
     start_ = current_;
     if (is_at_end()) {
       break;
     }
+
     const char c = advance();
+    if (c == '\n') {
+      ++line_;
+      if (emit_newline_tokens_) {
+        tokens.push_back(Token{TokenType::kNewline, "\\n", line_ - 1});
+      }
+      continue;
+    }
+
     switch (c) {
       case '(':
         tokens.push_back(make_token(TokenType::kLeftParen));
@@ -106,15 +116,10 @@ char Lexer::peek_next() const {
 
 bool Lexer::is_at_end() const { return current_ >= source_.size(); }
 
-void Lexer::skip_whitespace_and_comments() {
+void Lexer::skip_horizontal_whitespace_and_comments() {
   while (!is_at_end()) {
     const char c = peek();
     if (c == ' ' || c == '\r' || c == '\t') {
-      advance();
-      continue;
-    }
-    if (c == '\n') {
-      ++line_;
       advance();
       continue;
     }

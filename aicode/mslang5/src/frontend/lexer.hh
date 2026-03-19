@@ -9,7 +9,7 @@ namespace ms {
 
 class Lexer {
  public:
-  explicit Lexer(std::string source);
+  explicit Lexer(std::string source, bool emit_newline_tokens = false);
 
   std::vector<Token> scan_all_tokens();
 
@@ -20,7 +20,7 @@ class Lexer {
   char peek_next() const;
   bool is_at_end() const;
 
-  void skip_whitespace_and_comments();
+  void skip_horizontal_whitespace_and_comments();
   Token make_token(TokenType type) const;
   Token error_token(const std::string& message) const;
   Token string_token();
@@ -32,6 +32,7 @@ class Lexer {
   std::size_t start_ = 0;
   std::size_t current_ = 0;
   std::size_t line_ = 1;
+  bool emit_newline_tokens_ = false;
 };
 
 }  // namespace ms

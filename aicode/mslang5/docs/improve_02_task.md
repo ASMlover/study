@@ -55,8 +55,8 @@ Script execution template:
 | T08 | Stdlib | Add native callable infrastructure in VM | Full build | unit + integration | `tests/scripts/cli_ok.ms` | done | Codex |
 | T09 | Stdlib | Implement `std.io` and `std.math` modules | Full build | integration + conformance | new scripts under `tests/scripts/module/std/` | done | Codex |
 | T10 | Stdlib | Implement `std.str`, `std.time`, `std.debug` modules | Full build | integration + conformance + diagnostics | `str_time_debug_ok.ms`, `str_type_error.ms`, `time_arity_error.ms`, `debug_arity_error.ms` | done | Codex |
-| T11 | Newline | Add newline tokenization in lexer with compatibility mode | Full build | unit (`test_lexer.cc`) + integration | new scripts under `tests/scripts/migration/newline/` | todo | - |
-| T12 | Newline | Add parser/compiler statement-end abstraction (`consume_statement_end`) | Full build | unit (`test_vm_compiler.cc`) + integration + conformance | new scripts under `tests/scripts/migration/newline/` | todo | - |
+| T11 | Newline | Add newline tokenization in lexer with compatibility mode | Full build | unit (`test_lexer.cc`) + integration | new scripts under `tests/scripts/migration/newline/` | done | Codex |
+| T12 | Newline | Add parser/compiler statement-end abstraction (`consume_statement_end`) | Full build | unit (`test_vm_compiler.cc`) + integration + conformance | new scripts under `tests/scripts/migration/newline/` | done | Codex (`cmake --build build --config Debug`; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_unit`; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_integration`; `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_conformance`) |
 | T13 | Newline | Remove semicolon dependency in grammar and finalize migration | Full build | conformance + diagnostics + integration | convert representative scripts to newline style | todo | - |
 | T14 | Closeout | Run full regression and update design/spec docs | Full build | all suites | `tests/scripts/migration/m6_vm_only_convergence.ms` + newline/std scripts | todo | - |
 ## 5. Task Details (Atomic Execution Contract)

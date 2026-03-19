@@ -4,5 +4,5 @@
 // @expect: compile_error
 // @diag.phase: parse
 // @diag.code: MS2001
-// @diag.message_contains: expected ';' after expression
+// @diag.message_contains: expected statement end after expression
 (1 + 2) = 3;

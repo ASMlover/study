@@ -16,6 +16,8 @@ int RunModuleIntegrationTests();
 int RunGcIntegrationTests();
 int RunResolverIntegrationTests();
 int RunMigrationDebtTests();
+int RunNewlineLexerIntegrationTests();
+int RunNewlineStatementEndIntegrationTests();
 int RunConformanceIntegrationTests();
 int RunDiagnosticsGoldenTests();
 
@@ -37,6 +39,8 @@ void RunIntegrationSuite() {
   RunModuleIntegrationTests();
   RunGcIntegrationTests();
   RunResolverIntegrationTests();
+  RunNewlineLexerIntegrationTests();
+  RunNewlineStatementEndIntegrationTests();
 }
 
 void RunMigrationDebtSuite() { RunMigrationDebtTests(); }

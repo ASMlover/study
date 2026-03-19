@@ -18,6 +18,8 @@ class Parser {
   bool is_at_end() const;
 
   bool consume(TokenType type, const std::string& message);
+  bool consume_statement_end(const std::string& message);
+  void skip_newline_tokens();
   std::string parse_dotted_name();
   const Token& current() const;
   const Token& peek(std::size_t offset) const;

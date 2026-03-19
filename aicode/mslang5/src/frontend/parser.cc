@@ -41,6 +41,27 @@ bool Parser::consume(const TokenType type, const std::string& message) {
   return false;
 }
 
+bool Parser::consume_statement_end(const std::string& message) {
+  if (match(TokenType::kSemicolon)) {
+    skip_newline_tokens();
+    return true;
+  }
+  if (match(TokenType::kNewline)) {
+    skip_newline_tokens();
+    return true;
+  }
+  if (check(TokenType::kRightBrace) || check(TokenType::kEof)) {
+    return true;
+  }
+  report_error(tokens_[current_], message);
+  return false;
+}
+
+void Parser::skip_newline_tokens() {
+  while (match(TokenType::kNewline)) {
+  }
+}
+
 std::string Parser::parse_dotted_name() {
   if (!consume(TokenType::kIdentifier, "expected identifier")) {
     return {};

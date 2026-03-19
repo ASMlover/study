@@ -71,6 +71,8 @@ if(MAPLE_BUILD_TESTS)
     tests/integration/test_language_module.cc
     tests/integration/test_gc.cc
     tests/integration/test_language_resolver.cc
+    tests/integration/test_newline_lexer.cc
+    tests/integration/test_newline_statement_end.cc
     tests/integration/test_migration_debt.cc
     tests/integration/test_conformance.cc
     tests/integration/test_diagnostics_golden.cc
