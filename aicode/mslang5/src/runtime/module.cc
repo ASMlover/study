@@ -69,6 +69,24 @@ std::shared_ptr<Module> ModuleLoader::load(const std::string& module_name, Vm& v
     return nullptr;
   }
 
+  std::string standard_error;
+  if (auto standard_module = vm.load_standard_module(module_name, &standard_error);
+      standard_module != nullptr) {
+    cache_[module_name] = standard_module;
+    return standard_module;
+  }
+  if (module_name.starts_with("std.")) {
+    if (error != nullptr) {
+      if (!standard_error.empty()) {
+        *error = ModuleError("MS5004", standard_error);
+      } else {
+        *error = ModuleError("MS5001", "module not found: " + module_name);
+      }
+    }
+    return nullptr;
+  }
+
+
   auto path = resolve_path(module_name);
   if (!path) {
     if (error != nullptr) {

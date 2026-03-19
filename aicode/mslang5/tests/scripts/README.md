@@ -42,6 +42,13 @@ error-path examples.
 - `cycle_a.ms` / `cycle_b.ms`: cycle pair used by `error_cycle_entry.ms`.
 - `pkg/math.ms`: nested module fixture for dotted-name import.
 
+
+## Std Module Scripts (`tests/scripts/module/std`)
+
+- `io_math_ok.ms`: validates `import std.io/std.math` success paths and arithmetic output contracts.
+- `io_arity_error.ms`: validates std io arity diagnostics (`MS4002`).
+- `math_type_error.ms`: validates std math number-type diagnostics (`MS4003`).
+
 ## Migration Scripts (`tests/scripts/migration`)
 
 - `m0_baseline_guardrails.ms`: baseline fixture for guardrail-era VM execution smoke checks.

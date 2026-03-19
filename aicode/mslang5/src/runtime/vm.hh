@@ -49,6 +49,8 @@ class Vm {
 
   ModuleLoader& modules() noexcept;
   GcController& gc() noexcept;
+  std::shared_ptr<Module> load_standard_module(const std::string& module_name,
+                                               std::string* error);
 
  private:
   struct CallFrame {
@@ -89,7 +91,11 @@ class Vm {
   void register_module_allocation(const std::shared_ptr<Module>& module);
   std::size_t estimate_object_bytes(const RuntimeObject* object) const;
   std::size_t estimate_module_bytes(const std::shared_ptr<Module>& module) const;
+  RuntimeObject* create_native_object(const std::string& name, int arity,
+                                      NativeCallable callable);
   bool register_native(const std::string& name, int arity, NativeCallable callable);
+  bool install_std_io_exports(Module* module);
+  bool install_std_math_exports(Module* module);
   void install_core_natives();
 
   void trace_gc_roots(GcController& gc) const;

@@ -466,6 +466,18 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
                                 error);
           return InterpretResult::kRuntimeError;
         }
+        const std::string name = std::get<std::string>(c);
+        if (receiver.is_module()) {
+          Value exported;
+          if (!receiver.as_module()->exports.get(name, &exported)) {
+            set_single_diagnostic(ParseWithFallback(RuntimeError("MS4004", "undefined property: " + name),
+                                                    "runtime", "MS4004", current_source_name_),
+                                  error);
+            return InterpretResult::kRuntimeError;
+          }
+          push(exported);
+          break;
+        }
         const auto instance =
             receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
         if (instance == nullptr) {
@@ -474,7 +486,6 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
                                 error);
           return InterpretResult::kRuntimeError;
         }
-        const std::string name = std::get<std::string>(c);
         Value value;
         if (instance->fields.get(name, &value)) {
           push(value);
@@ -776,6 +787,33 @@ ModuleLoader& Vm::modules() noexcept { return modules_; }
 
 GcController& Vm::gc() noexcept { return gc_; }
 
+std::shared_ptr<Module> Vm::load_standard_module(const std::string& module_name,
+                                                std::string* error) {
+  auto module = std::make_shared<Module>();
+  module->name = module_name;
+  module->initializing = false;
+  module->initialized = true;
+
+  bool install_ok = false;
+  if (module_name == "std.io") {
+    install_ok = install_std_io_exports(module.get());
+  } else if (module_name == "std.math") {
+    install_ok = install_std_math_exports(module.get());
+  } else {
+    return nullptr;
+  }
+
+  if (!install_ok) {
+    if (error != nullptr) {
+      *error = RuntimeError("MS4003", "failed to initialize standard module: " + module_name);
+    }
+    return nullptr;
+  }
+
+  register_module_allocation(module);
+  return module;
+}
+
 
 SourceExecutionRoute Vm::last_source_execution_route() const noexcept { return last_source_route_; }
 
@@ -948,6 +986,20 @@ bool Vm::invoke_from_class(ClassObject* klass, const std::string& name,
 
 bool Vm::invoke_value(const Value& receiver, const std::string& name, const int arg_count,
                       std::vector<CallFrame>* frames, std::string* error) {
+  const std::size_t receiver_slot = stack_.size() - static_cast<std::size_t>(arg_count) - 1;
+  if (receiver.is_module()) {
+    auto module = receiver.as_module();
+    Value exported;
+    if (!module->exports.get(name, &exported)) {
+      set_single_diagnostic(ParseWithFallback(RuntimeError("MS4004", "undefined property: " + name),
+                                              "runtime", "MS4004", current_source_name_),
+                            error);
+      return false;
+    }
+    stack_[receiver_slot] = exported;
+    return call_value_at(receiver_slot, arg_count, frames, error);
+  }
+
   const auto instance =
       receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
   if (instance == nullptr) {
@@ -957,7 +1009,6 @@ bool Vm::invoke_value(const Value& receiver, const std::string& name, const int 
     return false;
   }
 
-  const std::size_t receiver_slot = stack_.size() - static_cast<std::size_t>(arg_count) - 1;
   Value field;
   if (instance->fields.get(name, &field)) {
     stack_[receiver_slot] = field;
@@ -1190,16 +1241,180 @@ void Vm::register_module_allocation(const std::shared_ptr<Module>& module) {
   gc_.register_allocation(module.get(), estimate_module_bytes(module));
 }
 
-bool Vm::register_native(const std::string& name, const int arity, NativeCallable callable) {
+RuntimeObject* Vm::create_native_object(const std::string& name, const int arity,
+                                      NativeCallable callable) {
   if (name.empty() || callable == nullptr) {
-    return false;
+    return nullptr;
   }
-
   auto native = std::make_unique<NativeFunctionObject>(name, arity, std::move(callable));
   RuntimeObject* native_ptr = native.get();
   native_owned_objects_.push_back(std::move(native));
+  return native_ptr;
+}
+
+bool Vm::register_native(const std::string& name, const int arity, NativeCallable callable) {
+  RuntimeObject* native_ptr = create_native_object(name, arity, std::move(callable));
+  if (native_ptr == nullptr) {
+    return false;
+  }
   return globals_.set(name, Value(native_ptr));
 }
+
+bool Vm::install_std_io_exports(Module* module) {
+  if (module == nullptr) {
+    return false;
+  }
+  RuntimeObject* print_fn = create_native_object(
+      "std.io.print", 1,
+      [](Vm& vm, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.io.print expects exactly one argument";
+          }
+          return false;
+        }
+        vm.output() << args[0].to_string();
+        if (out != nullptr) {
+          *out = Value::nil();
+        }
+        return true;
+      });
+  RuntimeObject* println_fn = create_native_object(
+      "std.io.println", 1,
+      [](Vm& vm, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.io.println expects exactly one argument";
+          }
+          return false;
+        }
+        vm.output() << args[0].to_string() << '\n';
+        if (out != nullptr) {
+          *out = Value::nil();
+        }
+        return true;
+      });
+  if (print_fn == nullptr || println_fn == nullptr) {
+    return false;
+  }
+  return module->exports.set("print", Value(print_fn)) &&
+         module->exports.set("println", Value(println_fn));
+}
+
+bool Vm::install_std_math_exports(Module* module) {
+  if (module == nullptr) {
+    return false;
+  }
+
+  const auto expect_number = [](const Value& value, const std::string& fn_name,
+                                const std::size_t index, std::string* native_error) -> bool {
+    if (value.is_number()) {
+      return true;
+    }
+    if (native_error != nullptr) {
+      *native_error = fn_name + " argument " + std::to_string(index + 1) + " must be number";
+    }
+    return false;
+  };
+
+  RuntimeObject* abs_fn = create_native_object(
+      "std.math.abs", 1,
+      [expect_number](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.math.abs expects exactly one argument";
+          }
+          return false;
+        }
+        if (!expect_number(args[0], "std.math.abs", 0, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(std::fabs(args[0].as_number()));
+        }
+        return true;
+      });
+  RuntimeObject* min_fn = create_native_object(
+      "std.math.min", 2,
+      [expect_number](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 2) {
+          if (native_error != nullptr) {
+            *native_error = "std.math.min expects exactly two arguments";
+          }
+          return false;
+        }
+        if (!expect_number(args[0], "std.math.min", 0, native_error) ||
+            !expect_number(args[1], "std.math.min", 1, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(std::min(args[0].as_number(), args[1].as_number()));
+        }
+        return true;
+      });
+  RuntimeObject* max_fn = create_native_object(
+      "std.math.max", 2,
+      [expect_number](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 2) {
+          if (native_error != nullptr) {
+            *native_error = "std.math.max expects exactly two arguments";
+          }
+          return false;
+        }
+        if (!expect_number(args[0], "std.math.max", 0, native_error) ||
+            !expect_number(args[1], "std.math.max", 1, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(std::max(args[0].as_number(), args[1].as_number()));
+        }
+        return true;
+      });
+  RuntimeObject* floor_fn = create_native_object(
+      "std.math.floor", 1,
+      [expect_number](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.math.floor expects exactly one argument";
+          }
+          return false;
+        }
+        if (!expect_number(args[0], "std.math.floor", 0, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(std::floor(args[0].as_number()));
+        }
+        return true;
+      });
+  RuntimeObject* ceil_fn = create_native_object(
+      "std.math.ceil", 1,
+      [expect_number](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.math.ceil expects exactly one argument";
+          }
+          return false;
+        }
+        if (!expect_number(args[0], "std.math.ceil", 0, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(std::ceil(args[0].as_number()));
+        }
+        return true;
+      });
+
+  if (abs_fn == nullptr || min_fn == nullptr || max_fn == nullptr || floor_fn == nullptr ||
+      ceil_fn == nullptr) {
+    return false;
+  }
+  return module->exports.set("abs", Value(abs_fn)) && module->exports.set("min", Value(min_fn)) &&
+         module->exports.set("max", Value(max_fn)) &&
+         module->exports.set("floor", Value(floor_fn)) &&
+         module->exports.set("ceil", Value(ceil_fn));
+}
+
 
 void Vm::install_core_natives() {
   register_native("native_clock", 0,

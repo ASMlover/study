@@ -121,5 +121,40 @@ int RunModuleIntegrationTests() {
            "failed-cache retry should execute on VM pipeline");
   }
 
+
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/io_math_ok.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kOk,
+           "std io/math happy path should execute");
+    Expect(default_run.output == "3\n3\n5\n3\n4\n8\n",
+           "std io/math output should match expected values");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std io/math should execute on VM pipeline");
+  }
+
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/io_arity_error.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kRuntimeError,
+           "std.io arity mismatch should fail");
+    Expect(default_run.error.find("MS4002") != std::string::npos,
+           "std.io arity mismatch should expose MS4002");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std.io arity mismatch should execute on VM pipeline");
+  }
+
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/math_type_error.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kRuntimeError,
+           "std.math type mismatch should fail");
+    Expect(default_run.error.find("MS4003") != std::string::npos,
+           "std.math type mismatch should expose MS4003");
+    Expect(default_run.error.find("argument 1 must be number") != std::string::npos,
+           "std.math type mismatch should preserve argument detail");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std.math type mismatch should execute on VM pipeline");
+  }
   return 0;
 }
