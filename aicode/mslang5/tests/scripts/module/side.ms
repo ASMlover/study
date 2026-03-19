@@ -1,3 +1,3 @@
-print "init";
-var x = 1;
+print "init"
+var x = 1
 

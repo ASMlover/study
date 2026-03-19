@@ -1,2 +1,2 @@
-import no_such_module;
+import no_such_module
 

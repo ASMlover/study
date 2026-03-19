@@ -62,6 +62,18 @@ int RunNewlineStatementEndIntegrationTests() {
   }
 
   {
+    const std::string src =
+        ReadAll(RepoRoot() + "/tests/scripts/migration/newline/newline_for_clause_sep_ok.ms");
+    const ExecOutcome run = RunWithMode(src);
+    Expect(run.result == ms::InterpretResult::kOk,
+           "newline_for_clause_sep_ok should execute");
+    Expect(run.output == "10\n",
+           "newline_for_clause_sep_ok output should match expected values");
+    Expect(run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "newline_for_clause_sep_ok should execute on VM pipeline");
+  }
+
+  {
     const ExecOutcome run = RunWithMode("return\n");
     Expect(run.result == ms::InterpretResult::kCompileError,
            "top-level return with newline terminator should remain compile error");

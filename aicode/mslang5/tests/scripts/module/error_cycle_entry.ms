@@ -1,3 +1,3 @@
-import cycle_a;
-print "unreachable";
+import cycle_a
+print "unreachable"
 

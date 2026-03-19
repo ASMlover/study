@@ -1,2 +1,2 @@
-import std.math;
-print math.abs("x");
+import std.math
+print math.abs("x")

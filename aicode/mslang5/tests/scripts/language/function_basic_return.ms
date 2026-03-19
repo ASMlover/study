@@ -1,11 +1,11 @@
 fun add(a, b) {
-  return a + b;
+  return a + b
 }
 
 fun noValue() {
-  return;
+  return
 }
 
-print add(7, 8);
-print noValue();
+print add(7, 8)
+print noValue()
 

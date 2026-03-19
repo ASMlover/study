@@ -1,17 +1,17 @@
 class A {
   method() {
-    return "A";
+    return "A"
   }
 }
 
 class B < A {
   method() {
-    return "B";
+    return "B"
   }
 
   chain() {
-    return super.method() + this.method();
+    return super.method() + this.method()
   }
 }
 
-print B().chain();
+print B().chain()

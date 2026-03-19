@@ -1,3 +1,3 @@
-var value = 7;
-var text = "ok";
+var value = 7
+var text = "ok"
 

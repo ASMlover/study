@@ -1,3 +1,3 @@
 {
-  return 7;
+  return 7
 }

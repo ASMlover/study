@@ -1,2 +1,2 @@
-import std.debug;
-print debug.typeof();
+import std.debug
+print debug.typeof()

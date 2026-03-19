@@ -243,6 +243,22 @@ class CompilerImpl {
     return parser_.consume_statement_end(message);
   }
 
+  bool match_for_clause_separator() {
+    if (parser_.match(TokenType::kSemicolon) || parser_.match(TokenType::kNewline)) {
+      parser_.skip_newline_tokens();
+      return true;
+    }
+    return false;
+  }
+
+  bool consume_for_clause_separator(const std::string& message) {
+    if (match_for_clause_separator()) {
+      return true;
+    }
+    report_parse_error(message);
+    return false;
+  }
+
   void declaration() {
     skip_statement_separators();
     if (parser_.is_at_end()) {
@@ -553,8 +569,9 @@ class CompilerImpl {
   void for_statement() {
     begin_scope();
     parser_.consume(TokenType::kLeftParen, "expected '(' after 'for'");
+    parser_.skip_newline_tokens();
 
-    if (parser_.match(TokenType::kSemicolon)) {
+    if (match_for_clause_separator()) {
       // No initializer.
     } else if (parser_.match(TokenType::kVar)) {
       var_declaration();
@@ -564,13 +581,14 @@ class CompilerImpl {
 
     std::size_t loop_start = chunk().code().size();
     std::optional<std::size_t> exit_jump;
-    if (!parser_.match(TokenType::kSemicolon)) {
+    if (!match_for_clause_separator()) {
       expression();
-      parser_.consume(TokenType::kSemicolon, "expected ';' after loop condition");
+      consume_for_clause_separator("expected separator after loop condition");
       exit_jump = emit_jump(OpCode::kJumpIfFalse);
       emit_op(OpCode::kPop, current_line());
     }
 
+    parser_.skip_newline_tokens();
     if (!parser_.match(TokenType::kRightParen)) {
       const std::size_t body_jump = emit_jump(OpCode::kJump);
       const std::size_t increment_start = chunk().code().size();
@@ -588,6 +606,7 @@ class CompilerImpl {
       if (increment_produced_value) {
         emit_op(OpCode::kPop, current_line());
       }
+      parser_.skip_newline_tokens();
       parser_.consume(TokenType::kRightParen, "expected ')' after for clauses");
 
       emit_loop(loop_start);

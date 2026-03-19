@@ -19,7 +19,7 @@ functionExpr    = "fun" functionBody ;
 functionBody    = "(" [ parameters ] ")" block ;
 parameters      = IDENTIFIER { "," IDENTIFIER } ;
 
-varDecl         = "var" IDENTIFIER [ "=" expression ] ";" ;
+varDecl         = "var" IDENTIFIER [ "=" expression ] statementEnd ;
 
 statement       = exprStmt
                 | printStmt
@@ -31,9 +31,9 @@ statement       = exprStmt
                 | importStmt
                 | fromImportStmt ;
 
-exprStmt        = expression ";" ;
-printStmt       = "print" expression ";" ;
-returnStmt      = "return" [ expression ] ";" ;
+exprStmt        = expression statementEnd ;
+printStmt       = "print" expression statementEnd ;
+returnStmt      = "return" [ expression ] statementEnd ;
 block           = "{" { declaration } "}" ;
 
 ifStmt          = "if" "(" expression ")" statement [ "else" statement ] ;
@@ -42,13 +42,16 @@ whileStmt       = "while" "(" expression ")" statement ;
 forStmt         = "for" "("
                   ( varDecl
                   | exprStmt
-                  | ";" )
-                  [ expression ] ";"
+                  | clauseSep )
+                  [ expression ] clauseSep
                   [ expression ]
                   ")" statement ;
 
-importStmt      = "import" dottedName ";" ;
-fromImportStmt  = "from" dottedName "import" IDENTIFIER [ "as" IDENTIFIER ] ";" ;
+importStmt      = "import" dottedName statementEnd ;
+fromImportStmt  = "from" dottedName "import" IDENTIFIER [ "as" IDENTIFIER ] statementEnd ;
+
+statementEnd    = ";" | NEWLINE ;
+clauseSep       = ";" | NEWLINE ;
 
 expression      = assignment ;
 
@@ -88,4 +91,5 @@ dottedName      = IDENTIFIER { "." IDENTIFIER } ;
 IDENTIFIER      = ? lexical identifier token ? ;
 NUMBER          = ? lexical number token ? ;
 STRING          = ? lexical string token ? ;
+NEWLINE         = ? newline boundary token ? ;
 EOF             = ? end-of-file token ? ;

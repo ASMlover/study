@@ -1,3 +1,3 @@
-var n = 1;
-n.value = 2;
+var n = 1
+n.value = 2
 

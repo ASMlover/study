@@ -1,14 +1,14 @@
 class Box {
   init(v) {
-    this.v = v;
+    this.v = v
   }
 
   get() {
     fun capture() {
-      return this.v;
+      return this.v
     }
-    return capture();
+    return capture()
   }
 }
 
-print Box(9).get();
+print Box(9).get()

@@ -1,2 +1,2 @@
-import std.io;
-io.println();
+import std.io
+io.println()

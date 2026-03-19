@@ -1,3 +1,3 @@
-import cycle_b;
-var a = "A";
+import cycle_b
+var a = "A"
 

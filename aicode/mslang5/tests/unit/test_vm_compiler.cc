@@ -101,6 +101,25 @@ int RunVmCompilerTests() {
   Expect(out.str() == "5\n",
          "mixed terminator output should preserve statement semantics");
 
+
+  out.str("");
+  out.clear();
+  error.clear();
+  const ms::InterpretResult newline_for_clause_result = vm.execute_source(
+      "var total = 0\n"
+      "for (\n"
+      "  var i = 0\n"
+      "  i < 5\n"
+      "  i = i + 1\n"
+      ") {\n"
+      "  total = total + i\n"
+      "}\n"
+      "print total\n",
+      &error);
+  Expect(newline_for_clause_result == ms::InterpretResult::kOk,
+         "for-clause newline separators should execute");
+  Expect(out.str() == "10\n",
+         "for-clause newline separators should preserve loop semantics");
   error.clear();
   const ms::InterpretResult compile_error = vm.execute_source("var x = ;\n", &error);
   Expect(compile_error == ms::InterpretResult::kCompileError,

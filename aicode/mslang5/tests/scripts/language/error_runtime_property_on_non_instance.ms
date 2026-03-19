@@ -1,3 +1,3 @@
-var n = 1;
-print n.value;
+var n = 1
+print n.value
 

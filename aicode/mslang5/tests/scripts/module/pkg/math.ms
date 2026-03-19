@@ -1,2 +1,2 @@
-var answer = 42;
+var answer = 42
 

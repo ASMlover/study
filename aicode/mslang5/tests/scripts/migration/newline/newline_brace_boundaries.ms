@@ -1,4 +1,4 @@
-var alpha = 1;
+var alpha = 1
 {
-  print alpha;
+  print alpha
 }

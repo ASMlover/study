@@ -1,2 +1,2 @@
-print no_such_name;
+print no_such_name
 

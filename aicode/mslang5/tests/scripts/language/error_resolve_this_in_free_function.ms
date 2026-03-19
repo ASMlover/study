@@ -1,5 +1,5 @@
 fun leakThis() {
-  return this;
+  return this
 }
 
-print leakThis();
+print leakThis()

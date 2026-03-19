@@ -1,12 +1,12 @@
-var x = "global";
+var x = "global"
 fun outer() {
-  var x = "local";
+  var x = "local"
   fun read() {
-    return x;
+    return x
   }
-  return read;
+  return read
 }
 
-var fn = outer();
-print fn();
-print x;
+var fn = outer()
+print fn()
+print x

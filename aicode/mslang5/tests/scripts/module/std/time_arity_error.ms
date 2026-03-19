@@ -1,2 +1,2 @@
-import std.time;
-print time.now_unix_ms(1);
+import std.time
+print time.now_unix_ms(1)
