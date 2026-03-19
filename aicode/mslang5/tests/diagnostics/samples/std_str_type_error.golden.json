@@ -1,0 +1,12 @@
+[
+  {
+    "phase": "runtime",
+    "code": "MS4003",
+    "message": "std.str.len argument 1 must be string",
+    "span": {
+      "file": "tests/scripts/module/std/str_type_error.ms",
+      "line": 1
+    },
+    "notes": []
+  }
+]

@@ -48,6 +48,10 @@ error-path examples.
 - `io_math_ok.ms`: validates `import std.io/std.math` success paths and arithmetic output contracts.
 - `io_arity_error.ms`: validates std io arity diagnostics (`MS4002`).
 - `math_type_error.ms`: validates std math number-type diagnostics (`MS4003`).
+- `str_time_debug_ok.ms`: validates `import std.str/std.time/std.debug` success paths and type contracts.
+- `str_type_error.ms`: validates std str string-type diagnostics (`MS4003`).
+- `time_arity_error.ms`: validates std time arity diagnostics (`MS4002`).
+- `debug_arity_error.ms`: validates std debug arity diagnostics (`MS4002`).
 
 ## Migration Scripts (`tests/scripts/migration`)
 

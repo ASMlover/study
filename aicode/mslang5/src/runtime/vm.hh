@@ -96,6 +96,9 @@ class Vm {
   bool register_native(const std::string& name, int arity, NativeCallable callable);
   bool install_std_io_exports(Module* module);
   bool install_std_math_exports(Module* module);
+  bool install_std_str_exports(Module* module);
+  bool install_std_time_exports(Module* module);
+  bool install_std_debug_exports(Module* module);
   void install_core_natives();
 
   void trace_gc_roots(GcController& gc) const;

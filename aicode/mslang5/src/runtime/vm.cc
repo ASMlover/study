@@ -27,6 +27,52 @@ Diagnostic ParseWithFallback(const std::string& text, const std::string& phase,
   return parse_diagnostic_text(text, phase, code, file);
 }
 
+std::string NativeTypeName(const Value& value) {
+  if (value.is_nil()) {
+    return "nil";
+  }
+  if (value.is_bool()) {
+    return "bool";
+  }
+  if (value.is_number()) {
+    return "number";
+  }
+  if (value.is_string()) {
+    return "string";
+  }
+  if (value.is_module()) {
+    return "module";
+  }
+  if (!value.is_object()) {
+    return "unknown";
+  }
+
+  RuntimeObject* object = value.as_object();
+  if (object == nullptr) {
+    return "object";
+  }
+  if (dynamic_cast<ClassObject*>(object) != nullptr) {
+    return "class";
+  }
+  if (dynamic_cast<InstanceObject*>(object) != nullptr) {
+    return "instance";
+  }
+  if (dynamic_cast<NativeFunctionObject*>(object) != nullptr) {
+    return "native_function";
+  }
+  if (dynamic_cast<BoundMethodObject*>(object) != nullptr) {
+    return "bound_method";
+  }
+  if (dynamic_cast<ClosureObject*>(object) != nullptr ||
+      dynamic_cast<FunctionObject*>(object) != nullptr) {
+    return "function";
+  }
+  if (dynamic_cast<UpvalueObject*>(object) != nullptr) {
+    return "upvalue";
+  }
+  return "object";
+}
+
 
 }  // namespace
 
@@ -799,6 +845,12 @@ std::shared_ptr<Module> Vm::load_standard_module(const std::string& module_name,
     install_ok = install_std_io_exports(module.get());
   } else if (module_name == "std.math") {
     install_ok = install_std_math_exports(module.get());
+  } else if (module_name == "std.str") {
+    install_ok = install_std_str_exports(module.get());
+  } else if (module_name == "std.time") {
+    install_ok = install_std_time_exports(module.get());
+  } else if (module_name == "std.debug") {
+    install_ok = install_std_debug_exports(module.get());
   } else {
     return nullptr;
   }
@@ -1415,6 +1467,172 @@ bool Vm::install_std_math_exports(Module* module) {
          module->exports.set("ceil", Value(ceil_fn));
 }
 
+bool Vm::install_std_str_exports(Module* module) {
+  if (module == nullptr) {
+    return false;
+  }
+
+  const auto expect_string = [](const Value& value, const std::string& fn_name,
+                                const std::size_t index, std::string* native_error) -> bool {
+    if (value.is_string()) {
+      return true;
+    }
+    if (native_error != nullptr) {
+      *native_error = fn_name + " argument " + std::to_string(index + 1) + " must be string";
+    }
+    return false;
+  };
+
+  const auto expect_non_negative_integer = [](const Value& value, const std::string& fn_name,
+                                              const std::size_t index,
+                                              std::string* native_error) -> bool {
+    if (!value.is_number()) {
+      if (native_error != nullptr) {
+        *native_error =
+            fn_name + " argument " + std::to_string(index + 1) + " must be non-negative integer";
+      }
+      return false;
+    }
+    const double number = value.as_number();
+    if (!std::isfinite(number) || number < 0 || std::floor(number) != number) {
+      if (native_error != nullptr) {
+        *native_error =
+            fn_name + " argument " + std::to_string(index + 1) + " must be non-negative integer";
+      }
+      return false;
+    }
+    return true;
+  };
+
+  RuntimeObject* len_fn = create_native_object(
+      "std.str.len", 1,
+      [expect_string](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.str.len expects exactly one argument";
+          }
+          return false;
+        }
+        if (!expect_string(args[0], "std.str.len", 0, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(static_cast<double>(args[0].as_string().size()));
+        }
+        return true;
+      });
+
+  RuntimeObject* substr_fn = create_native_object(
+      "std.str.substr", 3,
+      [expect_string, expect_non_negative_integer](Vm&, std::span<const Value> args, Value* out,
+                                                   std::string* native_error) {
+        if (args.size() != 3) {
+          if (native_error != nullptr) {
+            *native_error = "std.str.substr expects exactly three arguments";
+          }
+          return false;
+        }
+        if (!expect_string(args[0], "std.str.substr", 0, native_error) ||
+            !expect_non_negative_integer(args[1], "std.str.substr", 1, native_error) ||
+            !expect_non_negative_integer(args[2], "std.str.substr", 2, native_error)) {
+          return false;
+        }
+
+        const std::string& source = args[0].as_string();
+        std::size_t start = static_cast<std::size_t>(args[1].as_number());
+        const std::size_t length = static_cast<std::size_t>(args[2].as_number());
+        if (start > source.size()) {
+          start = source.size();
+        }
+        const std::size_t count = std::min(length, source.size() - start);
+
+        if (out != nullptr) {
+          *out = Value(source.substr(start, count));
+        }
+        return true;
+      });
+
+  RuntimeObject* contains_fn = create_native_object(
+      "std.str.contains", 2,
+      [expect_string](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 2) {
+          if (native_error != nullptr) {
+            *native_error = "std.str.contains expects exactly two arguments";
+          }
+          return false;
+        }
+        if (!expect_string(args[0], "std.str.contains", 0, native_error) ||
+            !expect_string(args[1], "std.str.contains", 1, native_error)) {
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(args[0].as_string().find(args[1].as_string()) != std::string::npos);
+        }
+        return true;
+      });
+
+  if (len_fn == nullptr || substr_fn == nullptr || contains_fn == nullptr) {
+    return false;
+  }
+  return module->exports.set("len", Value(len_fn)) &&
+         module->exports.set("substr", Value(substr_fn)) &&
+         module->exports.set("contains", Value(contains_fn));
+}
+
+bool Vm::install_std_time_exports(Module* module) {
+  if (module == nullptr) {
+    return false;
+  }
+
+  RuntimeObject* now_unix_ms_fn = create_native_object(
+      "std.time.now_unix_ms", 0,
+      [](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (!args.empty()) {
+          if (native_error != nullptr) {
+            *native_error = "std.time.now_unix_ms expects no arguments";
+          }
+          return false;
+        }
+        const auto now = std::chrono::system_clock::now();
+        const auto millis =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+        if (out != nullptr) {
+          *out = Value(static_cast<double>(millis));
+        }
+        return true;
+      });
+
+  if (now_unix_ms_fn == nullptr) {
+    return false;
+  }
+  return module->exports.set("now_unix_ms", Value(now_unix_ms_fn));
+}
+
+bool Vm::install_std_debug_exports(Module* module) {
+  if (module == nullptr) {
+    return false;
+  }
+
+  RuntimeObject* typeof_fn = create_native_object(
+      "std.debug.typeof", 1,
+      [](Vm&, std::span<const Value> args, Value* out, std::string* native_error) {
+        if (args.size() != 1) {
+          if (native_error != nullptr) {
+            *native_error = "std.debug.typeof expects exactly one argument";
+          }
+          return false;
+        }
+        if (out != nullptr) {
+          *out = Value(NativeTypeName(args[0]));
+        }
+        return true;
+      });
+
+  if (typeof_fn == nullptr) {
+    return false;
+  }
+  return module->exports.set("typeof", Value(typeof_fn));
+}
 
 void Vm::install_core_natives() {
   register_native("native_clock", 0,

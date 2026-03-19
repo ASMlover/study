@@ -111,5 +111,8 @@ int RunDiagnosticsGoldenTests() {
   RunGoldenCase("DIAG-MOD-MISSING-001", RepoRoot() + "/tests/scripts/module/error_missing_module.ms",
                 ms::InterpretResult::kRuntimeError,
                 RepoRoot() + "/tests/diagnostics/samples/module_not_found.golden.json");
+  RunGoldenCase("DIAG-STD-STR-TYPE-001", RepoRoot() + "/tests/scripts/module/std/str_type_error.ms",
+                ms::InterpretResult::kRuntimeError,
+                RepoRoot() + "/tests/diagnostics/samples/std_str_type_error.golden.json");
   return 0;
 }

@@ -54,7 +54,7 @@ Script execution template:
 | T07 | GC | Add GC stress assertions and observability checks | Full build | integration (`test_gc.cc`) + unit (`test_vm_compiler.cc`) | `tests/scripts/migration/m5_gc_stress_mix.ms` | done | Codex |
 | T08 | Stdlib | Add native callable infrastructure in VM | Full build | unit + integration | `tests/scripts/cli_ok.ms` | done | Codex |
 | T09 | Stdlib | Implement `std.io` and `std.math` modules | Full build | integration + conformance | new scripts under `tests/scripts/module/std/` | done | Codex |
-| T10 | Stdlib | Implement `std.str`, `std.time`, `std.debug` modules | Full build | integration + conformance + diagnostics | new scripts under `tests/scripts/module/std/` | todo | - |
+| T10 | Stdlib | Implement `std.str`, `std.time`, `std.debug` modules | Full build | integration + conformance + diagnostics | `str_time_debug_ok.ms`, `str_type_error.ms`, `time_arity_error.ms`, `debug_arity_error.ms` | done | Codex |
 | T11 | Newline | Add newline tokenization in lexer with compatibility mode | Full build | unit (`test_lexer.cc`) + integration | new scripts under `tests/scripts/migration/newline/` | todo | - |
 | T12 | Newline | Add parser/compiler statement-end abstraction (`consume_statement_end`) | Full build | unit (`test_vm_compiler.cc`) + integration + conformance | new scripts under `tests/scripts/migration/newline/` | todo | - |
 | T13 | Newline | Remove semicolon dependency in grammar and finalize migration | Full build | conformance + diagnostics + integration | convert representative scripts to newline style | todo | - |

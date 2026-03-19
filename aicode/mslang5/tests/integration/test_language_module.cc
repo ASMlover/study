@@ -156,5 +156,50 @@ int RunModuleIntegrationTests() {
     Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
            "std.math type mismatch should execute on VM pipeline");
   }
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/str_time_debug_ok.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kOk,
+           "std str/time/debug happy path should execute");
+    Expect(default_run.output == "5\napl\ntrue\nnumber\ntrue\nstring\ninstance\nclass\nnative_function\nfunction\n",
+           "std str/time/debug output should match expected values");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std str/time/debug should execute on VM pipeline");
+  }
+
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/str_type_error.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kRuntimeError,
+           "std.str type mismatch should fail");
+    Expect(default_run.error.find("MS4003") != std::string::npos,
+           "std.str type mismatch should expose MS4003");
+    Expect(default_run.error.find("argument 1 must be string") != std::string::npos,
+           "std.str type mismatch should preserve argument detail");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std.str type mismatch should execute on VM pipeline");
+  }
+
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/time_arity_error.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kRuntimeError,
+           "std.time arity mismatch should fail");
+    Expect(default_run.error.find("MS4002") != std::string::npos,
+           "std.time arity mismatch should expose MS4002");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std.time arity mismatch should execute on VM pipeline");
+  }
+
+  {
+    const std::string src = ReadAll(RepoRoot() + "/tests/scripts/module/std/debug_arity_error.ms");
+    const ExecOutcome default_run = RunWithMode(src);
+    Expect(default_run.result == ms::InterpretResult::kRuntimeError,
+           "std.debug arity mismatch should fail");
+    Expect(default_run.error.find("MS4002") != std::string::npos,
+           "std.debug arity mismatch should expose MS4002");
+    Expect(default_run.route == ms::SourceExecutionRoute::kVmPipeline,
+           "std.debug arity mismatch should execute on VM pipeline");
+  }
   return 0;
 }
