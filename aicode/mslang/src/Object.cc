@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
 #include <format>
+#include <sstream>
 #include "Object.hh"
 
 namespace ms {
@@ -370,6 +371,82 @@ u32_t ObjTuple::compute_hash() const noexcept {
     h *= 16777619u;
   }
   return h;
+}
+
+// --- ObjFile ---
+
+ObjFile::ObjFile(str_t path, str_t mode) noexcept
+    : Object(ObjectType::OBJ_FILE), path_(std::move(path)), mode_(std::move(mode)),
+      stream_(std::make_unique<std::fstream>()) {
+}
+
+ObjFile::~ObjFile() noexcept {
+  close();
+}
+
+str_t ObjFile::stringify() const noexcept {
+  return std::format("<file '{}' {}>", path_, is_open_ ? "open" : "closed");
+}
+
+sz_t ObjFile::size() const noexcept {
+  return sizeof(ObjFile);
+}
+
+bool ObjFile::open() noexcept {
+  std::ios_base::openmode flags{};
+  if (mode_ == "r") {
+    flags = std::ios::in;
+  } else if (mode_ == "w") {
+    flags = std::ios::out | std::ios::trunc;
+  } else if (mode_ == "a") {
+    flags = std::ios::out | std::ios::app;
+  } else if (mode_ == "rb") {
+    flags = std::ios::in | std::ios::binary;
+  } else if (mode_ == "wb") {
+    flags = std::ios::out | std::ios::trunc | std::ios::binary;
+  } else if (mode_ == "ab") {
+    flags = std::ios::out | std::ios::app | std::ios::binary;
+  } else {
+    return false;
+  }
+  stream_->open(path_, flags);
+  is_open_ = stream_->is_open();
+  return is_open_;
+}
+
+void ObjFile::close() noexcept {
+  if (is_open_) {
+    stream_->close();
+    is_open_ = false;
+  }
+}
+
+str_t ObjFile::read_all() noexcept {
+  if (!is_open_) return "";
+  std::ostringstream oss;
+  oss << stream_->rdbuf();
+  // Trigger eof detection after full read
+  stream_->peek();
+  return oss.str();
+}
+
+str_t ObjFile::read_line() noexcept {
+  if (!is_open_) return "";
+  str_t line;
+  if (std::getline(*stream_, line)) {
+    return line;
+  }
+  return "";
+}
+
+void ObjFile::write(strv_t data) noexcept {
+  if (is_open_) {
+    stream_->write(data.data(), static_cast<std::streamsize>(data.size()));
+  }
+}
+
+bool ObjFile::eof() const noexcept {
+  return !is_open_ || stream_->eof();
 }
 
 } // namespace ms

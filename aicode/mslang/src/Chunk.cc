@@ -28,8 +28,8 @@
 
 namespace ms {
 
-void Chunk::write(u8_t byte, int line, int column, int token_length) noexcept {
-  code_.push_back(byte);
+void Chunk::write(Instruction instr, int line, int column, int token_length) noexcept {
+  code_.push_back(instr);
   if (!lines_.empty() && lines_.back().line == line
       && lines_.back().column == column
       && lines_.back().token_length == token_length) {
@@ -39,16 +39,12 @@ void Chunk::write(u8_t byte, int line, int column, int token_length) noexcept {
   }
 }
 
-void Chunk::write(OpCode op, int line, int column, int token_length) noexcept {
-  write(static_cast<u8_t>(op), line, column, token_length);
-}
-
 sz_t Chunk::add_constant(Value value) noexcept {
   constants_.push_back(value);
   return constants_.size() - 1;
 }
 
-u8_t Chunk::code_at(sz_t offset) const noexcept {
+Instruction Chunk::code_at(sz_t offset) const noexcept {
   return code_[offset];
 }
 
@@ -94,7 +90,6 @@ sz_t Chunk::count() const noexcept {
 }
 
 void Chunk::truncate(sz_t new_count) noexcept {
-  // Shrink the line-run table to match the new code size
   sz_t to_remove = code_.size() - new_count;
   while (to_remove > 0 && !lines_.empty()) {
     auto& back = lines_.back();
@@ -106,15 +101,15 @@ void Chunk::truncate(sz_t new_count) noexcept {
   code_.resize(new_count);
 }
 
-u8_t& Chunk::operator[](sz_t offset) noexcept {
+Instruction& Chunk::operator[](sz_t offset) noexcept {
   return code_[offset];
 }
 
-const u8_t* Chunk::code_data() const noexcept {
+const Instruction* Chunk::code_data() const noexcept {
   return code_.data();
 }
 
-u8_t* Chunk::code_data() noexcept {
+Instruction* Chunk::code_data() noexcept {
   return code_.data();
 }
 
@@ -134,11 +129,11 @@ std::vector<SourceRun>& Chunk::lines() noexcept {
   return lines_;
 }
 
-std::vector<u8_t>& Chunk::code() noexcept {
+std::vector<Instruction>& Chunk::code() noexcept {
   return code_;
 }
 
-const std::vector<u8_t>& Chunk::code() const noexcept {
+const std::vector<Instruction>& Chunk::code() const noexcept {
   return code_;
 }
 

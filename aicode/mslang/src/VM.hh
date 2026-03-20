@@ -44,7 +44,7 @@ enum class InterpretResult {
 
 struct CallFrame {
   ObjClosure* closure{nullptr};
-  u8_t* ip{nullptr};
+  Instruction* ip{nullptr};
   Value* slots{nullptr};
   std::vector<ObjClosure*> deferred{};
   Value pending_return{};
@@ -54,7 +54,7 @@ struct CallFrame {
 struct ExceptionHandler {
   int frame_index{0};
   Value* stack_depth{nullptr};
-  u8_t* catch_ip{nullptr};
+  Instruction* catch_ip{nullptr};
 };
 
 class VM : public Singleton<VM> {
@@ -134,6 +134,7 @@ class VM : public Singleton<VM> {
 
   // Import system
   void import_module(ObjString* path) noexcept;
+  void register_io_module() noexcept;
 
   // Error reporting
   void runtime_error(strv_t message) noexcept;

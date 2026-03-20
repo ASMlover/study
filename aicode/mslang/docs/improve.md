@@ -291,8 +291,8 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 11.1 | Integer type + bitwise operators | [x] |
 | | 11.4 | Tuple type + destructuring | [x] |
 | | 13.3 | Abstract methods | [x] |
-| | 14.2 | Register-based bytecode | [ ] |
-| | 15.2 | File I/O module | [ ] |
+| | 14.2 | Register-based bytecode | [x] |
+| | 15.2 | File I/O module | [x] |
 | | 16.4 | Language Server Protocol (LSP) | [ ] |
 | | 17.1 | Incremental / generational GC | [ ] |
 | | 17.2 | Weak references | [ ] |

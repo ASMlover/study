@@ -33,92 +33,14 @@
 
 namespace ms {
 
-namespace {
-
-static sz_t simple_instruction(cstr_t name, sz_t offset) noexcept {
-  std::cout << name << "\n";
-  return offset + 1;
-}
-
-static sz_t byte_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
-  u8_t slot = chunk.code_at(offset + 1);
-  std::cout << std::format("{:<16s} {:4d}\n", name, slot);
-  return offset + 2;
-}
-
-static sz_t two_byte_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
-  u8_t slot1 = chunk.code_at(offset + 1);
-  u8_t slot2 = chunk.code_at(offset + 2);
-  std::cout << std::format("{:<24s} {:4d} {:4d}\n", name, slot1, slot2);
-  return offset + 3;
-}
-
-static sz_t constant_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
-  u8_t index = chunk.code_at(offset + 1);
-  std::cout << std::format("{:<16s} {:4d} '{}'\n",
-      name, index, chunk.constant_at(index).stringify());
-  return offset + 2;
-}
-
-static sz_t jump_instruction(cstr_t name, int sign, const Chunk& chunk, sz_t offset) noexcept {
-  u8_t hi = chunk.code_at(offset + 1);
-  u8_t lo = chunk.code_at(offset + 2);
-  auto jump = static_cast<std::uint16_t>((hi << 8) | lo);
-  sz_t target = static_cast<sz_t>(static_cast<int>(offset + 3) + sign * static_cast<int>(jump));
-  std::cout << std::format("{:<16s} {:4d} -> {:04d}\n",
-      name, offset, target);
-  return offset + 3;
-}
-
-static sz_t property_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
-  u8_t index = chunk.code_at(offset + 1);
-  u8_t ic_slot = chunk.code_at(offset + 2);
-  std::cout << std::format("{:<16s} {:4d} '{}' [ic:{}]\n",
-      name, index, chunk.constant_at(index).stringify(), ic_slot);
-  return offset + 3;
-}
-
-static sz_t invoke_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
-  u8_t index = chunk.code_at(offset + 1);
-  u8_t arg_count = chunk.code_at(offset + 2);
-  u8_t ic_slot = chunk.code_at(offset + 3);
-  std::cout << std::format("{:<16s} ({} args) {:4d} '{}' [ic:{}]\n",
-      name, arg_count, index, chunk.constant_at(index).stringify(), ic_slot);
-  return offset + 4;
-}
-
-static sz_t constant_long_instruction(cstr_t name, const Chunk& chunk, sz_t offset) noexcept {
-  u32_t index = chunk.code_at(offset + 1);
-  index |= static_cast<u32_t>(chunk.code_at(offset + 2)) << 8;
-  index |= static_cast<u32_t>(chunk.code_at(offset + 3)) << 16;
-  std::cout << std::format("{:<16s} {:4d} '{}'\n",
-      name, index, chunk.constant_at(index).stringify());
-  return offset + 4;
-}
-
-static sz_t closure_instruction(const Chunk& chunk, sz_t offset) noexcept {
-  u8_t index = chunk.code_at(offset + 1);
-  std::cout << std::format("{:<16s} {:4d} '{}'\n",
-      "OP_CLOSURE", index, chunk.constant_at(index).stringify());
-  offset += 2;
-
-  // Print upvalue metadata
-  Value constant = chunk.constant_at(index);
-  if (constant.is_object() && constant.as_object()->type() == ObjectType::OBJ_FUNCTION) {
-    ObjFunction* function = as_obj<ObjFunction>(constant.as_object());
-    for (int j = 0; j < function->upvalue_count(); j++) {
-      u8_t is_local = chunk.code_at(offset);
-      u8_t upvalue_index = chunk.code_at(offset + 1);
-      std::cout << std::format("{:04d}      |                     {} {}\n",
-          offset, is_local ? "local" : "upvalue", upvalue_index);
-      offset += 2;
-    }
+// Helper: format an RK operand as either R(n) or K(n)
+static str_t rk_str(u8_t rk, const Chunk& chunk) noexcept {
+  if (is_rk_const(rk)) {
+    u8_t ki = rk_to_const(rk);
+    return std::format("K({}) '{}'", ki, chunk.constant_at(ki).stringify());
   }
-
-  return offset;
+  return std::format("R({})", rk);
 }
-
-} // anonymous namespace
 
 void disassemble_chunk(const Chunk& chunk, strv_t name) noexcept {
   std::cout << std::format("== {} ==\n", name);
@@ -137,119 +59,232 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
     std::cout << std::format("{:4d} ", chunk.line_at(offset));
   }
 
-  u8_t byte = chunk.code_at(offset);
-  auto op = static_cast<OpCode>(byte);
+  Instruction instr = chunk.code_at(offset);
+  OpCode op = decode_op(instr);
+  u8_t A = decode_A(instr);
+  u8_t B = decode_B(instr);
+  u8_t C = decode_C(instr);
+  u16_t Bx = decode_Bx(instr);
+  int sBx = decode_sBx(instr);
 
   switch (op) {
-  // Simple instructions (no operands)
-  case OpCode::OP_NIL:
-  case OpCode::OP_TRUE:
-  case OpCode::OP_FALSE:
-  case OpCode::OP_POP:
-  case OpCode::OP_EQUAL:
-  case OpCode::OP_GREATER:
-  case OpCode::OP_LESS:
-  case OpCode::OP_ADD:
-  case OpCode::OP_SUBTRACT:
-  case OpCode::OP_MULTIPLY:
-  case OpCode::OP_DIVIDE:
-  case OpCode::OP_MODULO:
-  case OpCode::OP_NOT:
-  case OpCode::OP_NEGATE:
-  case OpCode::OP_STR:
-  case OpCode::OP_PRINT:
-  case OpCode::OP_INDEX_GET:
-  case OpCode::OP_INDEX_SET:
-  case OpCode::OP_CLOSE_UPVALUE:
-  case OpCode::OP_RETURN:
-  case OpCode::OP_INHERIT:
-  case OpCode::OP_IMPORT_FROM:
-  case OpCode::OP_IMPORT_ALIAS:
-  case OpCode::OP_THROW:
-  case OpCode::OP_END_TRY:
-  case OpCode::OP_DEFER:
-  case OpCode::OP_BITAND:
-  case OpCode::OP_BITOR:
-  case OpCode::OP_BITXOR:
-  case OpCode::OP_BITNOT:
-  case OpCode::OP_LSHIFT:
-  case OpCode::OP_RSHIFT:
-    return simple_instruction(opcode_name(op), offset);
+  // --- iABx: loading constants, globals, closures, classes ---
+  case OpCode::OP_LOADK:
+    std::cout << std::format("{:<16s} R({}) := K({}) '{}'\n",
+        opcode_name(op), A, Bx, chunk.constant_at(Bx).stringify());
+    return offset + 1;
 
-  // Byte instructions (1 byte operand = slot index)
-  case OpCode::OP_GET_LOCAL:
-  case OpCode::OP_SET_LOCAL:
-  case OpCode::OP_GET_UPVALUE:
-  case OpCode::OP_SET_UPVALUE:
-  case OpCode::OP_BUILD_LIST:
-  case OpCode::OP_BUILD_MAP:
-  case OpCode::OP_BUILD_TUPLE:
-  case OpCode::OP_CALL:
-    return byte_instruction(opcode_name(op), chunk, offset);
+  case OpCode::OP_GETGLOBAL:
+  case OpCode::OP_SETGLOBAL:
+  case OpCode::OP_DEFGLOBAL:
+    std::cout << std::format("{:<16s} R({})  K({}) '{}'\n",
+        opcode_name(op), A, Bx, chunk.constant_at(Bx).stringify());
+    return offset + 1;
 
-  // Constant long instruction (3 byte operand = constant index)
-  case OpCode::OP_CONSTANT_LONG:
-    return constant_long_instruction(opcode_name(op), chunk, offset);
-
-  // Property instructions (1 byte constant index + 1 byte IC slot)
-  case OpCode::OP_GET_PROPERTY:
-  case OpCode::OP_SET_PROPERTY:
-    return property_instruction(opcode_name(op), chunk, offset);
-
-  // Constant instructions (1 byte operand = constant index)
-  case OpCode::OP_CONSTANT:
-  case OpCode::OP_GET_GLOBAL:
-  case OpCode::OP_DEFINE_GLOBAL:
-  case OpCode::OP_SET_GLOBAL:
-  case OpCode::OP_GET_SUPER:
   case OpCode::OP_CLASS:
-  case OpCode::OP_METHOD:
-  case OpCode::OP_STATIC_METHOD:
-  case OpCode::OP_GETTER:
-  case OpCode::OP_SETTER:
-  case OpCode::OP_ABSTRACT_METHOD:
+    std::cout << std::format("{:<16s} R({}) := class '{}'\n",
+        opcode_name(op), A, chunk.constant_at(Bx).stringify());
+    return offset + 1;
+
+  // --- iA: simple register instructions ---
+  case OpCode::OP_LOADTRUE:
+  case OpCode::OP_LOADFALSE:
+  case OpCode::OP_PRINT:
+  case OpCode::OP_THROW:
   case OpCode::OP_IMPORT:
-    return constant_instruction(opcode_name(op), chunk, offset);
+  case OpCode::OP_DEFER:
+    std::cout << std::format("{:<16s} R({})\n", opcode_name(op), A);
+    return offset + 1;
 
-  // Jump instructions (2 byte operand = jump offset, forward)
-  case OpCode::OP_JUMP:
-  case OpCode::OP_JUMP_IF_FALSE:
-  case OpCode::OP_TRY:
-    return jump_instruction(opcode_name(op), 1, chunk, offset);
+  case OpCode::OP_LOADNIL:
+    std::cout << std::format("{:<16s} R({})..R({})\n", opcode_name(op), A, A + B);
+    return offset + 1;
 
-  // Loop instruction (2 byte operand = jump offset, backward)
-  case OpCode::OP_LOOP:
-    return jump_instruction(opcode_name(op), -1, chunk, offset);
+  // --- iABC: register movement ---
+  case OpCode::OP_MOVE:
+    std::cout << std::format("{:<16s} R({}) := R({})\n", opcode_name(op), A, B);
+    return offset + 1;
 
-  // Invoke instructions (constant index + arg count)
-  case OpCode::OP_INVOKE:
-  case OpCode::OP_SUPER_INVOKE:
-    return invoke_instruction(opcode_name(op), chunk, offset);
+  // --- iABC: upvalues ---
+  case OpCode::OP_GETUPVAL:
+    std::cout << std::format("{:<16s} R({}) := upval[{}]\n", opcode_name(op), A, B);
+    return offset + 1;
+  case OpCode::OP_SETUPVAL:
+    std::cout << std::format("{:<16s} upval[{}] := R({})\n", opcode_name(op), B, A);
+    return offset + 1;
 
-  // Closure instruction
-  case OpCode::OP_CLOSURE:
-    return closure_instruction(chunk, offset);
-
-  case OpCode::OP_FOR_ITER: {
-    u8_t slot = chunk.code_at(offset + 1);
-    u8_t hi = chunk.code_at(offset + 2);
-    u8_t lo = chunk.code_at(offset + 3);
-    auto jump = static_cast<std::uint16_t>((hi << 8) | lo);
-    std::cout << std::format("{:<16s} {:4d} -> {:04d}\n",
-        "OP_FOR_ITER", slot, offset + 4 + jump);
-    return offset + 4;
+  // --- iABC + EXTRAARG: properties with IC ---
+  case OpCode::OP_GETPROP: {
+    Instruction extra = chunk.code_at(offset + 1);
+    u8_t ic = static_cast<u8_t>(decode_Bx(extra));
+    std::cout << std::format("{:<16s} R({}) := R({}).K({}) '{}' [ic:{}]\n",
+        opcode_name(op), A, B, C, chunk.constant_at(C).stringify(), ic);
+    return offset + 2;
+  }
+  case OpCode::OP_SETPROP: {
+    Instruction extra = chunk.code_at(offset + 1);
+    u8_t ic = static_cast<u8_t>(decode_Bx(extra));
+    std::cout << std::format("{:<16s} R({}).K({}) '{}' := R({}) [ic:{}]\n",
+        opcode_name(op), A, B, chunk.constant_at(B).stringify(), C, ic);
+    return offset + 2;
   }
 
-  // Superinstructions (2 byte operands = slot1, slot2)
-  case OpCode::OP_ADD_LOCAL_LOCAL:
-  case OpCode::OP_SUBTRACT_LOCAL_LOCAL:
-  case OpCode::OP_MULTIPLY_LOCAL_LOCAL:
-  case OpCode::OP_DIVIDE_LOCAL_LOCAL:
-  case OpCode::OP_MODULO_LOCAL_LOCAL:
-    return two_byte_instruction(opcode_name(op), chunk, offset);
+  case OpCode::OP_GETSUPER:
+    std::cout << std::format("{:<16s} R({}) := super(R({})).K({}) '{}'\n",
+        opcode_name(op), A, B, C, chunk.constant_at(C).stringify());
+    return offset + 1;
+
+  // --- iABC: arithmetic/comparison with RK encoding ---
+  case OpCode::OP_ADD: case OpCode::OP_SUB:
+  case OpCode::OP_MUL: case OpCode::OP_DIV: case OpCode::OP_MOD:
+  case OpCode::OP_EQ:  case OpCode::OP_LT:  case OpCode::OP_LE:
+  case OpCode::OP_BAND: case OpCode::OP_BOR: case OpCode::OP_BXOR:
+  case OpCode::OP_SHL: case OpCode::OP_SHR:
+    std::cout << std::format("{:<16s} R({}) := {} op {}\n",
+        opcode_name(op), A, rk_str(B, chunk), rk_str(C, chunk));
+    return offset + 1;
+
+  // --- iABC: unary ---
+  case OpCode::OP_NEG:
+  case OpCode::OP_NOT:
+  case OpCode::OP_STR:
+  case OpCode::OP_BNOT:
+    std::cout << std::format("{:<16s} R({}) := op R({})\n", opcode_name(op), A, B);
+    return offset + 1;
+
+  // --- iAsBx: control flow ---
+  case OpCode::OP_JMP:
+    std::cout << std::format("{:<16s} PC += {} -> {:04d}\n",
+        opcode_name(op), sBx, static_cast<int>(offset + 1) + sBx);
+    return offset + 1;
+
+  case OpCode::OP_TEST:
+    std::cout << std::format("{:<16s} if bool(R({})) != {} then PC++\n",
+        opcode_name(op), A, C);
+    return offset + 1;
+
+  case OpCode::OP_TESTSET:
+    std::cout << std::format("{:<16s} if bool(R({})) == {} then R({}):=R({}) else PC++\n",
+        opcode_name(op), B, C, A, B);
+    return offset + 1;
+
+  // --- iABC: function calls ---
+  case OpCode::OP_CALL:
+    std::cout << std::format("{:<16s} R({}) := R({})(R({})..R({})) ; {} args\n",
+        opcode_name(op), A, A, A + 1, A + B - 1, B - 1);
+    return offset + 1;
+
+  case OpCode::OP_INVOKE: {
+    Instruction extra = chunk.code_at(offset + 1);
+    u8_t ic = static_cast<u8_t>(decode_Bx(extra));
+    std::cout << std::format("{:<16s} R({}).K({}) '{}' ({} args) [ic:{}]\n",
+        opcode_name(op), A, C, chunk.constant_at(C).stringify(), B, ic);
+    return offset + 2;
+  }
+
+  case OpCode::OP_SUPERINV:
+    std::cout << std::format("{:<16s} super.K({}) '{}' base=R({}) ({} args)\n",
+        opcode_name(op), C, chunk.constant_at(C).stringify(), A, B);
+    return offset + 1;
+
+  case OpCode::OP_RETURN:
+    if (B >= 2) {
+      std::cout << std::format("{:<16s} R({})\n", opcode_name(op), A);
+    } else {
+      std::cout << std::format("{:<16s} (nil)\n", opcode_name(op));
+    }
+    return offset + 1;
+
+  case OpCode::OP_CLOSURE: {
+    std::cout << std::format("{:<16s} R({}) := closure K({}) '{}'\n",
+        opcode_name(op), A, Bx, chunk.constant_at(Bx).stringify());
+    sz_t next = offset + 1;
+
+    Value constant = chunk.constant_at(Bx);
+    if (constant.is_object() && constant.as_object()->type() == ObjectType::OBJ_FUNCTION) {
+      ObjFunction* function = as_obj<ObjFunction>(constant.as_object());
+      for (int j = 0; j < function->upvalue_count(); j++) {
+        Instruction uv = chunk.code_at(next);
+        u8_t is_local = decode_A(uv);
+        u8_t uv_index = static_cast<u8_t>(decode_Bx(uv));
+        std::cout << std::format("{:04d}      |                     {} {}\n",
+            next, is_local ? "local" : "upvalue", uv_index);
+        next++;
+      }
+    }
+    return next;
+  }
+
+  case OpCode::OP_CLOSE:
+    std::cout << std::format("{:<16s} close >= R({})\n", opcode_name(op), A);
+    return offset + 1;
+
+  // --- iABC: OOP ---
+  case OpCode::OP_INHERIT:
+    std::cout << std::format("{:<16s} R({}).inherit(R({}))\n", opcode_name(op), A, B);
+    return offset + 1;
+
+  case OpCode::OP_METHOD:
+  case OpCode::OP_STATICMETH:
+  case OpCode::OP_GETTER:
+  case OpCode::OP_SETTER:
+  case OpCode::OP_ABSTMETH:
+    std::cout << std::format("{:<16s} class(R({})).K({}) '{}' := R({})\n",
+        opcode_name(op), A, B, chunk.constant_at(B).stringify(), C);
+    return offset + 1;
+
+  // --- iABC: collections ---
+  case OpCode::OP_NEWLIST:
+    std::cout << std::format("{:<16s} R({}) := [R({})..R({})] ({} elems)\n",
+        opcode_name(op), A, A + 1, A + B, B);
+    return offset + 1;
+  case OpCode::OP_NEWMAP:
+    std::cout << std::format("{:<16s} R({}) := {{...}} ({} pairs)\n",
+        opcode_name(op), A, B);
+    return offset + 1;
+  case OpCode::OP_NEWTUPLE:
+    std::cout << std::format("{:<16s} R({}) := (R({})..R({})) ({} elems)\n",
+        opcode_name(op), A, A + 1, A + B, B);
+    return offset + 1;
+
+  case OpCode::OP_GETIDX:
+    std::cout << std::format("{:<16s} R({}) := R({})[R({})]\n", opcode_name(op), A, B, C);
+    return offset + 1;
+  case OpCode::OP_SETIDX:
+    std::cout << std::format("{:<16s} R({})[R({})] := R({})\n", opcode_name(op), A, B, C);
+    return offset + 1;
+
+  // --- iABC: module ---
+  case OpCode::OP_IMPFROM:
+    std::cout << std::format("{:<16s} from R({}) import R({})\n", opcode_name(op), A, B);
+    return offset + 1;
+  case OpCode::OP_IMPALIAS:
+    std::cout << std::format("{:<16s} from R({}) import R({}) as R({})\n",
+        opcode_name(op), A, B, C);
+    return offset + 1;
+
+  // --- iAsBx: iterator ---
+  case OpCode::OP_FORITER:
+    std::cout << std::format("{:<16s} seq=R({}), idx=R({}), elem=R({}); exit -> {:04d}\n",
+        opcode_name(op), A, A + 1, A + 2, static_cast<int>(offset + 1) + sBx);
+    return offset + 1;
+
+  // --- Exception handling ---
+  case OpCode::OP_TRY:
+    std::cout << std::format("{:<16s} handler -> {:04d}\n",
+        opcode_name(op), static_cast<int>(offset + 1) + sBx);
+    return offset + 1;
+
+  case OpCode::OP_ENDTRY:
+    std::cout << std::format("{:<16s}\n", opcode_name(op));
+    return offset + 1;
+
+  case OpCode::OP_EXTRAARG:
+    std::cout << std::format("{:<16s} A={} Bx={}\n", opcode_name(op), A, Bx);
+    return offset + 1;
 
   default:
-    std::cout << std::format("Unknown opcode {}\n", byte);
+    std::cout << std::format("Unknown opcode {}\n", static_cast<int>(op));
     return offset + 1;
   }
 }

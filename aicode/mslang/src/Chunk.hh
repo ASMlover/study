@@ -41,36 +41,33 @@ struct SourceRun {
 };
 
 class Chunk {
-  std::vector<u8_t> code_;
+  std::vector<Instruction> code_;
   std::vector<Value> constants_;
   std::vector<SourceRun> lines_;
 public:
-  // Write a raw byte
-  void write(u8_t byte, int line, int column = 0, int token_length = 0) noexcept;
-
-  // Write an opcode
-  void write(OpCode op, int line, int column = 0, int token_length = 0) noexcept;
+  // Write a 32-bit instruction
+  void write(Instruction instr, int line, int column = 0, int token_length = 0) noexcept;
 
   // Add a constant and return its index
   sz_t add_constant(Value value) noexcept;
 
   // Accessors
-  u8_t code_at(sz_t offset) const noexcept;
+  Instruction code_at(sz_t offset) const noexcept;
   const Value& constant_at(sz_t index) const noexcept;
   int line_at(sz_t offset) const noexcept;
   int column_at(sz_t offset) const noexcept;
   int token_length_at(sz_t offset) const noexcept;
   sz_t count() const noexcept;
 
-  // For patching (jump offsets etc.)
-  u8_t& operator[](sz_t offset) noexcept;
+  // For patching (jump offsets, IC slots, etc.)
+  Instruction& operator[](sz_t offset) noexcept;
 
   // Truncate bytecode to given size (for constant folding)
   void truncate(sz_t new_count) noexcept;
 
-  // Access underlying data (for VM ip pointer)
-  const u8_t* code_data() const noexcept;
-  u8_t* code_data() noexcept;
+  // Access underlying data (for VM instruction pointer)
+  const Instruction* code_data() const noexcept;
+  Instruction* code_data() noexcept;
 
   // Constants access
   const std::vector<Value>& constants() const noexcept;
@@ -80,9 +77,9 @@ public:
   const std::vector<SourceRun>& lines() const noexcept;
   std::vector<SourceRun>& lines() noexcept;
 
-  // Direct code access (for deserialization)
-  std::vector<u8_t>& code() noexcept;
-  const std::vector<u8_t>& code() const noexcept;
+  // Direct code access (for serialization / deserialization)
+  std::vector<Instruction>& code() noexcept;
+  const std::vector<Instruction>& code() const noexcept;
 };
 
 } // namespace ms

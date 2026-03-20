@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <fstream>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include "Common.hh"
@@ -49,6 +51,7 @@ enum class ObjectType : int {
   OBJ_MODULE,
   OBJ_STRING_BUILDER,
   OBJ_TUPLE,
+  OBJ_FILE,
 };
 
 class Object {
@@ -122,6 +125,7 @@ struct InlineCache {
 class ObjFunction final : public Object {
   int arity_{0};
   int upvalue_count_{0};
+  int max_stack_size_{0};
   Chunk chunk_;
   ObjString* name_{nullptr};
   str_t script_path_;
@@ -144,6 +148,9 @@ public:
   void set_name(ObjString* name) noexcept { name_ = name; }
   const str_t& script_path() const noexcept { return script_path_; }
   void set_script_path(strv_t path) noexcept { script_path_ = str_t(path); }
+
+  int max_stack_size() const noexcept { return max_stack_size_; }
+  void set_max_stack_size(int size) noexcept { max_stack_size_ = size; }
 
   // Inline cache support
   sz_t add_ic() noexcept { ic_.emplace_back(); return ic_.size() - 1; }
@@ -354,6 +361,32 @@ private:
   u32_t compute_hash() const noexcept;
 };
 
+// --- ObjFile ---
+class ObjFile final : public Object {
+  str_t path_;
+  str_t mode_;
+  std::unique_ptr<std::fstream> stream_;
+  bool is_open_{false};
+
+public:
+  ObjFile(str_t path, str_t mode) noexcept;
+  ~ObjFile() noexcept;
+  str_t stringify() const noexcept override;
+  sz_t size() const noexcept override;
+
+  const str_t& path() const noexcept { return path_; }
+  const str_t& mode() const noexcept { return mode_; }
+  bool is_open() const noexcept { return is_open_; }
+  std::fstream& stream() noexcept { return *stream_; }
+
+  bool open() noexcept;
+  void close() noexcept;
+  str_t read_all() noexcept;
+  str_t read_line() noexcept;
+  void write(strv_t data) noexcept;
+  bool eof() const noexcept;
+};
+
 // --- Convenience helpers for Value ---
 inline ObjString* as_string(const Value& v) noexcept {
   return as_obj<ObjString>(v.as_object());
@@ -401,6 +434,10 @@ inline ObjStringBuilder* as_string_builder(const Value& v) noexcept {
 
 inline ObjTuple* as_tuple(const Value& v) noexcept {
   return as_obj<ObjTuple>(v.as_object());
+}
+
+inline ObjFile* as_file(const Value& v) noexcept {
+  return as_obj<ObjFile>(v.as_object());
 }
 
 inline strv_t as_cppstring(const Value& v) noexcept {

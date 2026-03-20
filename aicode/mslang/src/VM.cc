@@ -94,6 +94,8 @@ VM::VM() noexcept {
       case ObjectType::OBJ_MAP:              type_str = "map"; break;
       case ObjectType::OBJ_STRING_BUILDER: type_str = "stringbuilder"; break;
       case ObjectType::OBJ_TUPLE:           type_str = "tuple"; break;
+      case ObjectType::OBJ_MODULE:          type_str = "module"; break;
+      case ObjectType::OBJ_FILE:            type_str = "file"; break;
       default:                              type_str = "object"; break;
       }
     }
@@ -1177,6 +1179,85 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
     return false;
   }
 
+  if (is_obj_type(receiver, ObjectType::OBJ_FILE)) {
+    ObjFile* file = as_file(receiver);
+    strv_t method_name = name->value();
+
+    if (method_name == "read") {
+      if (arg_count != 0) {
+        runtime_error("read() takes no arguments.");
+        return false;
+      }
+      if (!file->is_open()) {
+        runtime_error("Cannot read from a closed file.");
+        return false;
+      }
+      str_t content = file->read_all();
+      ObjString* result = copy_string(content.data(), content.length());
+      stack_top_[-1] = Value(static_cast<Object*>(result));
+      return true;
+    } else if (method_name == "readline") {
+      if (arg_count != 0) {
+        runtime_error("readline() takes no arguments.");
+        return false;
+      }
+      if (!file->is_open()) {
+        runtime_error("Cannot read from a closed file.");
+        return false;
+      }
+      if (file->eof()) {
+        stack_top_[-1] = Value(); // nil
+        return true;
+      }
+      str_t line = file->read_line();
+      if (file->eof() && line.empty()) {
+        stack_top_[-1] = Value(); // nil
+        return true;
+      }
+      ObjString* result = copy_string(line.data(), line.length());
+      stack_top_[-1] = Value(static_cast<Object*>(result));
+      return true;
+    } else if (method_name == "write") {
+      if (arg_count != 1) {
+        runtime_error("write() takes exactly 1 argument.");
+        return false;
+      }
+      if (!file->is_open()) {
+        runtime_error("Cannot write to a closed file.");
+        return false;
+      }
+      str_t data = peek(0).stringify();
+      file->write(data);
+      stack_top_ -= 2; // pop arg and receiver
+      push(Value());   // return nil
+      return true;
+    } else if (method_name == "close") {
+      if (arg_count != 0) {
+        runtime_error("close() takes no arguments.");
+        return false;
+      }
+      file->close();
+      stack_top_[-1] = Value(); // return nil
+      return true;
+    } else if (method_name == "eof") {
+      if (arg_count != 0) {
+        runtime_error("eof() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(file->eof());
+      return true;
+    } else if (method_name == "is_open") {
+      if (arg_count != 0) {
+        runtime_error("is_open() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(file->is_open());
+      return true;
+    }
+    runtime_error(std::format("Undefined file method '{}'.", method_name));
+    return false;
+  }
+
   if (!is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
     runtime_error("Only instances have methods.");
     return false;
@@ -1247,7 +1328,47 @@ void VM::close_upvalues(Value* last) noexcept {
   }
 }
 
+void VM::register_io_module() noexcept {
+  ObjString* name = copy_string("io", 2);
+  ObjModule* module = allocate<ObjModule>(name);
+  push(Value(static_cast<Object*>(module))); // GC root
+
+  // io.open(path, mode) -> ObjFile
+  auto open_fn = [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 2 || !args[0].is_string() || !args[1].is_string()) {
+      runtime_error("io.open() takes exactly 2 string arguments (path, mode).");
+      return Value();
+    }
+    str_t path = str_t(as_string(args[0])->value());
+    str_t mode = str_t(as_string(args[1])->value());
+    ObjFile* file = allocate<ObjFile>(std::move(path), std::move(mode));
+    if (!file->open()) {
+      runtime_error(std::format("Could not open file '{}'.", file->path()));
+      return Value();
+    }
+    return Value(static_cast<Object*>(file));
+  };
+
+  ObjString* open_name = copy_string("open", 4);
+  ObjNative* open_native = allocate<ObjNative>(NativeFn(open_fn));
+  module->exports().set(open_name, Value(static_cast<Object*>(open_native)));
+
+  modules_["io"] = module;
+
+  // Register as global so `import "io"; io.open(...)` works
+  globals_.set(name, Value(static_cast<Object*>(module)));
+  pop(); // module
+}
+
 void VM::import_module(ObjString* path) noexcept {
+  // Check for built-in modules first
+  if (path->value() == "io") {
+    auto it = modules_.find("io");
+    if (it != modules_.end()) return; // already imported
+    register_io_module();
+    return;
+  }
+
   // Resolve path relative to current script
   str_t resolved = ModuleLoader::resolve_path(path->value(), current_script_path_);
 
@@ -1337,62 +1458,16 @@ InterpretResult VM::interpret_bytecode(ObjFunction* function) noexcept {
 InterpretResult VM::run() noexcept {
   CallFrame* frame = &frames_[frame_count_ - 1];
 
-#define READ_BYTE() (*frame->ip++)
-#define READ_SHORT() \
-    (frame->ip += 2, \
-     static_cast<u16_t>((frame->ip[-2] << 8) | frame->ip[-1]))
-#define READ_CONSTANT() \
-    (frame->closure->function()->chunk().constant_at(READ_BYTE()))
-#define READ_STRING() as_string(READ_CONSTANT())
-// Integer-aware binary op: int×int→int, else promote to double
-#define BINARY_OP(value_type, op) \
-    do { \
-      if (!peek(0).is_number() || !peek(1).is_number()) { \
-        runtime_error("Operands must be numbers."); \
-        goto handle_runtime_error; \
-      } \
-      if (peek(0).is_integer() && peek(1).is_integer()) { \
-        i64_t b = pop().as_integer(); \
-        i64_t a = pop().as_integer(); \
-        push(value_type(static_cast<i64_t>(a op b))); \
-      } else { \
-        double b = pop().as_number(); \
-        double a = pop().as_number(); \
-        push(value_type(a op b)); \
-      } \
-    } while (false)
+  // Read one 32-bit instruction and advance IP
+#define READ_INSTR() (*frame->ip++)
 
-// Comparison: always produce bool, promote to double if mixed
-#define COMPARE_OP(op) \
-    do { \
-      if (!peek(0).is_number() || !peek(1).is_number()) { \
-        runtime_error("Operands must be numbers."); \
-        goto handle_runtime_error; \
-      } \
-      if (peek(0).is_integer() && peek(1).is_integer()) { \
-        i64_t b = pop().as_integer(); \
-        i64_t a = pop().as_integer(); \
-        push(Value(a op b)); \
-      } else { \
-        double b = pop().as_number(); \
-        double a = pop().as_number(); \
-        push(Value(a op b)); \
-      } \
-    } while (false)
-
-// Bitwise op: integers only
-#define BITWISE_OP(op) \
-    do { \
-      if (!peek(0).is_integer() || !peek(1).is_integer()) { \
-        runtime_error("Operands must be integers."); \
-        goto handle_runtime_error; \
-      } \
-      i64_t b = pop().as_integer(); \
-      i64_t a = pop().as_integer(); \
-      push(Value(static_cast<i64_t>(a op b))); \
-    } while (false)
-
-  using u16_t = std::uint16_t;
+  // Constant pool pointer — reassigned after every frame change
+  const std::vector<Value>* Kp_ = &frame->closure->function()->chunk().constants();
+#define K (*Kp_)
+#define RK(rk) ((rk) >= kRK_CONST_BIT \
+    ? K[(rk) - kRK_CONST_BIT] \
+    : frame->slots[(rk)])
+#define RELOAD_K() (Kp_ = &frame->closure->function()->chunk().constants())
 
 #ifdef MAPLE_DEBUG_TRACE
 #define TRACE_INSTRUCTION() \
@@ -1411,107 +1486,117 @@ InterpretResult VM::run() noexcept {
 
 #ifdef MAPLE_GNUC
   // Computed goto (threaded dispatch) — GCC/Clang only.
-  // Each opcode jumps directly to the next handler via a label address table,
-  // eliminating the overhead of the switch indirect branch.
   static void* dispatch_table[] = {
-    &&op_OP_CONSTANT,      &&op_OP_CONSTANT_LONG,
-    &&op_OP_NIL,           &&op_OP_TRUE,          &&op_OP_FALSE,
-    &&op_OP_POP,
-    &&op_OP_GET_LOCAL,     &&op_OP_SET_LOCAL,
-    &&op_OP_GET_GLOBAL,    &&op_OP_DEFINE_GLOBAL, &&op_OP_SET_GLOBAL,
-    &&op_OP_GET_UPVALUE,   &&op_OP_SET_UPVALUE,
-    &&op_OP_GET_PROPERTY,  &&op_OP_SET_PROPERTY,
-    &&op_OP_GET_SUPER,
-    &&op_OP_EQUAL,         &&op_OP_GREATER,       &&op_OP_LESS,
-    &&op_OP_ADD,           &&op_OP_SUBTRACT,
-    &&op_OP_MULTIPLY,      &&op_OP_DIVIDE,        &&op_OP_MODULO,
-    &&op_OP_NOT,           &&op_OP_NEGATE,        &&op_OP_STR,
+    &&op_OP_LOADK,        &&op_OP_LOADNIL,       &&op_OP_LOADTRUE,
+    &&op_OP_LOADFALSE,    &&op_OP_MOVE,
+    &&op_OP_GETGLOBAL,    &&op_OP_SETGLOBAL,     &&op_OP_DEFGLOBAL,
+    &&op_OP_GETUPVAL,     &&op_OP_SETUPVAL,
+    &&op_OP_GETPROP,      &&op_OP_SETPROP,       &&op_OP_GETSUPER,
+    &&op_OP_ADD,          &&op_OP_SUB,           &&op_OP_MUL,
+    &&op_OP_DIV,          &&op_OP_MOD,
+    &&op_OP_EQ,           &&op_OP_LT,            &&op_OP_LE,
+    &&op_OP_NEG,          &&op_OP_NOT,           &&op_OP_STR,
+    &&op_OP_BAND,         &&op_OP_BOR,           &&op_OP_BXOR,
+    &&op_OP_BNOT,         &&op_OP_SHL,           &&op_OP_SHR,
+    &&op_OP_JMP,          &&op_OP_TEST,          &&op_OP_TESTSET,
     &&op_OP_PRINT,
-    &&op_OP_JUMP,          &&op_OP_JUMP_IF_FALSE, &&op_OP_LOOP,
-    &&op_OP_CALL,          &&op_OP_INVOKE,        &&op_OP_SUPER_INVOKE,
-    &&op_OP_CLOSURE,       &&op_OP_CLOSE_UPVALUE, &&op_OP_RETURN,
-    &&op_OP_CLASS,         &&op_OP_INHERIT,       &&op_OP_METHOD,
-    &&op_OP_STATIC_METHOD, &&op_OP_GETTER,        &&op_OP_SETTER,
-    &&op_OP_BUILD_LIST,    &&op_OP_BUILD_MAP,    &&op_OP_BUILD_TUPLE,
-    &&op_OP_INDEX_GET,     &&op_OP_INDEX_SET,
-    &&op_OP_IMPORT,        &&op_OP_IMPORT_FROM,   &&op_OP_IMPORT_ALIAS,
-    &&op_OP_FOR_ITER,
-    &&op_OP_THROW,         &&op_OP_TRY,           &&op_OP_END_TRY,
+    &&op_OP_CALL,         &&op_OP_INVOKE,        &&op_OP_SUPERINV,
+    &&op_OP_RETURN,       &&op_OP_CLOSURE,       &&op_OP_CLOSE,
+    &&op_OP_CLASS,        &&op_OP_INHERIT,       &&op_OP_METHOD,
+    &&op_OP_STATICMETH,   &&op_OP_GETTER,        &&op_OP_SETTER,
+    &&op_OP_ABSTMETH,
+    &&op_OP_NEWLIST,      &&op_OP_NEWMAP,        &&op_OP_NEWTUPLE,
+    &&op_OP_GETIDX,       &&op_OP_SETIDX,
+    &&op_OP_IMPORT,       &&op_OP_IMPFROM,       &&op_OP_IMPALIAS,
+    &&op_OP_FORITER,
+    &&op_OP_THROW,        &&op_OP_TRY,           &&op_OP_ENDTRY,
     &&op_OP_DEFER,
-    &&op_OP_ADD_LOCAL_LOCAL,      &&op_OP_SUBTRACT_LOCAL_LOCAL,
-    &&op_OP_MULTIPLY_LOCAL_LOCAL, &&op_OP_DIVIDE_LOCAL_LOCAL,
-    &&op_OP_MODULO_LOCAL_LOCAL,
+    &&op_OP_EXTRAARG,
   };
 
-#define VM_DISPATCH() do { TRACE_INSTRUCTION(); goto *dispatch_table[READ_BYTE()]; } while (false)
+#define VM_DISPATCH() do { \
+    TRACE_INSTRUCTION(); \
+    instr = READ_INSTR(); \
+    goto *dispatch_table[static_cast<u8_t>(instr & 0xFF)]; \
+  } while (false)
 #define VM_CASE(name) op_##name:
 #else // !MAPLE_GNUC — MSVC fallback: standard switch dispatch
 #define VM_DISPATCH() continue
 #define VM_CASE(name) case OpCode::name:
 #endif
 
+  Instruction instr;
+
 dispatch_loop:
 #ifdef MAPLE_GNUC
-  VM_DISPATCH();
+  instr = READ_INSTR();
+  TRACE_INSTRUCTION();
+  goto *dispatch_table[static_cast<u8_t>(instr & 0xFF)];
 #else
   for (;;) {
+    instr = READ_INSTR();
     TRACE_INSTRUCTION();
-    switch (static_cast<OpCode>(READ_BYTE())) {
+    switch (decode_op(instr)) {
 #endif
 
-    VM_CASE(OP_CONSTANT) {
-      Value constant = READ_CONSTANT();
-      push(constant);
+    // =====================================================================
+    // Loading
+    // =====================================================================
+    VM_CASE(OP_LOADK) {
+      u8_t A = decode_A(instr);
+      u16_t Bx = decode_Bx(instr);
+      frame->slots[A] = K[Bx];
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_CONSTANT_LONG) {
-      u32_t index = READ_BYTE();
-      index |= static_cast<u32_t>(READ_BYTE()) << 8;
-      index |= static_cast<u32_t>(READ_BYTE()) << 16;
-      push(frame->closure->function()->chunk().constant_at(index));
+    VM_CASE(OP_LOADNIL) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      for (u8_t i = A; i <= A + B; i++) {
+        frame->slots[i] = Value();
+      }
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_NIL)   { push(Value()); VM_DISPATCH(); }
-    VM_CASE(OP_TRUE)  { push(Value(true)); VM_DISPATCH(); }
-    VM_CASE(OP_FALSE) { push(Value(false)); VM_DISPATCH(); }
-
-    VM_CASE(OP_POP) { pop(); VM_DISPATCH(); }
-
-    VM_CASE(OP_GET_LOCAL) {
-      u8_t slot = READ_BYTE();
-      push(frame->slots[slot]);
+    VM_CASE(OP_LOADTRUE) {
+      frame->slots[decode_A(instr)] = Value(true);
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_SET_LOCAL) {
-      u8_t slot = READ_BYTE();
-      frame->slots[slot] = peek(0);
+    VM_CASE(OP_LOADFALSE) {
+      frame->slots[decode_A(instr)] = Value(false);
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_GET_GLOBAL) {
-      ObjString* name = READ_STRING();
+    // =====================================================================
+    // Register movement
+    // =====================================================================
+    VM_CASE(OP_MOVE) {
+      frame->slots[decode_A(instr)] = frame->slots[decode_B(instr)];
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // Global variables
+    // =====================================================================
+    VM_CASE(OP_GETGLOBAL) {
+      u8_t A = decode_A(instr);
+      u16_t Bx = decode_Bx(instr);
+      ObjString* name = as_string(K[Bx]);
       Value value;
       if (!globals_.get(name, &value)) {
         runtime_error(std::format("Undefined variable '{}'.", name->value()));
         goto handle_runtime_error;
       }
-      push(value);
+      frame->slots[A] = value;
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_DEFINE_GLOBAL) {
-      ObjString* name = READ_STRING();
-      globals_.set(name, peek(0));
-      pop();
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_SET_GLOBAL) {
-      ObjString* name = READ_STRING();
-      if (globals_.set(name, peek(0))) {
+    VM_CASE(OP_SETGLOBAL) {
+      u8_t A = decode_A(instr);
+      u16_t Bx = decode_Bx(instr);
+      ObjString* name = as_string(K[Bx]);
+      if (globals_.set(name, frame->slots[A])) {
         globals_.remove(name);
         runtime_error(std::format("Undefined variable '{}'.", name->value()));
         goto handle_runtime_error;
@@ -1519,84 +1604,95 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_GET_UPVALUE) {
-      u8_t slot = READ_BYTE();
-      push(*frame->closure->upvalue_at(slot)->location());
+    VM_CASE(OP_DEFGLOBAL) {
+      u8_t A = decode_A(instr);
+      u16_t Bx = decode_Bx(instr);
+      ObjString* name = as_string(K[Bx]);
+      globals_.set(name, frame->slots[A]);
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_SET_UPVALUE) {
-      u8_t slot = READ_BYTE();
-      *frame->closure->upvalue_at(slot)->location() = peek(0);
+    // =====================================================================
+    // Upvalues
+    // =====================================================================
+    VM_CASE(OP_GETUPVAL) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      frame->slots[A] = *frame->closure->upvalue_at(B)->location();
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_GET_PROPERTY) {
-      if (is_obj_type(peek(0), ObjectType::OBJ_MODULE)) {
-        ObjModule* module = as_module(peek(0));
-        ObjString* name = READ_STRING();
-        READ_BYTE(); // skip IC slot (not used for modules)
+    VM_CASE(OP_SETUPVAL) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      *frame->closure->upvalue_at(B)->location() = frame->slots[A];
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // Properties (followed by EXTRAARG for IC slot)
+    // =====================================================================
+    VM_CASE(OP_GETPROP) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Instruction extra = READ_INSTR(); // EXTRAARG with IC slot
+      u8_t ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      Value obj_val = frame->slots[B];
+      ObjString* name = as_string(K[C]);
+
+      if (is_obj_type(obj_val, ObjectType::OBJ_MODULE)) {
+        ObjModule* module = as_module(obj_val);
         Value export_val;
         if (module->exports().get(name, &export_val)) {
-          pop(); // Module
-          push(export_val);
+          frame->slots[A] = export_val;
           VM_DISPATCH();
         }
         runtime_error(std::format("Undefined export '{}'.", name->value()));
         goto handle_runtime_error;
       }
 
-      if (is_obj_type(peek(0), ObjectType::OBJ_CLASS)) {
-        ObjClass* klass = as_class(peek(0));
-        ObjString* name = READ_STRING();
-        READ_BYTE(); // skip IC slot (not used for class statics)
+      if (is_obj_type(obj_val, ObjectType::OBJ_CLASS)) {
+        ObjClass* klass = as_class(obj_val);
         Value method;
         if (klass->static_methods().get(name, &method)) {
-          pop(); // Class
-          push(method);
+          frame->slots[A] = method;
           VM_DISPATCH();
         }
         runtime_error(std::format("Undefined static method '{}'.", name->value()));
         goto handle_runtime_error;
       }
 
-      if (!is_obj_type(peek(0), ObjectType::OBJ_INSTANCE)) {
-        READ_STRING(); // consume name operand
-        READ_BYTE();   // consume IC slot
+      if (!is_obj_type(obj_val, ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have properties.");
         goto handle_runtime_error;
       }
 
       {
-        ObjInstance* instance = as_instance(peek(0));
-        ObjString* name = READ_STRING();
-        u8_t ic_slot = READ_BYTE();
+        ObjInstance* instance = as_instance(obj_val);
         ObjClass* klass = instance->klass();
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-        // IC fast path: class matches cached class
+        // IC fast path
         if (ic.klass == klass) {
           if (ic.kind == ICKind::IC_FIELD) {
-            // Fields can't be cached, but we know to skip getter/method lookups
             Value field_val;
             if (instance->fields().get(name, &field_val)) {
-              pop();
-              push(field_val);
+              frame->slots[A] = field_val;
               VM_DISPATCH();
             }
-            // Field was removed — fall through to full lookup + update IC
           } else if (ic.kind == ICKind::IC_METHOD) {
-            // Cached method — skip methods table lookup
-            ObjBoundMethod* bound = allocate<ObjBoundMethod>(peek(0), as_closure(ic.cached));
-            pop();
-            push(Value(static_cast<Object*>(bound)));
+            ObjBoundMethod* bound = allocate<ObjBoundMethod>(obj_val, as_closure(ic.cached));
+            frame->slots[A] = Value(static_cast<Object*>(bound));
             VM_DISPATCH();
           } else if (ic.kind == ICKind::IC_GETTER) {
-            // Cached getter — skip getters table lookup
+            // Getter call: push receiver, call with 0 args
+            stack_top_ = frame->slots + B + 1;
             if (!call(as_closure(ic.cached), 0)) {
               goto handle_runtime_error;
             }
             frame = &frames_[frame_count_ - 1];
+            RELOAD_K();
             VM_DISPATCH();
           }
         }
@@ -1607,8 +1703,7 @@ dispatch_loop:
           ic.klass = klass;
           ic.kind = ICKind::IC_FIELD;
           ic.cached = Value();
-          pop();
-          push(field_val);
+          frame->slots[A] = field_val;
           VM_DISPATCH();
         }
 
@@ -1617,10 +1712,12 @@ dispatch_loop:
           ic.klass = klass;
           ic.kind = ICKind::IC_GETTER;
           ic.cached = getter;
+          stack_top_ = frame->slots + B + 1;
           if (!call(as_closure(getter), 0)) {
             goto handle_runtime_error;
           }
           frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
           VM_DISPATCH();
         }
 
@@ -1629,9 +1726,8 @@ dispatch_loop:
           ic.klass = klass;
           ic.kind = ICKind::IC_METHOD;
           ic.cached = method;
-          ObjBoundMethod* bound = allocate<ObjBoundMethod>(peek(0), as_closure(method));
-          pop();
-          push(Value(static_cast<Object*>(bound)));
+          ObjBoundMethod* bound = allocate<ObjBoundMethod>(obj_val, as_closure(method));
+          frame->slots[A] = Value(static_cast<Object*>(bound));
           VM_DISPATCH();
         }
 
@@ -1640,108 +1736,124 @@ dispatch_loop:
       }
     }
 
-    VM_CASE(OP_SET_PROPERTY) {
-      if (!is_obj_type(peek(1), ObjectType::OBJ_INSTANCE)) {
-        READ_STRING(); // consume name operand
-        READ_BYTE();   // consume IC slot
+    VM_CASE(OP_SETPROP) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Instruction extra = READ_INSTR(); // EXTRAARG with IC slot
+      u8_t ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      Value obj_val = frame->slots[A];
+      ObjString* name = as_string(K[B]);
+      Value rhs = frame->slots[C];
+
+      if (!is_obj_type(obj_val, ObjectType::OBJ_INSTANCE)) {
         runtime_error("Only instances have fields.");
         goto handle_runtime_error;
       }
 
       {
-        ObjInstance* instance = as_instance(peek(1));
-        ObjString* name = READ_STRING();
-        u8_t ic_slot = READ_BYTE();
+        ObjInstance* instance = as_instance(obj_val);
         ObjClass* klass = instance->klass();
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-        // IC fast path: class matches
+        // IC fast path
         if (ic.klass == klass) {
           if (ic.kind == ICKind::IC_SETTER) {
+            // Set up stack: [receiver, rhs] for setter call
+            stack_top_ = frame->slots + A + 1;
+            push(rhs);
             if (!call(as_closure(ic.cached), 1)) {
               goto handle_runtime_error;
             }
             frame = &frames_[frame_count_ - 1];
+            RELOAD_K();
             VM_DISPATCH();
           }
           if (ic.kind == ICKind::IC_FIELD) {
-            instance->fields().set(name, peek(0));
-            Value value = pop();
-            pop();
-            push(value);
+            instance->fields().set(name, rhs);
             VM_DISPATCH();
           }
         }
 
-        // IC miss — full lookup + update cache
+        // IC miss — full lookup
         Value setter_val;
         if (klass->setters().get(name, &setter_val)) {
           ic.klass = klass;
           ic.kind = ICKind::IC_SETTER;
           ic.cached = setter_val;
+          stack_top_ = frame->slots + A + 1;
+          push(rhs);
           if (!call(as_closure(setter_val), 1)) {
             goto handle_runtime_error;
           }
           frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
           VM_DISPATCH();
         }
 
         ic.klass = klass;
         ic.kind = ICKind::IC_FIELD;
         ic.cached = Value();
-        instance->fields().set(name, peek(0));
-        Value value = pop();
-        pop();
-        push(value);
+        instance->fields().set(name, rhs);
         VM_DISPATCH();
       }
     }
 
-    VM_CASE(OP_GET_SUPER) {
-      ObjString* name = READ_STRING();
-      ObjClass* superclass = as_class(pop());
-      bind_method(superclass, name);
-      VM_DISPATCH();
-    }
+    VM_CASE(OP_GETSUPER) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* name = as_string(K[C]);
+      ObjClass* superclass = as_class(frame->slots[B]);
+      Value receiver = frame->slots[A];
 
-    VM_CASE(OP_EQUAL) {
-      if (peek(1).is_instance() && invoke_operator(op_eq_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else {
-        Value b = pop();
-        Value a = pop();
-        push(Value(a.is_equal(b)));
+      Value method;
+      if (!superclass->methods().get(name, &method)) {
+        runtime_error(std::format("Undefined property '{}'.", name->value()));
+        goto handle_runtime_error;
       }
+
+      Value dummy;
+      if (superclass->abstract_methods().get(name, &dummy)) {
+        runtime_error(std::format("Cannot call abstract method '{}' on '{}'.",
+            name->value(), superclass->name()->value()));
+        goto handle_runtime_error;
+      }
+
+      ObjBoundMethod* bound = allocate<ObjBoundMethod>(receiver, as_closure(method));
+      frame->slots[A] = Value(static_cast<Object*>(bound));
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_GREATER) {
-      if (peek(1).is_instance() && invoke_operator(op_gt_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else { COMPARE_OP(>); }
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_LESS) {
-      if (peek(1).is_instance() && invoke_operator(op_lt_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else { COMPARE_OP(<); }
-      VM_DISPATCH();
-    }
-
+    // =====================================================================
+    // Arithmetic (B,C use RK encoding)
+    // =====================================================================
     VM_CASE(OP_ADD) {
-      if (is_obj_type(peek(0), ObjectType::OBJ_STRING) &&
-          is_obj_type(peek(1), ObjectType::OBJ_STRING)) {
-        concatenate();
-      } else if (peek(0).is_integer() && peek(1).is_integer()) {
-        i64_t b = pop().as_integer();
-        i64_t a = pop().as_integer();
-        push(Value(static_cast<i64_t>(a + b)));
-      } else if (peek(0).is_number() && peek(1).is_number()) {
-        double b = pop().as_number();
-        double a = pop().as_number();
-        push(Value(a + b));
-      } else if (peek(1).is_instance() && invoke_operator(op_add_string_)) {
-        frame = &frames_[frame_count_ - 1];
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (is_obj_type(lhs, ObjectType::OBJ_STRING) &&
+          is_obj_type(rhs, ObjectType::OBJ_STRING)) {
+        str_t result = str_t(as_string(lhs)->value()) + str_t(as_string(rhs)->value());
+        frame->slots[A] = Value(static_cast<Object*>(take_string(std::move(result))));
+      } else if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() + rhs.as_integer()));
+      } else if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() + rhs.as_number());
+      } else if (lhs.is_instance()) {
+        // Operator overload: place [receiver, arg] at R(A), R(A+1)
+        // so return value lands in R(A) via OP_RETURN's *return_base
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_add_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+        } else {
+          runtime_error("Operands must be two numbers or two strings.");
+          goto handle_runtime_error;
+        }
       } else {
         runtime_error("Operands must be two numbers or two strings.");
         goto handle_runtime_error;
@@ -1749,61 +1861,191 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_SUBTRACT) {
-      if (peek(1).is_instance() && invoke_operator(op_sub_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else { BINARY_OP(Value, -); }
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_MULTIPLY) {
-      if (peek(1).is_instance() && invoke_operator(op_mul_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else { BINARY_OP(Value, *); }
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_DIVIDE) {
-      // int / int → float (always promote to avoid truncation confusion)
-      if (peek(1).is_instance() && invoke_operator(op_div_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else if (!peek(0).is_number() || !peek(1).is_number()) {
+    VM_CASE(OP_SUB) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (lhs.is_instance()) {
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_sub_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          VM_DISPATCH();
+        }
+      }
+      if (!lhs.is_number() || !rhs.is_number()) {
         runtime_error("Operands must be numbers.");
         goto handle_runtime_error;
+      }
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() - rhs.as_integer()));
       } else {
-        double b = pop().as_number();
-        double a = pop().as_number();
-        push(Value(a / b));
+        frame->slots[A] = Value(lhs.as_number() - rhs.as_number());
       }
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_MODULO) {
-      if (peek(1).is_instance() && invoke_operator(op_mod_string_)) {
-        frame = &frames_[frame_count_ - 1];
-      } else if (peek(0).is_integer() && peek(1).is_integer()) {
-        i64_t b = pop().as_integer();
-        i64_t a = pop().as_integer();
-        push(Value(static_cast<i64_t>(a % b)));
-      } else if (peek(0).is_number() && peek(1).is_number()) {
-        double b = pop().as_number();
-        double a = pop().as_number();
-        push(Value(std::fmod(a, b)));
-      } else {
+    VM_CASE(OP_MUL) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (lhs.is_instance()) {
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_mul_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          VM_DISPATCH();
+        }
+      }
+      if (!lhs.is_number() || !rhs.is_number()) {
         runtime_error("Operands must be numbers.");
         goto handle_runtime_error;
+      }
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() * rhs.as_integer()));
+      } else {
+        frame->slots[A] = Value(lhs.as_number() * rhs.as_number());
       }
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_NOT) {
-      push(Value(!pop().is_truthy()));
+    VM_CASE(OP_DIV) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (lhs.is_instance()) {
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_div_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          VM_DISPATCH();
+        }
+      }
+      if (!lhs.is_number() || !rhs.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      // int / int → float (always promote)
+      frame->slots[A] = Value(lhs.as_number() / rhs.as_number());
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_NEGATE) {
-      if (peek(0).is_integer()) {
-        push(Value(static_cast<i64_t>(-pop().as_integer())));
-      } else if (peek(0).is_double()) {
-        push(Value(-pop().as_number()));
+    VM_CASE(OP_MOD) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (lhs.is_instance()) {
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_mod_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          VM_DISPATCH();
+        }
+      }
+      if (!lhs.is_number() || !rhs.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() % rhs.as_integer()));
+      } else {
+        frame->slots[A] = Value(std::fmod(lhs.as_number(), rhs.as_number()));
+      }
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // Comparison (produce bool in register)
+    // =====================================================================
+    VM_CASE(OP_EQ) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (lhs.is_instance()) {
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_eq_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          VM_DISPATCH();
+        }
+        // Failed to invoke — restore stack and use default equality
+        stack_top_ = frame->slots + A;
+      }
+      frame->slots[A] = Value(lhs.is_equal(rhs));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_LT) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (lhs.is_instance()) {
+        frame->slots[A] = lhs;
+        frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_lt_string_)) {
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          VM_DISPATCH();
+        }
+        // Failed to invoke — restore stack
+        stack_top_ = frame->slots + A;
+      }
+      if (!lhs.is_number() || !rhs.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(lhs.as_integer() < rhs.as_integer());
+      } else {
+        frame->slots[A] = Value(lhs.as_number() < rhs.as_number());
+      }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_LE) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+
+      if (!lhs.is_number() || !rhs.is_number()) {
+        runtime_error("Operands must be numbers.");
+        goto handle_runtime_error;
+      }
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(lhs.as_integer() <= rhs.as_integer());
+      } else {
+        frame->slots[A] = Value(lhs.as_number() <= rhs.as_number());
+      }
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // Unary
+    // =====================================================================
+    VM_CASE(OP_NEG) {
+      u8_t A = decode_A(instr);
+      Value val = frame->slots[decode_B(instr)];
+      if (val.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(-val.as_integer()));
+      } else if (val.is_double()) {
+        frame->slots[A] = Value(-val.as_number());
       } else {
         runtime_error("Operand must be a number.");
         goto handle_runtime_error;
@@ -1811,66 +2053,184 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
+    VM_CASE(OP_NOT) {
+      u8_t A = decode_A(instr);
+      frame->slots[A] = Value(!frame->slots[decode_B(instr)].is_truthy());
+      VM_DISPATCH();
+    }
+
     VM_CASE(OP_STR) {
-      if (peek(0).is_instance()) {
-        ObjInstance* instance = as_instance(peek(0));
+      u8_t A = decode_A(instr);
+      Value val = frame->slots[decode_B(instr)];
+      if (val.is_instance()) {
+        ObjInstance* instance = as_instance(val);
         Value method;
         if (instance->klass()->methods().get(op_str_string_, &method)) {
-          // __str takes no args: stack has [instance], call with 0 args
+          // __str: push instance on stack, call with 0 args
+          stack_top_ = frame->slots + decode_B(instr) + 1;
           if (!call(as_closure(method), 0)) {
             goto handle_runtime_error;
           }
           frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
           VM_DISPATCH();
         }
       }
-      Value val = pop();
       if (val.is_string()) {
-        push(val);
+        frame->slots[A] = val;
       } else {
         str_t s = val.stringify();
-        push(Value(static_cast<Object*>(copy_string(s.data(), s.length()))));
+        frame->slots[A] = Value(static_cast<Object*>(copy_string(s.data(), s.length())));
       }
       VM_DISPATCH();
     }
 
+    // =====================================================================
+    // Bitwise (B,C use RK encoding)
+    // =====================================================================
+    VM_CASE(OP_BAND) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+      if (!lhs.is_integer() || !rhs.is_integer()) {
+        runtime_error("Operands must be integers.");
+        goto handle_runtime_error;
+      }
+      frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() & rhs.as_integer()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_BOR) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+      if (!lhs.is_integer() || !rhs.is_integer()) {
+        runtime_error("Operands must be integers.");
+        goto handle_runtime_error;
+      }
+      frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() | rhs.as_integer()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_BXOR) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+      if (!lhs.is_integer() || !rhs.is_integer()) {
+        runtime_error("Operands must be integers.");
+        goto handle_runtime_error;
+      }
+      frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() ^ rhs.as_integer()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_BNOT) {
+      u8_t A = decode_A(instr);
+      Value val = frame->slots[decode_B(instr)];
+      if (!val.is_integer()) {
+        runtime_error("Operand must be an integer.");
+        goto handle_runtime_error;
+      }
+      frame->slots[A] = Value(static_cast<i64_t>(~val.as_integer()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_SHL) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+      if (!lhs.is_integer() || !rhs.is_integer()) {
+        runtime_error("Operands must be integers.");
+        goto handle_runtime_error;
+      }
+      frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() << rhs.as_integer()));
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_SHR) {
+      u8_t A = decode_A(instr);
+      Value lhs = RK(decode_B(instr));
+      Value rhs = RK(decode_C(instr));
+      if (!lhs.is_integer() || !rhs.is_integer()) {
+        runtime_error("Operands must be integers.");
+        goto handle_runtime_error;
+      }
+      frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() >> rhs.as_integer()));
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // Control flow
+    // =====================================================================
+    VM_CASE(OP_JMP) {
+      int sBx = decode_sBx(instr);
+      frame->ip += sBx;
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_TEST) {
+      // if (bool(R(A)) != C) then skip next instruction
+      u8_t A = decode_A(instr);
+      u8_t C = decode_C(instr);
+      if (frame->slots[A].is_truthy() != static_cast<bool>(C)) {
+        frame->ip++; // skip next instruction
+      }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_TESTSET) {
+      // if (bool(R(B)) == C) R(A):=R(B) else skip next instruction
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      if (frame->slots[B].is_truthy() == static_cast<bool>(C)) {
+        frame->slots[A] = frame->slots[B];
+      } else {
+        frame->ip++; // skip next instruction
+      }
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // I/O
+    // =====================================================================
     VM_CASE(OP_PRINT) {
-      std::cout << pop().stringify() << std::endl;
+      u8_t A = decode_A(instr);
+      std::cout << frame->slots[A].stringify() << std::endl;
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_JUMP) {
-      u16_t offset = READ_SHORT();
-      frame->ip += offset;
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_JUMP_IF_FALSE) {
-      u16_t offset = READ_SHORT();
-      if (!peek(0).is_truthy()) frame->ip += offset;
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_LOOP) {
-      u16_t offset = READ_SHORT();
-      frame->ip -= offset;
-      VM_DISPATCH();
-    }
-
+    // =====================================================================
+    // Function calls
+    // =====================================================================
     VM_CASE(OP_CALL) {
-      int arg_count = READ_BYTE();
-      if (!call_value(peek(arg_count), arg_count)) {
+      // R(A)..R(A+C-2) := R(A)(R(A+1)..R(A+B-1))
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      int arg_count = B - 1;
+      // Set stack_top_ so call() sees the arguments in the correct position
+      stack_top_ = frame->slots + A + B;
+      if (!call_value(frame->slots[A], arg_count)) {
         goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
       VM_DISPATCH();
     }
 
     VM_CASE(OP_INVOKE) {
-      ObjString* method_name = READ_STRING();
-      int arg_count = READ_BYTE();
-      u8_t ic_slot = READ_BYTE();
-      Value receiver = peek(arg_count);
+      // A=base, B=argc, C=name_K  [next: EXTRAARG ic_slot]
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Instruction extra = READ_INSTR();
+      u8_t ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      ObjString* method_name = as_string(K[C]);
+      int arg_count = B;
+
+      // Set stack_top_ past the arguments
+      stack_top_ = frame->slots + A + arg_count + 1;
+      Value receiver = frame->slots[A];
 
       // IC fast path: monomorphic instance method dispatch
       if (is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
@@ -1879,24 +2239,20 @@ dispatch_loop:
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
         if (ic.klass == klass && ic.kind == ICKind::IC_METHOD) {
-          // Must still check field shadowing
           Value field_val;
           if (!instance->fields().get(method_name, &field_val)) {
-            // No field shadow — use cached method directly
             if (!call(as_closure(ic.cached), arg_count)) {
               goto handle_runtime_error;
             }
             frame = &frames_[frame_count_ - 1];
+            RELOAD_K();
             VM_DISPATCH();
           }
-          // Field shadows method — fall through to full invoke
         }
 
-        // IC miss for instances — try direct method lookup before full invoke
         if (!invoke(method_name, arg_count)) {
           goto handle_runtime_error;
         }
-        // Update IC for instance method calls (only if it was a method, not a field)
         Value method_val;
         if (klass->methods().get(method_name, &method_val)) {
           ic.klass = klass;
@@ -1904,88 +2260,41 @@ dispatch_loop:
           ic.cached = method_val;
         }
         frame = &frames_[frame_count_ - 1];
+        RELOAD_K();
         VM_DISPATCH();
       }
 
-      // Non-instance receiver — no IC, full invoke path
       if (!invoke(method_name, arg_count)) {
         goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_SUPER_INVOKE) {
-      ObjString* method = READ_STRING();
-      int arg_count = READ_BYTE();
-      ObjClass* superclass = as_class(pop());
-      if (!invoke_from_class(superclass, method, arg_count)) {
+    VM_CASE(OP_SUPERINV) {
+      // A=base, B=argc, C=name_K
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* method_name = as_string(K[C]);
+      int arg_count = B;
+
+      // Superclass is in R(A+argc+1), placed by compiler
+      ObjClass* superclass = as_class(frame->slots[A + arg_count + 1]);
+      stack_top_ = frame->slots + A + arg_count + 1;
+      if (!invoke_from_class(superclass, method_name, arg_count)) {
         goto handle_runtime_error;
       }
       frame = &frames_[frame_count_ - 1];
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_CLOSURE) {
-      ObjFunction* function = as_function(READ_CONSTANT());
-      ObjClosure* closure = allocate<ObjClosure>(function);
-      push(Value(static_cast<Object*>(closure)));
-
-      for (int i = 0; i < closure->upvalue_count(); i++) {
-        u8_t is_local = READ_BYTE();
-        u8_t index = READ_BYTE();
-        if (is_local) {
-          closure->set_upvalue_at(static_cast<sz_t>(i), capture_upvalue(frame->slots + index));
-        } else {
-          closure->set_upvalue_at(static_cast<sz_t>(i), frame->closure->upvalue_at(index));
-        }
-      }
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_CLOSE_UPVALUE) {
-      close_upvalues(stack_top_ - 1);
-      pop();
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_DEFER) {
-      Value closure_val = pop();
-      frame->deferred.push_back(as_closure(closure_val));
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_BITAND) {
-      BITWISE_OP(&);
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_BITOR) {
-      BITWISE_OP(|);
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_BITXOR) {
-      BITWISE_OP(^);
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_BITNOT) {
-      if (!peek(0).is_integer()) {
-        runtime_error("Operand must be an integer.");
-        goto handle_runtime_error;
-      }
-      push(Value(static_cast<i64_t>(~pop().as_integer())));
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_LSHIFT) {
-      BITWISE_OP(<<);
-      VM_DISPATCH();
-    }
-    VM_CASE(OP_RSHIFT) {
-      BITWISE_OP(>>);
+      RELOAD_K();
       VM_DISPATCH();
     }
 
     VM_CASE(OP_RETURN) {
-      Value result = pop();
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      Value result = (B >= 2) ? frame->slots[A] : Value();
 
       // If returning from a deferred call, discard its result
       // and restore the original return value.
@@ -2001,33 +2310,36 @@ dispatch_loop:
         frame->returning = true;
         frame->ip--;  // rewind IP to OP_RETURN for re-entry
 
+        // Push deferred closure on stack and call it
+        stack_top_ = frame->slots + A + 1;
         push(Value(static_cast<Object*>(deferred)));
         call(deferred, 0);
         frame = &frames_[frame_count_ - 1];
+        RELOAD_K();
         VM_DISPATCH();
       }
 
       frame->returning = false;
       close_upvalues(frame->slots);
+
+      Value* return_base = frame->slots;
       frame_count_--;
       if (frame_count_ == 0) {
-        pop();
         return InterpretResult::INTERPRET_OK;
       }
 
-      stack_top_ = frame->slots;
-      push(result);
+      *return_base = result;
+      stack_top_ = return_base + 1;
       frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
 
       // Check if we just returned from a module frame
       if (!pending_imports_.empty() && pending_imports_.back().frame_index == frame_count_) {
         auto pending = std::move(pending_imports_.back());
         pending_imports_.pop_back();
 
-        // Restore previous script path
         current_script_path_ = std::move(pending.previous_script_path);
 
-        // Collect new globals as module exports
         std::unordered_set<ObjString*> pre_set(
             pending.pre_global_keys.begin(), pending.pre_global_keys.end());
         for (auto& entry : globals_.entries()) {
@@ -2036,7 +2348,6 @@ dispatch_loop:
           }
         }
 
-        // Define module as global variable using filename without extension
         str_t mod_path = str_t(pending.module->name()->value());
         auto slash = mod_path.find_last_of("/\\");
         str_t filename = (slash != str_t::npos) ? mod_path.substr(slash + 1) : mod_path;
@@ -2045,7 +2356,6 @@ dispatch_loop:
         ObjString* name_str = copy_string(mod_name.c_str(), mod_name.size());
         globals_.set(name_str, Value(static_cast<Object*>(pending.module)));
 
-        // Process deferred from-import requests
         for (auto& req : pending.from_imports) {
           Value exp_val;
           if (pending.module->exports().get(req.name, &exp_val)) {
@@ -2057,114 +2367,158 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
+    VM_CASE(OP_CLOSURE) {
+      u8_t A = decode_A(instr);
+      u16_t Bx = decode_Bx(instr);
+      ObjFunction* function = as_function(K[Bx]);
+      ObjClosure* closure = allocate<ObjClosure>(function);
+      frame->slots[A] = Value(static_cast<Object*>(closure));
+
+      for (int i = 0; i < closure->upvalue_count(); i++) {
+        Instruction extra = READ_INSTR(); // EXTRAARG: A=is_local, Bx=index
+        u8_t is_local = decode_A(extra);
+        u8_t index = static_cast<u8_t>(decode_Bx(extra));
+        if (is_local) {
+          closure->set_upvalue_at(static_cast<sz_t>(i), capture_upvalue(frame->slots + index));
+        } else {
+          closure->set_upvalue_at(static_cast<sz_t>(i), frame->closure->upvalue_at(index));
+        }
+      }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_CLOSE) {
+      u8_t A = decode_A(instr);
+      close_upvalues(frame->slots + A);
+      VM_DISPATCH();
+    }
+
+    // =====================================================================
+    // OOP
+    // =====================================================================
     VM_CASE(OP_CLASS) {
-      push(Value(static_cast<Object*>(allocate<ObjClass>(READ_STRING()))));
+      u8_t A = decode_A(instr);
+      u16_t Bx = decode_Bx(instr);
+      ObjString* name = as_string(K[Bx]);
+      frame->slots[A] = Value(static_cast<Object*>(allocate<ObjClass>(name)));
       VM_DISPATCH();
     }
 
     VM_CASE(OP_INHERIT) {
-      Value superclass = peek(1);
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      Value superclass = frame->slots[B];
       if (!is_obj_type(superclass, ObjectType::OBJ_CLASS)) {
         runtime_error("Superclass must be a class.");
         goto handle_runtime_error;
       }
-
-      ObjClass* subclass = as_class(peek(0));
+      ObjClass* subclass = as_class(frame->slots[A]);
       ObjClass* super = as_class(superclass);
-      // Copy methods from superclass
       subclass->methods().add_all(super->methods());
       subclass->static_methods().add_all(super->static_methods());
       subclass->getters().add_all(super->getters());
       subclass->setters().add_all(super->setters());
       subclass->abstract_methods().add_all(super->abstract_methods());
-      pop(); // Subclass
       VM_DISPATCH();
     }
 
     VM_CASE(OP_METHOD) {
-      ObjString* name = READ_STRING();
-      Value method = peek(0);
-      ObjClass* klass = as_class(peek(1));
-      klass->methods().set(name, method);
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* name = as_string(K[B]);
+      ObjClass* klass = as_class(frame->slots[A]);
+      klass->methods().set(name, frame->slots[C]);
       klass->abstract_methods().remove(name);
-      pop();
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_STATIC_METHOD) {
-      ObjString* name = READ_STRING();
-      Value method = peek(0);
-      ObjClass* klass = as_class(peek(1));
-      klass->static_methods().set(name, method);
-      pop();
+    VM_CASE(OP_STATICMETH) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* name = as_string(K[B]);
+      ObjClass* klass = as_class(frame->slots[A]);
+      klass->static_methods().set(name, frame->slots[C]);
       VM_DISPATCH();
     }
 
     VM_CASE(OP_GETTER) {
-      ObjString* name = READ_STRING();
-      Value method = peek(0);
-      ObjClass* klass = as_class(peek(1));
-      klass->getters().set(name, method);
-      pop();
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* name = as_string(K[B]);
+      ObjClass* klass = as_class(frame->slots[A]);
+      klass->getters().set(name, frame->slots[C]);
       VM_DISPATCH();
     }
 
     VM_CASE(OP_SETTER) {
-      ObjString* name = READ_STRING();
-      Value method = peek(0);
-      ObjClass* klass = as_class(peek(1));
-      klass->setters().set(name, method);
-      pop();
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* name = as_string(K[B]);
+      ObjClass* klass = as_class(frame->slots[A]);
+      klass->setters().set(name, frame->slots[C]);
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_ABSTRACT_METHOD) {
-      ObjString* name = READ_STRING();
-      Value method = peek(0);
-      ObjClass* klass = as_class(peek(1));
-      klass->methods().set(name, method);
+    VM_CASE(OP_ABSTMETH) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      ObjString* name = as_string(K[B]);
+      ObjClass* klass = as_class(frame->slots[A]);
+      klass->methods().set(name, frame->slots[C]);
       klass->abstract_methods().set(name, Value(true));
-      pop();
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_BUILD_LIST) {
-      u8_t count = READ_BYTE();
+    // =====================================================================
+    // Collections
+    // =====================================================================
+    VM_CASE(OP_NEWLIST) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
       ObjList* list = allocate<ObjList>();
-      list->elements().resize(count);
-      for (int i = count - 1; i >= 0; i--) {
-        list->elements()[static_cast<sz_t>(i)] = pop();
+      list->elements().resize(B);
+      for (int i = 0; i < B; i++) {
+        list->elements()[static_cast<sz_t>(i)] = frame->slots[A + 1 + i];
       }
-      push(Value(static_cast<Object*>(list)));
+      frame->slots[A] = Value(static_cast<Object*>(list));
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_BUILD_MAP) {
-      u8_t count = READ_BYTE();
+    VM_CASE(OP_NEWMAP) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
       ObjMap* map = allocate<ObjMap>();
-      for (int i = count - 1; i >= 0; i--) {
-        Value val = pop();
-        Value key = pop();
+      for (int i = 0; i < B; i++) {
+        Value key = frame->slots[A + 1 + i * 2];
+        Value val = frame->slots[A + 1 + i * 2 + 1];
         map->entries()[key] = val;
       }
-      push(Value(static_cast<Object*>(map)));
+      frame->slots[A] = Value(static_cast<Object*>(map));
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_BUILD_TUPLE) {
-      u8_t count = READ_BYTE();
-      std::vector<Value> elements(count);
-      for (int i = count - 1; i >= 0; i--) {
-        elements[static_cast<sz_t>(i)] = pop();
+    VM_CASE(OP_NEWTUPLE) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      std::vector<Value> elements(B);
+      for (int i = 0; i < B; i++) {
+        elements[static_cast<sz_t>(i)] = frame->slots[A + 1 + i];
       }
       ObjTuple* tuple = allocate<ObjTuple>(std::move(elements));
-      push(Value(static_cast<Object*>(tuple)));
+      frame->slots[A] = Value(static_cast<Object*>(tuple));
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_INDEX_GET) {
-      Value index_val = pop();
-      Value receiver = pop();
+    VM_CASE(OP_GETIDX) {
+      u8_t A = decode_A(instr);
+      Value receiver = frame->slots[decode_B(instr)];
+      Value index_val = frame->slots[decode_C(instr)];
+
       if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
         if (!index_val.is_number()) {
           runtime_error("List index must be a number.");
@@ -2176,7 +2530,7 @@ dispatch_loop:
           runtime_error("List index out of bounds.");
           goto handle_runtime_error;
         }
-        push(list->elements()[static_cast<sz_t>(index)]);
+        frame->slots[A] = list->elements()[static_cast<sz_t>(index)];
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(receiver);
         auto it = map->entries().find(index_val);
@@ -2184,7 +2538,7 @@ dispatch_loop:
           runtime_error("Key not found in map.");
           goto handle_runtime_error;
         }
-        push(it->second);
+        frame->slots[A] = it->second;
       } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
         if (!index_val.is_number()) {
           runtime_error("Tuple index must be a number.");
@@ -2196,7 +2550,7 @@ dispatch_loop:
           runtime_error("Tuple index out of bounds.");
           goto handle_runtime_error;
         }
-        push(tuple->elements()[static_cast<sz_t>(index)]);
+        frame->slots[A] = tuple->elements()[static_cast<sz_t>(index)];
       } else if (is_obj_type(receiver, ObjectType::OBJ_STRING)) {
         if (!index_val.is_number()) {
           runtime_error("String index must be a number.");
@@ -2208,7 +2562,8 @@ dispatch_loop:
           runtime_error("String index out of bounds.");
           goto handle_runtime_error;
         }
-        push(Value(static_cast<Object*>(copy_string(&str->value()[static_cast<sz_t>(index)], 1))));
+        frame->slots[A] = Value(static_cast<Object*>(
+            copy_string(&str->value()[static_cast<sz_t>(index)], 1)));
       } else {
         runtime_error("Only lists, tuples, and strings can be indexed.");
         goto handle_runtime_error;
@@ -2216,10 +2571,14 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_INDEX_SET) {
-      Value value = pop();
-      Value index_val = pop();
-      Value receiver = pop();
+    VM_CASE(OP_SETIDX) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value receiver = frame->slots[A];
+      Value index_val = frame->slots[B];
+      Value value = frame->slots[C];
+
       if (is_obj_type(receiver, ObjectType::OBJ_LIST)) {
         if (!index_val.is_number()) {
           runtime_error("List index must be a number.");
@@ -2242,38 +2601,47 @@ dispatch_loop:
         runtime_error("Only lists and maps support index assignment.");
         goto handle_runtime_error;
       }
-      push(value);
       VM_DISPATCH();
     }
 
+    // =====================================================================
+    // Module
+    // =====================================================================
     VM_CASE(OP_IMPORT) {
-      Value path_val = pop();
+      u8_t A = decode_A(instr);
+      Value path_val = frame->slots[A];
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
         goto handle_runtime_error;
       }
       import_module(as_string(path_val));
       frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_IMPORT_FROM) {
-      // Stack: [path, name]
-      Value name_val = pop();
-      Value path_val = pop();
+    VM_CASE(OP_IMPFROM) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      Value path_val = frame->slots[A];
+      Value name_val = frame->slots[B];
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
         goto handle_runtime_error;
       }
       ObjString* path = as_string(path_val);
       ObjString* name = as_string(name_val);
-      str_t resolved = ModuleLoader::resolve_path(path->value(), current_script_path_);
-      bool was_cached = modules_.find(resolved) != modules_.end();
+      // Built-in modules use raw name as key
+      str_t raw_name = str_t(path->value());
+      auto builtin_it = modules_.find(raw_name);
+      bool is_builtin = (builtin_it != modules_.end());
+      str_t resolved = is_builtin ? raw_name : ModuleLoader::resolve_path(path->value(), current_script_path_);
+      bool was_cached = is_builtin || modules_.find(resolved) != modules_.end();
       import_module(path);
       frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
 
-      if (was_cached) {
-        // Module already executed, exports available
+      if (was_cached || modules_.find(resolved) != modules_.end()) {
         auto mod_it = modules_.find(resolved);
         if (mod_it != modules_.end()) {
           Value exp_val;
@@ -2282,17 +2650,18 @@ dispatch_loop:
           }
         }
       } else if (!pending_imports_.empty()) {
-        // Module not yet executed, defer lookup
         pending_imports_.back().from_imports.push_back({name, nullptr});
       }
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_IMPORT_ALIAS) {
-      // Stack: [path, name, alias]
-      Value alias_val = pop();
-      Value name_val = pop();
-      Value path_val = pop();
+    VM_CASE(OP_IMPALIAS) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value path_val = frame->slots[A];
+      Value name_val = frame->slots[B];
+      Value alias_val = frame->slots[C];
       if (!is_obj_type(path_val, ObjectType::OBJ_STRING)) {
         runtime_error("Import path must be a string.");
         goto handle_runtime_error;
@@ -2300,12 +2669,17 @@ dispatch_loop:
       ObjString* path = as_string(path_val);
       ObjString* name = as_string(name_val);
       ObjString* alias = as_string(alias_val);
-      str_t resolved = ModuleLoader::resolve_path(path->value(), current_script_path_);
-      bool was_cached = modules_.find(resolved) != modules_.end();
+      // Built-in modules use raw name as key
+      str_t raw_name = str_t(path->value());
+      auto builtin_it = modules_.find(raw_name);
+      bool is_builtin = (builtin_it != modules_.end());
+      str_t resolved = is_builtin ? raw_name : ModuleLoader::resolve_path(path->value(), current_script_path_);
+      bool was_cached = is_builtin || modules_.find(resolved) != modules_.end();
       import_module(path);
       frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
 
-      if (was_cached) {
+      if (was_cached || modules_.find(resolved) != modules_.end()) {
         auto mod_it = modules_.find(resolved);
         if (mod_it != modules_.end()) {
           Value exp_val;
@@ -2319,50 +2693,51 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_FOR_ITER) {
-      // Format: OP_FOR_ITER slot jump_hi jump_lo
-      // slot   = stack slot of the iterable (index is at slot+1)
-      // jump   = forward offset to exit the loop when iteration ends
-      u8_t slot = READ_BYTE();
-      u16_t offset = READ_SHORT();
-      Value& iterable = frame->slots[slot];
-      Value& index_val = frame->slots[slot + 1];
+    // =====================================================================
+    // Iterator
+    // =====================================================================
+    VM_CASE(OP_FORITER) {
+      // seq=R(A), idx=R(A+1), elem→R(A+2); sBx=exit offset
+      u8_t A = decode_A(instr);
+      int sBx = decode_sBx(instr);
+      Value& iterable = frame->slots[A];
+      Value& index_val = frame->slots[A + 1];
       int idx = static_cast<int>(index_val.as_number());
 
       if (is_obj_type(iterable, ObjectType::OBJ_LIST)) {
         ObjList* list = as_list(iterable);
         if (idx >= static_cast<int>(list->len())) {
-          frame->ip += offset; // jump past loop body
+          frame->ip += sBx;
         } else {
-          push(list->elements()[static_cast<sz_t>(idx)]);
+          frame->slots[A + 2] = list->elements()[static_cast<sz_t>(idx)];
           index_val = Value(static_cast<double>(idx + 1));
         }
       } else if (is_obj_type(iterable, ObjectType::OBJ_TUPLE)) {
         ObjTuple* tuple = as_tuple(iterable);
         if (idx >= static_cast<int>(tuple->len())) {
-          frame->ip += offset;
+          frame->ip += sBx;
         } else {
-          push(tuple->elements()[static_cast<sz_t>(idx)]);
+          frame->slots[A + 2] = tuple->elements()[static_cast<sz_t>(idx)];
           index_val = Value(static_cast<double>(idx + 1));
         }
       } else if (is_obj_type(iterable, ObjectType::OBJ_STRING)) {
         ObjString* str = as_string(iterable);
         if (idx >= static_cast<int>(str->value().length())) {
-          frame->ip += offset;
+          frame->ip += sBx;
         } else {
-          push(Value(static_cast<Object*>(
-              copy_string(&str->value()[static_cast<sz_t>(idx)], 1))));
+          frame->slots[A + 2] = Value(static_cast<Object*>(
+              copy_string(&str->value()[static_cast<sz_t>(idx)], 1)));
           index_val = Value(static_cast<double>(idx + 1));
         }
       } else if (is_obj_type(iterable, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(iterable);
         auto& entries = map->entries();
         if (idx >= static_cast<int>(entries.size())) {
-          frame->ip += offset;
+          frame->ip += sBx;
         } else {
           auto it = entries.begin();
           std::advance(it, idx);
-          push(it->first); // iterate over keys
+          frame->slots[A + 2] = it->first;
           index_val = Value(static_cast<double>(idx + 1));
         }
       } else {
@@ -2372,108 +2747,40 @@ dispatch_loop:
       VM_DISPATCH();
     }
 
+    // =====================================================================
+    // Exception handling
+    // =====================================================================
     VM_CASE(OP_THROW) {
-      pending_exception_ = pop();
+      pending_exception_ = frame->slots[decode_A(instr)];
       goto handle_runtime_error;
     }
 
     VM_CASE(OP_TRY) {
-      u16_t offset = READ_SHORT();
+      int sBx = decode_sBx(instr);
       exception_handlers_.push_back({
         frame_count_ - 1,
         stack_top_,
-        frame->ip + offset,
+        frame->ip + sBx,
       });
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_END_TRY) {
+    VM_CASE(OP_ENDTRY) {
       exception_handlers_.pop_back();
       VM_DISPATCH();
     }
 
-    // Superinstructions: fused GET_LOCAL+GET_LOCAL+binary_op
-    VM_CASE(OP_ADD_LOCAL_LOCAL) {
-      u8_t slot1 = READ_BYTE();
-      u8_t slot2 = READ_BYTE();
-      Value a = frame->slots[slot1];
-      Value b = frame->slots[slot2];
-      if (a.is_integer() && b.is_integer()) {
-        push(Value(static_cast<i64_t>(a.as_integer() + b.as_integer())));
-      } else if (a.is_number() && b.is_number()) {
-        push(Value(a.as_number() + b.as_number()));
-      } else if (is_obj_type(a, ObjectType::OBJ_STRING) &&
-                 is_obj_type(b, ObjectType::OBJ_STRING)) {
-        push(a); push(b);
-        concatenate();
-      } else {
-        runtime_error("Operands must be two numbers or two strings.");
-        goto handle_runtime_error;
-      }
+    VM_CASE(OP_DEFER) {
+      u8_t A = decode_A(instr);
+      frame->deferred.push_back(as_closure(frame->slots[A]));
       VM_DISPATCH();
     }
 
-    VM_CASE(OP_SUBTRACT_LOCAL_LOCAL) {
-      u8_t slot1 = READ_BYTE();
-      u8_t slot2 = READ_BYTE();
-      Value a = frame->slots[slot1];
-      Value b = frame->slots[slot2];
-      if (!a.is_number() || !b.is_number()) {
-        runtime_error("Operands must be numbers.");
-        goto handle_runtime_error;
-      }
-      if (a.is_integer() && b.is_integer()) {
-        push(Value(static_cast<i64_t>(a.as_integer() - b.as_integer())));
-      } else {
-        push(Value(a.as_number() - b.as_number()));
-      }
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_MULTIPLY_LOCAL_LOCAL) {
-      u8_t slot1 = READ_BYTE();
-      u8_t slot2 = READ_BYTE();
-      Value a = frame->slots[slot1];
-      Value b = frame->slots[slot2];
-      if (!a.is_number() || !b.is_number()) {
-        runtime_error("Operands must be numbers.");
-        goto handle_runtime_error;
-      }
-      if (a.is_integer() && b.is_integer()) {
-        push(Value(static_cast<i64_t>(a.as_integer() * b.as_integer())));
-      } else {
-        push(Value(a.as_number() * b.as_number()));
-      }
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_DIVIDE_LOCAL_LOCAL) {
-      u8_t slot1 = READ_BYTE();
-      u8_t slot2 = READ_BYTE();
-      Value a = frame->slots[slot1];
-      Value b = frame->slots[slot2];
-      if (!a.is_number() || !b.is_number()) {
-        runtime_error("Operands must be numbers.");
-        goto handle_runtime_error;
-      }
-      push(Value(a.as_number() / b.as_number()));
-      VM_DISPATCH();
-    }
-
-    VM_CASE(OP_MODULO_LOCAL_LOCAL) {
-      u8_t slot1 = READ_BYTE();
-      u8_t slot2 = READ_BYTE();
-      Value a = frame->slots[slot1];
-      Value b = frame->slots[slot2];
-      if (!a.is_number() || !b.is_number()) {
-        runtime_error("Operands must be numbers.");
-        goto handle_runtime_error;
-      }
-      if (a.is_integer() && b.is_integer()) {
-        push(Value(static_cast<i64_t>(a.as_integer() % b.as_integer())));
-      } else {
-        push(Value(std::fmod(a.as_number(), b.as_number())));
-      }
+    // =====================================================================
+    // Extra data (should not be dispatched directly)
+    // =====================================================================
+    VM_CASE(OP_EXTRAARG) {
+      // EXTRAARG is consumed inline by preceding instructions; skip if orphaned
       VM_DISPATCH();
     }
 
@@ -2487,7 +2794,6 @@ handle_runtime_error:
     auto handler = exception_handlers_.back();
     exception_handlers_.pop_back();
 
-    // Close upvalues and clear deferred closures for frames being unwound
     while (frame_count_ - 1 > handler.frame_index) {
       auto& unwound = frames_[frame_count_ - 1];
       unwound.deferred.clear();
@@ -2497,6 +2803,7 @@ handle_runtime_error:
     }
 
     frame = &frames_[frame_count_ - 1];
+    RELOAD_K();
     stack_top_ = handler.stack_depth;
     frame->ip = handler.catch_ip;
     push(pending_exception_);
@@ -2507,11 +2814,10 @@ handle_runtime_error:
 #undef VM_CASE
 #undef VM_DISPATCH
 #undef TRACE_INSTRUCTION
-#undef READ_BYTE
-#undef READ_SHORT
-#undef READ_CONSTANT
-#undef READ_STRING
-#undef BINARY_OP
+#undef READ_INSTR
+#undef K
+#undef RK
+#undef RELOAD_K
 }
 
 } // namespace ms

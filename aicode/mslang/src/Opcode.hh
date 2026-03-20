@@ -30,152 +30,265 @@
 
 namespace ms {
 
+// =============================================================================
+// Register-Based Bytecode: 32-bit fixed-width instructions
+//
+// Instruction formats (little-endian word layout):
+//   iABC:  [C:8][B:8][A:8][Op:8]   — binary ops, most instructions
+//   iABx:  [Bx:16][A:8][Op:8]      — constants, globals
+//   iAsBx: [sBx:16][A:8][Op:8]     — signed jumps
+//
+// RK encoding (for B/C fields in arithmetic/comparison ops):
+//   Value < 128  → register index R(value)
+//   Value >= 128 → constant index K(value - 128), addressing K(0)..K(127)
+//   For larger constant pools, use OP_LOADK with Bx field (0..65535).
+// =============================================================================
+
+using Instruction = u32_t;
+
+// RK constant threshold: B/C values >= this are constant indices
+inline constexpr u8_t kRK_CONST_BIT = 0x80;
+inline constexpr int kMAX_RK_CONST = 128;   // K(0)..K(127) via RK encoding
+inline constexpr int kMAX_REGISTERS = 128;   // R(0)..R(127)
+
 enum class OpCode : u8_t {
-  OP_CONSTANT,
-  OP_CONSTANT_LONG,
-  OP_NIL,
-  OP_TRUE,
-  OP_FALSE,
-  OP_POP,
-  OP_GET_LOCAL,
-  OP_SET_LOCAL,
-  OP_GET_GLOBAL,
-  OP_DEFINE_GLOBAL,
-  OP_SET_GLOBAL,
-  OP_GET_UPVALUE,
-  OP_SET_UPVALUE,
-  OP_GET_PROPERTY,
-  OP_SET_PROPERTY,
-  OP_GET_SUPER,
-  OP_EQUAL,
-  OP_GREATER,
-  OP_LESS,
-  OP_ADD,
-  OP_SUBTRACT,
-  OP_MULTIPLY,
-  OP_DIVIDE,
-  OP_MODULO,
-  OP_NOT,
-  OP_NEGATE,
-  OP_STR,
-  OP_PRINT,
-  OP_JUMP,
-  OP_JUMP_IF_FALSE,
-  OP_LOOP,
-  OP_CALL,
-  OP_INVOKE,
-  OP_SUPER_INVOKE,
-  OP_CLOSURE,
-  OP_CLOSE_UPVALUE,
-  OP_RETURN,
-  OP_CLASS,
-  OP_INHERIT,
-  OP_METHOD,
-  OP_STATIC_METHOD,
-  OP_GETTER,
-  OP_SETTER,
-  OP_ABSTRACT_METHOD,
-  OP_BUILD_LIST,
-  OP_BUILD_MAP,
-  OP_BUILD_TUPLE,
-  OP_INDEX_GET,
-  OP_INDEX_SET,
-  OP_IMPORT,
-  OP_IMPORT_FROM,
-  OP_IMPORT_ALIAS,
-  OP_FOR_ITER,
-  OP_THROW,
-  OP_TRY,
-  OP_END_TRY,
-  OP_DEFER,
+  // --- Loading ---
+  OP_LOADK,         // iABx   R(A) := K(Bx)
+  OP_LOADNIL,       // iABC   R(A), R(A+1), ..., R(A+B) := nil
+  OP_LOADTRUE,      // iA     R(A) := true
+  OP_LOADFALSE,     // iA     R(A) := false
 
-  // Bitwise operators (integers only)
-  OP_BITAND,
-  OP_BITOR,
-  OP_BITXOR,
-  OP_BITNOT,
-  OP_LSHIFT,
-  OP_RSHIFT,
+  // --- Register movement ---
+  OP_MOVE,          // iABC   R(A) := R(B)
 
-  // Superinstructions: fused GET_LOCAL+GET_LOCAL+binary_op
-  OP_ADD_LOCAL_LOCAL,       // slot1, slot2 → push(locals[slot1] + locals[slot2])
-  OP_SUBTRACT_LOCAL_LOCAL,  // slot1, slot2 → push(locals[slot1] - locals[slot2])
-  OP_MULTIPLY_LOCAL_LOCAL,  // slot1, slot2 → push(locals[slot1] * locals[slot2])
-  OP_DIVIDE_LOCAL_LOCAL,    // slot1, slot2 → push(locals[slot1] / locals[slot2])
-  OP_MODULO_LOCAL_LOCAL,    // slot1, slot2 → push(locals[slot1] % locals[slot2])
+  // --- Global variables ---
+  OP_GETGLOBAL,     // iABx   R(A) := globals[K(Bx)]
+  OP_SETGLOBAL,     // iABx   globals[K(Bx)] := R(A)
+  OP_DEFGLOBAL,     // iABx   define globals[K(Bx)] := R(A)
+
+  // --- Upvalues ---
+  OP_GETUPVAL,      // iABC   R(A) := upvalues[B]
+  OP_SETUPVAL,      // iABC   upvalues[B] := R(A)
+
+  // --- Properties (followed by EXTRAARG for IC slot) ---
+  OP_GETPROP,       // iABC   R(A) := R(B).K(C)  [next: EXTRAARG ic_slot]
+  OP_SETPROP,       // iABC   R(A).K(B) := R(C)  [next: EXTRAARG ic_slot]
+  OP_GETSUPER,      // iABC   R(A) := super(R(B)).K(C)
+
+  // --- Arithmetic (B,C use RK encoding) ---
+  OP_ADD,           // iABC   R(A) := RK(B) + RK(C)
+  OP_SUB,           // iABC   R(A) := RK(B) - RK(C)
+  OP_MUL,           // iABC   R(A) := RK(B) * RK(C)
+  OP_DIV,           // iABC   R(A) := RK(B) / RK(C)
+  OP_MOD,           // iABC   R(A) := RK(B) % RK(C)
+
+  // --- Comparison (produce bool in register) ---
+  OP_EQ,            // iABC   R(A) := (RK(B) == RK(C))
+  OP_LT,            // iABC   R(A) := (RK(B) < RK(C))
+  OP_LE,            // iABC   R(A) := (RK(B) <= RK(C))
+
+  // --- Unary ---
+  OP_NEG,           // iABC   R(A) := -R(B)
+  OP_NOT,           // iABC   R(A) := !R(B)
+  OP_STR,           // iABC   R(A) := str(R(B))
+
+  // --- Bitwise (B,C use RK encoding) ---
+  OP_BAND,          // iABC   R(A) := RK(B) & RK(C)
+  OP_BOR,           // iABC   R(A) := RK(B) | RK(C)
+  OP_BXOR,          // iABC   R(A) := RK(B) ^ RK(C)
+  OP_BNOT,          // iABC   R(A) := ~R(B)
+  OP_SHL,           // iABC   R(A) := RK(B) << RK(C)
+  OP_SHR,           // iABC   R(A) := RK(B) >> RK(C)
+
+  // --- Control flow ---
+  OP_JMP,           // iAsBx  PC += sBx  (A unused)
+  OP_TEST,          // iABC   if (bool(R(A)) != C) then PC++
+  OP_TESTSET,       // iABC   if (bool(R(B)) == C) R(A):=R(B) else PC++
+
+  // --- I/O ---
+  OP_PRINT,         // iA     print R(A)
+
+  // --- Function calls ---
+  OP_CALL,          // iABC   R(A)..R(A+C-2) := R(A)(R(A+1)..R(A+B-1))
+  OP_INVOKE,        // iABC   A=base, B=argc, C=name_K  [next: EXTRAARG ic]
+  OP_SUPERINV,      // iABC   A=base, B=argc, C=name_K
+  OP_RETURN,        // iABC   return R(A)..R(A+B-2)  (B=1: return R(A))
+  OP_CLOSURE,       // iABx   R(A) := closure(K(Bx))  [+upvalue EXTRAARGs]
+  OP_CLOSE,         // iA     close all upvalues >= R(A)
+
+  // --- OOP ---
+  OP_CLASS,         // iABx   R(A) := new class(K(Bx))
+  OP_INHERIT,       // iABC   R(A).inherit(R(B))
+  OP_METHOD,        // iABC   class(R(A)).methods[K(B)] := R(C)
+  OP_STATICMETH,    // iABC   class(R(A)).static[K(B)] := R(C)
+  OP_GETTER,        // iABC   class(R(A)).getters[K(B)] := R(C)
+  OP_SETTER,        // iABC   class(R(A)).setters[K(B)] := R(C)
+  OP_ABSTMETH,      // iABC   class(R(A)).abstract[K(B)] := R(C)
+
+  // --- Collections ---
+  OP_NEWLIST,       // iABC   R(A) := [R(A+1)..R(A+B)]
+  OP_NEWMAP,        // iABC   R(A) := {R(A+1):R(A+2), ..., R(A+2B-1):R(A+2B)}
+  OP_NEWTUPLE,      // iABC   R(A) := (R(A+1)..R(A+B))
+  OP_GETIDX,        // iABC   R(A) := R(B)[R(C)]
+  OP_SETIDX,        // iABC   R(A)[R(B)] := R(C)
+
+  // --- Module ---
+  OP_IMPORT,        // iA     import path from R(A)
+  OP_IMPFROM,       // iABC   from R(A) import R(B)
+  OP_IMPALIAS,      // iABC   from R(A) import R(B) as R(C)
+
+  // --- Iterator ---
+  OP_FORITER,       // iABx   seq=R(A), idx=R(A+1), elem→R(A+2); sBx=exit offset
+
+  // --- Exception handling ---
+  OP_THROW,         // iA     throw R(A)
+  OP_TRY,           // iAsBx  push handler at PC+sBx
+  OP_ENDTRY,        // i      pop exception handler
+  OP_DEFER,         // iA     defer closure R(A)
+
+  // --- Extra data ---
+  OP_EXTRAARG,      // iABx   extra data word for preceding instruction
 };
+
+// =============================================================================
+// Instruction encoding
+// =============================================================================
+
+// iABC format: [C:8][B:8][A:8][Op:8]
+inline Instruction encode_ABC(OpCode op, u8_t a, u8_t b, u8_t c) noexcept {
+  return static_cast<u32_t>(op)
+       | (static_cast<u32_t>(a) << 8)
+       | (static_cast<u32_t>(b) << 16)
+       | (static_cast<u32_t>(c) << 24);
+}
+
+// iABx format: [Bx:16][A:8][Op:8]
+inline Instruction encode_ABx(OpCode op, u8_t a, u16_t bx) noexcept {
+  return static_cast<u32_t>(op)
+       | (static_cast<u32_t>(a) << 8)
+       | (static_cast<u32_t>(bx) << 16);
+}
+
+// iAsBx format: [sBx:16][A:8][Op:8]  — sBx biased by 32767
+inline constexpr int kSBX_BIAS = 32767;
+
+inline Instruction encode_AsBx(OpCode op, u8_t a, int sbx) noexcept {
+  auto bx = static_cast<u16_t>(sbx + kSBX_BIAS);
+  return encode_ABx(op, a, bx);
+}
+
+// =============================================================================
+// Instruction decoding
+// =============================================================================
+
+inline OpCode decode_op(Instruction i) noexcept {
+  return static_cast<OpCode>(i & 0xFF);
+}
+
+inline u8_t decode_A(Instruction i) noexcept {
+  return static_cast<u8_t>((i >> 8) & 0xFF);
+}
+
+inline u8_t decode_B(Instruction i) noexcept {
+  return static_cast<u8_t>((i >> 16) & 0xFF);
+}
+
+inline u8_t decode_C(Instruction i) noexcept {
+  return static_cast<u8_t>((i >> 24) & 0xFF);
+}
+
+inline u16_t decode_Bx(Instruction i) noexcept {
+  return static_cast<u16_t>((i >> 16) & 0xFFFF);
+}
+
+inline int decode_sBx(Instruction i) noexcept {
+  return static_cast<int>(decode_Bx(i)) - kSBX_BIAS;
+}
+
+// =============================================================================
+// RK helpers: Register-or-Constant encoding for B/C fields
+// =============================================================================
+
+inline constexpr bool is_rk_const(u8_t rk) noexcept {
+  return (rk & kRK_CONST_BIT) != 0;
+}
+
+inline constexpr u8_t rk_to_const(u8_t rk) noexcept {
+  return rk & ~kRK_CONST_BIT;
+}
+
+inline constexpr u8_t const_to_rk(u8_t k_index) noexcept {
+  return k_index | kRK_CONST_BIT;
+}
+
+// =============================================================================
+// Opcode names (for disassembly / debug)
+// =============================================================================
 
 inline cstr_t opcode_name(OpCode code) noexcept {
   switch (code) {
-  case OpCode::OP_CONSTANT:       return "OP_CONSTANT";
-  case OpCode::OP_CONSTANT_LONG:  return "OP_CONSTANT_LONG";
-  case OpCode::OP_NIL:            return "OP_NIL";
-  case OpCode::OP_TRUE:           return "OP_TRUE";
-  case OpCode::OP_FALSE:          return "OP_FALSE";
-  case OpCode::OP_POP:            return "OP_POP";
-  case OpCode::OP_GET_LOCAL:      return "OP_GET_LOCAL";
-  case OpCode::OP_SET_LOCAL:      return "OP_SET_LOCAL";
-  case OpCode::OP_GET_GLOBAL:     return "OP_GET_GLOBAL";
-  case OpCode::OP_DEFINE_GLOBAL:  return "OP_DEFINE_GLOBAL";
-  case OpCode::OP_SET_GLOBAL:     return "OP_SET_GLOBAL";
-  case OpCode::OP_GET_UPVALUE:    return "OP_GET_UPVALUE";
-  case OpCode::OP_SET_UPVALUE:    return "OP_SET_UPVALUE";
-  case OpCode::OP_GET_PROPERTY:   return "OP_GET_PROPERTY";
-  case OpCode::OP_SET_PROPERTY:   return "OP_SET_PROPERTY";
-  case OpCode::OP_GET_SUPER:      return "OP_GET_SUPER";
-  case OpCode::OP_EQUAL:          return "OP_EQUAL";
-  case OpCode::OP_GREATER:        return "OP_GREATER";
-  case OpCode::OP_LESS:           return "OP_LESS";
-  case OpCode::OP_ADD:            return "OP_ADD";
-  case OpCode::OP_SUBTRACT:       return "OP_SUBTRACT";
-  case OpCode::OP_MULTIPLY:       return "OP_MULTIPLY";
-  case OpCode::OP_DIVIDE:         return "OP_DIVIDE";
-  case OpCode::OP_MODULO:        return "OP_MODULO";
-  case OpCode::OP_NOT:            return "OP_NOT";
-  case OpCode::OP_NEGATE:         return "OP_NEGATE";
-  case OpCode::OP_STR:            return "OP_STR";
-  case OpCode::OP_PRINT:          return "OP_PRINT";
-  case OpCode::OP_JUMP:           return "OP_JUMP";
-  case OpCode::OP_JUMP_IF_FALSE:  return "OP_JUMP_IF_FALSE";
-  case OpCode::OP_LOOP:           return "OP_LOOP";
-  case OpCode::OP_CALL:           return "OP_CALL";
-  case OpCode::OP_INVOKE:         return "OP_INVOKE";
-  case OpCode::OP_SUPER_INVOKE:   return "OP_SUPER_INVOKE";
-  case OpCode::OP_CLOSURE:        return "OP_CLOSURE";
-  case OpCode::OP_CLOSE_UPVALUE:  return "OP_CLOSE_UPVALUE";
-  case OpCode::OP_RETURN:         return "OP_RETURN";
-  case OpCode::OP_CLASS:          return "OP_CLASS";
-  case OpCode::OP_INHERIT:        return "OP_INHERIT";
-  case OpCode::OP_METHOD:         return "OP_METHOD";
-  case OpCode::OP_STATIC_METHOD:  return "OP_STATIC_METHOD";
-  case OpCode::OP_GETTER:           return "OP_GETTER";
-  case OpCode::OP_SETTER:           return "OP_SETTER";
-  case OpCode::OP_ABSTRACT_METHOD:  return "OP_ABSTRACT_METHOD";
-  case OpCode::OP_BUILD_LIST:     return "OP_BUILD_LIST";
-  case OpCode::OP_BUILD_MAP:      return "OP_BUILD_MAP";
-  case OpCode::OP_BUILD_TUPLE:    return "OP_BUILD_TUPLE";
-  case OpCode::OP_INDEX_GET:      return "OP_INDEX_GET";
-  case OpCode::OP_INDEX_SET:      return "OP_INDEX_SET";
-  case OpCode::OP_IMPORT:         return "OP_IMPORT";
-  case OpCode::OP_IMPORT_FROM:    return "OP_IMPORT_FROM";
-  case OpCode::OP_IMPORT_ALIAS:   return "OP_IMPORT_ALIAS";
-  case OpCode::OP_FOR_ITER:       return "OP_FOR_ITER";
-  case OpCode::OP_THROW:          return "OP_THROW";
-  case OpCode::OP_TRY:            return "OP_TRY";
-  case OpCode::OP_END_TRY:        return "OP_END_TRY";
-  case OpCode::OP_DEFER:               return "OP_DEFER";
-  case OpCode::OP_BITAND:              return "OP_BITAND";
-  case OpCode::OP_BITOR:               return "OP_BITOR";
-  case OpCode::OP_BITXOR:              return "OP_BITXOR";
-  case OpCode::OP_BITNOT:              return "OP_BITNOT";
-  case OpCode::OP_LSHIFT:              return "OP_LSHIFT";
-  case OpCode::OP_RSHIFT:              return "OP_RSHIFT";
-  case OpCode::OP_ADD_LOCAL_LOCAL:      return "OP_ADD_LOCAL_LOCAL";
-  case OpCode::OP_SUBTRACT_LOCAL_LOCAL: return "OP_SUBTRACT_LOCAL_LOCAL";
-  case OpCode::OP_MULTIPLY_LOCAL_LOCAL: return "OP_MULTIPLY_LOCAL_LOCAL";
-  case OpCode::OP_DIVIDE_LOCAL_LOCAL:   return "OP_DIVIDE_LOCAL_LOCAL";
-  case OpCode::OP_MODULO_LOCAL_LOCAL:   return "OP_MODULO_LOCAL_LOCAL";
-  default:                              return "OP_UNKNOWN";
+  case OpCode::OP_LOADK:       return "LOADK";
+  case OpCode::OP_LOADNIL:     return "LOADNIL";
+  case OpCode::OP_LOADTRUE:    return "LOADTRUE";
+  case OpCode::OP_LOADFALSE:   return "LOADFALSE";
+  case OpCode::OP_MOVE:        return "MOVE";
+  case OpCode::OP_GETGLOBAL:   return "GETGLOBAL";
+  case OpCode::OP_SETGLOBAL:   return "SETGLOBAL";
+  case OpCode::OP_DEFGLOBAL:   return "DEFGLOBAL";
+  case OpCode::OP_GETUPVAL:    return "GETUPVAL";
+  case OpCode::OP_SETUPVAL:    return "SETUPVAL";
+  case OpCode::OP_GETPROP:     return "GETPROP";
+  case OpCode::OP_SETPROP:     return "SETPROP";
+  case OpCode::OP_GETSUPER:    return "GETSUPER";
+  case OpCode::OP_ADD:         return "ADD";
+  case OpCode::OP_SUB:         return "SUB";
+  case OpCode::OP_MUL:         return "MUL";
+  case OpCode::OP_DIV:         return "DIV";
+  case OpCode::OP_MOD:         return "MOD";
+  case OpCode::OP_EQ:          return "EQ";
+  case OpCode::OP_LT:          return "LT";
+  case OpCode::OP_LE:          return "LE";
+  case OpCode::OP_NEG:         return "NEG";
+  case OpCode::OP_NOT:         return "NOT";
+  case OpCode::OP_STR:         return "STR";
+  case OpCode::OP_BAND:        return "BAND";
+  case OpCode::OP_BOR:         return "BOR";
+  case OpCode::OP_BXOR:        return "BXOR";
+  case OpCode::OP_BNOT:        return "BNOT";
+  case OpCode::OP_SHL:         return "SHL";
+  case OpCode::OP_SHR:         return "SHR";
+  case OpCode::OP_JMP:         return "JMP";
+  case OpCode::OP_TEST:        return "TEST";
+  case OpCode::OP_TESTSET:     return "TESTSET";
+  case OpCode::OP_PRINT:       return "PRINT";
+  case OpCode::OP_CALL:        return "CALL";
+  case OpCode::OP_INVOKE:      return "INVOKE";
+  case OpCode::OP_SUPERINV:    return "SUPERINV";
+  case OpCode::OP_RETURN:      return "RETURN";
+  case OpCode::OP_CLOSURE:     return "CLOSURE";
+  case OpCode::OP_CLOSE:       return "CLOSE";
+  case OpCode::OP_CLASS:       return "CLASS";
+  case OpCode::OP_INHERIT:     return "INHERIT";
+  case OpCode::OP_METHOD:      return "METHOD";
+  case OpCode::OP_STATICMETH:  return "STATICMETH";
+  case OpCode::OP_GETTER:      return "GETTER";
+  case OpCode::OP_SETTER:      return "SETTER";
+  case OpCode::OP_ABSTMETH:    return "ABSTMETH";
+  case OpCode::OP_NEWLIST:     return "NEWLIST";
+  case OpCode::OP_NEWMAP:      return "NEWMAP";
+  case OpCode::OP_NEWTUPLE:    return "NEWTUPLE";
+  case OpCode::OP_GETIDX:      return "GETIDX";
+  case OpCode::OP_SETIDX:      return "SETIDX";
+  case OpCode::OP_IMPORT:      return "IMPORT";
+  case OpCode::OP_IMPFROM:     return "IMPFROM";
+  case OpCode::OP_IMPALIAS:    return "IMPALIAS";
+  case OpCode::OP_FORITER:     return "FORITER";
+  case OpCode::OP_THROW:       return "THROW";
+  case OpCode::OP_TRY:         return "TRY";
+  case OpCode::OP_ENDTRY:      return "ENDTRY";
+  case OpCode::OP_DEFER:       return "DEFER";
+  case OpCode::OP_EXTRAARG:    return "EXTRAARG";
+  default:                     return "UNKNOWN";
   }
 }
 

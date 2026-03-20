@@ -171,7 +171,7 @@ static void write_function(ByteWriter& w, ObjFunction* fn,
   // Chunk: code
   const auto& code = fn->chunk().code();
   w.write_u32(static_cast<u32_t>(code.size()));
-  w.write_bytes(code.data(), code.size());
+  w.write_bytes(reinterpret_cast<const u8_t*>(code.data()), code.size() * sizeof(Instruction));
 
   // Chunk: constants
   const auto& constants = fn->chunk().constants();
@@ -268,8 +268,8 @@ static ObjFunction* read_function(ByteReader& r,
   auto& code = fn->chunk().code();
   code.resize(code_size);
   if (code_size > 0) {
-    const u8_t* code_data = r.read_bytes(code_size);
-    std::memcpy(code.data(), code_data, code_size);
+    const u8_t* code_data = r.read_bytes(code_size * sizeof(Instruction));
+    std::memcpy(code.data(), code_data, code_size * sizeof(Instruction));
   }
 
   // Chunk: constants
