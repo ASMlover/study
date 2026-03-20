@@ -449,4 +449,21 @@ bool ObjFile::eof() const noexcept {
   return !is_open_ || stream_->eof();
 }
 
+// --- ObjWeakRef ---
+
+ObjWeakRef::ObjWeakRef(Object* target) noexcept
+    : Object(ObjectType::OBJ_WEAK_REF), target_(target) {
+}
+
+str_t ObjWeakRef::stringify() const noexcept {
+  if (target_ != nullptr) {
+    return std::format("<weak_ref {}>", target_->stringify());
+  }
+  return "<weak_ref (dead)>";
+}
+
+sz_t ObjWeakRef::size() const noexcept {
+  return sizeof(ObjWeakRef);
+}
+
 } // namespace ms

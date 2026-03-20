@@ -392,6 +392,20 @@ VM::VM() noexcept {
 
   // --- StringBuilder native ---
 
+  define_native("weak_ref", [this](int arg_count, Value* args) -> Value {
+    if (arg_count != 1) {
+      runtime_error("weak_ref() takes exactly 1 argument.");
+      return Value();
+    }
+    if (!args[0].is_object()) {
+      runtime_error("weak_ref() argument must be an object.");
+      return Value();
+    }
+    ObjWeakRef* ref = allocate<ObjWeakRef>(args[0].as_object());
+    weak_refs_.push_back(ref);
+    return Value(static_cast<Object*>(ref));
+  });
+
   define_native("StringBuilder", [this](int arg_count, Value* args) -> Value {
     ObjStringBuilder* sb = allocate<ObjStringBuilder>();
     if (arg_count == 1) {
@@ -750,6 +764,20 @@ void VM::sweep_young() noexcept {
   }
 }
 
+void VM::nullify_weak_refs() noexcept {
+  auto new_end = std::remove_if(weak_refs_.begin(), weak_refs_.end(),
+    [](ObjWeakRef* ref) {
+      // If the weak ref object itself is unmarked, it will be freed — remove from list
+      if (!ref->is_marked()) return true;
+      // If the target is unmarked, null it out (target is about to be freed)
+      if (ref->target() != nullptr && !ref->target()->is_marked()) {
+        ref->clear();
+      }
+      return false;
+    });
+  weak_refs_.erase(new_end, weak_refs_.end());
+}
+
 void VM::minor_gc() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
@@ -764,6 +792,9 @@ void VM::minor_gc() noexcept {
   mark_remembered_set();
 
   trace_references();
+
+  // Null out weak refs to unmarked young objects before sweep
+  nullify_weak_refs();
 
   // Only sweep young generation
   sweep_young();
@@ -792,6 +823,9 @@ void VM::major_gc() noexcept {
 
   // Remove interned strings that are unmarked before sweep
   strings_.remove_white();
+
+  // Null out weak refs to unmarked objects before sweep
+  nullify_weak_refs();
 
   // Sweep both generations
   sweep_young();
@@ -836,6 +870,7 @@ void VM::incremental_mark_step() noexcept {
   if (gray_stack_.empty()) {
     // Marking done, transition to sweeping
     strings_.remove_white();
+    nullify_weak_refs();
     gc_phase_ = GcPhase::SWEEPING;
     sweep_cursor_ = old_objects_;
     sweep_previous_ = nullptr;
@@ -1391,6 +1426,33 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
       return true;
     }
     runtime_error(std::format("Undefined StringBuilder method '{}'.", method_name));
+    return false;
+  }
+
+  if (is_obj_type(receiver, ObjectType::OBJ_WEAK_REF)) {
+    ObjWeakRef* ref = as_weak_ref(receiver);
+    strv_t method_name = name->value();
+
+    if (method_name == "get") {
+      if (arg_count != 0) {
+        runtime_error("get() takes no arguments.");
+        return false;
+      }
+      if (ref->is_alive()) {
+        stack_top_[-1] = Value(ref->target());
+      } else {
+        stack_top_[-1] = Value(); // nil
+      }
+      return true;
+    } else if (method_name == "alive") {
+      if (arg_count != 0) {
+        runtime_error("alive() takes no arguments.");
+        return false;
+      }
+      stack_top_[-1] = Value(ref->is_alive());
+      return true;
+    }
+    runtime_error(std::format("Undefined weak_ref method '{}'.", method_name));
     return false;
   }
 

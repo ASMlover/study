@@ -295,5 +295,5 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 15.2 | File I/O module | [x] |
 | | 16.4 | Language Server Protocol (LSP) | [x] |
 | | 17.1 | Incremental / generational GC | [x] |
-| | 17.2 | Weak references | [ ] |
+| | 17.2 | Weak references | [x] |
 | | 17.3 | Finalizers | [ ] |

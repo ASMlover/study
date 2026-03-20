@@ -57,6 +57,7 @@ enum class ObjectType : int {
   OBJ_STRING_BUILDER,
   OBJ_TUPLE,
   OBJ_FILE,
+  OBJ_WEAK_REF,
 };
 
 class Object {
@@ -401,6 +402,20 @@ public:
   bool eof() const noexcept;
 };
 
+class ObjWeakRef final : public Object {
+  Object* target_;
+
+public:
+  explicit ObjWeakRef(Object* target) noexcept;
+  str_t stringify() const noexcept override;
+  sz_t size() const noexcept override;
+  // No trace_references: GC does not trace through weak refs
+
+  Object* target() const noexcept { return target_; }
+  void clear() noexcept { target_ = nullptr; }
+  bool is_alive() const noexcept { return target_ != nullptr; }
+};
+
 // --- Convenience helpers for Value ---
 inline ObjString* as_string(const Value& v) noexcept {
   return as_obj<ObjString>(v.as_object());
@@ -452,6 +467,10 @@ inline ObjTuple* as_tuple(const Value& v) noexcept {
 
 inline ObjFile* as_file(const Value& v) noexcept {
   return as_obj<ObjFile>(v.as_object());
+}
+
+inline ObjWeakRef* as_weak_ref(const Value& v) noexcept {
+  return as_obj<ObjWeakRef>(v.as_object());
 }
 
 inline strv_t as_cppstring(const Value& v) noexcept {

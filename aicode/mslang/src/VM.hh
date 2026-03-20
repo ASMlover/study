@@ -90,6 +90,9 @@ class VM : public Singleton<VM> {
   // Remembered set: old-gen objects holding young-gen references
   std::vector<Object*> remembered_set_;
 
+  // Weak references: nulled out during sweep if target is collected
+  std::vector<ObjWeakRef*> weak_refs_;
+
   // Incremental marking state for major GC
   enum class GcPhase : u8_t { IDLE, MARKING, SWEEPING };
   GcPhase gc_phase_{GcPhase::IDLE};
@@ -134,6 +137,7 @@ class VM : public Singleton<VM> {
   void promote_object(Object* object) noexcept;
   void sweep_young() noexcept;
   void mark_remembered_set() noexcept;
+  void nullify_weak_refs() noexcept;
 
   // Incremental major GC
   void incremental_gc_step() noexcept;
