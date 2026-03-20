@@ -78,10 +78,24 @@ class VM : public Singleton<VM> {
   ObjString* op_str_string_{nullptr};
   ObjUpvalue* open_upvalues_{nullptr};
 
-  Object* objects_{nullptr};
+  // Generational GC: separate young/old object lists
+  Object* young_objects_{nullptr};
+  Object* old_objects_{nullptr};
   sz_t bytes_allocated_{0};
+  sz_t young_bytes_{0};
   sz_t next_gc_{kGC_INITIAL_SIZE};
+  sz_t next_minor_gc_{kGC_NURSERY_SIZE};
   std::vector<Object*> gray_stack_;
+
+  // Remembered set: old-gen objects holding young-gen references
+  std::vector<Object*> remembered_set_;
+
+  // Incremental marking state for major GC
+  enum class GcPhase : u8_t { IDLE, MARKING, SWEEPING };
+  GcPhase gc_phase_{GcPhase::IDLE};
+  bool major_gc_requested_{false};
+  Object* sweep_cursor_{nullptr};  // for incremental sweep
+  Object* sweep_previous_{nullptr};
 
   std::vector<ExceptionHandler> exception_handlers_;
   Value pending_exception_;
@@ -113,6 +127,20 @@ class VM : public Singleton<VM> {
   void trace_references() noexcept;
   void sweep() noexcept;
   void free_objects() noexcept;
+
+  // Generational GC
+  void minor_gc() noexcept;
+  void major_gc() noexcept;
+  void promote_object(Object* object) noexcept;
+  void sweep_young() noexcept;
+  void mark_remembered_set() noexcept;
+
+  // Incremental major GC
+  void incremental_gc_step() noexcept;
+  void begin_major_gc() noexcept;
+  void incremental_mark_step() noexcept;
+  void incremental_sweep_step() noexcept;
+  void finish_major_gc() noexcept;
 
   // Stack operations
   void push(Value value) noexcept;
@@ -163,6 +191,9 @@ public:
 
   // Used by mark_object() in Memory.cc
   void push_gray(Object* object) noexcept;
+
+  // Write barrier: add old-gen object to remembered set
+  void remember(Object* object) noexcept;
 };
 
 } // namespace ms

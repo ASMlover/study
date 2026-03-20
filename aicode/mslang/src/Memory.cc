@@ -48,4 +48,16 @@ void mark_value(Value& value) noexcept {
   if (value.is_object()) mark_object(value.as_object());
 }
 
+void write_barrier(Object* owner, Object* ref) noexcept {
+  if (owner == nullptr || ref == nullptr) return;
+  if (owner->is_old() && ref->is_young()) {
+    VM::get_instance().remember(owner);
+  }
+}
+
+void write_barrier_value(Object* owner, Value& value) noexcept {
+  if (owner == nullptr) return;
+  if (value.is_object()) write_barrier(owner, value.as_object());
+}
+
 } // namespace ms

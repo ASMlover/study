@@ -37,6 +37,11 @@
 
 namespace ms {
 
+enum class GcGeneration : u8_t {
+  YOUNG = 0,
+  OLD   = 1,
+};
+
 enum class ObjectType : int {
   OBJ_STRING,
   OBJ_FUNCTION,
@@ -57,6 +62,8 @@ enum class ObjectType : int {
 class Object {
   ObjectType type_;
   bool is_marked_{false};
+  GcGeneration generation_{GcGeneration::YOUNG};
+  u8_t age_{0};
   Object* next_{nullptr};
 
 public:
@@ -72,6 +79,13 @@ public:
   void set_marked(bool marked) noexcept { is_marked_ = marked; }
   Object* next() const noexcept { return next_; }
   void set_next(Object* next) noexcept { next_ = next; }
+
+  GcGeneration generation() const noexcept { return generation_; }
+  void set_generation(GcGeneration gen) noexcept { generation_ = gen; }
+  bool is_young() const noexcept { return generation_ == GcGeneration::YOUNG; }
+  bool is_old() const noexcept { return generation_ == GcGeneration::OLD; }
+  u8_t age() const noexcept { return age_; }
+  void increment_age() noexcept { age_++; }
 };
 
 template <typename T>

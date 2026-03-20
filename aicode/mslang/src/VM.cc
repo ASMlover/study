@@ -539,18 +539,24 @@ ObjString* VM::take_string(str_t value) noexcept {
 template <typename T, typename... Args>
 T* VM::allocate(Args&&... args) noexcept {
   bytes_allocated_ += sizeof(T);
+  young_bytes_ += sizeof(T);
 
 #ifdef MAPLE_DEBUG_STRESS_GC
   collect_garbage();
 #else
+  // Minor GC on nursery threshold; major GC on total heap threshold
+  if (young_bytes_ > next_minor_gc_) {
+    minor_gc();
+  }
   if (bytes_allocated_ > next_gc_) {
-    collect_garbage();
+    major_gc();
   }
 #endif
 
   auto* object = new T(std::forward<Args>(args)...);
-  object->set_next(objects_);
-  objects_ = object;
+  object->set_generation(GcGeneration::YOUNG);
+  object->set_next(young_objects_);
+  young_objects_ = object;
 
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
@@ -622,6 +628,10 @@ void VM::push_gray(Object* object) noexcept {
   gray_stack_.push_back(object);
 }
 
+void VM::remember(Object* object) noexcept {
+  remembered_set_.push_back(object);
+}
+
 void VM::trace_references() noexcept {
   while (!gray_stack_.empty()) {
     Object* object = gray_stack_.back();
@@ -638,8 +648,9 @@ void VM::trace_references() noexcept {
 }
 
 void VM::sweep() noexcept {
+  // Sweep old generation list
   Object* previous = nullptr;
-  Object* object = objects_;
+  Object* object = old_objects_;
 
   while (object != nullptr) {
     if (object->is_marked()) {
@@ -652,12 +663,12 @@ void VM::sweep() noexcept {
       if (previous != nullptr) {
         previous->set_next(object);
       } else {
-        objects_ = object;
+        old_objects_ = object;
       }
 
 #ifdef MAPLE_DEBUG_LOG_GC
       auto& logger = Logger::get_instance();
-      logger.debug("GC", "free {} ({})",
+      logger.debug("GC", "free old {} ({})",
           static_cast<void*>(unreached), unreached->stringify());
 #endif
 
@@ -668,9 +679,111 @@ void VM::sweep() noexcept {
 }
 
 void VM::collect_garbage() noexcept {
+  // Full stop-the-world GC (used by stress GC mode)
+  major_gc();
+}
+
+// --- Minor GC: collect young generation only ---
+void VM::mark_remembered_set() noexcept {
+  for (Object* obj : remembered_set_) {
+    // Mark reachable young objects from old-gen references
+    obj->trace_references();
+  }
+}
+
+void VM::promote_object(Object* object) noexcept {
+  object->set_generation(GcGeneration::OLD);
+  object->set_next(old_objects_);
+  old_objects_ = object;
+}
+
+void VM::sweep_young() noexcept {
+  Object* previous = nullptr;
+  Object* object = young_objects_;
+
+  while (object != nullptr) {
+    if (object->is_marked()) {
+      object->set_marked(false);
+      object->increment_age();
+
+      if (object->age() >= kGC_PROMOTE_AGE) {
+        // Promote: unlink from young list, add to old list
+        Object* promoted = object;
+        object = object->next();
+        if (previous != nullptr) {
+          previous->set_next(object);
+        } else {
+          young_objects_ = object;
+        }
+        young_bytes_ -= promoted->size();
+        promote_object(promoted);
+
+#ifdef MAPLE_DEBUG_LOG_GC
+        auto& logger = Logger::get_instance();
+        logger.debug("GC", "promote {} ({})",
+            static_cast<void*>(promoted), promoted->stringify());
+#endif
+      } else {
+        previous = object;
+        object = object->next();
+      }
+    } else {
+      Object* unreached = object;
+      object = object->next();
+      if (previous != nullptr) {
+        previous->set_next(object);
+      } else {
+        young_objects_ = object;
+      }
+
+#ifdef MAPLE_DEBUG_LOG_GC
+      auto& logger = Logger::get_instance();
+      logger.debug("GC", "free young {} ({})",
+          static_cast<void*>(unreached), unreached->stringify());
+#endif
+
+      sz_t obj_size = unreached->size();
+      bytes_allocated_ -= obj_size;
+      young_bytes_ -= obj_size;
+      delete unreached;
+    }
+  }
+}
+
+void VM::minor_gc() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
-  logger.info("GC", "-- gc begin");
+  logger.info("GC", "-- minor gc begin");
+  sz_t before = bytes_allocated_;
+#endif
+
+  // Mark roots (marks both young and old, but we only sweep young)
+  mark_roots();
+
+  // Mark references from old→young via remembered set
+  mark_remembered_set();
+
+  trace_references();
+
+  // Only sweep young generation
+  sweep_young();
+
+  // Clear remembered set (will be rebuilt by write barriers)
+  remembered_set_.clear();
+
+  next_minor_gc_ = young_bytes_ + kGC_NURSERY_SIZE;
+
+#ifdef MAPLE_DEBUG_LOG_GC
+  logger.info("GC", "-- minor gc end (collected {} bytes, from {} to {})",
+      before - bytes_allocated_, before, bytes_allocated_);
+#endif
+}
+
+// --- Major GC: full mark-and-sweep of both generations ---
+void VM::major_gc() noexcept {
+#ifdef MAPLE_DEBUG_LOG_GC
+  auto& logger = Logger::get_instance();
+  logger.info("GC", "-- major gc begin");
   sz_t before = bytes_allocated_;
 #endif
 
@@ -680,24 +793,126 @@ void VM::collect_garbage() noexcept {
   // Remove interned strings that are unmarked before sweep
   strings_.remove_white();
 
+  // Sweep both generations
+  sweep_young();
   sweep();
 
+  // Clear remembered set
+  remembered_set_.clear();
+
   next_gc_ = bytes_allocated_ * kGC_HEAP_GROW;
+  next_minor_gc_ = young_bytes_ + kGC_NURSERY_SIZE;
 
 #ifdef MAPLE_DEBUG_LOG_GC
-  logger.info("GC", "-- gc end (collected {} bytes, from {} to {}, next at {})",
+  logger.info("GC", "-- major gc end (collected {} bytes, from {} to {}, next at {})",
       before - bytes_allocated_, before, bytes_allocated_, next_gc_);
 #endif
 }
 
+// --- Incremental major GC (amortized across VM instructions) ---
+void VM::begin_major_gc() noexcept {
+  gc_phase_ = GcPhase::MARKING;
+  major_gc_requested_ = false;
+  gray_stack_.clear();
+  mark_roots();
+}
+
+void VM::incremental_mark_step() noexcept {
+  sz_t work = 0;
+  while (!gray_stack_.empty() && work < kGC_INCREMENTAL_WORK) {
+    Object* object = gray_stack_.back();
+    gray_stack_.pop_back();
+
+#ifdef MAPLE_DEBUG_LOG_GC
+    auto& logger = Logger::get_instance();
+    logger.debug("GC", "incremental blacken {} ({})",
+        static_cast<void*>(object), object->stringify());
+#endif
+
+    object->trace_references();
+    work++;
+  }
+
+  if (gray_stack_.empty()) {
+    // Marking done, transition to sweeping
+    strings_.remove_white();
+    gc_phase_ = GcPhase::SWEEPING;
+    sweep_cursor_ = old_objects_;
+    sweep_previous_ = nullptr;
+  }
+}
+
+void VM::incremental_sweep_step() noexcept {
+  sz_t work = 0;
+  while (sweep_cursor_ != nullptr && work < kGC_INCREMENTAL_WORK) {
+    if (sweep_cursor_->is_marked()) {
+      sweep_cursor_->set_marked(false);
+      sweep_previous_ = sweep_cursor_;
+      sweep_cursor_ = sweep_cursor_->next();
+    } else {
+      Object* unreached = sweep_cursor_;
+      sweep_cursor_ = sweep_cursor_->next();
+      if (sweep_previous_ != nullptr) {
+        sweep_previous_->set_next(sweep_cursor_);
+      } else {
+        old_objects_ = sweep_cursor_;
+      }
+      bytes_allocated_ -= unreached->size();
+      delete unreached;
+    }
+    work++;
+  }
+
+  if (sweep_cursor_ == nullptr) {
+    finish_major_gc();
+  }
+}
+
+void VM::finish_major_gc() noexcept {
+  gc_phase_ = GcPhase::IDLE;
+  remembered_set_.clear();
+  next_gc_ = bytes_allocated_ * kGC_HEAP_GROW;
+
+#ifdef MAPLE_DEBUG_LOG_GC
+  auto& logger = Logger::get_instance();
+  logger.info("GC", "-- incremental major gc finished (heap at {})", bytes_allocated_);
+#endif
+}
+
+void VM::incremental_gc_step() noexcept {
+  switch (gc_phase_) {
+    case GcPhase::IDLE:
+      if (major_gc_requested_) {
+        begin_major_gc();
+      }
+      break;
+    case GcPhase::MARKING:
+      incremental_mark_step();
+      break;
+    case GcPhase::SWEEPING:
+      incremental_sweep_step();
+      break;
+  }
+}
+
 void VM::free_objects() noexcept {
-  Object* object = objects_;
+  // Free young generation
+  Object* object = young_objects_;
   while (object != nullptr) {
     Object* next = object->next();
     delete object;
     object = next;
   }
-  objects_ = nullptr;
+  young_objects_ = nullptr;
+
+  // Free old generation
+  object = old_objects_;
+  while (object != nullptr) {
+    Object* next = object->next();
+    delete object;
+    object = next;
+  }
+  old_objects_ = nullptr;
 }
 
 void VM::concatenate() noexcept {
@@ -1324,6 +1539,7 @@ void VM::close_upvalues(Value* last) noexcept {
     ObjUpvalue* upvalue = open_upvalues_;
     upvalue->closed() = *upvalue->location();
     upvalue->set_location(&upvalue->closed());
+    write_barrier_value(upvalue, upvalue->closed());
     open_upvalues_ = upvalue->next_upvalue();
   }
 }
@@ -1771,6 +1987,7 @@ dispatch_loop:
           }
           if (ic.kind == ICKind::IC_FIELD) {
             instance->fields().set(name, rhs);
+            write_barrier_value(instance, rhs);
             VM_DISPATCH();
           }
         }
@@ -1795,6 +2012,7 @@ dispatch_loop:
         ic.kind = ICKind::IC_FIELD;
         ic.cached = Value();
         instance->fields().set(name, rhs);
+        write_barrier_value(instance, rhs);
         VM_DISPATCH();
       }
     }
@@ -2379,9 +2597,13 @@ dispatch_loop:
         u8_t is_local = decode_A(extra);
         u8_t index = static_cast<u8_t>(decode_Bx(extra));
         if (is_local) {
-          closure->set_upvalue_at(static_cast<sz_t>(i), capture_upvalue(frame->slots + index));
+          ObjUpvalue* uv = capture_upvalue(frame->slots + index);
+          closure->set_upvalue_at(static_cast<sz_t>(i), uv);
+          write_barrier(closure, uv);
         } else {
-          closure->set_upvalue_at(static_cast<sz_t>(i), frame->closure->upvalue_at(index));
+          ObjUpvalue* uv = frame->closure->upvalue_at(index);
+          closure->set_upvalue_at(static_cast<sz_t>(i), uv);
+          write_barrier(closure, uv);
         }
       }
       VM_DISPATCH();
@@ -2429,6 +2651,7 @@ dispatch_loop:
       ObjString* name = as_string(K[B]);
       ObjClass* klass = as_class(frame->slots[A]);
       klass->methods().set(name, frame->slots[C]);
+      write_barrier_value(klass, frame->slots[C]);
       klass->abstract_methods().remove(name);
       VM_DISPATCH();
     }
@@ -2440,6 +2663,7 @@ dispatch_loop:
       ObjString* name = as_string(K[B]);
       ObjClass* klass = as_class(frame->slots[A]);
       klass->static_methods().set(name, frame->slots[C]);
+      write_barrier_value(klass, frame->slots[C]);
       VM_DISPATCH();
     }
 
@@ -2450,6 +2674,7 @@ dispatch_loop:
       ObjString* name = as_string(K[B]);
       ObjClass* klass = as_class(frame->slots[A]);
       klass->getters().set(name, frame->slots[C]);
+      write_barrier_value(klass, frame->slots[C]);
       VM_DISPATCH();
     }
 
@@ -2460,6 +2685,7 @@ dispatch_loop:
       ObjString* name = as_string(K[B]);
       ObjClass* klass = as_class(frame->slots[A]);
       klass->setters().set(name, frame->slots[C]);
+      write_barrier_value(klass, frame->slots[C]);
       VM_DISPATCH();
     }
 
@@ -2470,6 +2696,7 @@ dispatch_loop:
       ObjString* name = as_string(K[B]);
       ObjClass* klass = as_class(frame->slots[A]);
       klass->methods().set(name, frame->slots[C]);
+      write_barrier_value(klass, frame->slots[C]);
       klass->abstract_methods().set(name, Value(true));
       VM_DISPATCH();
     }
@@ -2591,9 +2818,11 @@ dispatch_loop:
           goto handle_runtime_error;
         }
         list->elements()[static_cast<sz_t>(index)] = value;
+        write_barrier_value(list, value);
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(receiver);
         map->entries()[index_val] = value;
+        write_barrier_value(map, value);
       } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
         runtime_error("Tuples are immutable.");
         goto handle_runtime_error;

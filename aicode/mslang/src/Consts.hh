@@ -37,4 +37,9 @@ inline constexpr sz_t kGC_HEAP_GROW   = 2;
 inline constexpr sz_t kGC_INITIAL_SIZE = 1024 * 1024;
 inline constexpr sz_t kALIGNMENT      = 8;
 
+// Generational GC constants
+inline constexpr int  kGC_PROMOTE_AGE      = 3;     // survive N minor GCs → promote
+inline constexpr sz_t kGC_NURSERY_SIZE     = 256 * 1024;  // minor GC trigger threshold
+inline constexpr sz_t kGC_INCREMENTAL_WORK = 64;    // gray objects processed per work slice
+
 } // namespace ms

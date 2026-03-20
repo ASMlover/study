@@ -33,4 +33,9 @@ namespace ms {
 void mark_object(Object* object) noexcept;
 void mark_value(Value& value) noexcept;
 
+// Write barrier: call when an old-gen object stores a reference to any object.
+// If the referenced object is young, the old object is added to the remembered set.
+void write_barrier(Object* owner, Object* ref) noexcept;
+void write_barrier_value(Object* owner, Value& value) noexcept;
+
 } // namespace ms
