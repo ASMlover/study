@@ -5,4 +5,4 @@
 // @diag.phase: runtime
 // @diag.code: MS4003
 // @diag.message_contains: operands must be numbers
-print 1 - "x";
+print 1 - "x"

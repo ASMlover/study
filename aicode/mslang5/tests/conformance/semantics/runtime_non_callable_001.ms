@@ -5,5 +5,5 @@
 // @diag.phase: runtime
 // @diag.code: MS4005
 // @diag.message_contains: can only call functions and classes
-var value = 7;
-value();
+var value = 7
+value()

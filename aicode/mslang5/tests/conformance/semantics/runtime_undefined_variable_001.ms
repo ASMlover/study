@@ -5,4 +5,4 @@
 // @diag.phase: runtime
 // @diag.code: MS4001
 // @diag.message_contains: undefined variable
-print missing_name;
+print missing_name

@@ -4,4 +4,4 @@
 // @diag.phase: module
 // @diag.code: MS5001
 // @diag.message_contains: module not found
-import std.unknown;
+import std.unknown

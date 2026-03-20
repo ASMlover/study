@@ -4,5 +4,5 @@
 // @diag.phase: runtime
 // @diag.code: MS4002
 // @diag.message_contains: expected 1 arguments but got 0
-import std.debug;
-print debug.typeof();
+import std.debug
+print debug.typeof()

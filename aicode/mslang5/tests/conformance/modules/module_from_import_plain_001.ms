@@ -3,5 +3,5 @@
 // @expect: ok
 // @stdout:
 // 7
-from util import value;
-print value;
+from util import value
+print value

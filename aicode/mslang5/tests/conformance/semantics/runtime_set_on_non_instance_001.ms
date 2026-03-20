@@ -5,5 +5,5 @@
 // @diag.phase: runtime
 // @diag.code: MS4003
 // @diag.message_contains: only instances have fields
-var n = 1;
-n.value = 2;
+var n = 1
+n.value = 2

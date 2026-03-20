@@ -4,6 +4,6 @@
 // @stdout:
 // init
 // 1
-from side import x as a;
-from side import x as b;
-print a;
+from side import x as a
+from side import x as b
+print a

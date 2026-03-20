@@ -5,5 +5,5 @@
 // @diag.phase: runtime
 // @diag.code: MS4003
 // @diag.message_contains: only instances have properties
-var n = 1;
-print n.value;
+var n = 1
+print n.value

@@ -6,20 +6,20 @@
 // ABC
 class A {
   tag() {
-    return "A";
+    return "A"
   }
 }
 
 class B < A {
   tag() {
-    return super.tag() + "B";
+    return super.tag() + "B"
   }
 }
 
 class C < B {
   tag() {
-    return super.tag() + "C";
+    return super.tag() + "C"
   }
 }
 
-print C().tag();
+print C().tag()

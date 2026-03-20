@@ -4,11 +4,11 @@
 // @stdout:
 // 42
 fun makeValue() {
-  var seed = 40;
+  var seed = 40
   fun addTwo() {
-    return seed + 2;
+    return seed + 2
   }
-  return addTwo();
+  return addTwo()
 }
 
-print makeValue();
+print makeValue()

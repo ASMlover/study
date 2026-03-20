@@ -5,4 +5,4 @@
 // @diag.phase: module
 // @diag.code: MS5001
 // @diag.message_contains: module not found
-import no_such_module;
+import no_such_module

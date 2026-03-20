@@ -5,4 +5,4 @@
 // @diag.phase: module
 // @diag.code: MS5003
 // @diag.message_contains: circular module dependency
-import cycle_a;
+import cycle_a

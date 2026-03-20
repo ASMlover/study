@@ -5,4 +5,4 @@
 // @diag.phase: parse
 // @diag.code: MS2001
 // @diag.message_contains: expected statement end after expression
-(1 + 2) = 3;
+(1 + 2) = 3

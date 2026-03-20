@@ -6,11 +6,11 @@
 // block
 // block-mut
 // global
-var name = "global";
+var name = "global"
 {
-  var name = "block";
-  print name;
-  name = name + "-mut";
-  print name;
+  var name = "block"
+  print name
+  name = name + "-mut"
+  print name
 }
-print name;
+print name

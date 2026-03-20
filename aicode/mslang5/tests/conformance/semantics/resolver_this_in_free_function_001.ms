@@ -6,7 +6,7 @@
 // @diag.code: MS3002
 // @diag.message_contains: cannot use 'this' outside of a class
 fun leakThis() {
-  return this;
+  return this
 }
 
-print leakThis();
+print leakThis()

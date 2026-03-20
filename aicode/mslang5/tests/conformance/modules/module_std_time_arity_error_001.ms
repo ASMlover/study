@@ -4,5 +4,5 @@
 // @diag.phase: runtime
 // @diag.code: MS4002
 // @diag.message_contains: expected 0 arguments but got 1
-import std.time;
-print time.now_unix_ms(1);
+import std.time
+print time.now_unix_ms(1)

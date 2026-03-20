@@ -6,4 +6,4 @@
 // @diag.code: MS4004
 // @diag.message_contains: undefined property
 class Box {}
-print Box().missing;
+print Box().missing

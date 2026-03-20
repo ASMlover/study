@@ -4,7 +4,7 @@
 // @stdout:
 // 7
 // ok
-from util import value as v;
-from util import text as t;
-print v;
-print t;
+from util import value as v
+from util import text as t
+print v
+print t

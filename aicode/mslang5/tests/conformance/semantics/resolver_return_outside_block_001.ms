@@ -6,5 +6,5 @@
 // @diag.code: MS3001
 // @diag.message_contains: cannot return from top-level code
 {
-  return 7;
+  return 7
 }

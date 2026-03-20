@@ -7,8 +7,8 @@
 // @diag.message_contains: cannot use 'super' outside of a subclass
 class Solo {
   ping() {
-    return super.ping();
+    return super.ping()
   }
 }
 
-print Solo().ping();
+print Solo().ping()

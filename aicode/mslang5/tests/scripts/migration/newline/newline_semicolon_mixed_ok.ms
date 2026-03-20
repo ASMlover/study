@@ -1,5 +1,5 @@
-var value = 1;
+var value = 1
 value = value + 2
-print value;
+print value
 value = value + 3
 print value

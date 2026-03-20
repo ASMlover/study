@@ -4,5 +4,5 @@
 // @diag.phase: runtime
 // @diag.code: MS4003
 // @diag.message_contains: argument 1 must be number
-import std.math;
-print math.abs("x");
+import std.math
+print math.abs("x")

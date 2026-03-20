@@ -9,18 +9,18 @@
 // 3
 // 102
 fun makeCounter(seed) {
-  var n = seed;
+  var n = seed
   fun inc() {
-    n = n + 1;
-    return n;
+    n = n + 1
+    return n
   }
-  return inc;
+  return inc
 }
 
-var c1 = makeCounter(0);
-var c2 = makeCounter(100);
-print c1();
-print c1();
-print c2();
-print c1();
-print c2();
+var c1 = makeCounter(0)
+var c2 = makeCounter(100)
+print c1()
+print c1()
+print c2()
+print c1()
+print c2()

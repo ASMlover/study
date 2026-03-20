@@ -5,4 +5,4 @@
 // @diag.phase: module
 // @diag.code: MS5002
 // @diag.message_contains: has no symbol
-from util import not_exported as x;
+from util import not_exported as x

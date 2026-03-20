@@ -5,4 +5,4 @@
 // @diag.phase: resolve
 // @diag.code: MS3002
 // @diag.message_contains: cannot use 'this' outside of a class
-print this;
+print this

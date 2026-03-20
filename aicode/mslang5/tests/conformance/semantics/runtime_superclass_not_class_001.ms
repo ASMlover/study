@@ -5,6 +5,6 @@
 // @diag.phase: runtime
 // @diag.code: MS4003
 // @diag.message_contains: superclass must be a class
-var Base = 1;
+var Base = 1
 
 class Broken < Base {}

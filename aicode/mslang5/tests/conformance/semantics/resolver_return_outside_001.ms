@@ -5,4 +5,4 @@
 // @diag.phase: resolve
 // @diag.code: MS3001
 // @diag.message_contains: cannot return from top-level code
-return 1;
+return 1

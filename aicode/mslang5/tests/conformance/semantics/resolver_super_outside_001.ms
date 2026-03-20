@@ -5,4 +5,4 @@
 // @diag.phase: resolve
 // @diag.code: MS3003
 // @diag.message_contains: cannot use 'super' outside of a subclass
-print super.nope();
+print super.nope()

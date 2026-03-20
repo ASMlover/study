@@ -5,11 +5,15 @@
 // @expect: ok
 // @stdout:
 // 15
-var total = 0;
-for (var i = 0; i < 5; i = i + 1) {
-  total = total + i;
+var total = 0
+for (
+  var i = 0
+  i < 5
+  i = i + 1
+) {
+  total = total + i
 }
 while (total < 15) {
-  total = total + 1;
+  total = total + 1
 }
-print total;
+print total
