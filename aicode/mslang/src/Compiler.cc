@@ -260,6 +260,8 @@ public:
   u8_t argument_list(u8_t base) noexcept;
 
   friend ObjFunction* compile(strv_t source, strv_t script_path) noexcept;
+  friend ObjFunction* compile(strv_t source, strv_t script_path,
+                              std::vector<Diagnostic>& diagnostics) noexcept;
   friend void mark_compiler_roots() noexcept;
 };
 
@@ -729,15 +731,22 @@ void Compiler::error_at(const Token& token, strv_t message) noexcept {
   if (ps_->panic_mode) return;
   ps_->panic_mode = true;
 
-  std::cerr << std::format("[line {}] Error", token.line);
-
-  if (token.type == TokenType::TOKEN_EOF) {
-    std::cerr << " at end";
-  } else if (token.type != TokenType::TOKEN_ERROR) {
-    std::cerr << std::format(" at '{}'", token.lexeme);
+  if (ps_->diagnostics) {
+    Diagnostic d;
+    d.line = token.line;
+    d.column = token.column;
+    d.end_column = token.column + static_cast<int>(token.lexeme.size());
+    d.message = str_t(message);
+    ps_->diagnostics->push_back(std::move(d));
+  } else {
+    std::cerr << std::format("[line {}] Error", token.line);
+    if (token.type == TokenType::TOKEN_EOF) {
+      std::cerr << " at end";
+    } else if (token.type != TokenType::TOKEN_ERROR) {
+      std::cerr << std::format(" at '{}'", token.lexeme);
+    }
+    std::cerr << ": " << message << std::endl;
   }
-
-  std::cerr << ": " << message << std::endl;
   ps_->had_error = true;
 }
 
@@ -3182,6 +3191,26 @@ ObjFunction* compile(strv_t source, strv_t script_path) noexcept {
   ParseState ps;
   ps.scanner.init(source);
   ps.script_path = str_t(script_path);
+  active_parse_state_ = &ps;
+
+  Compiler compiler(ps, FunctionType::TYPE_SCRIPT);
+  compiler.advance();
+
+  while (!compiler.match(TokenType::TOKEN_EOF)) {
+    compiler.declaration();
+  }
+
+  ObjFunction* function = compiler.end_compiler();
+  active_parse_state_ = nullptr;
+  return ps.had_error ? nullptr : function;
+}
+
+ObjFunction* compile(strv_t source, strv_t script_path,
+                     std::vector<Diagnostic>& diagnostics) noexcept {
+  ParseState ps;
+  ps.scanner.init(source);
+  ps.script_path = str_t(script_path);
+  ps.diagnostics = &diagnostics;
   active_parse_state_ = &ps;
 
   Compiler compiler(ps, FunctionType::TYPE_SCRIPT);

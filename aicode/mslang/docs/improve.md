@@ -293,7 +293,7 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 13.3 | Abstract methods | [x] |
 | | 14.2 | Register-based bytecode | [x] |
 | | 15.2 | File I/O module | [x] |
-| | 16.4 | Language Server Protocol (LSP) | [ ] |
+| | 16.4 | Language Server Protocol (LSP) | [x] |
 | | 17.1 | Incremental / generational GC | [ ] |
 | | 17.2 | Weak references | [ ] |
 | | 17.3 | Finalizers | [ ] |

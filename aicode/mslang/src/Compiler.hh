@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <vector>
 #include "Scanner.hh"
 #include "Object.hh"
 
@@ -36,6 +37,13 @@ enum class FunctionType {
   TYPE_INITIALIZER,
   TYPE_METHOD,
   TYPE_SCRIPT,
+};
+
+struct Diagnostic {
+  int line{0};
+  int column{0};
+  int end_column{0};
+  str_t message{};
 };
 
 struct ClassCompiler;
@@ -50,9 +58,12 @@ struct ParseState {
   ClassCompiler* current_class{nullptr};
   Compiler* current_compiler{nullptr};
   str_t script_path{};
+  std::vector<Diagnostic>* diagnostics{nullptr};
 };
 
 ObjFunction* compile(strv_t source, strv_t script_path = "") noexcept;
+ObjFunction* compile(strv_t source, strv_t script_path,
+                     std::vector<Diagnostic>& diagnostics) noexcept;
 void mark_compiler_roots() noexcept;
 
 } // namespace ms

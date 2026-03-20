@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include "Compiler.hh"
+#include "Lsp.hh"
 #include "Serializer.hh"
 #include "VM.hh"
 
@@ -239,12 +240,16 @@ static void compile_file(const ms::str_t& path) noexcept {
 int main(int argc, char* argv[]) {
   if (argc == 1) {
     repl();
+  } else if (argc == 2 && ms::str_t(argv[1]) == "--lsp") {
+    ms::LspServer server;
+    server.run();
   } else if (argc == 2) {
     run_file(argv[1]);
   } else if (argc == 3 && ms::str_t(argv[1]) == "--compile") {
     compile_file(argv[2]);
   } else {
     std::cerr << "Usage: mslang [script]\n"
+              << "       mslang --lsp\n"
               << "       mslang --compile <script.ms>" << std::endl;
     std::exit(64);
   }
