@@ -1,9 +1,9 @@
 # Maple Semantics (Draft v0.1)
 
-Status: Draft (T14 planning deliverable).
+Status: Implemented baseline (validated in T14 closeout on 2026-03-21).
 
 This document defines baseline static and runtime semantics for Maple.
-Where implementation and spec differ, this document should be treated as the target contract for future convergence.
+This document defines the current contract validated by the regression suites and script checks.
 
 ## 1. Semantic Domains
 

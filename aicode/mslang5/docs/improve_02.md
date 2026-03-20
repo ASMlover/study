@@ -1,6 +1,6 @@
 # Maple VM-Only Consolidation and Language Surface Upgrade (Design v0.2)
 
-Status: Proposal
+Status: Completed (implemented; closeout verified on 2026-03-21)
 Date: 2026-03-15
 Author perspective: Programming language design and runtime engineering
 
@@ -277,3 +277,32 @@ Rationale:
 4. Standard library v1 modules and native bindings.
 5. Newline statement parser/compiler support.
 6. Full CI pass with updated conformance suite.
+
+## 9. Closeout Evidence
+
+Closeout date: 2026-03-21.
+
+Build evidence:
+
+1. `cmake -S . -B build` completed successfully.
+2. `cmake --build build --config Debug` completed successfully and produced `maple_core`, `maple_cli`, and `maple_tests`.
+
+CTest evidence:
+
+1. `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_unit` passed.
+2. `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_integration` passed.
+3. `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_migration_debt` passed.
+4. `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_conformance` passed.
+5. `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_diagnostics` passed.
+
+Script evidence:
+
+1. `tests/scripts/migration/m6_vm_only_convergence.ms` executed with exit code `0`.
+2. All scripts under `tests/scripts/migration/newline/` executed with exit code `0`.
+3. Std success scripts (`io_math_ok.ms`, `str_time_debug_ok.ms`) executed with exit code `0`.
+4. Std error scripts (`debug_arity_error.ms`, `io_arity_error.ms`, `math_type_error.ms`, `str_type_error.ms`, `time_arity_error.ms`) executed with expected runtime diagnostics and exit code `2`.
+
+Document closeout:
+
+1. `docs/improve_02_task.md` updated with final task status and per-task evidence.
+2. `docs/spec/grammar.ebnf`, `docs/spec/semantics.md`, and `docs/spec/errors.md` status annotations updated from draft planning wording to implemented baseline wording.

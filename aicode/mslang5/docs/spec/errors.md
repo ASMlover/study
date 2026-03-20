@@ -1,9 +1,9 @@
 # Maple Error and Diagnostics Specification (Draft v0.1)
 
-Status: Draft (T14 planning deliverable).
+Status: Implemented baseline (validated in T14 closeout on 2026-03-21).
 
 This document defines Maple's error taxonomy and diagnostic contract.
-The purpose is stable behavior across platforms and implementations.
+The purpose is stable behavior across platforms and implementations, verified by diagnostics and stdlib error-path tests.
 
 ## 1. Error Phases
 

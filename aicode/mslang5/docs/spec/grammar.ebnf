@@ -1,8 +1,8 @@
 ; Maple Language Grammar (Draft v0.1)
-; Status: Draft, specification-first.
+; Status: Implemented baseline (validated in T14 closeout on 2026-03-21).
 ; Notes:
-; - This grammar is normative for T14 planning scope.
-; - Some productions are not fully implemented in runtime yet.
+; - This grammar is normative for current Maple language behavior.
+; - Closeout regression confirms parser/compiler alignment for covered syntax.
 
 program         = { declaration } EOF ;
 
