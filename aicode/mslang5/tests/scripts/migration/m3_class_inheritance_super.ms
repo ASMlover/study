@@ -9,12 +9,20 @@ class Root {
 }
 
 class Mid < Root {
+  init(name) {
+    super.init(name)
+  }
+
   label() {
     return super.label() + "/M"
   }
 }
 
 class Leaf < Mid {
+  init(name) {
+    super.init(name)
+  }
+
   label() {
     return super.label() + "/L"
   }

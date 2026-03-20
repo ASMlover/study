@@ -6,11 +6,7 @@ while (n > 1) {
 }
 
 var marker = ""
-for (
-  var i = 0
-  i < 4
-  i = i + 1
-) {
+for (var i = 0; i < 4; i = i + 1) {
   if (i == 1 or i == 3) {
     marker = marker + "T"
   } else {
@@ -19,7 +15,8 @@ for (
 }
 
 {
-  var fact = fact - 100
+  var outer_fact = fact
+  var fact = outer_fact - 100
   print fact
 }
 
