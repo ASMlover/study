@@ -37,6 +37,8 @@ struct ScannerState {
   int line;
   TokenType prev_type;
   bool pending_asi;
+  int paren_suppress_depth;
+  bool suppress_next_asi;
 };
 
 class Scanner {
@@ -50,6 +52,8 @@ class Scanner {
   int interp_count_{0};
   TokenType prev_type_{TokenType::TOKEN_EOF};
   bool pending_asi_{false};
+  int paren_suppress_depth_{0};
+  bool suppress_next_asi_{false};
 
   bool is_at_end() const noexcept;
   char advance() noexcept;

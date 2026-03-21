@@ -53,6 +53,8 @@ void Scanner::init(strv_t source) noexcept {
   line_start_ = source.data();
   line_ = 1;
   interp_count_ = 0;
+  paren_suppress_depth_ = 0;
+  suppress_next_asi_ = false;
 }
 
 bool Scanner::is_at_end() const noexcept {
@@ -107,7 +109,7 @@ void Scanner::skip_whitespace() noexcept {
       advance();
       break;
     case '\n':
-      if (is_asi_trigger(prev_type_))
+      if (is_asi_trigger(prev_type_) && paren_suppress_depth_ == 0 && !suppress_next_asi_)
         pending_asi_ = true;
       line_++;
       advance();
@@ -385,7 +387,7 @@ bool Scanner::is_asi_trigger(TokenType type) noexcept {
 }
 
 ScannerState Scanner::save_state() const noexcept {
-  return {start_, current_, line_start_, line_, prev_type_, pending_asi_};
+  return {start_, current_, line_start_, line_, prev_type_, pending_asi_, paren_suppress_depth_, suppress_next_asi_};
 }
 
 void Scanner::restore_state(const ScannerState& state) noexcept {
@@ -395,6 +397,8 @@ void Scanner::restore_state(const ScannerState& state) noexcept {
   line_ = state.line;
   prev_type_ = state.prev_type;
   pending_asi_ = state.pending_asi;
+  paren_suppress_depth_ = state.paren_suppress_depth;
+  suppress_next_asi_ = state.suppress_next_asi;
 }
 
 Token Scanner::scan_token() noexcept {
@@ -406,6 +410,8 @@ Token Scanner::scan_token() noexcept {
     prev_type_ = TokenType::TOKEN_SEMICOLON;
     return make_token(TokenType::TOKEN_SEMICOLON);
   }
+
+  suppress_next_asi_ = false;
 
   if (is_at_end()) return make_token(TokenType::TOKEN_EOF);
 
@@ -420,8 +426,22 @@ Token Scanner::scan_token() noexcept {
   if (is_digit(c)) return emit(scan_number());
 
   switch (c) {
-  case '(': return emit(make_token(TokenType::TOKEN_LEFT_PAREN));
-  case ')': return emit(make_token(TokenType::TOKEN_RIGHT_PAREN));
+  case '(':
+    if (paren_suppress_depth_ > 0) {
+      paren_suppress_depth_++;
+    } else if (prev_type_ == TokenType::TOKEN_IF || prev_type_ == TokenType::TOKEN_WHILE ||
+               prev_type_ == TokenType::TOKEN_FOR || prev_type_ == TokenType::TOKEN_SWITCH ||
+               prev_type_ == TokenType::TOKEN_CATCH) {
+      paren_suppress_depth_ = 1;
+    }
+    return emit(make_token(TokenType::TOKEN_LEFT_PAREN));
+  case ')':
+    if (paren_suppress_depth_ > 0) {
+      paren_suppress_depth_--;
+      if (paren_suppress_depth_ == 0)
+        suppress_next_asi_ = true;
+    }
+    return emit(make_token(TokenType::TOKEN_RIGHT_PAREN));
   case '{':
     if (interp_count_ > 0) interp_braces_[interp_count_ - 1]++;
     return emit(make_token(TokenType::TOKEN_LEFT_BRACE));
