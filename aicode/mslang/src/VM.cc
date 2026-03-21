@@ -1654,7 +1654,7 @@ bool VM::invoke(ObjString* name, int arg_count) noexcept {
 
   // Check for field first (field shadowing method)
   Value field_val;
-  if (instance->fields().get(name, &field_val)) {
+  if (instance->get_field(name, &field_val)) {
     stack_top_[-arg_count - 1] = field_val;
     return call_value(field_val, arg_count);
   }
@@ -2088,12 +2088,9 @@ dispatch_loop:
 
         // IC fast path
         if (ic.klass == klass) {
-          if (ic.kind == ICKind::IC_FIELD) {
-            Value field_val;
-            if (instance->fields().get(name, &field_val)) {
-              frame->slots[A] = field_val;
-              VM_DISPATCH();
-            }
+          if (ic.kind == ICKind::IC_FIELD && ic.shape_id == instance->shape()->id()) {
+            frame->slots[A] = instance->get_field(ic.slot_index);
+            VM_DISPATCH();
           } else if (ic.kind == ICKind::IC_METHOD) {
             ObjBoundMethod* bound = allocate<ObjBoundMethod>(obj_val, as_closure(ic.cached));
             frame->slots[A] = Value(static_cast<Object*>(bound));
@@ -2113,9 +2110,11 @@ dispatch_loop:
 
         // IC miss — full lookup + update cache
         Value field_val;
-        if (instance->fields().get(name, &field_val)) {
+        if (instance->get_field(name, &field_val)) {
           ic.klass = klass;
           ic.kind = ICKind::IC_FIELD;
+          ic.shape_id = instance->shape()->id();
+          ic.slot_index = static_cast<u32_t>(instance->shape()->find_slot(name));
           ic.cached = Value();
           frame->slots[A] = field_val;
           VM_DISPATCH();
@@ -2184,8 +2183,8 @@ dispatch_loop:
             RELOAD_K();
             VM_DISPATCH();
           }
-          if (ic.kind == ICKind::IC_FIELD) {
-            instance->fields().set(name, rhs);
+          if (ic.kind == ICKind::IC_FIELD && ic.shape_id == instance->shape()->id()) {
+            instance->set_field(ic.slot_index, rhs);
             write_barrier_value(instance, rhs);
             VM_DISPATCH();
           }
@@ -2207,10 +2206,12 @@ dispatch_loop:
           VM_DISPATCH();
         }
 
+        instance->set_field(name, rhs);
         ic.klass = klass;
         ic.kind = ICKind::IC_FIELD;
+        ic.shape_id = instance->shape()->id();
+        ic.slot_index = static_cast<u32_t>(instance->shape()->find_slot(name));
         ic.cached = Value();
-        instance->fields().set(name, rhs);
         write_barrier_value(instance, rhs);
         VM_DISPATCH();
       }
@@ -2659,7 +2660,7 @@ dispatch_loop:
 
         if (ic.klass == klass && ic.kind == ICKind::IC_METHOD) {
           Value field_val;
-          if (!instance->fields().get(method_name, &field_val)) {
+          if (!instance->get_field(method_name, &field_val)) {
             if (!call(as_closure(ic.cached), arg_count)) {
               goto handle_runtime_error;
             }

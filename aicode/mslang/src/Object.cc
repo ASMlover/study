@@ -35,6 +35,37 @@ namespace ms {
 void mark_object(Object* object) noexcept;
 void mark_value(Value& value) noexcept;
 
+// --- Shape ---
+
+Shape::~Shape() noexcept {
+  for (auto& [_, child] : transitions_) delete child;
+}
+
+i32_t Shape::find_slot(ObjString* name) const noexcept {
+  auto it = slots_.find(name);
+  return (it != slots_.end()) ? static_cast<i32_t>(it->second) : -1;
+}
+
+Shape* Shape::add_transition(ObjString* name, u32_t& next_id) noexcept {
+  auto it = transitions_.find(name);
+  if (it != transitions_.end()) return it->second;
+
+  auto* child = new Shape(next_id++);
+  child->slots_ = slots_;
+  child->slots_[name] = slot_count_;
+  child->slot_count_ = slot_count_ + 1;
+  transitions_[name] = child;
+  return child;
+}
+
+void Shape::mark_keys() noexcept {
+  for (auto& [key, _] : slots_) mark_object(key);
+  for (auto& [key, child] : transitions_) {
+    mark_object(key);
+    child->mark_keys();
+  }
+}
+
 // --- ObjString ---
 
 ObjString::ObjString(str_t value, u32_t hash) noexcept
@@ -145,7 +176,11 @@ sz_t ObjClosure::size() const noexcept {
 // --- ObjClass ---
 
 ObjClass::ObjClass(ObjString* name) noexcept
-    : Object(ObjectType::OBJ_CLASS), name_(name) {
+    : Object(ObjectType::OBJ_CLASS), name_(name), root_shape_(new Shape(0)) {
+}
+
+ObjClass::~ObjClass() noexcept {
+  delete root_shape_;
 }
 
 str_t ObjClass::stringify() const noexcept {
@@ -159,6 +194,7 @@ void ObjClass::trace_references() noexcept {
   getters_.mark_table();
   setters_.mark_table();
   abstract_methods_.mark_table();
+  root_shape_->mark_keys();
 }
 
 sz_t ObjClass::size() const noexcept {
@@ -168,7 +204,7 @@ sz_t ObjClass::size() const noexcept {
 // --- ObjInstance ---
 
 ObjInstance::ObjInstance(ObjClass* klass) noexcept
-    : Object(ObjectType::OBJ_INSTANCE), klass_(klass) {
+    : Object(ObjectType::OBJ_INSTANCE), klass_(klass), shape_(klass->root_shape()) {
 }
 
 str_t ObjInstance::stringify() const noexcept {
@@ -177,11 +213,28 @@ str_t ObjInstance::stringify() const noexcept {
 
 void ObjInstance::trace_references() noexcept {
   mark_object(klass_);
-  fields_.mark_table();
+  for (auto& val : fields_) mark_value(val);
 }
 
 sz_t ObjInstance::size() const noexcept {
-  return sizeof(ObjInstance);
+  return sizeof(ObjInstance) + fields_.capacity() * sizeof(Value);
+}
+
+bool ObjInstance::get_field(ObjString* name, Value* value) const noexcept {
+  i32_t slot = shape_->find_slot(name);
+  if (slot < 0) return false;
+  *value = fields_[static_cast<u32_t>(slot)];
+  return true;
+}
+
+void ObjInstance::set_field(ObjString* name, Value value) noexcept {
+  i32_t slot = shape_->find_slot(name);
+  if (slot >= 0) {
+    fields_[static_cast<u32_t>(slot)] = value;
+  } else {
+    shape_ = shape_->add_transition(name, klass_->next_shape_id_ref());
+    fields_.push_back(value);
+  }
 }
 
 // --- ObjBoundMethod ---

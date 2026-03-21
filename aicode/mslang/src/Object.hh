@@ -122,6 +122,24 @@ public:
   static u32_t hash_string(cstr_t chars, sz_t length) noexcept;
 };
 
+// --- Shape (Hidden Class) ---
+class Shape {
+  u32_t id_;
+  std::unordered_map<ObjString*, u32_t> slots_;
+  std::unordered_map<ObjString*, Shape*> transitions_;
+  u32_t slot_count_{0};
+
+public:
+  explicit Shape(u32_t id) noexcept : id_(id) {}
+  ~Shape() noexcept;
+
+  u32_t id() const noexcept { return id_; }
+  u32_t slot_count() const noexcept { return slot_count_; }
+  i32_t find_slot(ObjString* name) const noexcept;
+  Shape* add_transition(ObjString* name, u32_t& next_id) noexcept;
+  void mark_keys() noexcept;
+};
+
 // --- Inline Cache ---
 class ObjClass;
 
@@ -137,6 +155,8 @@ struct InlineCache {
   ObjClass* klass{nullptr};   // Cached class pointer (null = miss)
   ICKind kind{ICKind::IC_NONE};
   Value cached{};             // Cached closure value
+  u32_t shape_id{0};          // Cached shape identity (for IC_FIELD)
+  u32_t slot_index{0};        // Cached slot offset (for IC_FIELD)
 };
 
 // --- ObjFunction ---
@@ -235,9 +255,12 @@ class ObjClass final : public Object {
   Table getters_;
   Table setters_;
   Table abstract_methods_;
+  Shape* root_shape_{nullptr};
+  u32_t next_shape_id_{1};
 
 public:
   explicit ObjClass(ObjString* name) noexcept;
+  ~ObjClass() noexcept override;
   str_t stringify() const noexcept override;
   void trace_references() noexcept override;
   sz_t size() const noexcept override;
@@ -253,12 +276,15 @@ public:
   const Table& setters() const noexcept { return setters_; }
   Table& abstract_methods() noexcept { return abstract_methods_; }
   const Table& abstract_methods() const noexcept { return abstract_methods_; }
+  Shape* root_shape() const noexcept { return root_shape_; }
+  u32_t& next_shape_id_ref() noexcept { return next_shape_id_; }
 };
 
 // --- ObjInstance ---
 class ObjInstance final : public Object {
   ObjClass* klass_{nullptr};
-  Table fields_;
+  Shape* shape_{nullptr};
+  std::vector<Value> fields_;
 
 public:
   explicit ObjInstance(ObjClass* klass) noexcept;
@@ -267,8 +293,15 @@ public:
   sz_t size() const noexcept override;
 
   ObjClass* klass() const noexcept { return klass_; }
-  Table& fields() noexcept { return fields_; }
-  const Table& fields() const noexcept { return fields_; }
+  Shape* shape() const noexcept { return shape_; }
+
+  // Fast path: direct slot access
+  Value get_field(u32_t slot) const noexcept { return fields_[slot]; }
+  void set_field(u32_t slot, Value val) noexcept { fields_[slot] = val; }
+
+  // Slow path: name-based lookup
+  bool get_field(ObjString* name, Value* value) const noexcept;
+  void set_field(ObjString* name, Value value) noexcept;
 };
 
 // --- ObjBoundMethod ---
