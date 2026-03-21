@@ -25,6 +25,9 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
+#if defined(_MSC_VER)
+# include <intrin.h>
+#endif
 #include "Object.hh"
 #include "Table.hh"
 
@@ -42,6 +45,11 @@ Entry* Table::find_entry(std::vector<Entry>& entries, sz_t mask, ObjString* key)
     if (entry->key == key) return entry;
 
     index = (index + 1) & mask;
+#if defined(_MSC_VER)
+    _mm_prefetch(reinterpret_cast<const char*>(&entries[(index + 1) & mask]), _MM_HINT_T1);
+#elif defined(__GNUC__) || defined(__clang__)
+    __builtin_prefetch(&entries[(index + 1) & mask], 0, 1);
+#endif
   }
 }
 
@@ -54,6 +62,11 @@ const Entry* Table::find_entry(const std::vector<Entry>& entries, sz_t mask, Obj
     if (entry->key == key) return entry;
 
     index = (index + 1) & mask;
+#if defined(_MSC_VER)
+    _mm_prefetch(reinterpret_cast<const char*>(&entries[(index + 1) & mask]), _MM_HINT_T1);
+#elif defined(__GNUC__) || defined(__clang__)
+    __builtin_prefetch(&entries[(index + 1) & mask], 0, 1);
+#endif
   }
 }
 

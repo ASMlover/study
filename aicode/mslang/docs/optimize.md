@@ -359,5 +359,5 @@ On MSVC, use `_mm_prefetch` with `<intrin.h>`:
 | O3.1 | Keyword lookup: switch-trie → static hashmap | Scanner.cc | — | [x] |
 | O4.1 | Backward-shift deletion (remove tombstones) | Table.hh/cc | — | [x] |
 | O4.2 | Cached capacity mask | Table.hh/cc | — | [x] |
-| O4.3 | Prefetch on linear probe | Table.cc | O4.2 | [ ] |
+| O4.3 | Prefetch on linear probe | Table.cc | O4.2 | [x] |
 | O4.4 | Hidden Class / Shape | Object.hh/cc, VM.cc | — | [ ] |
