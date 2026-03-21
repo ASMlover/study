@@ -44,6 +44,15 @@ std::optional<str_t> ModuleLoader::read_source(strv_t path) noexcept {
   file.seekg(0, std::ios::beg);
   source.resize(static_cast<sz_t>(size));
   file.read(source.data(), size);
+
+  // Strip UTF-8 BOM if present
+  if (source.size() >= 3
+      && static_cast<u8_t>(source[0]) == 0xEF
+      && static_cast<u8_t>(source[1]) == 0xBB
+      && static_cast<u8_t>(source[2]) == 0xBF) {
+    source.erase(0, 3);
+  }
+
   return source;
 }
 
