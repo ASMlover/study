@@ -107,6 +107,8 @@ void Scanner::skip_whitespace() noexcept {
       advance();
       break;
     case '\n':
+      if (is_asi_trigger(prev_type_))
+        pending_asi_ = true;
       line_++;
       advance();
       line_start_ = current_;
@@ -367,7 +369,7 @@ bool Scanner::is_asi_trigger(TokenType type) noexcept {
 }
 
 ScannerState Scanner::save_state() const noexcept {
-  return {start_, current_, line_start_, line_, prev_type_};
+  return {start_, current_, line_start_, line_, prev_type_, pending_asi_};
 }
 
 void Scanner::restore_state(const ScannerState& state) noexcept {
@@ -376,11 +378,18 @@ void Scanner::restore_state(const ScannerState& state) noexcept {
   line_start_ = state.line_start;
   line_ = state.line;
   prev_type_ = state.prev_type;
+  pending_asi_ = state.pending_asi;
 }
 
 Token Scanner::scan_token() noexcept {
   skip_whitespace();
   start_ = current_;
+
+  if (pending_asi_) {
+    pending_asi_ = false;
+    prev_type_ = TokenType::TOKEN_SEMICOLON;
+    return make_token(TokenType::TOKEN_SEMICOLON);
+  }
 
   if (is_at_end()) return make_token(TokenType::TOKEN_EOF);
 

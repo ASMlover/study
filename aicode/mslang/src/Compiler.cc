@@ -2453,6 +2453,10 @@ void Compiler::class_declaration() noexcept {
 
   consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' before class body.");
   while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+    // Skip spurious ASI-inserted `;` between methods
+    while (match(TokenType::TOKEN_SEMICOLON)) {}
+    if (check(TokenType::TOKEN_RIGHT_BRACE) || check(TokenType::TOKEN_EOF)) break;
+
     if (match(TokenType::TOKEN_ABSTRACT)) {
       consume(TokenType::TOKEN_IDENTIFIER, "Expect abstract method name.");
       u16_t constant = identifier_constant(ps_->previous);
@@ -3002,6 +3006,10 @@ void Compiler::switch_statement() noexcept {
   bool had_default = false;
 
   while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+    // Skip spurious ASI-inserted `;`
+    while (match(TokenType::TOKEN_SEMICOLON)) {}
+    if (check(TokenType::TOKEN_RIGHT_BRACE) || check(TokenType::TOKEN_EOF)) break;
+
     if (match(TokenType::TOKEN_CASE)) {
       // Compare switch value with case expression
       expression();
@@ -3118,6 +3126,11 @@ void Compiler::statement() noexcept {
 }
 
 void Compiler::declaration() noexcept {
+  // Skip empty statements (e.g. spurious ASI-inserted `;` after `}`)
+  while (match(TokenType::TOKEN_SEMICOLON)) {}
+  if (check(TokenType::TOKEN_RIGHT_BRACE) || check(TokenType::TOKEN_EOF) ||
+      check(TokenType::TOKEN_CASE) || check(TokenType::TOKEN_DEFAULT)) return;
+
   if (match(TokenType::TOKEN_CLASS)) {
     class_declaration();
   } else if (match(TokenType::TOKEN_FUN)) {

@@ -36,6 +36,7 @@ struct ScannerState {
   cstr_t line_start;
   int line;
   TokenType prev_type;
+  bool pending_asi;
 };
 
 class Scanner {
@@ -48,6 +49,7 @@ class Scanner {
   int interp_braces_[kMAX_INTERPOLATION_NESTING]{};
   int interp_count_{0};
   TokenType prev_type_{TokenType::TOKEN_EOF};
+  bool pending_asi_{false};
 
   bool is_at_end() const noexcept;
   char advance() noexcept;
