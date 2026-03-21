@@ -36,21 +36,11 @@ void mark_value(Value& value) noexcept;
 Entry* Table::find_entry(std::vector<Entry>& entries, ObjString* key) noexcept {
   auto capacity = static_cast<u32_t>(entries.size());
   u32_t index = key->hash() & (capacity - 1);
-  Entry* tombstone = nullptr;
 
   for (;;) {
     Entry* entry = &entries[index];
-    if (entry->key == nullptr) {
-      if (entry->value.is_nil()) {
-        // Empty entry
-        return tombstone != nullptr ? tombstone : entry;
-      } else {
-        // Tombstone
-        if (tombstone == nullptr) tombstone = entry;
-      }
-    } else if (entry->key == key) {
-      return entry;
-    }
+    if (entry->key == nullptr) return entry;
+    if (entry->key == key) return entry;
 
     index = (index + 1) & (capacity - 1);
   }
@@ -62,13 +52,8 @@ const Entry* Table::find_entry(const std::vector<Entry>& entries, ObjString* key
 
   for (;;) {
     const Entry* entry = &entries[index];
-    if (entry->key == nullptr) {
-      if (entry->value.is_nil()) {
-        return entry;
-      }
-    } else if (entry->key == key) {
-      return entry;
-    }
+    if (entry->key == nullptr) return entry;
+    if (entry->key == key) return entry;
 
     index = (index + 1) & (capacity - 1);
   }
@@ -108,7 +93,7 @@ bool Table::set(ObjString* key, Value value) noexcept {
 
   Entry* entry = find_entry(entries_, key);
   bool is_new = (entry->key == nullptr);
-  if (is_new && entry->value.is_nil()) count_++;
+  if (is_new) count_++;
 
   entry->key = key;
   entry->value = value;
@@ -121,9 +106,26 @@ bool Table::remove(ObjString* key) noexcept {
   Entry* entry = find_entry(entries_, key);
   if (entry->key == nullptr) return false;
 
-  // Place a tombstone
-  entry->key = nullptr;
-  entry->value = Value(true);
+  sz_t mask = entries_.size() - 1;
+  sz_t idx = static_cast<sz_t>(entry - entries_.data());
+  entries_[idx] = Entry{};
+  count_--;
+
+  // Backward-shift: move displaced entries back toward their natural slot
+  sz_t empty = idx;
+  for (sz_t i = (empty + 1) & mask;
+       entries_[i].key != nullptr;
+       i = (i + 1) & mask) {
+    sz_t natural = entries_[i].key->hash() & mask;
+    bool displaced = (empty < i)
+        ? (natural <= empty || natural > i)
+        : (natural <= empty && natural > i);
+    if (displaced) {
+      entries_[empty] = entries_[i];
+      entries_[i] = Entry{};
+      empty = i;
+    }
+  }
   return true;
 }
 
@@ -143,10 +145,8 @@ ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexc
 
   for (;;) {
     const Entry& entry = entries_[index];
-    if (entry.key == nullptr) {
-      // Non-tombstone empty entry
-      if (entry.value.is_nil()) return nullptr;
-    } else if (entry.key->hash() == hash &&
+    if (entry.key == nullptr) return nullptr;
+    if (entry.key->hash() == hash &&
                entry.key->value().length() == length &&
                std::memcmp(entry.key->value().c_str(), chars, length) == 0) {
       return entry.key;
@@ -157,11 +157,12 @@ ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexc
 }
 
 void Table::remove_white() noexcept {
+  std::vector<ObjString*> to_remove;
   for (auto& entry : entries_) {
-    if (entry.key != nullptr && !entry.key->is_marked()) {
-      remove(entry.key);
-    }
+    if (entry.key != nullptr && !entry.key->is_marked())
+      to_remove.push_back(entry.key);
   }
+  for (auto* key : to_remove) remove(key);
 }
 
 void Table::mark_table() noexcept {
