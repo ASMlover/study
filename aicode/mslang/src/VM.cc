@@ -42,6 +42,7 @@
 #include "Memory.hh"
 #include "Debug.hh"
 #include "Logger.hh"
+#include "Serializer.hh"
 
 namespace ms {
 
@@ -1775,11 +1776,17 @@ void VM::import_module(ObjString* path) noexcept {
   // Cache module source for error reporting
   source_cache_[resolved] = *source_opt;
 
-  // Compile module
-  ObjFunction* function = compile(strv_t(*source_opt), resolved);
-  if (function == nullptr) {
-    runtime_error(std::format("Could not compile module '{}'.", resolved));
-    return;
+  // Try loading from .msc cache, fall back to compilation
+  str_t msc = msc_path_for(resolved);
+  const auto& source = *source_opt;
+  ObjFunction* function = try_load_cache(msc, source);
+  if (!function) {
+    function = compile(strv_t(source), resolved);
+    if (function == nullptr) {
+      runtime_error(std::format("Could not compile module '{}'.", resolved));
+      return;
+    }
+    serialize(function, msc, source); // best-effort cache write
   }
 
   // Snapshot current global keys before module execution
