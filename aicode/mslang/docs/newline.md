@@ -122,4 +122,4 @@ Grammar rules unchanged — `TERM` replaces `";"`.
 | | 4.2 | Test block / class / function: `}` ASI, cross-line declarations | [x] |
 | **5 — REPL & Wrap-up** | 5.1 | REPL ASI: insert `;` at EOF per trigger rules; prompt continuation on non-trigger | [x] |
 | | 5.2 | Full regression: all existing `tests/*.ms` (with `;`) pass `ctest` 100% | [x] |
-| | 5.3 | Doc update: `REQUIREMENTS.md` grammar + `CLAUDE.md` examples | [ ] |
+| | 5.3 | Doc update: `REQUIREMENTS.md` grammar + `CLAUDE.md` examples | [x] |

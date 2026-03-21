@@ -80,6 +80,8 @@ true   var     while
 ### 3.1 Declarations
 
 ```ebnf
+TERM           → ";" | <<ASI>> ;   // explicit or scanner-inserted semicolon
+
 program        → declaration* EOF ;
 
 declaration    → classDecl
@@ -90,10 +92,10 @@ declaration    → classDecl
 
 classDecl      → "class" IDENTIFIER ( ":" IDENTIFIER )? "{" function* "}" ;
 funDecl        → "fun" IDENTIFIER function ;
-varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? TERM ;
 
-importDecl     → "import" STRING ";"
-               | "from" STRING "import" IDENTIFIER ( "as" IDENTIFIER )? ";" ;
+importDecl     → "import" STRING TERM
+               | "from" STRING "import" IDENTIFIER ( "as" IDENTIFIER )? TERM ;
 ```
 
 ### 3.2 Statements
@@ -107,13 +109,13 @@ statement      → exprStmt
                | whileStmt
                | block ;
 
-exprStmt       → expression ";" ;
+exprStmt       → expression TERM ;
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                  expression? ";" expression? ")" statement ;
 ifStmt         → "if" "(" expression ")" statement
                  ( "else" statement )? ;
-printStmt      → "print" expression ";" ;
-returnStmt     → "return" expression? ";" ;
+printStmt      → "print" expression TERM ;
+returnStmt     → "return" expression? TERM ;
 whileStmt      → "while" "(" expression ")" statement ;
 block          → "{" declaration* "}" ;
 ```

@@ -122,10 +122,11 @@ Source → Scanner → Compiler (Pratt) → Chunk (bytecode) → VM (stack) → 
 
 ## Test Format
 
-Tests use `// expect:` comments:
+Tests use `// expect:` comments. Semicolons are optional (ASI inserts them at newlines):
 ```maple
-print 1 + 2;    // expect: 3
-print "hello";  // expect: hello
+print 1 + 2    // expect: 3
+print "hello"  // expect: hello
+var a = 1; var b = 2   // multiple statements on one line still use ;
 ```
 
 ## Git Commit Convention
