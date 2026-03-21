@@ -91,6 +91,16 @@ ss_t = std::stringstream;
 // POSSIBILITY OF SUCH DAMAGE.
 ```
 
+## Compiler
+
+### Known Pitfalls
+- **Token enum / parse rules alignment**: When adding new `TOKEN_*` values to the token enum, always audit and update the Pratt parse-rules table. The table is indexed by token type, so inserting a token shifts all subsequent indices and silently breaks parsing.
+
+## Bytecode / VM
+
+### Serialization Rule
+- When serializing new VM constructs (inline caches, new object types, etc.), always add corresponding read/write logic in the `.msc` bytecode serializer (`Serializer.hh/cc`) and verify correctness with class-heavy test scripts.
+
 ## Architecture
 
 ```
@@ -133,6 +143,7 @@ var a = 1; var b = 2   // multiple statements on one line still use ;
 
 - English only, prefixed with [gitmoji](https://gitmoji.dev/): `<gitmoji> <description>`
 - Examples: `:sparkles: add string interpolation` · `:bug: fix recursive stack overflow` · `:recycle: refactor parse rules`
+- Common prefixes: ✨ features · 🐛 fixes · 📝 docs · ♻️ refactoring · 🧪 tests
 
 ## Workflow
 
@@ -140,6 +151,8 @@ var a = 1; var b = 2   // multiple statements on one line still use ;
 - When the user types `实现 xxx.md a.b`, implement and verify the feature described in section `a.b` of `xxx.md`, then update its status.
 - When the user types `精简 xxx.md`, streamline the source document **without adding or removing any designs or rules**: compress redundant wording, merge duplicate sections, remove filler text, while preserving the original structure and semantics.
 - When the user types `git`, stage all changes in the current directory and create a git commit following the Git Commit Convention above.
+- **After implementing any feature**, run the full test suite before committing: `cmake --build build && ctest --test-dir build --output-on-failure`
+- When implementing features from any `*.md`, update the task status in the source document to `[x]` (or ✅ if that style is used) after successful implementation and commit.
 
 ## Reference
 - [Crafting Interpreters — clox](https://github.com/munificent/craftinginterpreters) (c/ directory)
