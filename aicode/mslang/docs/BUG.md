@@ -32,3 +32,11 @@ Windows 中文系统默认 GBK 解码失败。已修复。
 | `defer.ms` | 测试期望错误：顶层 defer 应在脚本退出时执行 | 修正 expect 注释位置 |
 
 附带修正：`control_flow.ms` 和 `ternary.ms` 的 `0 is truthy` 期望（因 `is_truthy` 语义变更）。
+
+---
+
+## ~~4. Windows CMD UTF-8 Output Garbled~~ [FIXED]
+
+Windows CMD 默认使用系统代码页（如 CP936/GBK），`std::cout` 直接输出 UTF-8 字符串导致中文/日文/emoji 等显示乱码。
+
+**Fix:** `main.cc` 入口处调用 `SetConsoleOutputCP(CP_UTF8)` + `SetConsoleCP(CP_UTF8)` 设置控制台输入输出为 UTF-8 编码。

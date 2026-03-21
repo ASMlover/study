@@ -29,6 +29,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "Compiler.hh"
 #include "Lsp.hh"
 #include "Scanner.hh"
@@ -235,6 +238,11 @@ static void compile_file(const ms::str_t& path) noexcept {
 }
 
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+  SetConsoleOutputCP(CP_UTF8);
+  SetConsoleCP(CP_UTF8);
+#endif
+
   if (argc == 1) {
     repl();
   } else if (argc == 2 && ms::str_t(argv[1]) == "--lsp") {

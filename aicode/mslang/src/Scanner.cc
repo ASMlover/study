@@ -38,7 +38,21 @@ inline bool is_digit(char c) noexcept {
 inline bool is_alpha(char c) noexcept {
   return (c >= 'a' && c <= 'z') ||
          (c >= 'A' && c <= 'Z') ||
-         c == '_';
+         c == '_' ||
+         static_cast<u8_t>(c) >= 0x80;
+}
+
+inline int utf8_seq_len(char c) noexcept {
+  u8_t b = static_cast<u8_t>(c);
+  if (b < 0x80) return 1;
+  if ((b & 0xE0) == 0xC0) return 2;
+  if ((b & 0xF0) == 0xE0) return 3;
+  if ((b & 0xF8) == 0xF0) return 4;
+  return 0; // invalid lead byte
+}
+
+inline bool is_utf8_continuation(char c) noexcept {
+  return (static_cast<u8_t>(c) & 0xC0) == 0x80;
 }
 
 } // anonymous namespace
@@ -354,7 +368,26 @@ TokenType Scanner::identifier_type() const noexcept {
 }
 
 Token Scanner::scan_identifier() noexcept {
-  while (is_alpha(peek()) || is_digit(peek())) advance();
+  for (;;) {
+    char c = peek();
+    if (is_digit(c) || (static_cast<u8_t>(c) < 0x80 && is_alpha(c))) {
+      advance();
+      continue;
+    }
+    u8_t b = static_cast<u8_t>(c);
+    if (b >= 0x80) {
+      int len = utf8_seq_len(c);
+      if (len == 0) return error_token("Invalid UTF-8 byte in identifier.");
+      // Verify continuation bytes are present and valid
+      for (int i = 1; i < len; ++i) {
+        if (!is_utf8_continuation(current_[i]))
+          return error_token("Invalid UTF-8 continuation byte in identifier.");
+      }
+      current_ += len;
+      continue;
+    }
+    break;
+  }
   return make_token(identifier_type());
 }
 
@@ -430,7 +463,20 @@ Token Scanner::scan_token() noexcept {
     return token;
   };
 
-  if (is_alpha(c)) return emit(scan_identifier());
+  if (is_alpha(c)) {
+    // If c is a UTF-8 multi-byte lead byte, consume remaining continuation bytes
+    u8_t b = static_cast<u8_t>(c);
+    if (b >= 0x80) {
+      int len = utf8_seq_len(c);
+      if (len == 0) return emit(error_token("Invalid UTF-8 byte."));
+      for (int i = 1; i < len; ++i) {
+        if (!is_utf8_continuation(*current_))
+          return emit(error_token("Invalid UTF-8 continuation byte."));
+        current_++;
+      }
+    }
+    return emit(scan_identifier());
+  }
   if (is_digit(c)) return emit(scan_number());
 
   switch (c) {
