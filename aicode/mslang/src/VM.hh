@@ -76,6 +76,7 @@ class VM : public Singleton<VM> {
   ObjString* op_lt_string_{nullptr};
   ObjString* op_gt_string_{nullptr};
   ObjString* op_str_string_{nullptr};
+  ObjString* op_finalize_string_{nullptr};
   ObjUpvalue* open_upvalues_{nullptr};
 
   // Generational GC: separate young/old object lists
@@ -92,6 +93,12 @@ class VM : public Singleton<VM> {
 
   // Weak references: nulled out during sweep if target is collected
   std::vector<ObjWeakRef*> weak_refs_;
+
+  // Finalizer support: deferred queue + re-entrant run() base frame
+  std::vector<Object*> pending_finalizers_;
+  bool finalize_pending_{false};
+  bool in_finalizer_{false};
+  int base_frame_{0};
 
   // Incremental marking state for major GC
   enum class GcPhase : u8_t { IDLE, MARKING, SWEEPING };
@@ -138,6 +145,9 @@ class VM : public Singleton<VM> {
   void sweep_young() noexcept;
   void mark_remembered_set() noexcept;
   void nullify_weak_refs() noexcept;
+  bool needs_finalization(Object* object) noexcept;
+  void mark_finalizable() noexcept;
+  void run_pending_finalizers() noexcept;
 
   // Incremental major GC
   void incremental_gc_step() noexcept;

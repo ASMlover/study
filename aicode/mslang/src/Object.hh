@@ -63,6 +63,7 @@ enum class ObjectType : int {
 class Object {
   ObjectType type_;
   bool is_marked_{false};
+  bool finalized_{false};
   GcGeneration generation_{GcGeneration::YOUNG};
   u8_t age_{0};
   Object* next_{nullptr};
@@ -78,6 +79,8 @@ public:
   ObjectType type() const noexcept { return type_; }
   bool is_marked() const noexcept { return is_marked_; }
   void set_marked(bool marked) noexcept { is_marked_ = marked; }
+  bool is_finalized() const noexcept { return finalized_; }
+  void set_finalized(bool v) noexcept { finalized_ = v; }
   Object* next() const noexcept { return next_; }
   void set_next(Object* next) noexcept { next_ = next; }
 

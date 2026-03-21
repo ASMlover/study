@@ -59,6 +59,7 @@ VM::VM() noexcept {
   op_lt_string_ = copy_string("__lt", 4);
   op_gt_string_ = copy_string("__gt", 4);
   op_str_string_ = copy_string("__str", 5);
+  op_finalize_string_ = copy_string("__finalize", 10);
 
   // Register native functions
   define_native("clock", [](int, Value*) -> Value {
@@ -624,6 +625,12 @@ void VM::mark_roots() noexcept {
   mark_object(op_lt_string_);
   mark_object(op_gt_string_);
   mark_object(op_str_string_);
+  mark_object(op_finalize_string_);
+
+  // Mark pending finalizers (kept alive until __finalize runs)
+  for (auto* obj : pending_finalizers_) {
+    mark_object(obj);
+  }
 
   // Mark pending exception
   mark_value(pending_exception_);
@@ -778,12 +785,97 @@ void VM::nullify_weak_refs() noexcept {
   weak_refs_.erase(new_end, weak_refs_.end());
 }
 
+bool VM::needs_finalization(Object* object) noexcept {
+  if (object->is_marked()) return false;
+  if (object->is_finalized()) return false;
+  if (object->type() != ObjectType::OBJ_INSTANCE) return false;
+  auto* inst = static_cast<ObjInstance*>(object);
+  // Only finalize if the class is alive (marked) and has __finalize
+  if (!inst->klass()->is_marked()) return false;
+  Value method;
+  return inst->klass()->methods().get(op_finalize_string_, &method);
+}
+
+void VM::mark_finalizable() noexcept {
+  bool found = false;
+  // Scan young generation for unreachable finalizable objects
+  for (Object* obj = young_objects_; obj != nullptr; obj = obj->next()) {
+    if (needs_finalization(obj)) {
+      mark_object(obj);
+      obj->set_finalized(true);
+      pending_finalizers_.push_back(obj);
+      finalize_pending_ = true;
+      found = true;
+    }
+  }
+  // Scan old generation
+  for (Object* obj = old_objects_; obj != nullptr; obj = obj->next()) {
+    if (needs_finalization(obj)) {
+      mark_object(obj);
+      obj->set_finalized(true);
+      pending_finalizers_.push_back(obj);
+      finalize_pending_ = true;
+      found = true;
+    }
+  }
+  // Re-trace to mark everything reachable from finalizable objects
+  if (found) {
+    trace_references();
+  }
+}
+
+void VM::run_pending_finalizers() noexcept {
+  if (in_finalizer_) return;  // prevent re-entrancy
+  in_finalizer_ = true;
+  finalize_pending_ = false;
+
+  while (!pending_finalizers_.empty()) {
+    auto* obj = pending_finalizers_.back();
+    pending_finalizers_.pop_back();
+
+    if (obj->type() == ObjectType::OBJ_INSTANCE) {
+      auto* inst = static_cast<ObjInstance*>(obj);
+      Value method;
+      if (inst->klass()->methods().get(op_finalize_string_, &method)) {
+        // Ensure stack_top_ is past the current frame's full register window
+        // so the finalizer frame doesn't overlap and corrupt locals.
+        CallFrame& cur = frames_[frame_count_ - 1];
+        Value* frame_end = cur.slots + cur.closure->function()->max_stack_size();
+        if (stack_top_ < frame_end)
+          stack_top_ = frame_end;
+
+        Value* saved_top = stack_top_;
+        int saved_base = base_frame_;
+        base_frame_ = frame_count_;
+
+        push(Value(static_cast<Object*>(inst)));
+        call(as_closure(method), 0);
+        run();
+
+        base_frame_ = saved_base;
+        stack_top_ = saved_top;
+        continue;  // instance freed on next GC (finalized_ = true)
+      }
+    }
+    // Object lost its __finalize (class collected?) — leave for normal sweep.
+  }
+
+  in_finalizer_ = false;
+}
+
 void VM::minor_gc() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
   logger.info("GC", "-- minor gc begin");
   sz_t before = bytes_allocated_;
 #endif
+
+  // Clear stale marks on old-generation objects from previous minor GC.
+  // Without this, mark_object skips already-marked old objects and their
+  // young-gen references go untraced, leading to premature collection.
+  for (Object* obj = old_objects_; obj != nullptr; obj = obj->next()) {
+    obj->set_marked(false);
+  }
 
   // Mark roots (marks both young and old, but we only sweep young)
   mark_roots();
@@ -792,6 +884,9 @@ void VM::minor_gc() noexcept {
   mark_remembered_set();
 
   trace_references();
+
+  // Mark unreachable objects with __finalize (keeps them alive for one more cycle)
+  mark_finalizable();
 
   // Null out weak refs to unmarked young objects before sweep
   nullify_weak_refs();
@@ -818,8 +913,21 @@ void VM::major_gc() noexcept {
   sz_t before = bytes_allocated_;
 #endif
 
+  // Clear all marks before full mark phase.
+  // Without this, stale marks from a previous minor GC cause mark_object
+  // to skip already-marked old objects, leaving their references untraced.
+  for (Object* obj = old_objects_; obj != nullptr; obj = obj->next()) {
+    obj->set_marked(false);
+  }
+  for (Object* obj = young_objects_; obj != nullptr; obj = obj->next()) {
+    obj->set_marked(false);
+  }
+
   mark_roots();
   trace_references();
+
+  // Mark unreachable objects with __finalize (keeps them alive for one more cycle)
+  mark_finalizable();
 
   // Remove interned strings that are unmarked before sweep
   strings_.remove_white();
@@ -869,6 +977,7 @@ void VM::incremental_mark_step() noexcept {
 
   if (gray_stack_.empty()) {
     // Marking done, transition to sweeping
+    mark_finalizable();
     strings_.remove_white();
     nullify_weak_refs();
     gc_phase_ = GcPhase::SWEEPING;
@@ -1793,6 +1902,7 @@ InterpretResult VM::run() noexcept {
   };
 
 #define VM_DISPATCH() do { \
+    if (finalize_pending_) [[unlikely]] goto run_finalizers; \
     TRACE_INSTRUCTION(); \
     instr = READ_INSTR(); \
     goto *dispatch_table[static_cast<u8_t>(instr & 0xFF)]; \
@@ -1807,11 +1917,21 @@ InterpretResult VM::run() noexcept {
 
 dispatch_loop:
 #ifdef MAPLE_GNUC
+  if (finalize_pending_) [[unlikely]] {
+    run_pending_finalizers();
+    frame = &frames_[frame_count_ - 1];
+    RELOAD_K();
+  }
   instr = READ_INSTR();
   TRACE_INSTRUCTION();
   goto *dispatch_table[static_cast<u8_t>(instr & 0xFF)];
 #else
   for (;;) {
+    if (finalize_pending_) [[unlikely]] {
+      run_pending_finalizers();
+      frame = &frames_[frame_count_ - 1];
+      RELOAD_K();
+    }
     instr = READ_INSTR();
     TRACE_INSTRUCTION();
     switch (decode_op(instr)) {
@@ -2604,7 +2724,7 @@ dispatch_loop:
 
       Value* return_base = frame->slots;
       frame_count_--;
-      if (frame_count_ == 0) {
+      if (frame_count_ == base_frame_) {
         return InterpretResult::INTERPRET_OK;
       }
 
@@ -3101,6 +3221,14 @@ handle_runtime_error:
     goto dispatch_loop;
   }
   return InterpretResult::INTERPRET_RUNTIME_ERROR;
+
+#ifdef MAPLE_GNUC
+run_finalizers:
+  run_pending_finalizers();
+  frame = &frames_[frame_count_ - 1];
+  RELOAD_K();
+  goto dispatch_loop;
+#endif
 
 #undef VM_CASE
 #undef VM_DISPATCH
