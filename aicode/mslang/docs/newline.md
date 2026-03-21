@@ -118,7 +118,7 @@ Grammar rules unchanged — `TERM` replaces `";"`.
 | | 2.2 | `\` line continuation: `skip_whitespace()` detects `\` + `\n` → skip, no ASI flag | [x] |
 | **3 — Control Flow** | 3.1 | Paren suppression: `paren_suppress_depth_` counter, suppress ASI while depth > 0 | [x] |
 | | 3.2 | Test `tests/newline_control_flow.ms`: nested / `if-else` / `for`-in-`if` scenarios | [x] |
-| **4 — Keywords & Edges** | 4.1 | Test `return`/`break`/`continue`: bare line vs same-line value | [ ] |
+| **4 — Keywords & Edges** | 4.1 | Test `return`/`break`/`continue`: bare line vs same-line value | [x] |
 | | 4.2 | Test block / class / function: `}` ASI, cross-line declarations | [ ] |
 | **5 — REPL & Wrap-up** | 5.1 | REPL ASI: insert `;` at EOF per trigger rules; prompt continuation on non-trigger | [ ] |
 | | 5.2 | Full regression: all existing `tests/*.ms` (with `;`) pass `ctest` 100% | [ ] |
