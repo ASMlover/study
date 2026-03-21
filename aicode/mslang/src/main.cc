@@ -31,6 +31,7 @@
 #include <vector>
 #include "Compiler.hh"
 #include "Lsp.hh"
+#include "Scanner.hh"
 #include "Serializer.hh"
 #include "VM.hh"
 
@@ -43,38 +44,34 @@ static inline ms::str_t trim(const ms::str_t& s) noexcept {
   return s.substr(start, end - start + 1);
 }
 
-static int bracket_depth(const ms::str_t& source) noexcept {
+static bool needs_continuation(const ms::str_t& source) noexcept {
+  ms::Scanner scanner(source);
+  ms::TokenType last_type = ms::TokenType::TOKEN_EOF;
   int depth = 0;
-  bool in_string = false;
-  bool in_line_comment = false;
-  bool in_block_comment = false;
 
-  for (ms::sz_t i = 0; i < source.size(); ++i) {
-    char c = source[i];
-    char next = (i + 1 < source.size()) ? source[i + 1] : '\0';
+  for (;;) {
+    ms::Token token = scanner.scan_token();
+    if (token.type == ms::TokenType::TOKEN_EOF) break;
+    if (token.type == ms::TokenType::TOKEN_ERROR) return false;
 
-    if (in_line_comment) {
-      if (c == '\n') in_line_comment = false;
-      continue;
+    last_type = token.type;
+
+    switch (token.type) {
+    case ms::TokenType::TOKEN_LEFT_PAREN:
+    case ms::TokenType::TOKEN_LEFT_BRACE:
+    case ms::TokenType::TOKEN_LEFT_BRACKET:
+      depth++; break;
+    case ms::TokenType::TOKEN_RIGHT_PAREN:
+    case ms::TokenType::TOKEN_RIGHT_BRACE:
+    case ms::TokenType::TOKEN_RIGHT_BRACKET:
+      depth--; break;
+    default: break;
     }
-    if (in_block_comment) {
-      if (c == '*' && next == '/') { in_block_comment = false; ++i; }
-      continue;
-    }
-    if (in_string) {
-      if (c == '\\') { ++i; continue; }
-      if (c == '"') in_string = false;
-      continue;
-    }
-
-    if (c == '/' && next == '/') { in_line_comment = true; ++i; continue; }
-    if (c == '/' && next == '*') { in_block_comment = true; ++i; continue; }
-    if (c == '"') { in_string = true; continue; }
-
-    if (c == '(' || c == '{' || c == '[') ++depth;
-    if (c == ')' || c == '}' || c == ']') --depth;
   }
-  return depth;
+
+  if (last_type == ms::TokenType::TOKEN_EOF) return false;
+  if (depth > 0) return true;
+  return last_type != ms::TokenType::TOKEN_SEMICOLON;
 }
 
 static void print_help() noexcept {
@@ -85,8 +82,8 @@ static void print_help() noexcept {
             << "  @history       Show command history\n"
             << "  @clear         Clear the screen\n"
             << "\n"
-            << "Multi-line input is supported: unmatched { ( [ will\n"
-            << "continue reading on the next line.\n";
+            << "Multi-line input is supported: unmatched brackets or\n"
+            << "trailing operators/commas continue on the next line.\n";
 }
 
 static void load_file(const ms::str_t& arg) noexcept {
@@ -161,9 +158,9 @@ static void repl() noexcept {
       continue;
     }
 
-    // Multi-line input: accumulate lines while brackets are unbalanced
+    // Multi-line input: continue on unbalanced brackets or non-trigger line end
     ms::str_t source = line;
-    while (bracket_depth(source) > 0) {
+    while (needs_continuation(source)) {
       std::cout << "  ...> ";
       ms::str_t continuation;
       if (!std::getline(std::cin, continuation)) {

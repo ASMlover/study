@@ -411,9 +411,17 @@ Token Scanner::scan_token() noexcept {
     return make_token(TokenType::TOKEN_SEMICOLON);
   }
 
-  suppress_next_asi_ = false;
+  if (is_at_end()) {
+    if (is_asi_trigger(prev_type_) && paren_suppress_depth_ == 0 && !suppress_next_asi_) {
+      prev_type_ = TokenType::TOKEN_SEMICOLON;
+      suppress_next_asi_ = false;
+      return make_token(TokenType::TOKEN_SEMICOLON);
+    }
+    suppress_next_asi_ = false;
+    return make_token(TokenType::TOKEN_EOF);
+  }
 
-  if (is_at_end()) return make_token(TokenType::TOKEN_EOF);
+  suppress_next_asi_ = false;
 
   char c = advance();
 
