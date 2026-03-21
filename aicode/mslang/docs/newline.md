@@ -111,7 +111,7 @@ Grammar rules unchanged — `TERM` replaces `";"`.
 
 | Phase | Task | Description | Status |
 |-------|------|-------------|--------|
-| **1 — Core ASI** | 1.1 | Scanner infra: add `prev_type_`, `is_asi_trigger()`; no behavior change | [ ] |
+| **1 — Core ASI** | 1.1 | Scanner infra: add `prev_type_`, `is_asi_trigger()`; no behavior change | [x] |
 | | 1.2 | Basic ASI: `skip_whitespace()` detects `\n` + trigger → `pending_asi_` → synthetic `;` | [ ] |
 | | 1.3 | Test `tests/newline_basic.ms`: no-`;` statements, same-line `;` split, blank lines | [ ] |
 | **2 — Multi-line** | 2.1 | Test `tests/newline_multiline.ms`: operator / comma / chained-call / bracket continuation | [ ] |

@@ -338,8 +338,36 @@ Token Scanner::scan_identifier() noexcept {
   return make_token(identifier_type());
 }
 
+bool Scanner::is_asi_trigger(TokenType type) noexcept {
+  switch (type) {
+  // Literals
+  case TokenType::TOKEN_NUMBER:
+  case TokenType::TOKEN_INTEGER:
+  case TokenType::TOKEN_STRING:
+  case TokenType::TOKEN_TRUE:
+  case TokenType::TOKEN_FALSE:
+  case TokenType::TOKEN_NIL:
+  // Identifiers
+  case TokenType::TOKEN_IDENTIFIER:
+  // Terminator keywords
+  case TokenType::TOKEN_BREAK:
+  case TokenType::TOKEN_CONTINUE:
+  case TokenType::TOKEN_RETURN:
+  // Closers
+  case TokenType::TOKEN_RIGHT_PAREN:
+  case TokenType::TOKEN_RIGHT_BRACKET:
+  case TokenType::TOKEN_RIGHT_BRACE:
+  // Other keywords that end statements
+  case TokenType::TOKEN_THIS:
+  case TokenType::TOKEN_SUPER:
+    return true;
+  default:
+    return false;
+  }
+}
+
 ScannerState Scanner::save_state() const noexcept {
-  return {start_, current_, line_start_, line_};
+  return {start_, current_, line_start_, line_, prev_type_};
 }
 
 void Scanner::restore_state(const ScannerState& state) noexcept {
@@ -347,6 +375,7 @@ void Scanner::restore_state(const ScannerState& state) noexcept {
   current_ = state.current;
   line_start_ = state.line_start;
   line_ = state.line;
+  prev_type_ = state.prev_type;
 }
 
 Token Scanner::scan_token() noexcept {
@@ -357,52 +386,57 @@ Token Scanner::scan_token() noexcept {
 
   char c = advance();
 
-  if (is_alpha(c)) return scan_identifier();
-  if (is_digit(c)) return scan_number();
+  auto emit = [this](Token token) noexcept -> Token {
+    prev_type_ = token.type;
+    return token;
+  };
+
+  if (is_alpha(c)) return emit(scan_identifier());
+  if (is_digit(c)) return emit(scan_number());
 
   switch (c) {
-  case '(': return make_token(TokenType::TOKEN_LEFT_PAREN);
-  case ')': return make_token(TokenType::TOKEN_RIGHT_PAREN);
+  case '(': return emit(make_token(TokenType::TOKEN_LEFT_PAREN));
+  case ')': return emit(make_token(TokenType::TOKEN_RIGHT_PAREN));
   case '{':
     if (interp_count_ > 0) interp_braces_[interp_count_ - 1]++;
-    return make_token(TokenType::TOKEN_LEFT_BRACE);
+    return emit(make_token(TokenType::TOKEN_LEFT_BRACE));
   case '}':
     if (interp_count_ > 0) {
       interp_braces_[interp_count_ - 1]--;
       if (interp_braces_[interp_count_ - 1] == 0) {
         interp_count_--;
-        return scan_string_continuation();
+        return emit(scan_string_continuation());
       }
     }
-    return make_token(TokenType::TOKEN_RIGHT_BRACE);
-  case '[': return make_token(TokenType::TOKEN_LEFT_BRACKET);
-  case ']': return make_token(TokenType::TOKEN_RIGHT_BRACKET);
-  case ';': return make_token(TokenType::TOKEN_SEMICOLON);
-  case ',': return make_token(TokenType::TOKEN_COMMA);
-  case '.': return make_token(TokenType::TOKEN_DOT);
-  case '-': return make_token(match('=') ? TokenType::TOKEN_MINUS_EQUAL : TokenType::TOKEN_MINUS);
-  case '+': return make_token(match('=') ? TokenType::TOKEN_PLUS_EQUAL : TokenType::TOKEN_PLUS);
-  case '/': return make_token(match('=') ? TokenType::TOKEN_SLASH_EQUAL : TokenType::TOKEN_SLASH);
-  case '*': return make_token(match('=') ? TokenType::TOKEN_STAR_EQUAL : TokenType::TOKEN_STAR);
-  case '%': return make_token(match('=') ? TokenType::TOKEN_PERCENT_EQUAL : TokenType::TOKEN_PERCENT);
-  case '&': return make_token(TokenType::TOKEN_AMPERSAND);
-  case '|': return make_token(TokenType::TOKEN_PIPE);
-  case '^': return make_token(TokenType::TOKEN_CARET);
-  case '~': return make_token(TokenType::TOKEN_TILDE);
-  case '?': return make_token(TokenType::TOKEN_QUESTION);
-  case ':': return make_token(TokenType::TOKEN_COLON);
-  case '!': return make_token(match('=') ? TokenType::TOKEN_BANG_EQUAL : TokenType::TOKEN_BANG);
-  case '=': return make_token(match('=') ? TokenType::TOKEN_EQUAL_EQUAL : TokenType::TOKEN_EQUAL);
+    return emit(make_token(TokenType::TOKEN_RIGHT_BRACE));
+  case '[': return emit(make_token(TokenType::TOKEN_LEFT_BRACKET));
+  case ']': return emit(make_token(TokenType::TOKEN_RIGHT_BRACKET));
+  case ';': return emit(make_token(TokenType::TOKEN_SEMICOLON));
+  case ',': return emit(make_token(TokenType::TOKEN_COMMA));
+  case '.': return emit(make_token(TokenType::TOKEN_DOT));
+  case '-': return emit(make_token(match('=') ? TokenType::TOKEN_MINUS_EQUAL : TokenType::TOKEN_MINUS));
+  case '+': return emit(make_token(match('=') ? TokenType::TOKEN_PLUS_EQUAL : TokenType::TOKEN_PLUS));
+  case '/': return emit(make_token(match('=') ? TokenType::TOKEN_SLASH_EQUAL : TokenType::TOKEN_SLASH));
+  case '*': return emit(make_token(match('=') ? TokenType::TOKEN_STAR_EQUAL : TokenType::TOKEN_STAR));
+  case '%': return emit(make_token(match('=') ? TokenType::TOKEN_PERCENT_EQUAL : TokenType::TOKEN_PERCENT));
+  case '&': return emit(make_token(TokenType::TOKEN_AMPERSAND));
+  case '|': return emit(make_token(TokenType::TOKEN_PIPE));
+  case '^': return emit(make_token(TokenType::TOKEN_CARET));
+  case '~': return emit(make_token(TokenType::TOKEN_TILDE));
+  case '?': return emit(make_token(TokenType::TOKEN_QUESTION));
+  case ':': return emit(make_token(TokenType::TOKEN_COLON));
+  case '!': return emit(make_token(match('=') ? TokenType::TOKEN_BANG_EQUAL : TokenType::TOKEN_BANG));
+  case '=': return emit(make_token(match('=') ? TokenType::TOKEN_EQUAL_EQUAL : TokenType::TOKEN_EQUAL));
   case '<':
-    if (match('<')) return make_token(TokenType::TOKEN_LEFT_SHIFT);
-    return make_token(match('=') ? TokenType::TOKEN_LESS_EQUAL : TokenType::TOKEN_LESS);
+    if (match('<')) return emit(make_token(TokenType::TOKEN_LEFT_SHIFT));
+    return emit(make_token(match('=') ? TokenType::TOKEN_LESS_EQUAL : TokenType::TOKEN_LESS));
   case '>':
-    if (match('>')) return make_token(TokenType::TOKEN_RIGHT_SHIFT);
-    return make_token(match('=') ? TokenType::TOKEN_GREATER_EQUAL : TokenType::TOKEN_GREATER);
-  case '"': return scan_string();
+    if (match('>')) return emit(make_token(TokenType::TOKEN_RIGHT_SHIFT));
+    return emit(make_token(match('=') ? TokenType::TOKEN_GREATER_EQUAL : TokenType::TOKEN_GREATER));
+  case '"': return emit(scan_string());
   }
 
-  return error_token("Unexpected character.");
+  return emit(error_token("Unexpected character."));
 }
 
 } // namespace ms

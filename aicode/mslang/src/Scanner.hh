@@ -35,6 +35,7 @@ struct ScannerState {
   cstr_t current;
   cstr_t line_start;
   int line;
+  TokenType prev_type;
 };
 
 class Scanner {
@@ -46,6 +47,7 @@ class Scanner {
   int line_{1};
   int interp_braces_[kMAX_INTERPOLATION_NESTING]{};
   int interp_count_{0};
+  TokenType prev_type_{TokenType::TOKEN_EOF};
 
   bool is_at_end() const noexcept;
   char advance() noexcept;
@@ -62,6 +64,7 @@ class Scanner {
   Token scan_identifier() noexcept;
   TokenType identifier_type() const noexcept;
   TokenType check_keyword(int start, int length, cstr_t rest, TokenType type) const noexcept;
+  static bool is_asi_trigger(TokenType type) noexcept;
 public:
   Scanner() noexcept = default;
   explicit Scanner(strv_t source) noexcept;
