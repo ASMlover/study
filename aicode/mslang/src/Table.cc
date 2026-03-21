@@ -33,52 +33,52 @@ namespace ms {
 void mark_object(Object* object) noexcept;
 void mark_value(Value& value) noexcept;
 
-Entry* Table::find_entry(std::vector<Entry>& entries, ObjString* key) noexcept {
-  auto capacity = static_cast<u32_t>(entries.size());
-  u32_t index = key->hash() & (capacity - 1);
+Entry* Table::find_entry(std::vector<Entry>& entries, sz_t mask, ObjString* key) noexcept {
+  sz_t index = key->hash() & mask;
 
   for (;;) {
     Entry* entry = &entries[index];
     if (entry->key == nullptr) return entry;
     if (entry->key == key) return entry;
 
-    index = (index + 1) & (capacity - 1);
+    index = (index + 1) & mask;
   }
 }
 
-const Entry* Table::find_entry(const std::vector<Entry>& entries, ObjString* key) const noexcept {
-  auto capacity = static_cast<u32_t>(entries.size());
-  u32_t index = key->hash() & (capacity - 1);
+const Entry* Table::find_entry(const std::vector<Entry>& entries, sz_t mask, ObjString* key) const noexcept {
+  sz_t index = key->hash() & mask;
 
   for (;;) {
     const Entry* entry = &entries[index];
     if (entry->key == nullptr) return entry;
     if (entry->key == key) return entry;
 
-    index = (index + 1) & (capacity - 1);
+    index = (index + 1) & mask;
   }
 }
 
 void Table::adjust_capacity(int capacity) noexcept {
   std::vector<Entry> new_entries(static_cast<sz_t>(capacity));
+  sz_t new_mask = static_cast<sz_t>(capacity) - 1;
 
   count_ = 0;
   for (auto& entry : entries_) {
     if (entry.key == nullptr) continue;
 
-    Entry* dest = find_entry(new_entries, entry.key);
+    Entry* dest = find_entry(new_entries, new_mask, entry.key);
     dest->key = entry.key;
     dest->value = entry.value;
     count_++;
   }
 
   entries_ = std::move(new_entries);
+  mask_ = new_mask;
 }
 
 bool Table::get(ObjString* key, Value* value) const noexcept {
   if (count_ == 0) return false;
 
-  const Entry* entry = find_entry(entries_, key);
+  const Entry* entry = find_entry(entries_, mask_, key);
   if (entry->key == nullptr) return false;
 
   *value = entry->value;
@@ -91,7 +91,7 @@ bool Table::set(ObjString* key, Value value) noexcept {
     adjust_capacity(cap);
   }
 
-  Entry* entry = find_entry(entries_, key);
+  Entry* entry = find_entry(entries_, mask_, key);
   bool is_new = (entry->key == nullptr);
   if (is_new) count_++;
 
@@ -103,20 +103,19 @@ bool Table::set(ObjString* key, Value value) noexcept {
 bool Table::remove(ObjString* key) noexcept {
   if (count_ == 0) return false;
 
-  Entry* entry = find_entry(entries_, key);
+  Entry* entry = find_entry(entries_, mask_, key);
   if (entry->key == nullptr) return false;
 
-  sz_t mask = entries_.size() - 1;
   sz_t idx = static_cast<sz_t>(entry - entries_.data());
   entries_[idx] = Entry{};
   count_--;
 
   // Backward-shift: move displaced entries back toward their natural slot
   sz_t empty = idx;
-  for (sz_t i = (empty + 1) & mask;
+  for (sz_t i = (empty + 1) & mask_;
        entries_[i].key != nullptr;
-       i = (i + 1) & mask) {
-    sz_t natural = entries_[i].key->hash() & mask;
+       i = (i + 1) & mask_) {
+    sz_t natural = entries_[i].key->hash() & mask_;
     bool displaced = (empty < i)
         ? (natural <= empty || natural > i)
         : (natural <= empty && natural > i);
@@ -140,8 +139,7 @@ void Table::add_all(Table& from) noexcept {
 ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexcept {
   if (count_ == 0) return nullptr;
 
-  auto capacity = static_cast<u32_t>(entries_.size());
-  u32_t index = hash & (capacity - 1);
+  sz_t index = hash & mask_;
 
   for (;;) {
     const Entry& entry = entries_[index];
@@ -152,7 +150,7 @@ ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexc
       return entry.key;
     }
 
-    index = (index + 1) & (capacity - 1);
+    index = (index + 1) & mask_;
   }
 }
 

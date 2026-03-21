@@ -41,12 +41,13 @@ struct Entry {
 class Table {
   std::vector<Entry> entries_;
   int count_{0};
+  sz_t mask_{0};
 
   static constexpr double kMAX_LOAD = 0.75;
 
   void adjust_capacity(int capacity) noexcept;
-  Entry* find_entry(std::vector<Entry>& entries, ObjString* key) noexcept;
-  const Entry* find_entry(const std::vector<Entry>& entries, ObjString* key) const noexcept;
+  Entry* find_entry(std::vector<Entry>& entries, sz_t mask, ObjString* key) noexcept;
+  const Entry* find_entry(const std::vector<Entry>& entries, sz_t mask, ObjString* key) const noexcept;
 public:
   Table() noexcept = default;
 
