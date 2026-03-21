@@ -10,6 +10,6 @@ class Circle : Shape {
   // perimeter not overridden — should still be abstract
 }
 
-var c = Circle(5);
-print c.area(); // expect: 78.5
-c.perimeter();  // expect runtime error
+var c = Circle(5)
+print c.area() // expect: 78.5
+c.perimeter()  // expect runtime error

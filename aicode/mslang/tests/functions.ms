@@ -1,85 +1,85 @@
 // Basic function declaration and call
-print "--- basic function call ---"; // expect: --- basic function call ---
+print "--- basic function call ---" // expect: --- basic function call ---
 fun add(a, b) {
-  return a + b;
+  return a + b
 }
-print add(1, 2);         // expect: 3
+print add(1, 2)         // expect: 3
 
 // Function with no return (returns nil)
-print "--- implicit nil return ---"; // expect: --- implicit nil return ---
+print "--- implicit nil return ---" // expect: --- implicit nil return ---
 fun greet(name) {
-  print "Hello, " + name + "!";
+  print "Hello, " + name + "!"
 }
-greet("Maple");          // expect: Hello, Maple!
-print greet("World");    // expect: Hello, World!
+greet("Maple")          // expect: Hello, Maple!
+print greet("World")    // expect: Hello, World!
                          // expect: nil
 
 // Recursion: fibonacci
-print "--- recursion (fibonacci) ---"; // expect: --- recursion (fibonacci) ---
+print "--- recursion (fibonacci) ---" // expect: --- recursion (fibonacci) ---
 fun fib(n) {
-  if (n < 2) return n;
-  return fib(n - 1) + fib(n - 2);
+  if (n < 2) return n
+  return fib(n - 1) + fib(n - 2)
 }
-print fib(0);            // expect: 0
-print fib(1);            // expect: 1
-print fib(10);           // expect: 55
+print fib(0)            // expect: 0
+print fib(1)            // expect: 1
+print fib(10)           // expect: 55
 
 // Multiple return values through different paths
-print "--- conditional return ---"; // expect: --- conditional return ---
+print "--- conditional return ---" // expect: --- conditional return ---
 fun abs(n) {
-  if (n < 0) return -n;
-  return n;
+  if (n < 0) return -n
+  return n
 }
-print abs(-5);           // expect: 5
-print abs(3);            // expect: 3
+print abs(-5)           // expect: 5
+print abs(3)            // expect: 3
 
 // Nested functions
-print "--- nested functions ---"; // expect: --- nested functions ---
+print "--- nested functions ---" // expect: --- nested functions ---
 fun outer() {
   fun inner() {
-    return "inner";
+    return "inner"
   }
-  return inner();
+  return inner()
 }
-print outer();           // expect: inner
+print outer()           // expect: inner
 
 // Functions as first-class values
-print "--- first-class functions ---"; // expect: --- first-class functions ---
+print "--- first-class functions ---" // expect: --- first-class functions ---
 fun identity(x) {
-  return x;
+  return x
 }
-print identity(42);      // expect: 42
+print identity(42)      // expect: 42
 
 fun apply(f, x) {
-  return f(x);
+  return f(x)
 }
-print apply(identity, 99);  // expect: 99
+print apply(identity, 99)  // expect: 99
 
 // No arguments
-print "--- no arguments ---"; // expect: --- no arguments ---
+print "--- no arguments ---" // expect: --- no arguments ---
 fun zero() {
-  return 0;
+  return 0
 }
-print zero();            // expect: 0
+print zero()            // expect: 0
 
 // Multiple parameters
-print "--- multiple parameters ---"; // expect: --- multiple parameters ---
+print "--- multiple parameters ---" // expect: --- multiple parameters ---
 fun sum3(a, b, c) {
-  return a + b + c;
+  return a + b + c
 }
-print sum3(1, 2, 3);     // expect: 6
+print sum3(1, 2, 3)     // expect: 6
 
 // Recursive countdown
-print "--- recursive countdown ---"; // expect: --- recursive countdown ---
+print "--- recursive countdown ---" // expect: --- recursive countdown ---
 fun countdown(n) {
   if (n <= 0) {
-    print "done";
-    return;
+    print "done"
+    return
   }
-  print n;
-  countdown(n - 1);
+  print n
+  countdown(n - 1)
 }
-countdown(3);            // expect: 3
+countdown(3)            // expect: 3
                          // expect: 2
                          // expect: 1
                          // expect: done

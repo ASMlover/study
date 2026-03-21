@@ -2,7 +2,7 @@
 
 // --- Iterate over list ---
 for (var x in [1, 2, 3]) {
-  print x;
+  print x
 }
 // expect: 1
 // expect: 2
@@ -10,7 +10,7 @@ for (var x in [1, 2, 3]) {
 
 // --- Iterate over range ---
 for (var i in range(5)) {
-  print i;
+  print i
 }
 // expect: 0
 // expect: 1
@@ -20,7 +20,7 @@ for (var i in range(5)) {
 
 // --- Iterate over string (character by character) ---
 for (var ch in "abc") {
-  print ch;
+  print ch
 }
 // expect: a
 // expect: b
@@ -28,22 +28,22 @@ for (var ch in "abc") {
 
 // --- Iterate over empty list ---
 for (var x in []) {
-  print x;
+  print x
 }
 // (no output)
 
 // --- Iterate with expression ---
-var items = [10, 20, 30];
-var sum = 0;
+var items = [10, 20, 30]
+var sum = 0
 for (var item in items) {
-  sum = sum + item;
+  sum = sum + item
 }
-print sum;  // expect: 60
+print sum  // expect: 60
 
 // --- Nested for-in ---
 for (var i in [1, 2]) {
   for (var j in [10, 20]) {
-    print i * 100 + j;
+    print i * 100 + j
   }
 }
 // expect: 110
@@ -53,16 +53,16 @@ for (var i in [1, 2]) {
 
 // --- Break inside for-in ---
 for (var x in [1, 2, 3, 4, 5]) {
-  if (x == 3) break;
-  print x;
+  if (x == 3) break
+  print x
 }
 // expect: 1
 // expect: 2
 
 // --- Continue inside for-in ---
 for (var x in [1, 2, 3, 4, 5]) {
-  if (x == 3) continue;
-  print x;
+  if (x == 3) continue
+  print x
 }
 // expect: 1
 // expect: 2
@@ -70,9 +70,9 @@ for (var x in [1, 2, 3, 4, 5]) {
 // expect: 5
 
 // --- Iterate over map (keys) ---
-var m = {"a": 1, "b": 2};
-var keys = [];
+var m = {"a": 1, "b": 2}
+var keys = []
 for (var k in m) {
-  keys.push(k);
+  keys.push(k)
 }
-print keys.len();  // expect: 2
+print keys.len()  // expect: 2

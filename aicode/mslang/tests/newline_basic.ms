@@ -9,10 +9,10 @@ print y // expect: 20
 print x + y // expect: 30
 
 // --- semicolons still work (backward compat) ---
-print "--- explicit semicolons ---"; // expect: --- explicit semicolons ---
-var a = 1; var b = 2;
-print a; // expect: 1
-print b; // expect: 2
+print "--- explicit semicolons ---" // expect: --- explicit semicolons ---
+var a = 1; var b = 2
+print a // expect: 1
+print b // expect: 2
 
 // --- multiple statements on one line with semicolons ---
 print "--- same-line split ---" // expect: --- same-line split ---
@@ -32,9 +32,9 @@ print f // expect: 200
 // --- mixed: some with semicolons, some without ---
 print "--- mixed ---" // expect: --- mixed ---
 var g = 5
-var h = 6;
+var h = 6
 print g + h // expect: 11
-print g * h; // expect: 30
+print g * h // expect: 30
 
 // --- expressions as statements ---
 print "--- expressions ---" // expect: --- expressions ---

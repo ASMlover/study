@@ -3,5 +3,5 @@ class Animal {
   abstract speak() {}
 }
 
-var a = Animal();
-a.speak(); // expect runtime error
+var a = Animal()
+a.speak() // expect runtime error

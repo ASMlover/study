@@ -1,17 +1,17 @@
 // Test: import statement with relative path
-import "modules/math.ms";
-print math.add(1, 2);           // expect: 3
-print math.multiply(3, 4);      // expect: 12
-print math.PI;                  // expect: 3.14159
+import "modules/math.ms"
+print math.add(1, 2)           // expect: 3
+print math.multiply(3, 4)      // expect: 12
+print math.PI                  // expect: 3.14159
 
 // Test: from ... import (relative path)
-from "modules/utils.ms" import greet;
-print greet("Maple");           // expect: Hello, Maple!
+from "modules/utils.ms" import greet
+print greet("Maple")           // expect: Hello, Maple!
 
 // Test: from ... import ... as
-from "modules/utils.ms" import double as dbl;
-print dbl(21);                  // expect: 42
+from "modules/utils.ms" import double as dbl
+print dbl(21)                  // expect: 42
 
 // Test: from ... import (another name from same module)
-from "modules/math.ms" import add as plus;
-print plus(10, 20);             // expect: 30
+from "modules/math.ms" import add as plus
+print plus(10, 20)             // expect: 30

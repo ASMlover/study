@@ -1,29 +1,29 @@
 // Fibonacci — recursive implementation
 fun fib(n) {
-  if (n < 2) return n;
-  return fib(n - 1) + fib(n - 2);
+  if (n < 2) return n
+  return fib(n - 1) + fib(n - 2)
 }
 
-print "Recursive Fibonacci:";
+print "Recursive Fibonacci:"
 for (var i = 0; i <= 10; i = i + 1) {
-  print fib(i);
+  print fib(i)
 }
 
 // Fibonacci — iterative implementation
 fun fib_iter(n) {
-  if (n < 2) return n;
+  if (n < 2) return n
 
-  var a = 0;
-  var b = 1;
+  var a = 0
+  var b = 1
   for (var i = 2; i <= n; i = i + 1) {
-    var temp = a + b;
-    a = b;
-    b = temp;
+    var temp = a + b
+    a = b
+    b = temp
   }
-  return b;
+  return b
 }
 
-print "Iterative Fibonacci:";
+print "Iterative Fibonacci:"
 for (var i = 0; i <= 20; i = i + 1) {
-  print fib_iter(i);
+  print fib_iter(i)
 }
