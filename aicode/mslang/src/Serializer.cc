@@ -41,6 +41,11 @@ class ByteWriter {
 public:
   void write_u8(u8_t v) noexcept { buf_.push_back(v); }
 
+  void write_u16(u16_t v) noexcept {
+    buf_.push_back(static_cast<u8_t>( v       & 0xFF));
+    buf_.push_back(static_cast<u8_t>((v >> 8) & 0xFF));
+  }
+
   void write_u32(u32_t v) noexcept {
     buf_.push_back(static_cast<u8_t>((v >> 24) & 0xFF));
     buf_.push_back(static_cast<u8_t>((v >> 16) & 0xFF));
@@ -49,6 +54,11 @@ public:
   }
 
   void write_i32(i32_t v) noexcept { write_u32(static_cast<u32_t>(v)); }
+
+  void write_u64(u64_t v) noexcept {
+    for (int i = 56; i >= 0; i -= 8)
+      buf_.push_back(static_cast<u8_t>((v >> i) & 0xFF));
+  }
 
   void write_f64(double v) noexcept {
     u64_t bits;
@@ -88,6 +98,13 @@ public:
 
   u8_t read_u8() noexcept { return data_[pos_++]; }
 
+  u16_t read_u16() noexcept {
+    u16_t v = 0;
+    v |= static_cast<u16_t>(data_[pos_++]);
+    v |= static_cast<u16_t>(data_[pos_++]) << 8;
+    return v;
+  }
+
   u32_t read_u32() noexcept {
     u32_t v = 0;
     v |= static_cast<u32_t>(data_[pos_++]) << 24;
@@ -98,6 +115,13 @@ public:
   }
 
   i32_t read_i32() noexcept { return static_cast<i32_t>(read_u32()); }
+
+  u64_t read_u64() noexcept {
+    u64_t v = 0;
+    for (int i = 0; i < 8; ++i)
+      v = (v << 8) | data_[pos_++];
+    return v;
+  }
 
   double read_f64() noexcept {
     u64_t bits = 0;
@@ -219,18 +243,20 @@ static void write_function(ByteWriter& w, ObjFunction* fn,
   w.write_u32(static_cast<u32_t>(fn->ic_count()));
 }
 
-bool serialize(ObjFunction* function, strv_t path) noexcept {
+static bool serialize_impl(ObjFunction* function, strv_t path,
+    u16_t flags, u64_t source_hash) noexcept {
   std::vector<ObjFunction*> functions;
   std::unordered_map<ObjFunction*, u32_t> index_map;
   collect_functions(function, functions, index_map);
 
   ByteWriter w;
 
-  // Header: magic + version + reserved
+  // Header (16B): magic + version + flags + source_hash
   w.write_u8('M'); w.write_u8('S'); w.write_u8('C'); w.write_u8('\0');
   w.write_u8(kMSC_VERSION_MAJOR);
   w.write_u8(kMSC_VERSION_MINOR);
-  w.write_u8(0); w.write_u8(0); // reserved
+  w.write_u16(flags);
+  w.write_u64(source_hash);
 
   // Function count
   w.write_u32(static_cast<u32_t>(functions.size()));
@@ -241,6 +267,14 @@ bool serialize(ObjFunction* function, strv_t path) noexcept {
   }
 
   return w.flush(path);
+}
+
+bool serialize(ObjFunction* function, strv_t path) noexcept {
+  return serialize_impl(function, path, 0, 0);
+}
+
+bool serialize(ObjFunction* function, strv_t path, strv_t source) noexcept {
+  return serialize_impl(function, path, kMSC_FLAG_HAS_HASH, fnv1a_hash(source));
 }
 
 // -- Deserialization ---------------------------------------------------------
@@ -345,7 +379,7 @@ ObjFunction* deserialize(strv_t path) noexcept {
 
   ByteReader r(data.data(), data.size());
 
-  // Validate header
+  // Validate header (minimum 8B for v1.0 compat)
   if (!r.has(8)) {
     std::cerr << "Invalid .msc file: too short." << std::endl;
     return nullptr;
@@ -361,7 +395,20 @@ ObjFunction* deserialize(strv_t path) noexcept {
               << "." << static_cast<int>(minor) << "." << std::endl;
     return nullptr;
   }
-  r.read_u8(); r.read_u8(); // reserved
+
+  if (minor >= 1) {
+    // v1.1+: flags (2B) + source_hash (8B)
+    if (!r.has(10)) {
+      std::cerr << "Invalid .msc file: truncated v1.1 header." << std::endl;
+      return nullptr;
+    }
+    [[maybe_unused]] u16_t flags = r.read_u16();
+    [[maybe_unused]] u64_t source_hash = r.read_u64();
+    // Hash validation deferred to O2.2 (auto-cache)
+  } else {
+    // v1.0: skip 2B reserved
+    r.read_u8(); r.read_u8();
+  }
 
   // Read functions
   u32_t fn_count = r.read_u32();

@@ -32,7 +32,10 @@
 namespace ms {
 
 // Binary format (.msc):
-//   Header:  "MSC\0" (4B) + version_major (1B) + version_minor (1B) + reserved (2B)
+//   Header (16B):
+//     "MSC\0" (4B) + version_major (1B) + version_minor (1B)
+//     + flags (2B, LE) + source_hash (8B, BE)
+//   v1.0 header (8B): magic(4) + version(2) + reserved(2) — no flags/hash
 //   u32: function_count
 //   Functions[0..N-1]:  serialized in DFS post-order (inner first, top-level last)
 //     u32: arity
@@ -52,9 +55,20 @@ namespace ms {
 //       For each SourceRun: 4x i32 (line, column, token_length, count)
 
 inline constexpr u8_t kMSC_VERSION_MAJOR = 1;
-inline constexpr u8_t kMSC_VERSION_MINOR = 0;
+inline constexpr u8_t kMSC_VERSION_MINOR = 1;
+inline constexpr u16_t kMSC_FLAG_HAS_HASH = 0x0001;
+
+inline u64_t fnv1a_hash(strv_t source) noexcept {
+  u64_t h = 14695981039346656037ULL;
+  for (char c : source) {
+    h ^= static_cast<u8_t>(c);
+    h *= 1099511628211ULL;
+  }
+  return h;
+}
 
 bool serialize(ObjFunction* function, strv_t path) noexcept;
+bool serialize(ObjFunction* function, strv_t path, strv_t source) noexcept;
 ObjFunction* deserialize(strv_t path) noexcept;
 
 inline bool is_msc_file(strv_t path) noexcept {
