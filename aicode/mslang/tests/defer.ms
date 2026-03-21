@@ -33,7 +33,6 @@ print test_return();
 defer print "top-level defer";
 print "top-level body";
 // expect: top-level body
-// expect: top-level defer
 
 // Test 5: Multiple defers with interleaved code
 fun test_interleaved() {
@@ -85,3 +84,4 @@ outer();
 // expect: inner-defer
 // expect: outer-body
 // expect: outer-defer
+// expect: top-level defer

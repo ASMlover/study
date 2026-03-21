@@ -67,6 +67,8 @@ Object* Value::as_object() const noexcept {
 bool Value::is_truthy() const noexcept {
   if (is_nil()) return false;
   if (is_boolean()) return as_boolean();
+  if (is_integer()) return as_integer() != 0;
+  if (is_double()) return as_number() != 0.0;
   return true;
 }
 
@@ -167,6 +169,8 @@ Object* Value::as_object() const noexcept {
 bool Value::is_truthy() const noexcept {
   if (is_nil()) return false;
   if (is_boolean()) return as_boolean();
+  if (is_integer()) return as_integer() != 0;
+  if (is_double()) return as_number() != 0.0;
   return true;
 }
 

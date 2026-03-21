@@ -5,8 +5,8 @@ print "--- type() ---"; // expect: --- type() ---
 print type(nil);           // expect: nil
 print type(true);          // expect: bool
 print type(false);         // expect: bool
-print type(123);           // expect: number
-print type(3.14);          // expect: number
+print type(123);           // expect: int
+print type(3.14);          // expect: float
 print type("hello");       // expect: string
 print type(clock);         // expect: function
 print type(type);          // expect: function

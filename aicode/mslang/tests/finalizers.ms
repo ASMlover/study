@@ -4,7 +4,7 @@ class Res {
 }
 fun make() { var r = Res("temp"); }
 make();
-for (var i = 0; i < 5000; i = i + 1) {
+for (var i = 0; i < 5000; i = i + 1) {  // expect: fin:temp
   var junk = [i, i + 1, i + 2, i + 3, i + 4];
 }
 print "1";               // expect: 1

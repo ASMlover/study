@@ -55,6 +55,7 @@ struct ExceptionHandler {
   int frame_index{0};
   Value* stack_depth{nullptr};
   Instruction* catch_ip{nullptr};
+  u8_t catch_reg{0};
 };
 
 class VM : public Singleton<VM> {

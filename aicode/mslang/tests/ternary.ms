@@ -21,5 +21,5 @@ print "result: " + (true ? "ok" : "fail"); // expect: result: ok
 // Ternary with nil
 print nil ? "truthy" : "falsy"; // expect: falsy
 
-// Ternary with number 0 (0 is truthy in Maple, only nil and false are falsy)
-print 0 ? "truthy" : "falsy";  // expect: truthy
+// Ternary with number 0 (0 is falsy in Maple)
+print 0 ? "truthy" : "falsy";  // expect: falsy

@@ -296,4 +296,4 @@ var weak = weak_ref(obj); var strong = weak.get();  // nil if collected
 | | 16.4 | Language Server Protocol (LSP) | [x] |
 | | 17.1 | Incremental / generational GC | [x] |
 | | 17.2 | Weak references | [x] |
-| | 17.3 | Finalizers | [ ] |
+| | 17.3 | Finalizers | [x] |

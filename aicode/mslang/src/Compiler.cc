@@ -1894,6 +1894,8 @@ void Compiler::list_comprehension_() noexcept {
   // [expr for var in iterable]
   // [expr for var in iterable if condition]
 
+  // Sync register top with locals so hidden locals align with registers
+  reg_top_ = static_cast<u8_t>(local_count_);
   begin_scope();
 
   // Create empty list as hidden local
@@ -2925,7 +2927,13 @@ void Compiler::try_statement() noexcept {
   begin_scope();
   add_local(error_name);
   mark_initialized();
-  // The VM will place the exception value in the error local's register
+  // Patch the OP_TRY's A field with the catch variable register
+  {
+    u8_t catch_reg = static_cast<u8_t>(local_count_ - 1);
+    Instruction old_instr = current_chunk()[try_offset];
+    int sBx = decode_sBx(old_instr);
+    current_chunk()[try_offset] = encode_AsBx(OpCode::OP_TRY, catch_reg, sBx);
+  }
   block();
   end_scope();
 

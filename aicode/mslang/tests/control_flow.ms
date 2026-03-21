@@ -13,7 +13,7 @@ if (false) {
 // Truthiness
 print "--- truthiness ---"; // expect: --- truthiness ---
 if (0) {
-  print "zero is truthy";  // expect: zero is truthy
+  print "zero is truthy";
 }
 
 if (nil) {

@@ -26,7 +26,7 @@ def parse_expectations(filepath):
     """Extract expected output and error lines from // expect: comments."""
     expectations = []
     error_expectations = []
-    with open(filepath, "r") as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         for lineno, line in enumerate(f, 1):
             # Check for runtime error expectation
             idx = line.find("// expect runtime error: ")
@@ -56,6 +56,7 @@ def run_test(executable, filepath):
         [executable, filepath],
         capture_output=True,
         text=True,
+        encoding="utf-8",
         timeout=10,
     )
 

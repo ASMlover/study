@@ -2084,8 +2084,9 @@ dispatch_loop:
             frame->slots[A] = Value(static_cast<Object*>(bound));
             VM_DISPATCH();
           } else if (ic.kind == ICKind::IC_GETTER) {
-            // Getter call: push receiver, call with 0 args
-            stack_top_ = frame->slots + B + 1;
+            // Getter call: place receiver at R(A) so return lands in R(A)
+            frame->slots[A] = frame->slots[B];
+            stack_top_ = frame->slots + A + 1;
             if (!call(as_closure(ic.cached), 0)) {
               goto handle_runtime_error;
             }
@@ -2110,7 +2111,8 @@ dispatch_loop:
           ic.klass = klass;
           ic.kind = ICKind::IC_GETTER;
           ic.cached = getter;
-          stack_top_ = frame->slots + B + 1;
+          frame->slots[A] = frame->slots[B];
+          stack_top_ = frame->slots + A + 1;
           if (!call(as_closure(getter), 0)) {
             goto handle_runtime_error;
           }
@@ -2461,13 +2463,15 @@ dispatch_loop:
 
     VM_CASE(OP_STR) {
       u8_t A = decode_A(instr);
-      Value val = frame->slots[decode_B(instr)];
+      u8_t B = decode_B(instr);
+      Value val = frame->slots[B];
       if (val.is_instance()) {
         ObjInstance* instance = as_instance(val);
         Value method;
         if (instance->klass()->methods().get(op_str_string_, &method)) {
-          // __str: push instance on stack, call with 0 args
-          stack_top_ = frame->slots + decode_B(instr) + 1;
+          // __str: place receiver at R(A) so return lands in R(A)
+          frame->slots[A] = frame->slots[B];
+          stack_top_ = frame->slots + A + 1;
           if (!call(as_closure(method), 0)) {
             goto handle_runtime_error;
           }
@@ -3167,11 +3171,13 @@ dispatch_loop:
     }
 
     VM_CASE(OP_TRY) {
+      u8_t A = decode_A(instr);
       int sBx = decode_sBx(instr);
       exception_handlers_.push_back({
         frame_count_ - 1,
         stack_top_,
         frame->ip + sBx,
+        A,
       });
       VM_DISPATCH();
     }
@@ -3217,7 +3223,7 @@ handle_runtime_error:
     RELOAD_K();
     stack_top_ = handler.stack_depth;
     frame->ip = handler.catch_ip;
-    push(pending_exception_);
+    frame->slots[handler.catch_reg] = pending_exception_;
     goto dispatch_loop;
   }
   return InterpretResult::INTERPRET_RUNTIME_ERROR;
