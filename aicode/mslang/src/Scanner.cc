@@ -136,6 +136,22 @@ void Scanner::skip_whitespace() noexcept {
         return;
       }
       break;
+    case '\\':
+      if (peek_next() == '\n') {
+        advance(); // skip '\'
+        advance(); // skip '\n'
+        line_++;
+        line_start_ = current_;
+        break;
+      } else if (peek_next() == '\r') {
+        advance(); // skip '\'
+        advance(); // skip '\r'
+        if (peek() == '\n') advance(); // skip '\n'
+        line_++;
+        line_start_ = current_;
+        break;
+      }
+      return;
     default:
       return;
     }

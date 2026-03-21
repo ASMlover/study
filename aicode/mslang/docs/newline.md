@@ -115,7 +115,7 @@ Grammar rules unchanged — `TERM` replaces `";"`.
 | | 1.2 | Basic ASI: `skip_whitespace()` detects `\n` + trigger → `pending_asi_` → synthetic `;` | [x] |
 | | 1.3 | Test `tests/newline_basic.ms`: no-`;` statements, same-line `;` split, blank lines | [x] |
 | **2 — Multi-line** | 2.1 | Test `tests/newline_multiline.ms`: operator / comma / chained-call / bracket continuation | [x] |
-| | 2.2 | `\` line continuation: `skip_whitespace()` detects `\` + `\n` → skip, no ASI flag | [ ] |
+| | 2.2 | `\` line continuation: `skip_whitespace()` detects `\` + `\n` → skip, no ASI flag | [x] |
 | **3 — Control Flow** | 3.1 | Paren suppression: `paren_suppress_depth_` counter, suppress ASI while depth > 0 | [ ] |
 | | 3.2 | Test `tests/newline_control_flow.ms`: nested / `if-else` / `for`-in-`if` scenarios | [ ] |
 | **4 — Keywords & Edges** | 4.1 | Test `return`/`break`/`continue`: bare line vs same-line value | [ ] |
