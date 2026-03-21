@@ -25,6 +25,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstring>
+#include <unordered_map>
 #include "Scanner.hh"
 
 namespace ms {
@@ -249,122 +250,29 @@ Token Scanner::scan_number() noexcept {
   return make_token(TokenType::TOKEN_INTEGER);
 }
 
-TokenType Scanner::check_keyword(int start, int length, cstr_t rest, TokenType type) const noexcept {
-  if (current_ - start_ == start + length &&
-      std::memcmp(start_ + start, rest, static_cast<sz_t>(length)) == 0) {
-    return type;
-  }
-  return TokenType::TOKEN_IDENTIFIER;
-}
+static const std::unordered_map<strv_t, TokenType> kKeywords = {
+  {"abstract", TokenType::TOKEN_ABSTRACT}, {"and",      TokenType::TOKEN_AND},
+  {"as",       TokenType::TOKEN_AS},       {"break",    TokenType::TOKEN_BREAK},
+  {"case",     TokenType::TOKEN_CASE},     {"catch",    TokenType::TOKEN_CATCH},
+  {"class",    TokenType::TOKEN_CLASS},    {"continue", TokenType::TOKEN_CONTINUE},
+  {"default",  TokenType::TOKEN_DEFAULT},  {"defer",    TokenType::TOKEN_DEFER},
+  {"else",     TokenType::TOKEN_ELSE},     {"false",    TokenType::TOKEN_FALSE},
+  {"for",      TokenType::TOKEN_FOR},      {"from",     TokenType::TOKEN_FROM},
+  {"fun",      TokenType::TOKEN_FUN},      {"if",       TokenType::TOKEN_IF},
+  {"import",   TokenType::TOKEN_IMPORT},   {"in",       TokenType::TOKEN_IN},
+  {"nil",      TokenType::TOKEN_NIL},      {"or",       TokenType::TOKEN_OR},
+  {"print",    TokenType::TOKEN_PRINT},    {"return",   TokenType::TOKEN_RETURN},
+  {"static",   TokenType::TOKEN_STATIC},   {"super",    TokenType::TOKEN_SUPER},
+  {"switch",   TokenType::TOKEN_SWITCH},   {"this",     TokenType::TOKEN_THIS},
+  {"throw",    TokenType::TOKEN_THROW},    {"true",     TokenType::TOKEN_TRUE},
+  {"try",      TokenType::TOKEN_TRY},      {"var",      TokenType::TOKEN_VAR},
+  {"while",    TokenType::TOKEN_WHILE},
+};
 
 TokenType Scanner::identifier_type() const noexcept {
-  switch (start_[0]) {
-  case 'a':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 'b': return check_keyword(2, 6, "stract", TokenType::TOKEN_ABSTRACT);
-      case 'n': return check_keyword(2, 1, "d", TokenType::TOKEN_AND);
-      case 's': return check_keyword(2, 0, "", TokenType::TOKEN_AS);
-      }
-    }
-    break;
-  case 'b': return check_keyword(1, 4, "reak", TokenType::TOKEN_BREAK);
-  case 'c':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 'a':
-        if (current_ - start_ > 2) {
-          switch (start_[2]) {
-          case 's': return check_keyword(3, 1, "e", TokenType::TOKEN_CASE);
-          case 't': return check_keyword(3, 2, "ch", TokenType::TOKEN_CATCH);
-          }
-        }
-        break;
-      case 'l': return check_keyword(2, 3, "ass", TokenType::TOKEN_CLASS);
-      case 'o': return check_keyword(2, 6, "ntinue", TokenType::TOKEN_CONTINUE);
-      }
-    }
-    break;
-  case 'd':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 'e':
-        if (current_ - start_ > 2) {
-          switch (start_[2]) {
-          case 'f':
-            if (current_ - start_ > 3) {
-              switch (start_[3]) {
-              case 'a': return check_keyword(4, 3, "ult", TokenType::TOKEN_DEFAULT);
-              case 'e': return check_keyword(4, 1, "r", TokenType::TOKEN_DEFER);
-              }
-            }
-            break;
-          }
-        }
-        break;
-      }
-    }
-    break;
-  case 'e': return check_keyword(1, 3, "lse", TokenType::TOKEN_ELSE);
-  case 'f':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 'a': return check_keyword(2, 3, "lse", TokenType::TOKEN_FALSE);
-      case 'o': return check_keyword(2, 1, "r", TokenType::TOKEN_FOR);
-      case 'r': return check_keyword(2, 2, "om", TokenType::TOKEN_FROM);
-      case 'u': return check_keyword(2, 1, "n", TokenType::TOKEN_FUN);
-      }
-    }
-    break;
-  case 'i':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 'f': return check_keyword(2, 0, "", TokenType::TOKEN_IF);
-      case 'n': return check_keyword(2, 0, "", TokenType::TOKEN_IN);
-      case 'm': return check_keyword(2, 4, "port", TokenType::TOKEN_IMPORT);
-      }
-    }
-    break;
-  case 'n': return check_keyword(1, 2, "il", TokenType::TOKEN_NIL);
-  case 'o': return check_keyword(1, 1, "r", TokenType::TOKEN_OR);
-  case 'p': return check_keyword(1, 4, "rint", TokenType::TOKEN_PRINT);
-  case 'r': return check_keyword(1, 5, "eturn", TokenType::TOKEN_RETURN);
-  case 's':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 't': return check_keyword(2, 4, "atic", TokenType::TOKEN_STATIC);
-      case 'u': return check_keyword(2, 3, "per", TokenType::TOKEN_SUPER);
-      case 'w': return check_keyword(2, 4, "itch", TokenType::TOKEN_SWITCH);
-      }
-    }
-    break;
-  case 't':
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-      case 'h':
-        if (current_ - start_ > 2) {
-          switch (start_[2]) {
-          case 'i': return check_keyword(3, 1, "s", TokenType::TOKEN_THIS);
-          case 'r': return check_keyword(3, 2, "ow", TokenType::TOKEN_THROW);
-          }
-        }
-        break;
-      case 'r':
-        if (current_ - start_ > 2) {
-          switch (start_[2]) {
-          case 'u': return check_keyword(3, 1, "e", TokenType::TOKEN_TRUE);
-          case 'y': return check_keyword(3, 0, "", TokenType::TOKEN_TRY);
-          }
-        }
-        break;
-      }
-    }
-    break;
-  case 'v': return check_keyword(1, 2, "ar", TokenType::TOKEN_VAR);
-  case 'w': return check_keyword(1, 4, "hile", TokenType::TOKEN_WHILE);
-  }
-
-  return TokenType::TOKEN_IDENTIFIER;
+  strv_t lexeme(start_, static_cast<sz_t>(current_ - start_));
+  auto it = kKeywords.find(lexeme);
+  return (it != kKeywords.end()) ? it->second : TokenType::TOKEN_IDENTIFIER;
 }
 
 Token Scanner::scan_identifier() noexcept {

@@ -69,7 +69,6 @@ class Scanner {
   Token scan_number() noexcept;
   Token scan_identifier() noexcept;
   TokenType identifier_type() const noexcept;
-  TokenType check_keyword(int start, int length, cstr_t rest, TokenType type) const noexcept;
   static bool is_asi_trigger(TokenType type) noexcept;
 public:
   Scanner() noexcept = default;

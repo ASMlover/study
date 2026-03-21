@@ -356,7 +356,7 @@ On MSVC, use `_mm_prefetch` with `<intrin.h>`:
 | O2.1 | .msc header: add source_hash field | Serializer.hh/cc | — | [x] |
 | O2.2 | Auto-cache in run_file() | Serializer.hh/cc, main.cc | O2.1 | [x] |
 | O2.3 | Import module cache | VM.cc | O2.2 | [x] |
-| O3.1 | Keyword lookup: switch-trie → static hashmap | Scanner.cc | — | [ ] |
+| O3.1 | Keyword lookup: switch-trie → static hashmap | Scanner.cc | — | [x] |
 | O4.1 | Backward-shift deletion (remove tombstones) | Table.hh/cc | — | [ ] |
 | O4.2 | Cached capacity mask | Table.hh/cc | — | [ ] |
 | O4.3 | Prefetch on linear probe | Table.cc | O4.2 | [ ] |
