@@ -119,7 +119,7 @@ Grammar rules unchanged — `TERM` replaces `";"`.
 | **3 — Control Flow** | 3.1 | Paren suppression: `paren_suppress_depth_` counter, suppress ASI while depth > 0 | [x] |
 | | 3.2 | Test `tests/newline_control_flow.ms`: nested / `if-else` / `for`-in-`if` scenarios | [x] |
 | **4 — Keywords & Edges** | 4.1 | Test `return`/`break`/`continue`: bare line vs same-line value | [x] |
-| | 4.2 | Test block / class / function: `}` ASI, cross-line declarations | [ ] |
+| | 4.2 | Test block / class / function: `}` ASI, cross-line declarations | [x] |
 | **5 — REPL & Wrap-up** | 5.1 | REPL ASI: insert `;` at EOF per trigger rules; prompt continuation on non-trigger | [ ] |
 | | 5.2 | Full regression: all existing `tests/*.ms` (with `;`) pass `ctest` 100% | [ ] |
 | | 5.3 | Doc update: `REQUIREMENTS.md` grammar + `CLAUDE.md` examples | [ ] |
