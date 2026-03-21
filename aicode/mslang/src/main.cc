@@ -202,9 +202,23 @@ static void run_file(const ms::str_t& path) noexcept {
     std::exit(74);
   }
 
-  ms::InterpretResult result = vm.interpret(*source_opt, path);
+  const auto& source = *source_opt;
+  ms::str_t msc = ms::msc_path_for(path);
 
-  if (result == ms::InterpretResult::INTERPRET_COMPILE_ERROR) std::exit(65);
+  // Try loading from cache (hash-validated)
+  if (auto* cached = ms::try_load_cache(msc, source)) {
+    ms::InterpretResult result = vm.interpret_bytecode(cached, source, path);
+    if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);
+    return;
+  }
+
+  // Cache miss — compile, execute, write cache
+  ms::ObjFunction* fn = ms::compile(source, path);
+  if (fn == nullptr) std::exit(65);
+
+  ms::serialize(fn, msc, source); // best-effort cache write
+
+  ms::InterpretResult result = vm.interpret_bytecode(fn, source, path);
   if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);
 }
 

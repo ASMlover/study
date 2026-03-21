@@ -71,6 +71,16 @@ bool serialize(ObjFunction* function, strv_t path) noexcept;
 bool serialize(ObjFunction* function, strv_t path, strv_t source) noexcept;
 ObjFunction* deserialize(strv_t path) noexcept;
 
+// Auto-cache helpers (O2.2)
+inline str_t msc_path_for(strv_t ms_path) noexcept {
+  str_t p(ms_path);
+  if (p.size() >= 3 && p.substr(p.size() - 3) == ".ms")
+    return p + "c";
+  return p + ".msc";
+}
+
+ObjFunction* try_load_cache(strv_t msc_path, strv_t source) noexcept;
+
 inline bool is_msc_file(strv_t path) noexcept {
   return path.size() >= 4 && path.substr(path.size() - 4) == ".msc";
 }

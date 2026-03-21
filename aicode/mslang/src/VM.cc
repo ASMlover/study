@@ -1842,6 +1842,14 @@ InterpretResult VM::interpret_bytecode(ObjFunction* function) noexcept {
   return run();
 }
 
+InterpretResult VM::interpret_bytecode(ObjFunction* function, strv_t source, strv_t script_path) noexcept {
+  current_script_path_ = str_t(script_path);
+  str_t path_key = current_script_path_.empty() ? "<repl>" : current_script_path_;
+  source_cache_[path_key] = str_t(source);
+
+  return interpret_bytecode(function);
+}
+
 InterpretResult VM::run() noexcept {
   CallFrame* frame = &frames_[frame_count_ - 1];
 

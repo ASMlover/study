@@ -361,56 +361,68 @@ static ObjFunction* read_function(ByteReader& r,
   return fn;
 }
 
-ObjFunction* deserialize(strv_t path) noexcept {
-  // Read entire file
+// -- Shared header parsing ---------------------------------------------------
+
+struct MscHeader {
+  u16_t flags{0};
+  u64_t source_hash{0};
+  bool valid{false};
+};
+
+static bool read_msc_file(strv_t path, std::vector<u8_t>& out, bool quiet = false) noexcept {
   std::ifstream ifs(str_t(path), std::ios::binary | std::ios::ate);
   if (!ifs) {
-    std::cerr << "Could not open bytecode file \"" << path << "\"." << std::endl;
-    return nullptr;
+    if (!quiet)
+      std::cerr << "Could not open bytecode file \"" << path << "\"." << std::endl;
+    return false;
   }
   auto file_size = ifs.tellg();
   ifs.seekg(0, std::ios::beg);
-  std::vector<u8_t> data(static_cast<sz_t>(file_size));
-  ifs.read(reinterpret_cast<char*>(data.data()), file_size);
+  out.resize(static_cast<sz_t>(file_size));
+  ifs.read(reinterpret_cast<char*>(out.data()), file_size);
   if (!ifs) {
-    std::cerr << "Failed to read bytecode file \"" << path << "\"." << std::endl;
-    return nullptr;
+    if (!quiet)
+      std::cerr << "Failed to read bytecode file \"" << path << "\"." << std::endl;
+    return false;
   }
+  return true;
+}
 
-  ByteReader r(data.data(), data.size());
-
-  // Validate header (minimum 8B for v1.0 compat)
+static MscHeader parse_msc_header(ByteReader& r, bool quiet = false) noexcept {
+  MscHeader hdr;
   if (!r.has(8)) {
-    std::cerr << "Invalid .msc file: too short." << std::endl;
-    return nullptr;
+    if (!quiet) std::cerr << "Invalid .msc file: too short." << std::endl;
+    return hdr;
   }
   if (r.read_u8() != 'M' || r.read_u8() != 'S' || r.read_u8() != 'C' || r.read_u8() != '\0') {
-    std::cerr << "Invalid .msc file: bad magic." << std::endl;
-    return nullptr;
+    if (!quiet) std::cerr << "Invalid .msc file: bad magic." << std::endl;
+    return hdr;
   }
   u8_t major = r.read_u8();
   u8_t minor = r.read_u8();
   if (major != kMSC_VERSION_MAJOR) {
-    std::cerr << "Unsupported .msc version " << static_cast<int>(major)
-              << "." << static_cast<int>(minor) << "." << std::endl;
-    return nullptr;
+    if (!quiet)
+      std::cerr << "Unsupported .msc version " << static_cast<int>(major)
+                << "." << static_cast<int>(minor) << "." << std::endl;
+    return hdr;
   }
 
   if (minor >= 1) {
-    // v1.1+: flags (2B) + source_hash (8B)
     if (!r.has(10)) {
-      std::cerr << "Invalid .msc file: truncated v1.1 header." << std::endl;
-      return nullptr;
+      if (!quiet) std::cerr << "Invalid .msc file: truncated v1.1 header." << std::endl;
+      return hdr;
     }
-    [[maybe_unused]] u16_t flags = r.read_u16();
-    [[maybe_unused]] u64_t source_hash = r.read_u64();
-    // Hash validation deferred to O2.2 (auto-cache)
+    hdr.flags = r.read_u16();
+    hdr.source_hash = r.read_u64();
   } else {
-    // v1.0: skip 2B reserved
-    r.read_u8(); r.read_u8();
+    r.read_u8(); r.read_u8(); // v1.0 reserved
   }
 
-  // Read functions
+  hdr.valid = true;
+  return hdr;
+}
+
+static ObjFunction* read_functions(ByteReader& r) noexcept {
   u32_t fn_count = r.read_u32();
   std::vector<ObjFunction*> fn_table;
   fn_table.reserve(fn_count);
@@ -421,8 +433,33 @@ ObjFunction* deserialize(strv_t path) noexcept {
     fn_table.push_back(fn);
   }
 
-  // Last function is the top-level script
   return fn_table.empty() ? nullptr : fn_table.back();
+}
+
+ObjFunction* deserialize(strv_t path) noexcept {
+  std::vector<u8_t> data;
+  if (!read_msc_file(path, data)) return nullptr;
+
+  ByteReader r(data.data(), data.size());
+  MscHeader hdr = parse_msc_header(r);
+  if (!hdr.valid) return nullptr;
+
+  return read_functions(r);
+}
+
+ObjFunction* try_load_cache(strv_t msc_path, strv_t source) noexcept {
+  std::vector<u8_t> data;
+  if (!read_msc_file(msc_path, data, /*quiet=*/true)) return nullptr;
+
+  ByteReader r(data.data(), data.size());
+  MscHeader hdr = parse_msc_header(r, /*quiet=*/true);
+  if (!hdr.valid) return nullptr;
+
+  // Validate source hash
+  if (!(hdr.flags & kMSC_FLAG_HAS_HASH)) return nullptr;
+  if (hdr.source_hash != fnv1a_hash(source)) return nullptr;
+
+  return read_functions(r);
 }
 
 } // namespace ms
