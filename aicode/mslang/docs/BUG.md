@@ -40,3 +40,22 @@ Windows 中文系统默认 GBK 解码失败。已修复。
 Windows CMD 默认使用系统代码页（如 CP936/GBK），`std::cout` 直接输出 UTF-8 字符串导致中文/日文/emoji 等显示乱码。
 
 **Fix:** `main.cc` 入口处调用 `SetConsoleOutputCP(CP_UTF8)` + `SetConsoleCP(CP_UTF8)` 设置控制台输入输出为 UTF-8 编码。
+
+---
+
+## ~~5. Inline Block — No Trailing Semicolon Before `}`~~ [FIXED]
+
+**症状：** 函数体或任意 block 写在同一行时，最后一条语句前没有 `;` 就报错。
+例如 `fun foo(n) { return n * 2 }` 或 `for (var o in objs) { sum = sum + o.get_x() }` 均失败。
+
+**根因：** 编译器所有语句终止点均调用 `consume(TOKEN_SEMICOLON, ...)` 严格要求 `;`；
+而 ASI 仅在遇到 `\n` 时插入虚拟分号，同行的 `}` 之前不会插入，导致解析失败。
+
+**Fix（`Compiler.cc`）：**
+新增 `consume_semi(strv_t message)` 辅助函数：
+- 当前 token 是 `;`：消费并返回（显式分号）
+- 当前 token 是 `}` 或 `EOF`：直接返回（隐式终止，不消费）
+- 否则：报错
+
+将所有**语句级**的 `consume(TOKEN_SEMICOLON, ...)` 改为 `consume_semi(...)`，
+保留 `for` 循环三段式中的子句分隔符（init `;` cond `;` incr）不变。

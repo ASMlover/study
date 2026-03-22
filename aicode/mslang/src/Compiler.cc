@@ -172,6 +172,7 @@ class Compiler {
   // Token consumption
   void advance() noexcept;
   void consume(TokenType type, strv_t message) noexcept;
+  void consume_semi(strv_t message) noexcept;
   bool check(TokenType type) const noexcept;
   bool match(TokenType type) noexcept;
 
@@ -782,6 +783,20 @@ void Compiler::consume(TokenType type, strv_t message) noexcept {
   if (ps_->current.type == type) {
     advance();
     return;
+  }
+  error_at_current(message);
+}
+
+// Consume a statement-ending semicolon, or accept `}` / EOF as an implicit
+// terminator so that `{ stmt }` on one line works without a trailing `;`.
+void Compiler::consume_semi(strv_t message) noexcept {
+  if (ps_->current.type == TokenType::TOKEN_SEMICOLON) {
+    advance();
+    return;
+  }
+  if (ps_->current.type == TokenType::TOKEN_RIGHT_BRACE ||
+      ps_->current.type == TokenType::TOKEN_EOF) {
+    return;  // implicit terminator — do not consume
   }
   error_at_current(message);
 }
@@ -2235,7 +2250,7 @@ void Compiler::var_declaration() noexcept {
       end_scope();
     }
 
-    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+    consume_semi("Expect ';' after variable declaration.");
     invalidate_constants();
     return;
   }
@@ -2251,7 +2266,7 @@ void Compiler::var_declaration() noexcept {
     } else {
       emit_instr(encode_ABC(OpCode::OP_LOADNIL, local_slot, 0, 0));
     }
-    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+    consume_semi("Expect ';' after variable declaration.");
     mark_initialized();
     if (reg_top_ <= local_slot) {
       reg_top_ = local_slot + 1;
@@ -2267,7 +2282,7 @@ void Compiler::var_declaration() noexcept {
       val_reg = alloc_reg();
       emit_instr(encode_ABC(OpCode::OP_LOADNIL, val_reg, 0, 0));
     }
-    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+    consume_semi("Expect ';' after variable declaration.");
     emit_instr(encode_ABx(OpCode::OP_DEFGLOBAL, val_reg, global));
     free_reg(val_reg);
   }
@@ -2675,7 +2690,7 @@ void Compiler::import_declaration() noexcept {
       VM::get_instance().copy_string(ps_->previous.lexeme.data() + 1,
                      ps_->previous.lexeme.length() - 2))));
 
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after import path.");
+  consume_semi("Expect ';' after import path.");
 
   u8_t path_reg = alloc_reg();
   emit_instr(encode_ABx(OpCode::OP_LOADK, path_reg, static_cast<u16_t>(ki)));
@@ -2685,7 +2700,7 @@ void Compiler::import_declaration() noexcept {
 
 void Compiler::expression_statement() noexcept {
   expression();
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after expression.");
+  consume_semi("Expect ';' after expression.");
   // Free the register holding the result (no POP needed in register-based)
   u8_t reg = discharge(last_expr_);
   free_reg(reg);
@@ -2693,7 +2708,7 @@ void Compiler::expression_statement() noexcept {
 
 void Compiler::print_statement() noexcept {
   expression();
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after value.");
+  consume_semi("Expect ';' after value.");
   u8_t reg = discharge(last_expr_);
   emit_instr(encode_ABC(OpCode::OP_PRINT, reg, 0, 0));
   free_reg(reg);
@@ -2990,7 +3005,7 @@ void Compiler::break_statement() noexcept {
   sz_t jump = emit_jump(OpCode::OP_JMP);
   current_loop_->break_jumps.push_back(jump);
 
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+  consume_semi("Expect ';' after 'break'.");
 }
 
 void Compiler::continue_statement() noexcept {
@@ -3009,7 +3024,7 @@ void Compiler::continue_statement() noexcept {
 
   emit_loop(current_loop_->continue_target);
 
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+  consume_semi("Expect ';' after 'continue'.");
 }
 
 void Compiler::return_statement() noexcept {
@@ -3026,7 +3041,7 @@ void Compiler::return_statement() noexcept {
 
     expression();
     u8_t ret_reg = discharge(last_expr_);
-    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after return value.");
+    consume_semi("Expect ';' after return value.");
     emit_instr(encode_ABC(OpCode::OP_RETURN, ret_reg, 2, 0));
     free_reg(ret_reg);
   }
@@ -3079,7 +3094,7 @@ void Compiler::try_statement() noexcept {
 void Compiler::throw_statement() noexcept {
   expression();
   u8_t reg = discharge(last_expr_);
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after throw value.");
+  consume_semi("Expect ';' after throw value.");
   emit_instr(encode_ABC(OpCode::OP_THROW, reg, 0, 0));
   free_reg(reg);
 }
@@ -3099,7 +3114,7 @@ void Compiler::yield_statement() noexcept {
     expression();
     val_reg = discharge(last_expr_);
   }
-  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after yield value.");
+  consume_semi("Expect ';' after yield value.");
   emit_instr(encode_ABC(OpCode::OP_YIELD, val_reg, 0, 0));
   free_reg(val_reg);
 }
@@ -3331,7 +3346,7 @@ void Compiler::declaration() noexcept {
       free_reg(path_reg);
     }
 
-    consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after import statement.");
+    consume_semi("Expect ';' after import statement.");
   } else {
     statement();
   }
