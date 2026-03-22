@@ -44,7 +44,7 @@ Two monolithic files account for 52% of the codebase (~14K lines):
 
 ## Implementation Phases
 
-> **Rule:** After every phase, run `cmake --build build && ctest --test-dir build --output-on-failure`. All 61 tests must pass before proceeding.
+> **Rule:** After every phase, run `cmake --build build && ctest --test-dir build --output-on-failure`. All 62 tests must pass before proceeding.
 
 ### Phase 0 — Safety Net
 
@@ -200,7 +200,7 @@ inline ParseState* active_parse_state_ = nullptr;
 2. In `Compiler.cc`, replace lines 39–272 with `#include "CompilerImpl.hh"`.
 3. `Compiler.hh` (public API) is **unchanged**.
 
-**Verification:** build + test. This is a pure structural extraction — zero behavioral change. All 61 tests must still pass.
+**Verification:** build + test. This is a pure structural extraction — zero behavioral change. All 62 tests must still pass.
 
 ---
 
@@ -286,8 +286,8 @@ Compiler.cc      ──►  CompilerImpl.hh, Debug.hh, Optimize.hh
 
 | Phase | Description | Type | Files Touched | Status |
 |:-----:|-------------|------|---------------|:------:|
-| 0 | Baseline — confirm 61 tests pass | verify | — | [x] |
-| 1 | Extract `VMNatives.cc` | extract | `VM.hh` · `VM.cc` · `VMNatives.cc` *(new)* | [ ] |
+| 0 | Baseline — confirm 62 tests pass | verify | — | [x] |
+| 1 | Extract `VMNatives.cc` | extract | `VM.hh` · `VM.cc` · `VMNatives.cc` *(new)* | [x] |
 | 2 | Extract `VMGC.cc` | move | `VM.cc` · `VMGC.cc` *(new)* | [ ] |
 | 3 | Extract `VMCall.cc` | move | `VM.cc` · `VMCall.cc` *(new)* | [ ] |
 | 4 | Extract `VMImport.cc` | move | `VM.cc` · `VMImport.cc` *(new)* | [ ] |

@@ -200,6 +200,7 @@ class VM : public Singleton<VM> {
   void concatenate() noexcept;
 
   // Native function registration
+  void register_natives() noexcept;
   void define_native(strv_t name, NativeFn function) noexcept;
 
 public:
