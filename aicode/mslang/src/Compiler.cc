@@ -34,6 +34,7 @@
 #include "VM.hh"
 #include "Memory.hh"
 #include "Debug.hh"
+#include "Optimize.hh"
 
 namespace ms {
 
@@ -210,6 +211,7 @@ class Compiler {
   void var_declaration() noexcept;
   void fun_declaration() noexcept;
   void class_declaration() noexcept;
+  void enum_declaration() noexcept;
   void import_declaration() noexcept;
   void statement() noexcept;
   void expression_statement() noexcept;
@@ -221,6 +223,7 @@ class Compiler {
   void list_comprehension_() noexcept;
   void break_statement() noexcept;
   void continue_statement() noexcept;
+  void yield_statement() noexcept;
   void return_statement() noexcept;
   void try_statement() noexcept;
   void throw_statement() noexcept;
@@ -447,7 +450,10 @@ Compiler::Compiler(ParseState& ps, FunctionType type) noexcept
   Local& local = locals_[local_count_++];
   local.depth = 0;
   local.is_captured = false;
-  if (type != FunctionType::TYPE_FUNCTION) {
+  if (type == FunctionType::TYPE_GENERATOR) {
+    function_->set_is_generator(true);
+    local.name.lexeme = "";
+  } else if (type != FunctionType::TYPE_FUNCTION) {
     local.name.lexeme = "this";
   } else {
     local.name.lexeme = "";
@@ -2272,22 +2278,82 @@ void Compiler::function(FunctionType type) noexcept {
   compiler.begin_scope();
 
   consume(TokenType::TOKEN_LEFT_PAREN, "Expect '(' after function name.");
+  bool seen_default = false;
   if (!check(TokenType::TOKEN_RIGHT_PAREN)) {
     do {
-      compiler.function_->increment_arity();
-      if (compiler.function_->arity() > 255) {
-        compiler.error_at_current("Can't have more than 255 parameters.");
+      // Rest parameter: ...name (must be last)
+      if (match(TokenType::TOKEN_ELLIPSIS)) {
+        compiler.function_->increment_arity();
+        if (compiler.function_->arity() > 255)
+          compiler.error_at_current("Can't have more than 255 parameters.");
+        compiler.parse_variable("Expect rest parameter name.");
+        compiler.mark_initialized();
+        if (compiler.reg_top_ < static_cast<u8_t>(compiler.local_count_)) {
+          compiler.reg_top_ = static_cast<u8_t>(compiler.local_count_);
+          compiler.check_stack(compiler.reg_top_);
+        }
+        compiler.function_->set_has_rest_param(true);
+        // rest param must be last
+        break;
       }
-      u16_t constant = compiler.parse_variable("Expect parameter name.");
-      // For local params, they are already in the right register slot
+
+      compiler.function_->increment_arity();
+      if (compiler.function_->arity() > 255)
+        compiler.error_at_current("Can't have more than 255 parameters.");
+      compiler.parse_variable("Expect parameter name.");
       compiler.mark_initialized();
-      // Ensure reg_top covers params
       if (compiler.reg_top_ < static_cast<u8_t>(compiler.local_count_)) {
         compiler.reg_top_ = static_cast<u8_t>(compiler.local_count_);
         compiler.check_stack(compiler.reg_top_);
       }
-      (void)constant;
+
+      // Default value: = expr (must be a simple constant)
+      if (check(TokenType::TOKEN_EQUAL)) {
+        advance(); // consume '='
+        if (!seen_default) {
+          compiler.function_->set_min_arity(compiler.function_->arity() - 1);
+          compiler.function_->set_default_base(
+              static_cast<int>(compiler.function_->chunk().constants().size()));
+          seen_default = true;
+        }
+        // Parse default expression — emit as constant by evaluating literal
+        // For simplicity, support literals: nil, true, false, number, string
+        Value def_val;
+        if (check(TokenType::TOKEN_NIL)) {
+          advance(); def_val = Value();
+        } else if (check(TokenType::TOKEN_TRUE)) {
+          advance(); def_val = Value(true);
+        } else if (check(TokenType::TOKEN_FALSE)) {
+          advance(); def_val = Value(false);
+        } else if (check(TokenType::TOKEN_INTEGER)) {
+          advance();
+          i64_t v = 0;
+          for (char ch : ps_->previous.lexeme)
+            if (ch >= '0' && ch <= '9') v = v * 10 + (ch - '0');
+          def_val = Value(v);
+        } else if (check(TokenType::TOKEN_NUMBER)) {
+          advance();
+          def_val = Value(std::stod(str_t(ps_->previous.lexeme)));
+        } else if (check(TokenType::TOKEN_STRING)) {
+          advance();
+          strv_t sv = ps_->previous.lexeme;
+          str_t s(sv.substr(1, sv.size() - 2)); // strip quotes
+          def_val = Value(static_cast<Object*>(
+              VM::get_instance().copy_string(s.data(), s.size())));
+        } else {
+          error("Default parameter must be a literal value (nil, bool, number, string).");
+          advance();
+        }
+        compiler.function_->chunk().constants().push_back(def_val);
+      } else {
+        if (seen_default) {
+          error("Non-default parameter after default parameter.");
+        }
+      }
     } while (match(TokenType::TOKEN_COMMA));
+  }
+  if (!seen_default) {
+    compiler.function_->set_min_arity(compiler.function_->arity());
   }
   consume(TokenType::TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
   consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' before function body.");
@@ -2310,9 +2376,11 @@ void Compiler::function(FunctionType type) noexcept {
 }
 
 void Compiler::fun_declaration() noexcept {
+  // Detect fun* (generator) — star comes before the function name
+  bool is_generator = match(TokenType::TOKEN_STAR);
   u16_t global = parse_variable("Expect function name.");
   mark_initialized();
-  function(FunctionType::TYPE_FUNCTION);
+  function(is_generator ? FunctionType::TYPE_GENERATOR : FunctionType::TYPE_FUNCTION);
 
   if (scope_depth_ > 0) {
     // Local function
@@ -2363,6 +2431,70 @@ void Compiler::method() noexcept {
   // Let's NOT emit METHOD here; let class_declaration do it.
   // So we just leave closure in last_expr_.
   last_expr_ = {ExprDesc::VREG, closure_reg};
+}
+
+void Compiler::enum_declaration() noexcept {
+  // enum Name { VARIANT [= expr], ... }
+  // Desugars to: create class, set static int fields for each variant
+  consume(TokenType::TOKEN_IDENTIFIER, "Expect enum name.");
+  Token enum_name = ps_->previous;
+  u16_t name_constant = identifier_constant(ps_->previous);
+  declare_variable();
+
+  u8_t enum_reg;
+  if (scope_depth_ > 0) {
+    enum_reg = static_cast<u8_t>(local_count_ - 1);
+    if (reg_top_ <= enum_reg) { reg_top_ = enum_reg + 1; check_stack(reg_top_); }
+  } else {
+    enum_reg = alloc_reg();
+  }
+  emit_instr(encode_ABx(OpCode::OP_CLASS, enum_reg, name_constant));
+
+  consume(TokenType::TOKEN_LEFT_BRACE, "Expect '{' after enum name.");
+
+  i64_t counter = 0;
+  while (!check(TokenType::TOKEN_RIGHT_BRACE) && !check(TokenType::TOKEN_EOF)) {
+    consume(TokenType::TOKEN_IDENTIFIER, "Expect variant name.");
+    Token variant_tok = ps_->previous;
+    u16_t variant_ki = identifier_constant(variant_tok);
+
+    u8_t val_reg = alloc_reg();
+    if (match(TokenType::TOKEN_EQUAL)) {
+      // Explicit numeric value
+      if (!check(TokenType::TOKEN_INTEGER) && !check(TokenType::TOKEN_NUMBER)) {
+        error("Enum value must be an integer literal.");
+        advance();
+        counter = 0;
+      } else {
+        advance(); // consume the literal
+        Token lit = ps_->previous;
+        if (lit.type == TokenType::TOKEN_INTEGER) {
+          // Parse integer literal
+          i64_t v = 0;
+          for (char ch : lit.lexeme) { if (ch >= '0' && ch <= '9') v = v * 10 + (ch - '0'); }
+          counter = v;
+        } else {
+          counter = static_cast<i64_t>(std::stod(str_t(lit.lexeme)));
+        }
+      }
+    }
+    u16_t val_ki = static_cast<u16_t>(make_constant(Value(counter)));
+    emit_instr(encode_ABx(OpCode::OP_LOADK, val_reg, val_ki));
+    emit_instr(encode_ABC(OpCode::OP_STATICMETH, enum_reg,
+                          static_cast<u8_t>(variant_ki), val_reg));
+    free_reg(val_reg);
+    counter++;
+
+    if (!match(TokenType::TOKEN_COMMA)) break;
+  }
+  consume(TokenType::TOKEN_RIGHT_BRACE, "Expect '}' after enum body.");
+
+  if (scope_depth_ > 0) {
+    mark_initialized();
+  } else {
+    emit_instr(encode_ABx(OpCode::OP_DEFGLOBAL, enum_reg, name_constant));
+    free_reg(enum_reg);
+  }
 }
 
 void Compiler::class_declaration() noexcept {
@@ -2952,6 +3084,26 @@ void Compiler::throw_statement() noexcept {
   free_reg(reg);
 }
 
+void Compiler::yield_statement() noexcept {
+  if (type_ != FunctionType::TYPE_GENERATOR) {
+    error("Can't use 'yield' outside a generator function.");
+    return;
+  }
+
+  u8_t val_reg;
+  if (check(TokenType::TOKEN_SEMICOLON) || check(TokenType::TOKEN_EOF)) {
+    // yield; — yield nil
+    val_reg = alloc_reg();
+    emit_instr(encode_ABC(OpCode::OP_LOADNIL, val_reg, val_reg, 0));
+  } else {
+    expression();
+    val_reg = discharge(last_expr_);
+  }
+  consume(TokenType::TOKEN_SEMICOLON, "Expect ';' after yield value.");
+  emit_instr(encode_ABC(OpCode::OP_YIELD, val_reg, 0, 0));
+  free_reg(val_reg);
+}
+
 void Compiler::defer_statement() noexcept {
   Compiler compiler(*ps_, FunctionType::TYPE_FUNCTION);
   compiler.begin_scope();
@@ -3114,6 +3266,8 @@ void Compiler::statement() noexcept {
     throw_statement();
   } else if (match(TokenType::TOKEN_DEFER)) {
     defer_statement();
+  } else if (match(TokenType::TOKEN_YIELD)) {
+    yield_statement();
   } else if (match(TokenType::TOKEN_SWITCH)) {
     switch_statement();
   } else if (match(TokenType::TOKEN_LEFT_BRACE)) {
@@ -3131,7 +3285,9 @@ void Compiler::declaration() noexcept {
   if (check(TokenType::TOKEN_RIGHT_BRACE) || check(TokenType::TOKEN_EOF) ||
       check(TokenType::TOKEN_CASE) || check(TokenType::TOKEN_DEFAULT)) return;
 
-  if (match(TokenType::TOKEN_CLASS)) {
+  if (match(TokenType::TOKEN_ENUM)) {
+    enum_declaration();
+  } else if (match(TokenType::TOKEN_CLASS)) {
     class_declaration();
   } else if (match(TokenType::TOKEN_FUN)) {
     fun_declaration();
@@ -3223,6 +3379,7 @@ ObjFunction* compile(strv_t source, strv_t script_path) noexcept {
 
   ObjFunction* function = compiler.end_compiler();
   active_parse_state_ = nullptr;
+  if (!ps.had_error && function) peephole_optimize(function);
   return ps.had_error ? nullptr : function;
 }
 
@@ -3243,6 +3400,7 @@ ObjFunction* compile(strv_t source, strv_t script_path,
 
   ObjFunction* function = compiler.end_compiler();
   active_parse_state_ = nullptr;
+  if (!ps.had_error && function) peephole_optimize(function);
   return ps.had_error ? nullptr : function;
 }
 

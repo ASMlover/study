@@ -26,7 +26,9 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
 #include <algorithm>
+#include <chrono>
 #include <iostream>
+#include <numeric>
 #include <string>
 #include <vector>
 #ifdef _WIN32
@@ -222,6 +224,57 @@ static void run_file(const ms::str_t& path) noexcept {
   if (result == ms::InterpretResult::INTERPRET_RUNTIME_ERROR) std::exit(70);
 }
 
+static void run_benchmark(const ms::str_t& path, int runs) noexcept {
+  auto source_opt = ms::ModuleLoader::read_source(path);
+  if (!source_opt.has_value()) {
+    std::cerr << "Could not open file \"" << path << "\"." << std::endl;
+    std::exit(74);
+  }
+  const auto& source = *source_opt;
+  auto& vm = ms::VM::get_instance();
+
+  // Redirect stdout to suppress print output during benchmarking
+  std::streambuf* original_buf = std::cout.rdbuf();
+  std::cout.rdbuf(nullptr); // suppress output
+
+  std::vector<long long> times;
+  times.reserve(static_cast<ms::sz_t>(runs));
+  ms::sz_t total_gc = 0;
+
+  for (int r = 0; r < runs; ++r) {
+    vm.reset_gc_count();
+    auto start = std::chrono::steady_clock::now();
+
+    ms::ObjFunction* fn = ms::compile(source, path);
+    if (fn == nullptr) {
+      std::cout.rdbuf(original_buf);
+      std::cerr << "Compilation failed." << std::endl;
+      std::exit(65);
+    }
+    vm.interpret_bytecode(fn, source, path);
+
+    auto end = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    times.push_back(elapsed.count());
+    total_gc += vm.gc_count();
+  }
+
+  std::cout.rdbuf(original_buf);
+
+  std::sort(times.begin(), times.end());
+  long long min_t = times.front();
+  long long max_t = times.back();
+  long long median_t = times[static_cast<ms::sz_t>(runs / 2)];
+
+  std::cout << "[benchmark] " << path << "\n"
+            << "  runs=" << runs
+            << "  min=" << min_t << "us"
+            << "  median=" << median_t << "us"
+            << "  max=" << max_t << "us"
+            << "  gc=" << (total_gc / static_cast<ms::sz_t>(runs)) << "/run"
+            << "\n";
+}
+
 static void compile_file(const ms::str_t& path) noexcept {
   auto source_opt = ms::ModuleLoader::read_source(path);
   if (!source_opt.has_value()) {
@@ -266,10 +319,32 @@ int main(int argc, char* argv[]) {
     run_file(argv[1]);
   } else if (argc == 3 && ms::str_t(argv[1]) == "--compile") {
     compile_file(argv[2]);
+  } else if (argc >= 3 && ms::str_t(argv[1]) == "--benchmark") {
+    int runs = 5;
+    ms::str_t script;
+    if (argc == 3) {
+      // --benchmark <script>  (default 5 runs)
+      script = argv[2];
+    } else if (argc == 4) {
+      // --benchmark N <script>  or  --benchmark <script> N
+      // Try: --benchmark N <script>
+      try {
+        runs = std::stoi(argv[2]);
+        script = argv[3];
+      } catch (...) {
+        script = argv[2];
+        try { runs = std::stoi(argv[3]); } catch (...) { runs = 5; }
+      }
+    } else {
+      std::cerr << "Usage: mslang --benchmark [N] <script.ms>" << std::endl;
+      std::exit(64);
+    }
+    run_benchmark(script, runs);
   } else {
     std::cerr << "Usage: mslang [script]\n"
               << "       mslang --lsp\n"
-              << "       mslang --compile <script.ms>" << std::endl;
+              << "       mslang --compile <script.ms>\n"
+              << "       mslang --benchmark [N] <script.ms>" << std::endl;
     std::exit(64);
   }
 

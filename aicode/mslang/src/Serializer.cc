@@ -180,6 +180,10 @@ static void collect_functions(ObjFunction* root,
 static void write_function(ByteWriter& w, ObjFunction* fn,
     const std::unordered_map<ObjFunction*, u32_t>& index_map) noexcept {
   w.write_u32(static_cast<u32_t>(fn->arity()));
+  w.write_u32(static_cast<u32_t>(fn->min_arity()));
+  w.write_i32(fn->default_base());
+  w.write_u8(fn->has_rest_param() ? 1 : 0);
+  w.write_u8(fn->is_generator() ? 1 : 0);
   w.write_u32(static_cast<u32_t>(fn->upvalue_count()));
 
   // Name
@@ -192,10 +196,29 @@ static void write_function(ByteWriter& w, ObjFunction* fn,
   // Script path
   w.write_str(fn->script_path());
 
-  // Chunk: code
+  // Chunk: code — de-quicken specialized opcodes before writing
   const auto& code = fn->chunk().code();
   w.write_u32(static_cast<u32_t>(code.size()));
-  w.write_bytes(reinterpret_cast<const u8_t*>(code.data()), code.size() * sizeof(Instruction));
+  for (Instruction raw : code) {
+    OpCode op = decode_op(raw);
+    // Map quickened opcodes back to their generic form
+    switch (op) {
+    case OpCode::OP_ADD_II: case OpCode::OP_ADD_FF: case OpCode::OP_ADD_SS:
+      raw = encode_ABC(OpCode::OP_ADD, decode_A(raw), decode_B(raw), decode_C(raw)); break;
+    case OpCode::OP_SUB_II: case OpCode::OP_SUB_FF:
+      raw = encode_ABC(OpCode::OP_SUB, decode_A(raw), decode_B(raw), decode_C(raw)); break;
+    case OpCode::OP_MUL_II: case OpCode::OP_MUL_FF:
+      raw = encode_ABC(OpCode::OP_MUL, decode_A(raw), decode_B(raw), decode_C(raw)); break;
+    case OpCode::OP_DIV_FF:
+      raw = encode_ABC(OpCode::OP_DIV, decode_A(raw), decode_B(raw), decode_C(raw)); break;
+    case OpCode::OP_LT_II: case OpCode::OP_LT_FF:
+      raw = encode_ABC(OpCode::OP_LT, decode_A(raw), decode_B(raw), decode_C(raw)); break;
+    case OpCode::OP_EQ_II:
+      raw = encode_ABC(OpCode::OP_EQ, decode_A(raw), decode_B(raw), decode_C(raw)); break;
+    default: break;
+    }
+    w.write_bytes(reinterpret_cast<const u8_t*>(&raw), sizeof(Instruction));
+  }
 
   // Chunk: constants
   const auto& constants = fn->chunk().constants();
@@ -284,12 +307,20 @@ static ObjFunction* read_function(ByteReader& r,
   auto& vm = VM::get_instance();
 
   u32_t arity = r.read_u32();
+  u32_t min_arity = r.read_u32();
+  i32_t default_base = r.read_i32();
+  u8_t has_rest = r.read_u8();
+  u8_t is_gen = r.read_u8();
   u32_t upvalue_count = r.read_u32();
   str_t name = r.read_str();
   str_t script_path = r.read_str();
 
   ObjFunction* fn = vm.allocate<ObjFunction>();
   fn->set_arity(static_cast<int>(arity));
+  fn->set_min_arity(static_cast<int>(min_arity));
+  fn->set_default_base(static_cast<int>(default_base));
+  fn->set_has_rest_param(has_rest != 0);
+  fn->set_is_generator(is_gen != 0);
   for (u32_t i = 0; i < upvalue_count; ++i) fn->increment_upvalue_count();
 
   if (!name.empty()) {

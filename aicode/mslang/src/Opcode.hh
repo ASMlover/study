@@ -146,8 +146,28 @@ enum class OpCode : u8_t {
   OP_ENDTRY,        // i      pop exception handler
   OP_DEFER,         // iA     defer closure R(A)
 
+  // --- No-operation (padding after dead code elimination) ---
+  OP_NOP,           // i      no-operation
+
+  // --- Coroutines ---
+  OP_YIELD,   // iA     suspend coroutine; yield R(A) to caller
+  OP_RESUME,  // iABC   R(A) = resume coroutine R(B) with sent value R(C)
+
   // --- Extra data ---
   OP_EXTRAARG,      // iABx   extra data word for preceding instruction
+
+  // --- Quickened arithmetic (set by runtime; de-quicken before serialize) ---
+  OP_ADD_II,    // iABC  R(A) := RK(B) + RK(C)  [both integers]
+  OP_ADD_FF,    // iABC  R(A) := RK(B) + RK(C)  [both doubles]
+  OP_ADD_SS,    // iABC  R(A) := RK(B) + RK(C)  [string concat]
+  OP_SUB_II,    // iABC  R(A) := RK(B) - RK(C)  [integers]
+  OP_SUB_FF,    // iABC  R(A) := RK(B) - RK(C)  [doubles]
+  OP_MUL_II,    // iABC  R(A) := RK(B) * RK(C)  [integers]
+  OP_MUL_FF,    // iABC  R(A) := RK(B) * RK(C)  [doubles]
+  OP_DIV_FF,    // iABC  R(A) := RK(B) / RK(C)  [doubles; int/int may produce float]
+  OP_LT_II,     // iABC  R(A) := RK(B) < RK(C)  [integers]
+  OP_LT_FF,     // iABC  R(A) := RK(B) < RK(C)  [doubles]
+  OP_EQ_II,     // iABC  R(A) := RK(B) == RK(C) [integers]
 };
 
 // =============================================================================
@@ -287,7 +307,21 @@ inline cstr_t opcode_name(OpCode code) noexcept {
   case OpCode::OP_TRY:         return "TRY";
   case OpCode::OP_ENDTRY:      return "ENDTRY";
   case OpCode::OP_DEFER:       return "DEFER";
+  case OpCode::OP_NOP:         return "NOP";
+  case OpCode::OP_YIELD:       return "YIELD";
+  case OpCode::OP_RESUME:      return "RESUME";
   case OpCode::OP_EXTRAARG:    return "EXTRAARG";
+  case OpCode::OP_ADD_II:      return "ADD_II";
+  case OpCode::OP_ADD_FF:      return "ADD_FF";
+  case OpCode::OP_ADD_SS:      return "ADD_SS";
+  case OpCode::OP_SUB_II:      return "SUB_II";
+  case OpCode::OP_SUB_FF:      return "SUB_FF";
+  case OpCode::OP_MUL_II:      return "MUL_II";
+  case OpCode::OP_MUL_FF:      return "MUL_FF";
+  case OpCode::OP_DIV_FF:      return "DIV_FF";
+  case OpCode::OP_LT_II:       return "LT_II";
+  case OpCode::OP_LT_FF:       return "LT_FF";
+  case OpCode::OP_EQ_II:       return "EQ_II";
   default:                     return "UNKNOWN";
   }
 }

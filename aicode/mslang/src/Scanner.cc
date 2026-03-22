@@ -256,7 +256,8 @@ static const std::unordered_map<strv_t, TokenType> kKeywords = {
   {"case",     TokenType::TOKEN_CASE},     {"catch",    TokenType::TOKEN_CATCH},
   {"class",    TokenType::TOKEN_CLASS},    {"continue", TokenType::TOKEN_CONTINUE},
   {"default",  TokenType::TOKEN_DEFAULT},  {"defer",    TokenType::TOKEN_DEFER},
-  {"else",     TokenType::TOKEN_ELSE},     {"false",    TokenType::TOKEN_FALSE},
+  {"else",     TokenType::TOKEN_ELSE},     {"enum",     TokenType::TOKEN_ENUM},
+  {"false",    TokenType::TOKEN_FALSE},
   {"for",      TokenType::TOKEN_FOR},      {"from",     TokenType::TOKEN_FROM},
   {"fun",      TokenType::TOKEN_FUN},      {"if",       TokenType::TOKEN_IF},
   {"import",   TokenType::TOKEN_IMPORT},   {"in",       TokenType::TOKEN_IN},
@@ -266,7 +267,7 @@ static const std::unordered_map<strv_t, TokenType> kKeywords = {
   {"switch",   TokenType::TOKEN_SWITCH},   {"this",     TokenType::TOKEN_THIS},
   {"throw",    TokenType::TOKEN_THROW},    {"true",     TokenType::TOKEN_TRUE},
   {"try",      TokenType::TOKEN_TRY},      {"var",      TokenType::TOKEN_VAR},
-  {"while",    TokenType::TOKEN_WHILE},
+  {"while",    TokenType::TOKEN_WHILE},   {"yield",    TokenType::TOKEN_YIELD},
 };
 
 TokenType Scanner::identifier_type() const noexcept {
@@ -420,7 +421,12 @@ Token Scanner::scan_token() noexcept {
   case ']': return emit(make_token(TokenType::TOKEN_RIGHT_BRACKET));
   case ';': return emit(make_token(TokenType::TOKEN_SEMICOLON));
   case ',': return emit(make_token(TokenType::TOKEN_COMMA));
-  case '.': return emit(make_token(TokenType::TOKEN_DOT));
+  case '.':
+    if (peek() == '.' && peek_next() == '.') {
+      advance(); advance(); // consume the two additional dots
+      return emit(make_token(TokenType::TOKEN_ELLIPSIS));
+    }
+    return emit(make_token(TokenType::TOKEN_DOT));
   case '-': return emit(make_token(match('=') ? TokenType::TOKEN_MINUS_EQUAL : TokenType::TOKEN_MINUS));
   case '+': return emit(make_token(match('=') ? TokenType::TOKEN_PLUS_EQUAL : TokenType::TOKEN_PLUS));
   case '/': return emit(make_token(match('=') ? TokenType::TOKEN_SLASH_EQUAL : TokenType::TOKEN_SLASH));

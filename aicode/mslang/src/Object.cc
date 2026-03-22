@@ -106,10 +106,13 @@ void ObjFunction::trace_references() noexcept {
     // We need a non-const reference for marking
     mark_value(const_cast<Value&>(constant));
   }
-  // Mark inline cache entries (class pointers + cached closures)
+  // Mark inline cache entries (PIC: class pointers + cached closures)
   for (auto& ic : ic_) {
-    mark_object(ic.klass);
-    mark_value(ic.cached);
+    for (u8_t i = 0; i < ic.count; ++i) {
+      if (ic.entries[i].klass)
+        mark_object(ic.entries[i].klass);
+      mark_value(ic.entries[i].cached);
+    }
   }
 }
 
@@ -517,6 +520,22 @@ str_t ObjWeakRef::stringify() const noexcept {
 
 sz_t ObjWeakRef::size() const noexcept {
   return sizeof(ObjWeakRef);
+}
+
+// --- ObjCoroutine ---
+
+void ObjCoroutine::trace_references() noexcept {
+  mark_object(closure_);
+  mark_value(yielded_value_);
+  mark_value(sent_value_);
+  for (auto& val : saved_stack_) mark_value(val);
+  for (auto& val : init_args_) mark_value(val);
+  // Mark all GC roots stored in properly-copied SavedCallFrame entries
+  for (auto& f : saved_frames_) {
+    mark_object(f.closure);
+    mark_value(const_cast<Value&>(f.pending_return));
+    for (auto* dc : f.deferred) mark_object(dc);
+  }
 }
 
 } // namespace ms

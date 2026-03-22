@@ -26,6 +26,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
+#include <array>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -58,6 +59,7 @@ enum class ObjectType : int {
   OBJ_TUPLE,
   OBJ_FILE,
   OBJ_WEAK_REF,
+  OBJ_COROUTINE,
 };
 
 class Object {
@@ -151,17 +153,43 @@ enum class ICKind : u8_t {
   IC_SETTER,  // Cached setter closure
 };
 
-struct InlineCache {
-  ObjClass* klass{nullptr};   // Cached class pointer (null = miss)
+inline constexpr int kIC_PIC_SIZE = 4;
+
+struct ICEntry {
+  ObjClass* klass{nullptr};
   ICKind kind{ICKind::IC_NONE};
-  Value cached{};             // Cached closure value
-  u32_t shape_id{0};          // Cached shape identity (for IC_FIELD)
-  u32_t slot_index{0};        // Cached slot offset (for IC_FIELD)
+  Value cached{};
+  u32_t shape_id{0};
+  u32_t slot_index{0};
+};
+
+struct InlineCache {
+  std::array<ICEntry, kIC_PIC_SIZE> entries{};
+  u8_t count{0};           // number of valid entries (0..kIC_PIC_SIZE)
+  bool megamorphic{false}; // true → skip IC entirely, use slow path
+
+  // Find entry matching klass; returns pointer or nullptr
+  inline ICEntry* find_entry(ObjClass* klass) noexcept {
+    for (u8_t i = 0; i < count; ++i)
+      if (entries[i].klass == klass) return &entries[i];
+    return nullptr;
+  }
+
+  // Append entry; returns false if full → caller sets megamorphic
+  inline bool append_entry(const ICEntry& e) noexcept {
+    if (count == kIC_PIC_SIZE) return false;
+    entries[count++] = e;
+    return true;
+  }
 };
 
 // --- ObjFunction ---
 class ObjFunction final : public Object {
-  int arity_{0};
+  int arity_{0};          // max arity (= param count including those with defaults)
+  int min_arity_{0};      // params without defaults
+  int default_base_{-1};  // K(default_base..) = default values (-1 = none)
+  bool has_rest_param_{false};  // last param is variadic ...name
+  bool is_generator_{false};    // fun* — calling creates ObjCoroutine
   int upvalue_count_{0};
   int max_stack_size_{0};
   Chunk chunk_;
@@ -178,6 +206,14 @@ public:
   int arity() const noexcept { return arity_; }
   void set_arity(int arity) noexcept { arity_ = arity; }
   void increment_arity() noexcept { arity_++; }
+  int min_arity() const noexcept { return min_arity_; }
+  void set_min_arity(int v) noexcept { min_arity_ = v; }
+  int default_base() const noexcept { return default_base_; }
+  void set_default_base(int v) noexcept { default_base_ = v; }
+  bool has_rest_param() const noexcept { return has_rest_param_; }
+  void set_has_rest_param(bool v) noexcept { has_rest_param_ = v; }
+  bool is_generator() const noexcept { return is_generator_; }
+  void set_is_generator(bool v) noexcept { is_generator_ = v; }
   int upvalue_count() const noexcept { return upvalue_count_; }
   int increment_upvalue_count() noexcept { return upvalue_count_++; }
   Chunk& chunk() noexcept { return chunk_; }
@@ -452,6 +488,60 @@ public:
   bool is_alive() const noexcept { return target_ != nullptr; }
 };
 
+// --- ObjCoroutine ---
+// A coroutine wraps a generator closure. The VM manages save/restore of frame state.
+
+enum class CoroutineState : u8_t { CREATED, RUNNING, SUSPENDED, DEAD };
+
+// Properly-copyable snapshot of a CallFrame for coroutine save/restore.
+// Avoids std::memcpy on non-trivially-copyable std::vector/Value members.
+struct SavedCallFrame {
+  ObjClosure* closure{nullptr};
+  Instruction* ip{nullptr};
+  ptrdiff_t slots_offset{0};  // slots relative to coroutine stack base
+  std::vector<ObjClosure*> deferred{};
+  Value pending_return{};
+  bool returning{false};
+};
+
+class ObjCoroutine final : public Object {
+  ObjClosure* closure_;
+  CoroutineState state_{CoroutineState::CREATED};
+
+  // Saved VM state (managed by VM)
+  std::vector<SavedCallFrame> saved_frames_;  // properly-copied CallFrame snapshots
+  std::vector<Value> saved_stack_;
+  int saved_stack_top_offset_{0};  // number of saved stack values
+
+  Value yielded_value_{};
+  Value sent_value_{};
+  std::vector<Value> init_args_;  // args captured when generator function is called
+
+public:
+  explicit ObjCoroutine(ObjClosure* closure) noexcept
+      : Object(ObjectType::OBJ_COROUTINE), closure_(closure) {}
+
+  str_t stringify() const noexcept override {
+    return std::format("<coroutine {}>", closure_ ? closure_->function()->stringify() : "?");
+  }
+  void trace_references() noexcept override;
+  sz_t size() const noexcept override { return sizeof(ObjCoroutine); }
+
+  ObjClosure* closure() const noexcept { return closure_; }
+  CoroutineState state() const noexcept { return state_; }
+  void set_state(CoroutineState s) noexcept { state_ = s; }
+  Value& yielded_value() noexcept { return yielded_value_; }
+  const Value& yielded_value() const noexcept { return yielded_value_; }
+  Value& sent_value() noexcept { return sent_value_; }
+
+  std::vector<Value>& init_args() noexcept { return init_args_; }
+
+  // Accessors for VM save/restore
+  std::vector<SavedCallFrame>& saved_frames() noexcept { return saved_frames_; }
+  std::vector<Value>& saved_stack() noexcept { return saved_stack_; }
+  int& saved_stack_top_offset() noexcept { return saved_stack_top_offset_; }
+};
+
 // --- Convenience helpers for Value ---
 inline ObjString* as_string(const Value& v) noexcept {
   return as_obj<ObjString>(v.as_object());
@@ -507,6 +597,10 @@ inline ObjFile* as_file(const Value& v) noexcept {
 
 inline ObjWeakRef* as_weak_ref(const Value& v) noexcept {
   return as_obj<ObjWeakRef>(v.as_object());
+}
+
+inline ObjCoroutine* as_coroutine(const Value& v) noexcept {
+  return as_obj<ObjCoroutine>(v.as_object());
 }
 
 inline strv_t as_cppstring(const Value& v) noexcept {

@@ -26,45 +26,12 @@
 // POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
-#include <vector>
-#include "Scanner.hh"
 #include "Object.hh"
 
 namespace ms {
 
-enum class FunctionType {
-  TYPE_FUNCTION,
-  TYPE_INITIALIZER,
-  TYPE_METHOD,
-  TYPE_SCRIPT,
-  TYPE_GENERATOR,  // fun* generator function
-};
-
-struct Diagnostic {
-  int line{0};
-  int column{0};
-  int end_column{0};
-  str_t message{};
-};
-
-struct ClassCompiler;
-class Compiler;
-
-struct ParseState {
-  Scanner scanner;
-  Token current{};
-  Token previous{};
-  bool had_error{false};
-  bool panic_mode{false};
-  ClassCompiler* current_class{nullptr};
-  Compiler* current_compiler{nullptr};
-  str_t script_path{};
-  std::vector<Diagnostic>* diagnostics{nullptr};
-};
-
-ObjFunction* compile(strv_t source, strv_t script_path = "") noexcept;
-ObjFunction* compile(strv_t source, strv_t script_path,
-                     std::vector<Diagnostic>& diagnostics) noexcept;
-void mark_compiler_roots() noexcept;
+// Run peephole pass on the given function (and all nested closures).
+// Called once after compile() returns, before execution or serialization.
+void peephole_optimize(ObjFunction* fn) noexcept;
 
 } // namespace ms

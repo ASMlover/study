@@ -87,6 +87,7 @@ class VM : public Singleton<VM> {
   sz_t young_bytes_{0};
   sz_t next_gc_{kGC_INITIAL_SIZE};
   sz_t next_minor_gc_{kGC_NURSERY_SIZE};
+  sz_t gc_count_{0};  // total GC collections (for benchmark reporting)
   std::vector<Object*> gray_stack_;
 
   // Remembered set: old-gen objects holding young-gen references
@@ -110,6 +111,16 @@ class VM : public Singleton<VM> {
 
   std::vector<ExceptionHandler> exception_handlers_;
   Value pending_exception_;
+
+  // Coroutine support: stack of active coroutines (innermost last)
+  // When a coroutine yields, it suspends and we return to the parent frame.
+  struct CoroutineEntry {
+    ObjCoroutine* coro;
+    int parent_frame_count;   // frame_count_ before entering the coroutine
+    Value* parent_stack_top;  // stack_top_ before the OP_RESUME
+    u8_t result_reg;          // R(A) in the OP_RESUME that started this
+  };
+  std::vector<CoroutineEntry> coro_stack_;
 
   str_t current_script_path_;
   std::unordered_map<str_t, str_t> source_cache_;
@@ -170,6 +181,8 @@ class VM : public Singleton<VM> {
   bool invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noexcept;
   bool invoke_operator(ObjString* op_name) noexcept;
   void bind_method(ObjClass* klass, ObjString* name) noexcept;
+  // Coroutine resume: result placed in frame->slots[result_reg] on yield/return
+  bool resume_coroutine(ObjCoroutine* coro, Value sent_val, u8_t result_reg) noexcept;
 
   // Upvalue management
   ObjUpvalue* capture_upvalue(Value* local) noexcept;
@@ -210,6 +223,10 @@ public:
 
   // Write barrier: add old-gen object to remembered set
   void remember(Object* object) noexcept;
+
+  // GC statistics (for benchmark reporting)
+  sz_t gc_count() const noexcept { return gc_count_; }
+  void reset_gc_count() noexcept { gc_count_ = 0; }
 };
 
 } // namespace ms

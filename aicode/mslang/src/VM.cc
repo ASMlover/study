@@ -98,6 +98,7 @@ VM::VM() noexcept {
       case ObjectType::OBJ_TUPLE:           type_str = "tuple"; break;
       case ObjectType::OBJ_MODULE:          type_str = "module"; break;
       case ObjectType::OBJ_FILE:            type_str = "file"; break;
+      case ObjectType::OBJ_COROUTINE:       type_str = "coroutine"; break;
       default:                              type_str = "object"; break;
       }
     }
@@ -865,6 +866,7 @@ void VM::run_pending_finalizers() noexcept {
 }
 
 void VM::minor_gc() noexcept {
+  gc_count_++;
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
   logger.info("GC", "-- minor gc begin");
@@ -908,6 +910,7 @@ void VM::minor_gc() noexcept {
 
 // --- Major GC: full mark-and-sweep of both generations ---
 void VM::major_gc() noexcept {
+  gc_count_++;
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
   logger.info("GC", "-- major gc begin");
@@ -1073,10 +1076,50 @@ void VM::concatenate() noexcept {
 }
 
 bool VM::call(ObjClosure* closure, int arg_count) noexcept {
-  if (arg_count != closure->function()->arity()) {
-    runtime_error(std::format("Expected {} arguments but got {}.",
-        closure->function()->arity(), arg_count));
-    return false;
+  ObjFunction* fn = closure->function();
+  int max_arity = fn->arity();
+  int min_arity = fn->min_arity();
+
+  if (fn->has_rest_param()) {
+    // Fixed params count = arity - 1 (rest param is always last)
+    int fixed = max_arity - 1;
+    if (arg_count < fixed) {
+      runtime_error(std::format("Expected at least {} arguments but got {}.", fixed, arg_count));
+      return false;
+    }
+    // Collect trailing args into ObjList for rest param
+    int rest_count = arg_count - fixed;
+    ObjList* rest_list = allocate<ObjList>();
+    push(Value(static_cast<Object*>(rest_list))); // keep GC-reachable
+    for (int i = 0; i < rest_count; ++i) {
+      rest_list->elements().push_back(*(stack_top_ - rest_count - 1 + i));
+    }
+    // Trim stack: remove individual rest args, keep fixed args
+    // stack_top_ currently = base + fixed + rest_count + 1 (rest_list on top)
+    // We want: base + fixed + 1 (rest_list in last slot)
+    Value* base = stack_top_ - rest_count - 1;
+    *base = Value(static_cast<Object*>(rest_list)); // put list in rest slot
+    stack_top_ = base + 1;
+    arg_count = fixed + 1; // fixed params + rest list
+  } else {
+    if (arg_count < min_arity || arg_count > max_arity) {
+      if (min_arity == max_arity) {
+        runtime_error(std::format("Expected {} arguments but got {}.", max_arity, arg_count));
+      } else {
+        runtime_error(std::format("Expected {}-{} arguments but got {}.",
+            min_arity, max_arity, arg_count));
+      }
+      return false;
+    }
+    // Fill missing args with defaults
+    if (arg_count < max_arity && fn->default_base() >= 0) {
+      const auto& constants = fn->chunk().constants();
+      for (int i = arg_count; i < max_arity; ++i) {
+        int def_idx = fn->default_base() + i - min_arity;
+        push(constants[static_cast<sz_t>(def_idx)]);
+      }
+      arg_count = max_arity;
+    }
   }
 
   if (frame_count_ == static_cast<int>(kFRAMES_MAX)) {
@@ -1086,7 +1129,7 @@ bool VM::call(ObjClosure* closure, int arg_count) noexcept {
 
   CallFrame& frame = frames_[frame_count_++];
   frame.closure = closure;
-  frame.ip = closure->function()->chunk().code_data();
+  frame.ip = fn->chunk().code_data();
   frame.slots = stack_top_ - arg_count - 1;
   frame.deferred.clear();
   frame.returning = false;
@@ -1096,8 +1139,20 @@ bool VM::call(ObjClosure* closure, int arg_count) noexcept {
 bool VM::call_value(Value callee, int arg_count) noexcept {
   if (callee.is_object()) {
     switch (callee.as_object()->type()) {
-    case ObjectType::OBJ_CLOSURE:
-      return call(as_closure(callee), arg_count);
+    case ObjectType::OBJ_CLOSURE: {
+      ObjClosure* cl = as_closure(callee);
+      if (cl->function()->is_generator()) {
+        // Calling a generator function creates a coroutine, not an immediate call
+        ObjCoroutine* coro = allocate<ObjCoroutine>(cl);
+        // Save initial args so first resume can pass them to the closure
+        Value* args_base = stack_top_ - arg_count;
+        coro->init_args().assign(args_base, args_base + arg_count);
+        stack_top_ -= arg_count + 1;
+        push(Value(static_cast<Object*>(coro)));
+        return true;
+      }
+      return call(cl, arg_count);
+    }
 
     case ObjectType::OBJ_NATIVE: {
       NativeFn& native = as_native(callee)->function();
@@ -1135,6 +1190,57 @@ bool VM::call_value(Value callee, int arg_count) noexcept {
 
   runtime_error("Can only call functions and classes.");
   return false;
+}
+
+bool VM::resume_coroutine(ObjCoroutine* coro, Value sent_val, u8_t result_reg) noexcept {
+  if (coro->state() == CoroutineState::DEAD) {
+    // Place nil in result slot — coroutine exhausted
+    frames_[frame_count_ - 1].slots[result_reg] = Value();
+    return true;
+  }
+  if (coro->state() == CoroutineState::RUNNING) {
+    runtime_error("Cannot resume a running coroutine.");
+    return false;
+  }
+
+  CoroutineEntry ce;
+  ce.coro = coro;
+  ce.parent_frame_count = frame_count_;
+  ce.parent_stack_top = stack_top_;
+  ce.result_reg = result_reg;
+  coro_stack_.push_back(ce);
+  coro->set_state(CoroutineState::RUNNING);
+  coro->sent_value() = sent_val;
+
+  if (coro->saved_frames().empty()) {
+    // First resume: call the generator closure with saved initial args
+    push(Value(static_cast<Object*>(coro))); // slot 0 = receiver
+    int init_argc = static_cast<int>(coro->init_args().size());
+    for (auto& v : coro->init_args()) push(v);
+    if (!call(coro->closure(), init_argc)) {
+      coro_stack_.pop_back();
+      return false;
+    }
+  } else {
+    // Restore suspended state using properly-saved SavedCallFrame entries
+    int saved_count = static_cast<int>(coro->saved_frames().size());
+    Value* new_base = stack_top_;
+    for (sz_t i = 0; i < coro->saved_stack().size(); ++i)
+      new_base[i] = coro->saved_stack()[i];
+    stack_top_ = new_base + coro->saved_stack_top_offset();
+    for (int fi = 0; fi < saved_count; ++fi) {
+      const SavedCallFrame& sf = coro->saved_frames()[static_cast<sz_t>(fi)];
+      CallFrame& f = frames_[frame_count_ + fi];
+      f.closure = sf.closure;
+      f.ip = sf.ip;
+      f.slots = new_base + sf.slots_offset;
+      f.deferred = sf.deferred;
+      f.pending_return = sf.pending_return;
+      f.returning = sf.returning;
+    }
+    frame_count_ += saved_count;
+  }
+  return true;
 }
 
 bool VM::invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noexcept {
@@ -1913,7 +2019,16 @@ InterpretResult VM::run() noexcept {
     &&op_OP_FORITER,
     &&op_OP_THROW,        &&op_OP_TRY,           &&op_OP_ENDTRY,
     &&op_OP_DEFER,
+    &&op_OP_NOP,
+    &&op_OP_YIELD,        &&op_OP_RESUME,
     &&op_OP_EXTRAARG,
+    // Quickened opcodes
+    &&op_OP_ADD_II,       &&op_OP_ADD_FF,        &&op_OP_ADD_SS,
+    &&op_OP_SUB_II,       &&op_OP_SUB_FF,
+    &&op_OP_MUL_II,       &&op_OP_MUL_FF,
+    &&op_OP_DIV_FF,
+    &&op_OP_LT_II,        &&op_OP_LT_FF,
+    &&op_OP_EQ_II,
   };
 
 #define VM_DISPATCH() do { \
@@ -2086,45 +2201,46 @@ dispatch_loop:
         ObjClass* klass = instance->klass();
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-        // IC fast path
-        if (ic.klass == klass) {
-          if (ic.kind == ICKind::IC_FIELD && ic.shape_id == instance->shape()->id()) {
-            frame->slots[A] = instance->get_field(ic.slot_index);
-            VM_DISPATCH();
-          } else if (ic.kind == ICKind::IC_METHOD) {
-            ObjBoundMethod* bound = allocate<ObjBoundMethod>(obj_val, as_closure(ic.cached));
-            frame->slots[A] = Value(static_cast<Object*>(bound));
-            VM_DISPATCH();
-          } else if (ic.kind == ICKind::IC_GETTER) {
-            // Getter call: place receiver at R(A) so return lands in R(A)
-            frame->slots[A] = frame->slots[B];
-            stack_top_ = frame->slots + A + 1;
-            if (!call(as_closure(ic.cached), 0)) {
-              goto handle_runtime_error;
+        // IC fast path (PIC: up to 4 entries)
+        if (!ic.megamorphic) {
+          if (auto* e = ic.find_entry(klass)) {
+            if (e->kind == ICKind::IC_FIELD && e->shape_id == instance->shape()->id()) {
+              frame->slots[A] = instance->get_field(e->slot_index);
+              VM_DISPATCH();
+            } else if (e->kind == ICKind::IC_METHOD) {
+              ObjBoundMethod* bound = allocate<ObjBoundMethod>(obj_val, as_closure(e->cached));
+              frame->slots[A] = Value(static_cast<Object*>(bound));
+              VM_DISPATCH();
+            } else if (e->kind == ICKind::IC_GETTER) {
+              frame->slots[A] = frame->slots[B];
+              stack_top_ = frame->slots + A + 1;
+              if (!call(as_closure(e->cached), 0)) {
+                goto handle_runtime_error;
+              }
+              frame = &frames_[frame_count_ - 1];
+              RELOAD_K();
+              VM_DISPATCH();
             }
-            frame = &frames_[frame_count_ - 1];
-            RELOAD_K();
-            VM_DISPATCH();
           }
         }
 
-        // IC miss — full lookup + update cache
+        // IC miss — full lookup + append to PIC
         Value field_val;
         if (instance->get_field(name, &field_val)) {
-          ic.klass = klass;
-          ic.kind = ICKind::IC_FIELD;
-          ic.shape_id = instance->shape()->id();
-          ic.slot_index = static_cast<u32_t>(instance->shape()->find_slot(name));
-          ic.cached = Value();
+          ICEntry new_e;
+          new_e.klass = klass; new_e.kind = ICKind::IC_FIELD;
+          new_e.shape_id = instance->shape()->id();
+          new_e.slot_index = static_cast<u32_t>(instance->shape()->find_slot(name));
+          if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
           frame->slots[A] = field_val;
           VM_DISPATCH();
         }
 
         Value getter;
         if (klass->getters().get(name, &getter)) {
-          ic.klass = klass;
-          ic.kind = ICKind::IC_GETTER;
-          ic.cached = getter;
+          ICEntry new_e;
+          new_e.klass = klass; new_e.kind = ICKind::IC_GETTER; new_e.cached = getter;
+          if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
           frame->slots[A] = frame->slots[B];
           stack_top_ = frame->slots + A + 1;
           if (!call(as_closure(getter), 0)) {
@@ -2137,9 +2253,9 @@ dispatch_loop:
 
         Value method;
         if (klass->methods().get(name, &method)) {
-          ic.klass = klass;
-          ic.kind = ICKind::IC_METHOD;
-          ic.cached = method;
+          ICEntry new_e;
+          new_e.klass = klass; new_e.kind = ICKind::IC_METHOD; new_e.cached = method;
+          if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
           ObjBoundMethod* bound = allocate<ObjBoundMethod>(obj_val, as_closure(method));
           frame->slots[A] = Value(static_cast<Object*>(bound));
           VM_DISPATCH();
@@ -2170,32 +2286,33 @@ dispatch_loop:
         ObjClass* klass = instance->klass();
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-        // IC fast path
-        if (ic.klass == klass) {
-          if (ic.kind == ICKind::IC_SETTER) {
-            // Set up stack: [receiver, rhs] for setter call
-            stack_top_ = frame->slots + A + 1;
-            push(rhs);
-            if (!call(as_closure(ic.cached), 1)) {
-              goto handle_runtime_error;
+        // IC fast path (PIC)
+        if (!ic.megamorphic) {
+          if (auto* e = ic.find_entry(klass)) {
+            if (e->kind == ICKind::IC_SETTER) {
+              stack_top_ = frame->slots + A + 1;
+              push(rhs);
+              if (!call(as_closure(e->cached), 1)) {
+                goto handle_runtime_error;
+              }
+              frame = &frames_[frame_count_ - 1];
+              RELOAD_K();
+              VM_DISPATCH();
             }
-            frame = &frames_[frame_count_ - 1];
-            RELOAD_K();
-            VM_DISPATCH();
-          }
-          if (ic.kind == ICKind::IC_FIELD && ic.shape_id == instance->shape()->id()) {
-            instance->set_field(ic.slot_index, rhs);
-            write_barrier_value(instance, rhs);
-            VM_DISPATCH();
+            if (e->kind == ICKind::IC_FIELD && e->shape_id == instance->shape()->id()) {
+              instance->set_field(e->slot_index, rhs);
+              write_barrier_value(instance, rhs);
+              VM_DISPATCH();
+            }
           }
         }
 
-        // IC miss — full lookup
+        // IC miss — full lookup + append to PIC
         Value setter_val;
         if (klass->setters().get(name, &setter_val)) {
-          ic.klass = klass;
-          ic.kind = ICKind::IC_SETTER;
-          ic.cached = setter_val;
+          ICEntry new_e;
+          new_e.klass = klass; new_e.kind = ICKind::IC_SETTER; new_e.cached = setter_val;
+          if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
           stack_top_ = frame->slots + A + 1;
           push(rhs);
           if (!call(as_closure(setter_val), 1)) {
@@ -2207,11 +2324,13 @@ dispatch_loop:
         }
 
         instance->set_field(name, rhs);
-        ic.klass = klass;
-        ic.kind = ICKind::IC_FIELD;
-        ic.shape_id = instance->shape()->id();
-        ic.slot_index = static_cast<u32_t>(instance->shape()->find_slot(name));
-        ic.cached = Value();
+        {
+          ICEntry new_e;
+          new_e.klass = klass; new_e.kind = ICKind::IC_FIELD;
+          new_e.shape_id = instance->shape()->id();
+          new_e.slot_index = static_cast<u32_t>(instance->shape()->find_slot(name));
+          if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
+        }
         write_barrier_value(instance, rhs);
         VM_DISPATCH();
       }
@@ -2248,16 +2367,24 @@ dispatch_loop:
     // =====================================================================
     VM_CASE(OP_ADD) {
       u8_t A = decode_A(instr);
-      Value lhs = RK(decode_B(instr));
-      Value rhs = RK(decode_C(instr));
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value lhs = RK(B);
+      Value rhs = RK(C);
 
       if (is_obj_type(lhs, ObjectType::OBJ_STRING) &&
           is_obj_type(rhs, ObjectType::OBJ_STRING)) {
+        // Quicken to ADD_SS
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD_SS, A, B, C);
         str_t result = str_t(as_string(lhs)->value()) + str_t(as_string(rhs)->value());
         frame->slots[A] = Value(static_cast<Object*>(take_string(std::move(result))));
       } else if (lhs.is_integer() && rhs.is_integer()) {
+        // Quicken to ADD_II
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD_II, A, B, C);
         frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() + rhs.as_integer()));
       } else if (lhs.is_number() && rhs.is_number()) {
+        // Quicken to ADD_FF
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD_FF, A, B, C);
         frame->slots[A] = Value(lhs.as_number() + rhs.as_number());
       } else if (lhs.is_instance()) {
         // Operator overload: place [receiver, arg] at R(A), R(A+1)
@@ -2281,8 +2408,10 @@ dispatch_loop:
 
     VM_CASE(OP_SUB) {
       u8_t A = decode_A(instr);
-      Value lhs = RK(decode_B(instr));
-      Value rhs = RK(decode_C(instr));
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value lhs = RK(B);
+      Value rhs = RK(C);
 
       if (lhs.is_instance()) {
         frame->slots[A] = lhs;
@@ -2299,8 +2428,10 @@ dispatch_loop:
         goto handle_runtime_error;
       }
       if (lhs.is_integer() && rhs.is_integer()) {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_SUB_II, A, B, C);
         frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() - rhs.as_integer()));
       } else {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_SUB_FF, A, B, C);
         frame->slots[A] = Value(lhs.as_number() - rhs.as_number());
       }
       VM_DISPATCH();
@@ -2308,8 +2439,10 @@ dispatch_loop:
 
     VM_CASE(OP_MUL) {
       u8_t A = decode_A(instr);
-      Value lhs = RK(decode_B(instr));
-      Value rhs = RK(decode_C(instr));
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value lhs = RK(B);
+      Value rhs = RK(C);
 
       if (lhs.is_instance()) {
         frame->slots[A] = lhs;
@@ -2326,8 +2459,10 @@ dispatch_loop:
         goto handle_runtime_error;
       }
       if (lhs.is_integer() && rhs.is_integer()) {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_MUL_II, A, B, C);
         frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() * rhs.as_integer()));
       } else {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_MUL_FF, A, B, C);
         frame->slots[A] = Value(lhs.as_number() * rhs.as_number());
       }
       VM_DISPATCH();
@@ -2335,8 +2470,10 @@ dispatch_loop:
 
     VM_CASE(OP_DIV) {
       u8_t A = decode_A(instr);
-      Value lhs = RK(decode_B(instr));
-      Value rhs = RK(decode_C(instr));
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value lhs = RK(B);
+      Value rhs = RK(C);
 
       if (lhs.is_instance()) {
         frame->slots[A] = lhs;
@@ -2352,7 +2489,8 @@ dispatch_loop:
         runtime_error("Operands must be numbers.");
         goto handle_runtime_error;
       }
-      // int / int → float (always promote)
+      // int / int → float (always promote); quicken to DIV_FF
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_DIV_FF, A, B, C);
       frame->slots[A] = Value(lhs.as_number() / rhs.as_number());
       VM_DISPATCH();
     }
@@ -2389,8 +2527,10 @@ dispatch_loop:
     // =====================================================================
     VM_CASE(OP_EQ) {
       u8_t A = decode_A(instr);
-      Value lhs = RK(decode_B(instr));
-      Value rhs = RK(decode_C(instr));
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value lhs = RK(B);
+      Value rhs = RK(C);
 
       if (lhs.is_instance()) {
         frame->slots[A] = lhs;
@@ -2404,14 +2544,19 @@ dispatch_loop:
         // Failed to invoke — restore stack and use default equality
         stack_top_ = frame->slots + A;
       }
+      if (lhs.is_integer() && rhs.is_integer()) {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_EQ_II, A, B, C);
+      }
       frame->slots[A] = Value(lhs.is_equal(rhs));
       VM_DISPATCH();
     }
 
     VM_CASE(OP_LT) {
       u8_t A = decode_A(instr);
-      Value lhs = RK(decode_B(instr));
-      Value rhs = RK(decode_C(instr));
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value lhs = RK(B);
+      Value rhs = RK(C);
 
       if (lhs.is_instance()) {
         frame->slots[A] = lhs;
@@ -2430,8 +2575,10 @@ dispatch_loop:
         goto handle_runtime_error;
       }
       if (lhs.is_integer() && rhs.is_integer()) {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_LT_II, A, B, C);
         frame->slots[A] = Value(lhs.as_integer() < rhs.as_integer());
       } else {
+        const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_LT_FF, A, B, C);
         frame->slots[A] = Value(lhs.as_number() < rhs.as_number());
       }
       VM_DISPATCH();
@@ -2658,26 +2805,56 @@ dispatch_loop:
         ObjClass* klass = instance->klass();
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
 
-        if (ic.klass == klass && ic.kind == ICKind::IC_METHOD) {
-          Value field_val;
-          if (!instance->get_field(method_name, &field_val)) {
-            if (!call(as_closure(ic.cached), arg_count)) {
-              goto handle_runtime_error;
+        // IC fast path (PIC)
+        if (!ic.megamorphic) {
+          if (auto* e = ic.find_entry(klass)) {
+            if (e->kind == ICKind::IC_METHOD) {
+              Value field_val;
+              if (!instance->get_field(method_name, &field_val)) {
+                if (!call(as_closure(e->cached), arg_count)) {
+                  goto handle_runtime_error;
+                }
+                frame = &frames_[frame_count_ - 1];
+                RELOAD_K();
+                VM_DISPATCH();
+              }
             }
-            frame = &frames_[frame_count_ - 1];
-            RELOAD_K();
-            VM_DISPATCH();
           }
         }
 
         if (!invoke(method_name, arg_count)) {
           goto handle_runtime_error;
         }
-        Value method_val;
-        if (klass->methods().get(method_name, &method_val)) {
-          ic.klass = klass;
-          ic.kind = ICKind::IC_METHOD;
-          ic.cached = method_val;
+        if (!ic.megamorphic) {
+          Value method_val;
+          if (klass->methods().get(method_name, &method_val)) {
+            ICEntry new_e;
+            new_e.klass = klass; new_e.kind = ICKind::IC_METHOD; new_e.cached = method_val;
+            if (!ic.append_entry(new_e)) ic.megamorphic = true;
+          }
+        }
+        frame = &frames_[frame_count_ - 1];
+        RELOAD_K();
+        VM_DISPATCH();
+      }
+
+      // Coroutine .next() / .send() dispatch
+      if (is_obj_type(receiver, ObjectType::OBJ_COROUTINE)) {
+        strv_t mname = method_name->value();
+        Value sent_val{};
+        if (mname == "send") {
+          if (arg_count != 1) {
+            runtime_error("send() takes exactly 1 argument.");
+            goto handle_runtime_error;
+          }
+          sent_val = frame->slots[A + 1];
+        } else if (mname != "next") {
+          runtime_error(std::format("Undefined coroutine method '{}'.", mname));
+          goto handle_runtime_error;
+        }
+        ObjCoroutine* coro = as_coroutine(receiver);
+        if (!resume_coroutine(coro, sent_val, A)) {
+          goto handle_runtime_error;
         }
         frame = &frames_[frame_count_ - 1];
         RELOAD_K();
@@ -2746,6 +2923,20 @@ dispatch_loop:
       frame_count_--;
       if (frame_count_ == base_frame_) {
         return InterpretResult::INTERPRET_OK;
+      }
+
+      // If we just returned from the last coroutine frame, mark it DEAD and restore parent
+      if (!coro_stack_.empty() && frame_count_ == coro_stack_.back().parent_frame_count) {
+        CoroutineEntry& ce = coro_stack_.back();
+        ce.coro->set_state(CoroutineState::DEAD);
+        frame_count_ = ce.parent_frame_count;
+        stack_top_ = ce.parent_stack_top;
+        u8_t res_reg = ce.result_reg;
+        coro_stack_.pop_back();
+        frame = &frames_[frame_count_ - 1];
+        RELOAD_K();
+        frame->slots[res_reg] = Value(); // coroutine done → nil
+        VM_DISPATCH();
       }
 
       *return_base = result;
@@ -3171,6 +3362,20 @@ dispatch_loop:
           frame->slots[A + 2] = it->first;
           index_val = Value(static_cast<double>(idx + 1));
         }
+      } else if (is_obj_type(iterable, ObjectType::OBJ_COROUTINE)) {
+        ObjCoroutine* coro = as_coroutine(iterable);
+        if (coro->state() == CoroutineState::DEAD) {
+          frame->ip += sBx; // exit loop
+        } else {
+          // Resume coroutine; yielded value lands in slots[A+2] via OP_YIELD.
+          // The dispatch loop enters the coroutine frame after this.
+          if (!resume_coroutine(coro, Value(), static_cast<u8_t>(A + 2))) {
+            goto handle_runtime_error;
+          }
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          // Execution continues inside the coroutine until OP_YIELD restores us.
+        }
       } else {
         runtime_error("Can only iterate over lists, tuples, strings, and maps.");
         goto handle_runtime_error;
@@ -3212,8 +3417,291 @@ dispatch_loop:
     // =====================================================================
     // Extra data (should not be dispatched directly)
     // =====================================================================
+    VM_CASE(OP_NOP) {
+      VM_DISPATCH();
+    }
+
+    // =========================================================================
+    // Coroutine opcodes
+    // =========================================================================
+    VM_CASE(OP_YIELD) {
+      u8_t A = decode_A(instr);
+      Value yielded = frame->slots[A];
+
+      if (coro_stack_.empty()) {
+        runtime_error("yield outside of a coroutine.");
+        goto handle_runtime_error;
+      }
+
+      {
+        CoroutineEntry& ce = coro_stack_.back();
+        ObjCoroutine* coro = ce.coro;
+        coro->set_state(CoroutineState::SUSPENDED);
+        coro->yielded_value() = yielded;
+
+        // Save coroutine frames using properly-copyable SavedCallFrame structs
+        int coro_frame_count = frame_count_ - ce.parent_frame_count;
+        Value* coro_stack_base = ce.parent_stack_top;
+
+        // Save stack values
+        int stack_count = static_cast<int>(stack_top_ - coro_stack_base);
+        coro->saved_stack().resize(static_cast<sz_t>(stack_count));
+        for (int i = 0; i < stack_count; ++i)
+          coro->saved_stack()[static_cast<sz_t>(i)] = coro_stack_base[i];
+        coro->saved_stack_top_offset() = stack_count;
+
+        // Save each frame as a SavedCallFrame (safe C++ copy, no memcpy UB)
+        coro->saved_frames().clear();
+        coro->saved_frames().resize(static_cast<sz_t>(coro_frame_count));
+        for (int fi = 0; fi < coro_frame_count; ++fi) {
+          const CallFrame& f = frames_[ce.parent_frame_count + fi];
+          SavedCallFrame& sf = coro->saved_frames()[static_cast<sz_t>(fi)];
+          sf.closure = f.closure;
+          sf.ip = f.ip;
+          sf.slots_offset = f.slots - coro_stack_base;
+          sf.deferred = f.deferred;
+          sf.pending_return = f.pending_return;
+          sf.returning = f.returning;
+        }
+
+        // Restore caller state
+        frame_count_ = ce.parent_frame_count;
+        stack_top_ = ce.parent_stack_top;
+        u8_t res_reg = ce.result_reg;
+        coro_stack_.pop_back();
+
+        frame = &frames_[frame_count_ - 1];
+        RELOAD_K();
+        frame->slots[res_reg] = yielded;
+      }
+      VM_DISPATCH();
+    }
+
+    VM_CASE(OP_RESUME) {
+      u8_t A = decode_A(instr);
+      u8_t B = decode_B(instr);
+      u8_t C = decode_C(instr);
+      Value coro_val = RK(B);
+      Value sent_val = RK(C);
+
+      if (!is_obj_type(coro_val, ObjectType::OBJ_COROUTINE)) {
+        runtime_error("OP_RESUME: expected a coroutine.");
+        goto handle_runtime_error;
+      }
+
+      {
+        ObjCoroutine* coro = as_coroutine(coro_val);
+        coro->sent_value() = sent_val;
+
+        if (coro->state() == CoroutineState::DEAD) {
+          frame->slots[A] = Value(); // nil when exhausted
+          VM_DISPATCH();
+        }
+
+        if (coro->state() == CoroutineState::RUNNING) {
+          runtime_error("Cannot resume a running coroutine.");
+          goto handle_runtime_error;
+        }
+
+        CoroutineEntry ce;
+        ce.coro = coro;
+        ce.parent_frame_count = frame_count_;
+        ce.parent_stack_top = stack_top_;
+        ce.result_reg = A;
+        coro_stack_.push_back(ce);
+        coro->set_state(CoroutineState::RUNNING);
+
+        if (coro->saved_frames().empty()) {
+          // First resume: call the closure
+          push(coro_val); // "self" slot (coroutine object)
+          if (!call(coro->closure(), 0)) {
+            coro_stack_.pop_back();
+            goto handle_runtime_error;
+          }
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+        } else {
+          // Resume from suspended state using SavedCallFrame entries
+          int saved_count = static_cast<int>(coro->saved_frames().size());
+          Value* new_base = stack_top_;
+          for (sz_t i = 0; i < coro->saved_stack().size(); ++i)
+            new_base[i] = coro->saved_stack()[i];
+          stack_top_ = new_base + coro->saved_stack_top_offset();
+          for (int fi = 0; fi < saved_count; ++fi) {
+            const SavedCallFrame& sf = coro->saved_frames()[static_cast<sz_t>(fi)];
+            CallFrame& f = frames_[frame_count_ + fi];
+            f.closure = sf.closure;
+            f.ip = sf.ip;
+            f.slots = new_base + sf.slots_offset;
+            f.deferred = sf.deferred;
+            f.pending_return = sf.pending_return;
+            f.returning = sf.returning;
+          }
+          frame_count_ += saved_count;
+          frame = &frames_[frame_count_ - 1];
+          RELOAD_K();
+          coro->sent_value() = sent_val;
+        }
+      }
+      VM_DISPATCH();
+    }
+
     VM_CASE(OP_EXTRAARG) {
       // EXTRAARG is consumed inline by preceding instructions; skip if orphaned
+      VM_DISPATCH();
+    }
+
+    // =========================================================================
+    // Quickened (runtime-specialized) arithmetic handlers
+    // On deopt: revert opcode and re-execute generic logic inline.
+    // =========================================================================
+    VM_CASE(OP_ADD_II) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() + rhs.as_integer()));
+        VM_DISPATCH();
+      }
+      // Deopt: revert to generic
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD, A, B, C);
+      if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() + rhs.as_number());
+      } else { runtime_error("Operands must be two numbers or two strings."); goto handle_runtime_error; }
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_ADD_FF) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() + rhs.as_number());
+        VM_DISPATCH();
+      }
+      // Deopt
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD, A, B, C);
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() + rhs.as_integer()));
+      } else { runtime_error("Operands must be two numbers or two strings."); goto handle_runtime_error; }
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_ADD_SS) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_string() && rhs.is_string()) {
+        str_t result = str_t(as_string(lhs)->value()) + str_t(as_string(rhs)->value());
+        frame->slots[A] = Value(static_cast<Object*>(take_string(std::move(result))));
+        VM_DISPATCH();
+      }
+      // Deopt: revert and execute generic add logic
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD, A, B, C);
+      if (is_obj_type(lhs, ObjectType::OBJ_STRING) && is_obj_type(rhs, ObjectType::OBJ_STRING)) {
+        str_t result = str_t(as_string(lhs)->value()) + str_t(as_string(rhs)->value());
+        frame->slots[A] = Value(static_cast<Object*>(take_string(std::move(result))));
+      } else if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() + rhs.as_integer()));
+      } else if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() + rhs.as_number());
+      } else if (lhs.is_instance()) {
+        frame->slots[A] = lhs; frame->slots[A + 1] = rhs;
+        stack_top_ = frame->slots + A + 2;
+        if (invoke_operator(op_add_string_)) { frame = &frames_[frame_count_ - 1]; RELOAD_K(); }
+        else { runtime_error("Operands must be two numbers or two strings."); goto handle_runtime_error; }
+      } else { runtime_error("Operands must be two numbers or two strings."); goto handle_runtime_error; }
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_SUB_II) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() - rhs.as_integer()));
+        VM_DISPATCH();
+      }
+      // Deopt: fall to generic
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_SUB, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() - rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_SUB_FF) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() - rhs.as_number());
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_SUB, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() - rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_MUL_II) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(static_cast<i64_t>(lhs.as_integer() * rhs.as_integer()));
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_MUL, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() * rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_MUL_FF) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() * rhs.as_number());
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_MUL, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() * rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_DIV_FF) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() / rhs.as_number());
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_DIV, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() / rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_LT_II) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(lhs.as_integer() < rhs.as_integer());
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_LT, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() < rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_LT_FF) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_number() && rhs.is_number()) {
+        frame->slots[A] = Value(lhs.as_number() < rhs.as_number());
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_LT, A, B, C);
+      if (!lhs.is_number() || !rhs.is_number()) { runtime_error("Operands must be numbers."); goto handle_runtime_error; }
+      frame->slots[A] = Value(lhs.as_number() < rhs.as_number());
+      VM_DISPATCH();
+    }
+    VM_CASE(OP_EQ_II) {
+      u8_t A = decode_A(instr); u8_t B = decode_B(instr); u8_t C = decode_C(instr);
+      Value lhs = RK(B); Value rhs = RK(C);
+      if (lhs.is_integer() && rhs.is_integer()) {
+        frame->slots[A] = Value(lhs.as_integer() == rhs.as_integer());
+        VM_DISPATCH();
+      }
+      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_EQ, A, B, C);
+      frame->slots[A] = Value(lhs.is_equal(rhs));
       VM_DISPATCH();
     }
 

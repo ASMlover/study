@@ -140,6 +140,13 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
   case OpCode::OP_EQ:  case OpCode::OP_LT:  case OpCode::OP_LE:
   case OpCode::OP_BAND: case OpCode::OP_BOR: case OpCode::OP_BXOR:
   case OpCode::OP_SHL: case OpCode::OP_SHR:
+  // Quickened variants
+  case OpCode::OP_ADD_II: case OpCode::OP_ADD_FF: case OpCode::OP_ADD_SS:
+  case OpCode::OP_SUB_II: case OpCode::OP_SUB_FF:
+  case OpCode::OP_MUL_II: case OpCode::OP_MUL_FF:
+  case OpCode::OP_DIV_FF:
+  case OpCode::OP_LT_II: case OpCode::OP_LT_FF:
+  case OpCode::OP_EQ_II:
     std::cout << std::format("{:<16s} R({}) := {} op {}\n",
         opcode_name(op), A, rk_str(B, chunk), rk_str(C, chunk));
     return offset + 1;
@@ -276,7 +283,17 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
     return offset + 1;
 
   case OpCode::OP_ENDTRY:
+  case OpCode::OP_NOP:
     std::cout << std::format("{:<16s}\n", opcode_name(op));
+    return offset + 1;
+
+  case OpCode::OP_YIELD:
+    std::cout << std::format("{:<16s} R({})\n", opcode_name(op), A);
+    return offset + 1;
+
+  case OpCode::OP_RESUME:
+    std::cout << std::format("{:<16s} R({}) := resume R({}) send R({})\n",
+        opcode_name(op), A, B, C);
     return offset + 1;
 
   case OpCode::OP_EXTRAARG:
