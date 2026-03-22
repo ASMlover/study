@@ -188,6 +188,15 @@ class VM : public Singleton<VM> {
   ObjUpvalue* capture_upvalue(Value* local) noexcept;
   void close_upvalues(Value* last) noexcept;
 
+  // Built-in type method dispatchers (implemented in VMBuiltins.cc)
+  bool invoke_string_method(ObjString* str, ObjString* name, int arg_count) noexcept;
+  bool invoke_list_method(ObjList* list, ObjString* name, int arg_count) noexcept;
+  bool invoke_tuple_method(ObjTuple* tuple, ObjString* name, int arg_count) noexcept;
+  bool invoke_map_method(ObjMap* map, ObjString* name, int arg_count) noexcept;
+  bool invoke_stringbuilder_method(ObjStringBuilder* sb, ObjString* name, int arg_count) noexcept;
+  bool invoke_weakref_method(ObjWeakRef* ref, ObjString* name, int arg_count) noexcept;
+  bool invoke_file_method(ObjFile* file, ObjString* name, int arg_count) noexcept;
+
   // Import system
   void import_module(ObjString* path) noexcept;
   void register_io_module() noexcept;
