@@ -34,7 +34,7 @@ print count // expect: 100
 
 // 3. Closures capturing upvalues survive across GC
 fun make_adder(x) {
-  return fun(y) { return x + y; }
+  return fun(y) { return x + y }
 }
 
 var add5 = make_adder(5)

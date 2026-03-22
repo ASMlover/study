@@ -61,9 +61,9 @@ try {
 }
 
 // Test 8: Exception across nested function calls
-fun a() { throw "deep"; }
-fun b() { a(); }
-fun c() { b(); }
+fun a() { throw "deep" }
+fun b() { a() }
+fun c() { b() }
 try {
   c()
 } catch (e) {

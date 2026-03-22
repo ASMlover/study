@@ -1,16 +1,16 @@
 class Res {
-  init(name) { this.name = name; }
-  __finalize() { print "fin:" + this.name; }
+  init(name) { this.name = name }
+  __finalize() { print "fin:" + this.name }
 }
-fun make() { var r = Res("temp"); }
+fun make() { var r = Res("temp") }
 make()
 for (var i = 0; i < 5000; i = i + 1) {  // expect: fin:temp
   var junk = [i, i + 1, i + 2, i + 3, i + 4]
 }
 print "1"               // expect: 1
 class Other {
-  init(id) { this.id = id; }
-  __finalize() { print "other"; }
+  init(id) { this.id = id }
+  __finalize() { print "other" }
 }
 print "2"               // expect: 2
 var t = Other(999)

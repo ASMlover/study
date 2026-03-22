@@ -29,7 +29,7 @@ print "num: ${3.14}" // expect: num: 3.14
 
 // Interpolation with function call
 print "--- function call ---" // expect: --- function call ---
-fun greet(n) { return "Hi, " + n; }
+fun greet(n) { return "Hi, " + n }
 print "says: ${greet("Maple")}" // expect: says: Hi, Maple
 
 // Interpolation with method call

@@ -19,7 +19,7 @@ print Math.max(10, 2)   // expect: 10
 
 // Static method with no args
 class Counter {
-  static zero() { return 0; }
+  static zero() { return 0 }
 }
 print Counter.zero()    // expect: 0
 
@@ -43,7 +43,7 @@ print f.get_x()         // expect: 42
 
 // Static methods are inherited
 class Base {
-  static greet() { return "hello"; }
+  static greet() { return "hello" }
 }
 
 class Child : Base {}
@@ -52,11 +52,11 @@ print Child.greet()     // expect: hello
 
 // Override static method in subclass
 class Parent {
-  static name() { return "Parent"; }
+  static name() { return "Parent" }
 }
 
 class Sub : Parent {
-  static name() { return "Sub"; }
+  static name() { return "Sub" }
 }
 
 print Parent.name()     // expect: Parent
@@ -64,7 +64,7 @@ print Sub.name()        // expect: Sub
 
 // Static method as first-class value
 class Utils {
-  static double(x) { return x * 2; }
+  static double(x) { return x * 2 }
 }
 
 var fn = Utils.double

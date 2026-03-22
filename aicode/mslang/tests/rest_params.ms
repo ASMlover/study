@@ -1,6 +1,6 @@
 fun sum(...args) {
   var total = 0
-  for (var x in args) { total = total + x; }
+  for (var x in args) { total = total + x }
   return total
 }
 print sum()           // expect: 0

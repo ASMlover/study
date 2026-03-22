@@ -71,12 +71,12 @@ print b.width       // expect: 42
 
 // === Polymorphic site (class mismatch invalidates IC) ===
 class Dog {
-  init(name) { this.name = name; }
-  speak() { return "woof"; }
+  init(name) { this.name = name }
+  speak() { return "woof" }
 }
 class Cat {
-  init(name) { this.name = name; }
-  speak() { return "meow"; }
+  init(name) { this.name = name }
+  speak() { return "meow" }
 }
 
 fun get_sound(animal) {
@@ -89,8 +89,8 @@ print get_sound(Dog("Buddy")) // expect: woof
 
 // === Inheritance with IC ===
 class Animal {
-  init(name) { this.name = name; }
-  describe() { return this.name; }
+  init(name) { this.name = name }
+  describe() { return this.name }
 }
 class Parrot : Animal {
   init(name, color) {
@@ -105,8 +105,8 @@ print parrot.color       // expect: green
 
 // === Invoke in loop (IC hot path) ===
 class Adder {
-  init() { this.sum = 0; }
-  add(n) { this.sum = this.sum + n; }
+  init() { this.sum = 0 }
+  add(n) { this.sum = this.sum + n }
 }
 
 var adder = Adder()
@@ -117,7 +117,7 @@ print adder.sum     // expect: 5050
 
 // === Static method access (no IC, should still work) ===
 class MathUtil {
-  static square(x) { return x * x; }
+  static square(x) { return x * x }
 }
 print MathUtil.square(7)  // expect: 49
 
@@ -126,9 +126,9 @@ print MathUtil.square(7)  // expect: 49
 
 // === Operator overloading with IC ===
 class Vec {
-  init(x) { this.x = x; }
-  __add(other) { return Vec(this.x + other.x); }
-  __str() { return str(this.x); }
+  init(x) { this.x = x }
+  __add(other) { return Vec(this.x + other.x) }
+  __str() { return str(this.x) }
 }
 
 var v1 = Vec(10)

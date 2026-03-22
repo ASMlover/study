@@ -2,7 +2,7 @@
 
 // 1. Basic weak_ref creation and get
 class Obj {
-  init(val) { this.val = val; }
+  init(val) { this.val = val }
 }
 
 var obj = Obj(42)
