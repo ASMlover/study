@@ -289,7 +289,7 @@ Compiler.cc      ──►  CompilerImpl.hh, Debug.hh, Optimize.hh
 | 0 | Baseline — confirm 62 tests pass | verify | — | [x] |
 | 1 | Extract `VMNatives.cc` | extract | `VM.hh` · `VM.cc` · `VMNatives.cc` *(new)* | [x] |
 | 2 | Extract `VMGC.cc` | move | `VM.cc` · `VMGC.cc` *(new)* | [x] |
-| 3 | Extract `VMCall.cc` | move | `VM.cc` · `VMCall.cc` *(new)* | [ ] |
+| 3 | Extract `VMCall.cc` | move | `VM.cc` · `VMCall.cc` *(new)* | [x] |
 | 4 | Extract `VMImport.cc` | move | `VM.cc` · `VMImport.cc` *(new)* | [ ] |
 | 5 | Extract `VMBuiltins.cc` | **refactor** | `VM.hh` · `VM.cc` · `VMBuiltins.cc` *(new)* | [ ] |
 | 6 | Create `CompilerImpl.hh` | extract | `Compiler.cc` · `CompilerImpl.hh` *(new)* | [ ] |
