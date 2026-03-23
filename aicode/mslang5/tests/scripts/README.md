@@ -1,8 +1,8 @@
 # Maple Script Fixtures
 
 This directory contains runnable `.ms` fixtures for existing Maple language features.
-The files are intentionally grouped by capability and include both happy-path and
-error-path examples.
+The files are intentionally grouped by capability and include both happy path and
+error path examples.
 
 ## Language Scripts (`tests/scripts/language`)
 
@@ -40,8 +40,7 @@ error-path examples.
 - `error_missing_symbol.ms`: missing export symbol error path.
 - `error_cycle_entry.ms`: circular dependency error path.
 - `cycle_a.ms` / `cycle_b.ms`: cycle pair used by `error_cycle_entry.ms`.
-- `pkg/math.ms`: nested module fixture for dotted-name import.
-
+- `module/pkg/math.ms`: nested module fixture for dotted-name import.
 
 ## Std Module Scripts (`tests/scripts/module/std`)
 

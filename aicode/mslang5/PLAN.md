@@ -882,8 +882,8 @@ No code change here; this is an execution blueprint.
 - Targets:
   - `src/runtime/vm.cc`
   - `src/runtime/vm.hh`
-  - `src/runtime/script_interpreter.cc`
-  - `src/runtime/script_interpreter.hh`
+  - legacy interpreter source
+  - legacy interpreter interface
   - `tests/unit/test_vm_compiler.cc`
   - `tests/integration/test_language_closure.cc`
   - `tests/integration/test_language_class.cc`
@@ -922,8 +922,8 @@ No code change here; this is an execution blueprint.
     - keep interpreter mode explicitly non-normative
   - Primary files:
     - `src/runtime/vm.cc`
-    - `src/runtime/script_interpreter.hh`
-    - `src/runtime/script_interpreter.cc`
+    - legacy interpreter interface
+    - legacy interpreter source
   - Tests:
     - `tests/unit/test_vm_compiler.cc` error category assertions
   - Acceptance:
@@ -953,7 +953,7 @@ No code change here; this is an execution blueprint.
     - mark interpreter as transitional/reference
     - align internal comments/docs with ADR-001
   - Primary files:
-    - `src/runtime/script_interpreter.hh`
+    - legacy interpreter interface
     - `docs/adr/ADR-001-execution-model.md`
     - `PLAN.md`
   - Tests:
@@ -1035,8 +1035,8 @@ No code change here; this is an execution blueprint.
   - Scope:
     - add resolver units and call seam after parse, before compile emit
   - Primary files:
-    - `src/frontend/resolver.hh` (new)
-    - `src/frontend/resolver.cc` (new)
+    - frontend resolver implementation (new)
+    - frontend resolver implementation (new)
     - `src/frontend/compiler.hh`
     - `src/frontend/compiler.cc`
   - Tests:
@@ -1052,8 +1052,8 @@ No code change here; this is an execution blueprint.
   - Scope:
     - resolve locals/upvalues with depth metadata for compiler backend
   - Primary files:
-    - `src/frontend/resolver.hh`
-    - `src/frontend/resolver.cc`
+    - frontend resolver implementation
+    - frontend resolver implementation
     - `src/frontend/compiler.cc`
   - Tests:
     - new unit tests for lexical depth and capture marking
@@ -1068,7 +1068,7 @@ No code change here; this is an execution blueprint.
   - Scope:
     - implement checks for `return outside function`, `this/super misuse`, and self-inherit
   - Primary files:
-    - `src/frontend/resolver.cc`
+    - frontend resolver implementation
     - `docs/spec/errors.md` (if code mapping refinement needed)
   - Tests:
     - conformance negatives:
@@ -1160,7 +1160,7 @@ No code change here; this is an execution blueprint.
 
 - `W12-D1` Operator/value contract alignment
   - Scope:
-    - align runtime to `value-model.md` for arithmetic/callability/type errors
+    - align runtime to `docs/spec/value-model.md` for arithmetic/callability/type errors
   - Primary files:
     - `src/runtime/value.hh`
     - `src/runtime/vm.cc`
@@ -1200,7 +1200,7 @@ No code change here; this is an execution blueprint.
   - Tests:
     - module script cases: first-load, cached-load, symbol-missing, cycle
   - Acceptance:
-    - module behaviors match `modules.md` compatibility table
+    - module behaviors match `docs/spec/modules.md` compatibility table
   - Commit suggestion:
     - `:construction: feat(maple): align module loader state machine with spec`
   - Rollback point:
@@ -1610,7 +1610,7 @@ Commit message convention reminder:
     - `src/runtime/vm.hh` default `source_mode_` is now `kVmPreferred`.
   - Retired fallback in normal builds and moved legacy interpreter to debug/reference-only compile gate:
     - `CMakeLists.txt` adds `MAPLE_ENABLE_LEGACY_INTERPRETER` (default `OFF`).
-    - `src/runtime/script_interpreter.cc` is compiled only when the option is enabled.
+    - legacy interpreter source is compiled only when the option is enabled.
     - `src/runtime/vm.cc` wraps all interpreter dispatch/fallback paths with `#if MAPLE_ENABLE_LEGACY_INTERPRETER`.
   - Removed fallback-dependent integration assertions and normalized VM-single-path checks:
     - `tests/integration/test_language_closure.cc`

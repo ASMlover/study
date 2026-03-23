@@ -33,7 +33,7 @@ Conclusion: bytecode frontend is still a minimal subset and cannot carry full la
 
 ### 1.3 Where Semantics Actually Live
 
-1. Closures, classes, inheritance, method binding, and resolver-like static semantics are mainly implemented in `script_interpreter.cc`.
+1. Closures, classes, inheritance, method binding, and resolver-like static semantics are mainly implemented in the legacy interpreter path.
 2. Full-script behavior in `Vm` heavily depends on fallback to interpreter.
 3. So semantic correctness is mostly guaranteed by interpreter behavior, not by VM-native behavior.
 
@@ -591,7 +591,7 @@ Reference fixture: tests/scripts/migration/m6_vm_only_convergence.ms
   - Status: done
   - Done criteria: disposition strategy is implemented and documented consistently.
   - Evidence:
-    - `CMakeLists.txt` adds `MAPLE_ENABLE_LEGACY_INTERPRETER` (default `OFF`) and conditionally compiles `src/runtime/script_interpreter.cc`.
+    - `CMakeLists.txt` adds `MAPLE_ENABLE_LEGACY_INTERPRETER` (default `OFF`) and conditionally compiles the legacy interpreter source.
     - `maple_core` exports `MAPLE_ENABLE_LEGACY_INTERPRETER` compile definition; legacy interpreter is debug/reference-only when explicitly enabled.
 - `M6-04` Milestone final closeout
   - Status: done

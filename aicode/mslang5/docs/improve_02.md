@@ -24,7 +24,7 @@ Observed facts:
 
 1. Legacy interpreter build is gated by `MAPLE_ENABLE_LEGACY_INTERPRETER` and defaults to `OFF` (`CMakeLists.txt`).
 2. VM source execution still keeps legacy branches under `#if MAPLE_ENABLE_LEGACY_INTERPRETER` (`src/runtime/vm.cc`, `execute_source_named`).
-3. `src/runtime/script_interpreter.cc` remains a large standalone lexer/parser/resolver/executor implementation.
+3. The legacy interpreter source remains a large standalone lexer/parser/resolver/executor implementation.
 
 Conclusion:
 
@@ -161,7 +161,7 @@ Exit criteria:
 
 Changes:
 
-1. Remove `src/runtime/script_interpreter.hh` and `src/runtime/script_interpreter.cc`.
+1. Remove the legacy interpreter interface and source files.
 2. Remove `MAPLE_ENABLE_LEGACY_INTERPRETER` from `CMakeLists.txt`.
 3. Keep `Vm::execute_source_named` on a single compile->VM path.
 4. Simplify mode/route enums and related tests.

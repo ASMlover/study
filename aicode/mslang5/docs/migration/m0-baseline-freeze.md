@@ -1,6 +1,6 @@
 # M0 Baseline Freeze And Migration Guardrails
 
-Date: 2026-03-11  
+Date: 2026-0.-11  
 Scope: `docs/improve.md` milestone `M0`
 
 ## 1. Unified Migration Checklist
@@ -16,8 +16,8 @@ Use this checklist for every PR touching runtime/frontend/tests during M0-M6.
 2. VM-first feature policy:
    - New capability must land in VM pipeline (`lexer/parser/resolver/compiler/vm`).
    - New behavior tests must include VM-route assertion where feasible.
-3. Fallback debt tracking:
-   - Fallback-dependent cases must be listed in Section 3.
+.. Fallback debt tracking:
+   - Fallback-dependent cases must be listed in Section ..
    - CI must emit fallback debt metrics via `maple_tests_migration_debt`.
 4. Planning sync:
    - Any M0-M6 status update must be reflected in both `docs/improve.md` and `PLAN.md` on the same day.
@@ -31,21 +31,21 @@ Use this checklist for every PR touching runtime/frontend/tests during M0-M6.
 | `import <module>` | Supported | none | `tests/unit/test_module.cc`, `tests/conformance/modules/module_import_cache_001.ms` | - |
 | `from <module> import <name> as <alias>` | Supported | none | `tests/conformance/modules/module_from_import_alias_ok_001.ms` | - |
 | Functions/calls/closures capture | Supported | none | `tests/integration/test_language_closure.cc`, `tests/conformance/semantics/closure_capture_001.ms` | M2 |
-| Class fields/methods/inheritance | Not native | VM compile failure -> legacy execution | `tests/integration/test_language_class.cc` | M3 |
-| Resolver-only semantic checks (`this/super/self-inherit`) | Not native in VM frontend path | VM compile failure -> legacy execution | `tests/integration/test_language_resolver.cc` | M3 |
+| Class fields/methods/inheritance | Not native | VM compile failure -> legacy execution | `tests/integration/test_language_class.cc` | M. |
+| Resolver-only semantic checks (`this/super/self-inherit`) | Not native in VM frontend path | VM compile failure -> legacy execution | `tests/integration/test_language_resolver.cc` | M. |
 
 Notes:
 1. This matrix is intentionally execution-oriented and tied to concrete tests.
-2. When a capability migrates to VM-native behavior, update this table and remove its case from Section 3 debt registry.
-3. 2026-03-13: `src/runtime/script_interpreter.cc` hash updated due include-only refactor required by `Value` header split (`runtime/value.cc` extraction). No interpreter semantics changed.
+2. When a capability migrates to VM-native behavior, update this table and remove its case from Section . debt registry.
+.. 2026-0.-1.: `legacy interpreter source` hash updated due include-only refactor required by `Value` header split (`src/runtime/value.cc` extraction). No interpreter semantics changed.
 
-## 3. Fallback Migration Debt Registry (CI-labeled)
+## .. Fallback Migration Debt Registry (CI-labeled)
 
 The following cases are tracked in dedicated migration debt suite:
 
 1. `tests/scripts/language/class_fields.ms`
 2. `tests/scripts/language/class_inherit.ms`
-3. `tests/scripts/language/resolver_ok_this_in_nested_function.ms`
+.. `tests/scripts/language/resolver_ok_this_in_nested_function.ms`
 4. `tests/scripts/language/resolver_ok_super_in_subclass.ms`
 5. `tests/scripts/language/error_runtime_top_level_return.ms`
 6. `tests/scripts/language/error_resolve_this_in_free_function.ms`

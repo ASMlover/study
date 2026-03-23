@@ -121,7 +121,7 @@ Date: 2026-03-08
   - added an explicit resolver phase seam in `ScriptInterpreter::Execute` between parse and runtime
   - moved self-inheritance checks from parse-time to resolve-time policy
 - Changed files:
-  - `src/runtime/script_interpreter.cc`
+  - legacy interpreter source
 
 2. Subagent-B (Batch B: W11-D2 + W11-D3)
 - Scope:
@@ -129,7 +129,7 @@ Date: 2026-03-08
   - enforced resolve diagnostics for `return/this/super/self-inherit` with `MS3001~MS3004`
   - aligned compile/runtime category mapping by classifying resolve errors as compile-like
 - Changed files:
-  - `src/runtime/script_interpreter.cc`
+  - legacy interpreter source
   - `tests/integration/test_language_resolver.cc`
   - `tests/unit/test_main.cc`
   - `CMakeLists.txt`
@@ -164,8 +164,8 @@ Date: 2026-03-08
 - Changed files:
   - `src/runtime/vm.hh`
   - `src/runtime/vm.cc`
-  - `src/runtime/script_interpreter.hh`
-  - `src/runtime/script_interpreter.cc`
+  - legacy interpreter interface
+  - legacy interpreter source
   - `tests/unit/test_vm_compiler.cc`
 
 2. Subagent-B (Batch B: W10-D3)
@@ -199,7 +199,7 @@ Date: 2026-03-09
   - updated integration/unit assertions to lock code-bearing diagnostics for arity/property/undefined-variable failures
 - Changed files:
   - `src/runtime/vm.cc`
-  - `src/runtime/script_interpreter.cc`
+  - legacy interpreter source
   - `tests/unit/test_vm_compiler.cc`
   - `tests/integration/test_language_closure.cc`
   - `tests/integration/test_language_class.cc`
