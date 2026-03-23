@@ -292,6 +292,6 @@ Compiler.cc      ──►  CompilerImpl.hh, Debug.hh, Optimize.hh
 | 3 | Extract `VMCall.cc` | move | `VM.cc` · `VMCall.cc` *(new)* | [x] |
 | 4 | Extract `VMImport.cc` | move | `VM.cc` · `VMImport.cc` *(new)* | [x] |
 | 5 | Extract `VMBuiltins.cc` | **refactor** | `VM.hh` · `VM.cc` · `VMBuiltins.cc` *(new)* | [x] |
-| 6 | Create `CompilerImpl.hh` | extract | `Compiler.cc` · `CompilerImpl.hh` *(new)* | [ ] |
+| 6 | Create `CompilerImpl.hh` | extract | `Compiler.cc` · `CompilerImpl.hh` *(new)* | [x] |
 | 7 | Extract `CompilerExpr.cc` | move | `Compiler.cc` · `CompilerExpr.cc` *(new)* | [ ] |
 | 8 | Extract `CompilerStmt.cc` | move | `Compiler.cc` · `CompilerStmt.cc` *(new)* | [ ] |
