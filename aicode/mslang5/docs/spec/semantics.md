@@ -26,6 +26,16 @@ See also:
 2. `docs/spec/modules.md` for module lifecycle/export policy.
 3. `docs/spec/diagnostics-normalization-v0.2.md` for normalization/matching rules.
 
+## 0.1 Compatibility Notes
+
+Tier mapping policy for normative clauses in this document:
+
+1. Default rule: all numbered normative clauses are `stable` unless explicitly marked `provisional`.
+2. `provisional` clauses in this version:
+   - Section 5.2, item 2 (module export visibility controls are not yet part of the locked contract).
+   - Section 7, minimum diagnostic contract item 2 column/length fields (line is stable; column/length remain planned).
+3. Any change to `stable` clauses requires migration notes and test updates before merge.
+
 ## 1. Semantic Domains
 
 ### 1.1 Value Kinds
@@ -152,7 +162,7 @@ In subclass methods:
 Current v0.2 baseline export model is implicit top-level export:
 
 1. top-level module declarations are exported via module export table.
-2. explicit visibility controls are not part of the stable v0.2 surface.
+2. explicit visibility controls are not part of the stable v0.2 surface. [provisional]
 
 `from a.b import x as y;`:
 
@@ -205,7 +215,7 @@ Maple errors are phase-classified:
 Minimum diagnostic contract:
 
 1. phase label
-2. source location (line; column planned)
+2. source location (line is stable; column/length are provisional while planned)
 3. human-readable message
 
 Compatibility anchor:
@@ -221,3 +231,6 @@ This document is intended to map one-to-one to conformance tests:
 1. every rule above requires at least one positive test and one negative test,
 2. diagnostic matching should prefer stable `phase + code` fields,
 3. behavior changes must update this document before implementation changes.
+
+
+

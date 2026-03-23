@@ -19,6 +19,15 @@ Tier definitions:
 | Implicit top-level export policy | stable | Current runtime behavior and tests rely on this baseline. |
 | Future explicit export/private controls | provisional | Planned evolution path, not part of v0.2 stable surface. |
 
+## 0.1 Compatibility Notes
+
+Tier mapping policy for normative clauses in this document:
+
+1. Default rule: all numbered normative clauses are `stable` unless explicitly marked `provisional`.
+2. `provisional` clauses in this version:
+   - Section 5 planned extension points (`export` keyword and private/internal visibility controls).
+3. Existing implicit top-level export behavior remains the `stable` v0.2 baseline.
+
 ## 1. Module Names and Paths
 
 Module names are dotted identifiers:
@@ -95,8 +104,8 @@ Current baseline export model:
 
 Planned extension points (provisional):
 
-1. explicit `export` keyword
-2. private/internal symbols
+1. explicit `export` keyword [provisional]
+2. private/internal symbols [provisional]
 
 ## 6. Namespace Binding Rules
 
@@ -146,3 +155,7 @@ Required case families:
 6. alias binding correctness
 
 Current conformance/integration suites already cover this baseline.
+
+
+
+

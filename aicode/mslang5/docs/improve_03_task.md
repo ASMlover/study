@@ -44,7 +44,7 @@ Script execution template:
 
 | Task ID | Stream | Milestone | Atomic Goal | Detail Doc | Status | Owner | Start Date | End Date | Evidence/Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| P3-T01 | A | M1 | Add spec stability tier markers and compatibility notes | `docs/tasks/improve_03/P3-T01-spec-stability.md` | todo | TBD | - | - | - |
+| P3-T01 | A | M1 | Add spec stability tier markers and compatibility notes | `docs/tasks/improve_03/P3-T01-spec-stability.md` | done | Codex | 2026-03-24 | 2026-03-24 | Updated `docs/spec/semantics.md`, `docs/spec/errors.md`, and `docs/spec/modules.md` with clause-tier compatibility notes and provisional mappings; verified via `cmake -S . -B build`, `cmake --build build --config Debug`, `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_conformance`, and `ctest --test-dir build --output-on-failure -C Debug -R maple_tests_diagnostics`. |
 | P3-T02 | A | M1 | Add diagnostics code normalization check and fixture coverage | `docs/tasks/improve_03/P3-T02-diagnostics-normalization.md` | todo | TBD | - | - | - |
 | P3-T03 | B | M2 | Extract parser boundary facade with behavior parity | `docs/tasks/improve_03/P3-T03-parser-facade.md` | todo | TBD | - | - | - |
 | P3-T04 | B | M2 | Introduce resolver metadata pass and scope invariants | `docs/tasks/improve_03/P3-T04-resolver-pass.md` | todo | TBD | - | - | - |
@@ -61,3 +61,4 @@ Script execution template:
 2. A task can be set to `done` only after required verification commands are recorded in `Evidence/Notes`.
 3. `blocked` tasks must include both blocker description and unblock condition.
 4. `P3-T10` cannot be `done` before `P3-T01` through `P3-T09` are `done`.
+

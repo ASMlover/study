@@ -20,6 +20,17 @@ Tier definitions:
 | Parse invalid-assignment specificity (`MS2003`) | provisional | Canonical target is `MS2003`; temporary normalization alias from `MS2001` is allowed. |
 | Human message wording | provisional | Keep intent stable; test anchor remains `phase + code`. |
 
+## 0.1 Compatibility Notes
+
+Tier mapping policy for normative clauses in this document:
+
+1. Default rule: all numbered normative clauses are `stable` unless explicitly marked `provisional`.
+2. `provisional` clauses in this version:
+   - Section 5.2, transitional normalization alias from `MS2001` to canonical `MS2003`.
+   - Section 3, `span.column` and `span.length` fields where implementation is still in planned state.
+   - Message wording precision (meaning must remain stable, exact phrasing may evolve).
+3. Tests must anchor on `phase + code`; message text checks are secondary.
+
 ## 1. Error Phases
 
 Every error belongs to exactly one phase:
@@ -57,8 +68,8 @@ Each diagnostic must expose:
 4. `span`:
    - `file` (optional for REPL input)
    - `line` (1-based)
-   - `column` (1-based; planned if not yet implemented)
-   - `length` (token/lexeme span; planned if not yet implemented)
+   - `column` (1-based; provisional while planned if not yet implemented)
+   - `length` (token/lexeme span; provisional while planned if not yet implemented)
 5. `notes` (optional array of supplemental hints)
 
 Recommended JSON shape:
@@ -157,3 +168,7 @@ Suggested normalization:
 2. Reassigning existing code meaning is breaking.
 3. Removing a code is breaking.
 4. Breaking changes require spec version bump and migration notes.
+
+
+
+
