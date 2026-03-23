@@ -115,6 +115,26 @@ struct ClassCompiler {
 };
 
 // =============================================================================
+// Compound assignment helpers — shared by Compiler.cc and CompilerExpr.cc
+// =============================================================================
+
+// Returns the arithmetic opcode for a compound assignment token type.
+inline OpCode compound_op(TokenType type) noexcept {
+  switch (type) {
+  case TokenType::TOKEN_PLUS_EQUAL:    return OpCode::OP_ADD;
+  case TokenType::TOKEN_MINUS_EQUAL:   return OpCode::OP_SUB;
+  case TokenType::TOKEN_STAR_EQUAL:    return OpCode::OP_MUL;
+  case TokenType::TOKEN_SLASH_EQUAL:   return OpCode::OP_DIV;
+  case TokenType::TOKEN_PERCENT_EQUAL: return OpCode::OP_MOD;
+  default: return OpCode::OP_RETURN; // sentinel: not a compound op
+  }
+}
+
+inline bool is_compound_op(TokenType type) noexcept {
+  return compound_op(type) != OpCode::OP_RETURN;
+}
+
+// =============================================================================
 // Compiler class (internal to this TU)
 // =============================================================================
 
