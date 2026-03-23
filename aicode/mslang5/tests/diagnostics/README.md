@@ -1,22 +1,24 @@
-# Maple Diagnostics Golden Tests (Draft v0.1)
+# Maple Diagnostics Golden Tests (v0.2)
 
-Status: Draft (T19 planning deliverable, docs-only).
+Status: Implemented.
 
-This directory specifies how structured diagnostics are validated by golden files.
+This directory defines how structured diagnostics are validated by golden files.
 
 ## 1. Purpose
 
 1. ensure deterministic diagnostics across platforms
-2. validate `phase + code + span` contract
-3. support migration from free-form messages to structured records
+2. validate the `phase + code + normalized span` contract
+3. keep golden matching independent from free-form message wording
 
-## 2. Planned Layout
+## 2. Layout
 
 ```text
 tests/diagnostics/
   README.md
   NORMALIZATION.md
   samples/
+    parse_expected_expression.golden.json
+    resolve_return_outside_function.golden.json
     runtime_arity_mismatch.golden.json
     module_not_found.golden.json
 ```
@@ -25,23 +27,25 @@ tests/diagnostics/
 
 Comparison precedence:
 
-1. strict on `phase`, `code`, `span.line`
-2. strict on `span.column` and `span.length` when available
-3. message comparison by exact match or configured contains-mode during migration
+1. strict on `phase` and `code`
+2. strict on `span.file` and `span.line` after path normalization
+3. strict on `span.column` and `span.length` only when expected values are present
+4. message text is informational and non-blocking
 
-## 4. Test Harness Expectations (Planned)
+## 4. Test Harness Behavior
 
-Harness should:
+Harness must:
 
-1. execute script/input
+1. execute script input
 2. capture structured diagnostics
 3. normalize records (see `NORMALIZATION.md`)
-4. compare against golden JSON
+4. compare against golden JSON using phase/code/span contract
 
-## 5. Migration Policy
+## 5. Fixture Coverage
 
-During migration window:
+Current golden fixtures cover:
 
-1. missing `column`/`length` fields may be tolerated by case-level policy
-2. message text may use contains-mode for legacy errors
-3. phase/code mismatch must always fail
+1. parse failure (`MS2001`)
+2. resolve failure (`MS3001`)
+3. runtime failure (`MS4002`)
+4. module failure (`MS5001`)

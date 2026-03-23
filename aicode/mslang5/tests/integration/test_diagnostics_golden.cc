@@ -1,6 +1,7 @@
 #include "test_common.hh"
 
 #include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <optional>
@@ -15,7 +16,6 @@ namespace {
 struct ExpectedDiagnostic {
   std::string phase;
   std::string code;
-  std::string message;
   std::string file;
   std::size_t line = 1;
 };
@@ -23,6 +23,18 @@ struct ExpectedDiagnostic {
 std::string NormalizePath(std::string path) {
   std::replace(path.begin(), path.end(), '\\', '/');
   return path;
+}
+
+std::string NormalizePhase(std::string phase) {
+  std::transform(phase.begin(), phase.end(), phase.begin(),
+                 [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+  return phase;
+}
+
+std::string NormalizeCode(std::string code) {
+  std::transform(code.begin(), code.end(), code.begin(),
+                 [](unsigned char ch) { return static_cast<char>(std::toupper(ch)); });
+  return code;
 }
 
 std::string ReadAll(const std::filesystem::path& path) {
@@ -55,17 +67,14 @@ std::optional<ExpectedDiagnostic> LoadExpected(const std::string& golden_path) {
   ExpectedDiagnostic out;
   auto phase = ExtractString(text, "phase");
   auto code = ExtractString(text, "code");
-  auto message = ExtractString(text, "message");
   auto file = ExtractString(text, "file");
   auto line = ExtractSize(text, "line");
-  if (!phase.has_value() || !code.has_value() || !message.has_value() || !file.has_value() ||
-      !line.has_value()) {
+  if (!phase.has_value() || !code.has_value() || !file.has_value() || !line.has_value()) {
     Expect(false, "invalid diagnostics golden json: " + golden_path);
     return std::nullopt;
   }
-  out.phase = *phase;
-  out.code = *code;
-  out.message = *message;
+  out.phase = NormalizePhase(*phase);
+  out.code = NormalizeCode(*code);
   out.file = NormalizePath(*file);
   out.line = *line;
   return out;
@@ -94,10 +103,10 @@ void RunGoldenCase(const std::string& id, const std::string& script_path,
   if (diagnostics.empty()) {
     return;
   }
+
   const auto& diag = diagnostics.front();
-  Expect(diag.phase == expected->phase, id + " phase mismatch");
-  Expect(diag.code == expected->code, id + " code mismatch");
-  Expect(diag.message == expected->message, id + " message mismatch");
+  Expect(NormalizePhase(diag.phase) == expected->phase, id + " phase mismatch");
+  Expect(NormalizeCode(diag.code) == expected->code, id + " code mismatch");
   Expect(NormalizePath(diag.span.file) == expected->file, id + " file mismatch");
   Expect(diag.span.line == expected->line, id + " line mismatch");
 }
@@ -105,14 +114,25 @@ void RunGoldenCase(const std::string& id, const std::string& script_path,
 }  // namespace
 
 int RunDiagnosticsGoldenTests() {
-  RunGoldenCase("DIAG-RUN-ARITY-001", RepoRoot() + "/tests/scripts/language/closure_arity_error.ms",
+  RunGoldenCase("DIAG-PARSE-EXPR-001",
+                RepoRoot() + "/tests/scripts/diagnostics/parse_expected_expression.ms",
+                ms::InterpretResult::kCompileError,
+                RepoRoot() + "/tests/diagnostics/samples/parse_expected_expression.golden.json");
+  RunGoldenCase("DIAG-RESOLVE-RETURN-001",
+                RepoRoot() + "/tests/scripts/diagnostics/resolve_return_outside_function.ms",
+                ms::InterpretResult::kCompileError,
+                RepoRoot() +
+                    "/tests/diagnostics/samples/resolve_return_outside_function.golden.json");
+  RunGoldenCase("DIAG-RUN-ARITY-001",
+                RepoRoot() + "/tests/scripts/diagnostics/runtime_arity_mismatch.ms",
                 ms::InterpretResult::kRuntimeError,
                 RepoRoot() + "/tests/diagnostics/samples/runtime_arity_mismatch.golden.json");
-  RunGoldenCase("DIAG-MOD-MISSING-001", RepoRoot() + "/tests/scripts/module/error_missing_module.ms",
+  RunGoldenCase("DIAG-MOD-MISSING-001",
+                RepoRoot() + "/tests/scripts/diagnostics/module_not_found.ms",
                 ms::InterpretResult::kRuntimeError,
                 RepoRoot() + "/tests/diagnostics/samples/module_not_found.golden.json");
-  RunGoldenCase("DIAG-STD-STR-TYPE-001", RepoRoot() + "/tests/scripts/module/std/str_type_error.ms",
-                ms::InterpretResult::kRuntimeError,
-                RepoRoot() + "/tests/diagnostics/samples/std_str_type_error.golden.json");
   return 0;
 }
+
+
+

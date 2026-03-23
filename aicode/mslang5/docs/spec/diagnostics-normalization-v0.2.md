@@ -1,4 +1,4 @@
-﻿# Maple Diagnostics Normalization Map (v0.2)
+# Maple Diagnostics Normalization Map (v0.2)
 
 Status: v0.2 normative mapping for conformance and diagnostics matching (updated on 2026-03-24).
 
@@ -9,15 +9,15 @@ The primary compatibility key is always `phase + code`.
 
 This map applies to:
 
-1. diagnostics produced by compiler/runtime/module paths,
-2. conformance annotations (`@diag.phase`, `@diag.code`),
-3. golden diagnostics matching in CI.
+1. diagnostics produced by compiler/runtime/module paths
+2. conformance annotations (`@diag.phase`, `@diag.code`)
+3. diagnostics golden matching in CI
 
 ## 2. Normalization Principles
 
 1. Prefer canonical `phase + code` per condition.
 2. If an older emission exists, normalize to canonical code when policy allows.
-3. Keep message text as secondary signal; matching must not depend on exact wording.
+3. Keep message text as non-normative; matching must not depend on exact wording.
 4. Preserve source line as required; column/length are tolerated as optional during migration.
 
 ## 3. Canonical Mapping Table
@@ -45,8 +45,8 @@ This map applies to:
 
 When module initialization fails with nested causes:
 
-1. if the nested cause is or normalizes to `MS5003`, normalize final classification to `module + MS5003`,
-2. otherwise normalize to `module + MS5004`.
+1. if the nested cause is or normalizes to `MS5003`, normalize final classification to `module + MS5003`
+2. otherwise normalize to `module + MS5004`
 
 This keeps cycle diagnosis deterministic.
 
@@ -58,7 +58,7 @@ Conformance and diagnostics tests should match in this order:
 2. `code` (required)
 3. `span.line` (required)
 4. `span.column` (optional during migration)
-5. `message` (secondary, tolerant to wording edits)
+5. `message` is non-blocking and should not be required by default
 
 ## 6. Change Control
 

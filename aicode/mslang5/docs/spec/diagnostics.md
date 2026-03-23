@@ -1,9 +1,9 @@
-﻿# Maple Diagnostics Schema (Spec v0.2)
+# Maple Diagnostics Schema (Spec v0.2)
 
 Status: Implemented baseline schema with v0.2 matching policy (updated on 2026-03-24).
 
 This document standardizes structured diagnostics for Maple.
-It complements `docs/spec/errors.md` with concrete schema and matching policy.
+It complements `docs/spec/errors.md` with concrete schema and matcher behavior.
 
 ## 1. Canonical Diagnostic Record
 
@@ -11,7 +11,7 @@ Each diagnostic record has:
 
 1. `phase`: `lex | parse | resolve | runtime | module`
 2. `code`: `MSxxxx`
-3. `message`: stable human-readable summary
+3. `message`: human-readable detail (non-normative for compatibility)
 4. `span`:
    - `file` (optional for REPL)
    - `line` (1-based)
@@ -44,27 +44,28 @@ Required now:
 
 1. `phase`
 2. `code`
-3. `message`
-4. `span.line`
+3. `span.line`
 
-Planned-hard-required after migration:
+Migration-optional:
 
-1. `span.column`
-2. `span.length`
+1. `message`
+2. `span.column`
+3. `span.length`
 
-## 4. Stability and Compatibility
+## 4. Compatibility Contract
 
-Compatibility contract:
+Compatibility keys:
 
 1. `phase + code` are normative and must remain stable.
-2. `message` may evolve only with release note and migration guidance.
-3. additional `notes` are backward-compatible.
+2. `span.line` is required for deterministic matching.
+3. `message` is informational and must not be a required golden-match key.
+4. additional `notes` are backward-compatible.
 
 Breaking changes:
 
 1. changing meaning of existing code
 2. removing required fields
-3. changing phase classification for same condition without migration path
+3. changing phase classification for the same condition without migration path
 
 Diagnostics normalization map:
 
@@ -74,16 +75,26 @@ Diagnostics normalization map:
 
 When multiple diagnostics are emitted:
 
-1. sort by source order (line, column)
+1. sort by source order (`line`, `column`)
 2. stable tie-break by discovery order
 3. deterministic output across platforms
 
-## 6. Mapping to Exit Status
+## 6. Test Matcher Contract
+
+Diagnostics tests should match in this order:
+
+1. `phase` (strict)
+2. `code` (strict)
+3. `span.file` and `span.line` (strict after path normalization)
+4. `span.column` and `span.length` (strict only when expected values are provided)
+5. `message` must not be required by default
+
+## 7. Mapping to Exit Status
 
 1. any `lex|parse|resolve` diagnostic => compile error exit category
 2. any `runtime|module` diagnostic during execution => runtime error exit category
 
-## 7. Recommended Human Rendering
+## 8. Recommended Human Rendering
 
 Text rendering should include:
 

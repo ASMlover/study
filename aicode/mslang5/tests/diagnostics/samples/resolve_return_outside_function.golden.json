@@ -1,0 +1,11 @@
+[
+  {
+    "phase": "resolve",
+    "code": "MS3001",
+    "span": {
+      "file": "tests/scripts/diagnostics/resolve_return_outside_function.ms",
+      "line": 1
+    },
+    "notes": []
+  }
+]
