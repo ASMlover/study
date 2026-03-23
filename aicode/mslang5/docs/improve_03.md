@@ -181,7 +181,7 @@ This section is intended for continuous updates during execution.
 | P3-02 | A | M1 | Publish `spec v0.2` stability tiers and diagnostics code normalization map | Codex | done | 2026-03-24 | 2026-03-24 | Updated `docs/spec/semantics.md`, `docs/spec/errors.md`, `docs/spec/modules.md`, `docs/spec/diagnostics.md`, and added `docs/spec/diagnostics-normalization-v0.2.md` |
 | P3-03 | B | M2 | Produce frontend split design (`parser`, `resolver`, `lowering`) | Codex | done | 2026-03-24 | 2026-03-24 | Added `docs/design/frontend-split-v0.3.md` with phase boundaries, contracts, migration steps, and acceptance criteria |
 | P3-04 | B | M2 | Define parser recovery acceptance criteria and synchronization rules | Codex | done | 2026-03-24 | 2026-03-24 | Added `docs/design/parser-recovery-v0.3.md` with synchronization boundaries, bounded cascade policy, and conformance expectations |
-| P3-05 | C | M3 | Publish runtime diagnostics precision contract and rollout plan | TBD | planned | - | - | Line-level precision baseline |
+| P3-05 | C | M3 | Publish runtime diagnostics precision contract and rollout plan | Codex | done | 2026-03-24 | 2026-03-24 | Added `docs/design/runtime-diagnostics-precision-v0.3.md` with precision levels, acceptance thresholds, and phased rollout gates |
 | P3-06 | C | M3 | Publish runtime ownership + GC tracing invariants ADR | TBD | planned | - | - | Root sets and lifecycle constraints |
 | P3-07 | D | M4 | Define fuzz/invariant/stress test strategy and entry criteria | TBD | planned | - | - | Deterministic and non-deterministic suites |
 | P3-08 | D | M4 | Define release gates and KPI thresholds for v0.3 closeout | TBD | planned | - | - | Gate checklist + trend reporting |
@@ -193,4 +193,5 @@ This section is intended for continuous updates during execution.
 3. 2026-03-24: Completed P3-02 by publishing spec v0.2 stability tiers and a diagnostics code normalization map aligned across semantics/errors/modules/diagnostics docs.
 4. 2026-03-24: Completed P3-03 by publishing the frontend split architecture design in docs/design/frontend-split-v0.3.md for parser/resolver/lowering boundaries and migration sequencing.
 5. 2026-03-24: Completed P3-04 by publishing parser recovery acceptance criteria and synchronization rules in `docs/design/parser-recovery-v0.3.md` with conformance-oriented assertions.
+6. 2026-03-24: Completed P3-05 by publishing runtime diagnostics precision contract and rollout sequencing in `docs/design/runtime-diagnostics-precision-v0.3.md` with line-level baseline targets.
 
