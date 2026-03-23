@@ -1,8 +1,23 @@
-# Maple Module and Namespace Specification (Draft v0.1)
+﻿# Maple Module and Namespace Specification (Spec v0.2)
 
-Status: Draft (T18 planning deliverable, docs-only).
+Status: Implemented baseline with v0.2 stability tiers (updated on 2026-03-24).
 
 This document formalizes module resolution, loading lifecycle, caching, and symbol import behavior.
+
+## 0. Stability Tiers (v0.2)
+
+Tier definitions:
+
+1. `stable`: compatibility-locked in v0.2.
+2. `provisional`: may evolve in v0.3 with migration notes.
+
+| Module Contract Area | Tier | Notes |
+|---|---|---|
+| Dotted-name resolution and import forms | stable | `import` and `from ... import` syntax is locked. |
+| Lifecycle states and cycle detection | stable | `MS5003` behavior is compatibility-critical. |
+| Cache behavior for initialized/failed modules | stable | `MS5004` failed-cache retry semantics are preserved. |
+| Implicit top-level export policy | stable | Current runtime behavior and tests rely on this baseline. |
+| Future explicit export/private controls | provisional | Planned evolution path, not part of v0.2 stable surface. |
 
 ## 1. Module Names and Paths
 
@@ -71,14 +86,14 @@ Circular dependency detection:
 3. repeated imports return cached module without re-executing top-level code
 4. failed initialization should not produce reusable successful cache entry
 
-## 5. Export Surface Policy (v0.1 Baseline)
+## 5. Export Surface Policy (v0.2 Baseline)
 
 Current baseline export model:
 
 1. top-level module declarations are exported via module export table
 2. export visibility controls are not yet introduced
 
-Future extension points:
+Planned extension points (provisional):
 
 1. explicit `export` keyword
 2. private/internal symbols
@@ -109,6 +124,8 @@ Diagnostics should include:
 2. source import statement line
 3. nested cause when module execution fails
 
+Normalization and matching rules are defined in `docs/spec/diagnostics-normalization-v0.2.md`.
+
 ## 8. Compatibility Table
 
 | Syntax | Expected Result | Errors |
@@ -128,4 +145,4 @@ Required case families:
 5. circular dependency
 6. alias binding correctness
 
-Existing tests can be migrated from unit/integration module cases to conformance format.
+Current conformance/integration suites already cover this baseline.

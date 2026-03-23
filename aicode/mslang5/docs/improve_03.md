@@ -178,7 +178,7 @@ This section is intended for continuous updates during execution.
 | ID | Stream | Milestone | Task | Owner | Status | Start Date | End Date | Evidence/Notes |
 |---|---|---|---|---|---|---|---|---|
 | P3-01 | A | M1 | Audit and replace stale VM/legacy migration guardrails | Codex | done | 2026-03-24 | 2026-03-24 | Replaced stale legacy-file hash guard with VM-only guard (`cmake/check_vm_only_guard.cmake`), wired in `CMakeLists.txt`, and validated by ctest |
-| P3-02 | A | M1 | Publish `spec v0.2` stability tiers and diagnostics code normalization map | TBD | planned | - | - | Align semantics/errors/modules docs |
+| P3-02 | A | M1 | Publish `spec v0.2` stability tiers and diagnostics code normalization map | Codex | done | 2026-03-24 | 2026-03-24 | Updated `docs/spec/semantics.md`, `docs/spec/errors.md`, `docs/spec/modules.md`, `docs/spec/diagnostics.md`, and added `docs/spec/diagnostics-normalization-v0.2.md` |
 | P3-03 | B | M2 | Produce frontend split design (`parser`, `resolver`, `lowering`) | TBD | planned | - | - | Non-behavioral architecture plan only |
 | P3-04 | B | M2 | Define parser recovery acceptance criteria and synchronization rules | TBD | planned | - | - | Include conformance expectations |
 | P3-05 | C | M3 | Publish runtime diagnostics precision contract and rollout plan | TBD | planned | - | - | Line-level precision baseline |
@@ -190,4 +190,6 @@ This section is intended for continuous updates during execution.
 
 1. 2026-03-24: Created initial v0.3 iteration plan with progress tracking table.
 2. 2026-03-24: Completed P3-01 by replacing the stale interpreter-freeze guard with an active VM-only anti-regression guard.
+3. 2026-03-24: Completed P3-02 by publishing spec v0.2 stability tiers and a diagnostics code normalization map aligned across semantics/errors/modules/diagnostics docs.
+
 

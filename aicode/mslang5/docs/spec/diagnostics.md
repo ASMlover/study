@@ -1,6 +1,6 @@
-# Maple Diagnostics Schema (Draft v0.1)
+﻿# Maple Diagnostics Schema (Spec v0.2)
 
-Status: Draft (T19 planning deliverable, docs-only).
+Status: Implemented baseline schema with v0.2 matching policy (updated on 2026-03-24).
 
 This document standardizes structured diagnostics for Maple.
 It complements `docs/spec/errors.md` with concrete schema and matching policy.
@@ -65,6 +65,10 @@ Breaking changes:
 1. changing meaning of existing code
 2. removing required fields
 3. changing phase classification for same condition without migration path
+
+Diagnostics normalization map:
+
+1. canonical and transitional mapping rules are defined in `docs/spec/diagnostics-normalization-v0.2.md`.
 
 ## 5. Multi-Diagnostic Ordering
 

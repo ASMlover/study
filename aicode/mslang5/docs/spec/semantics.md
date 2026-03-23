@@ -1,9 +1,30 @@
-# Maple Semantics (Draft v0.1)
+﻿# Maple Semantics (Spec v0.2)
 
-Status: Implemented baseline (validated in T14 closeout on 2026-03-21).
+Status: Implemented baseline with v0.2 stability tiers (updated on 2026-03-24).
 
 This document defines baseline static and runtime semantics for Maple.
 This document defines the current contract validated by the regression suites and script checks.
+
+## 0. Stability Tiers (v0.2)
+
+Tier definitions:
+
+1. `stable`: compatibility-locked in v0.2; behavior changes require spec/version migration notes.
+2. `provisional`: available in v0.2 baseline but allowed to evolve in v0.3 with migration notes.
+
+| Semantic Area | Tier | Notes |
+|---|---|---|
+| Core values/truthiness/scope/closure/function/call semantics | stable | Covered by unit/integration/conformance suites. |
+| Class/object semantics (`this`, `super`, inheritance, initializer receiver rule) | stable | Mapped to `MS3002~MS3004`, `MS4003~MS4004` contracts. |
+| Module load/cache identity and import forms | stable | Runtime contract tied to `MS5001~MS5004`. |
+| Module export policy (implicit top-level export baseline) | provisional | Future explicit export controls are planned for v0.3. |
+| Diagnostic message wording | provisional | Compatibility anchor remains `phase + code` (see diagnostics map). |
+
+See also:
+
+1. `docs/spec/errors.md` for phase/code contract.
+2. `docs/spec/modules.md` for module lifecycle/export policy.
+3. `docs/spec/diagnostics-normalization-v0.2.md` for normalization/matching rules.
 
 ## 1. Semantic Domains
 
@@ -128,7 +149,10 @@ In subclass methods:
 
 ### 5.2 Export Surface
 
-Current baseline export model is global-symbol based for module top-level declarations.
+Current v0.2 baseline export model is implicit top-level export:
+
+1. top-level module declarations are exported via module export table.
+2. explicit visibility controls are not part of the stable v0.2 surface.
 
 `from a.b import x as y;`:
 
@@ -184,10 +208,16 @@ Minimum diagnostic contract:
 2. source location (line; column planned)
 3. human-readable message
 
+Compatibility anchor:
+
+1. `phase + code` is normative.
+2. message text is secondary and may evolve.
+3. normalization behavior follows `docs/spec/diagnostics-normalization-v0.2.md`.
+
 ## 8. Conformance-Oriented Notes
 
 This document is intended to map one-to-one to conformance tests:
 
 1. every rule above requires at least one positive test and one negative test,
-2. diagnostic text matching should prefer code/phase stable fields once available,
+2. diagnostic matching should prefer stable `phase + code` fields,
 3. behavior changes must update this document before implementation changes.

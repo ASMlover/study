@@ -1,9 +1,24 @@
-# Maple Error and Diagnostics Specification (Draft v0.1)
+﻿# Maple Error and Diagnostics Specification (Spec v0.2)
 
-Status: Implemented baseline (validated in T14 closeout on 2026-03-21).
+Status: Implemented baseline with v0.2 stability tiers (updated on 2026-03-24).
 
 This document defines Maple's error taxonomy and diagnostic contract.
 The purpose is stable behavior across platforms and implementations, verified by diagnostics and stdlib error-path tests.
+
+## 0. Stability Tiers (v0.2)
+
+Tier definitions:
+
+1. `stable`: compatibility-locked in v0.2.
+2. `provisional`: accepted in v0.2 but may be normalized in v0.3 with migration notes.
+
+| Contract Area | Tier | Notes |
+|---|---|---|
+| `phase` families (`lex/parse/resolve/runtime/module`) | stable | Primary compatibility key. |
+| Code ranges (`MS1xxx` to `MS5xxx`) | stable | Family ownership is fixed in v0.2. |
+| Existing baseline codes (`MS3001~MS3004`, `MS4001~MS4005`, `MS5001~MS5004`) | stable | Used by conformance/integration suites. |
+| Parse invalid-assignment specificity (`MS2003`) | provisional | Canonical target is `MS2003`; temporary normalization alias from `MS2001` is allowed. |
+| Human message wording | provisional | Keep intent stable; test anchor remains `phase + code`. |
 
 ## 1. Error Phases
 
@@ -66,7 +81,7 @@ Stability requirements:
 2. `message` text should remain stable; minor wording can change only with release note entry.
 3. Tests should prefer matching by `phase + code`; message can be secondary match.
 
-## 5. Baseline Error Catalog (Draft)
+## 5. Baseline Error Catalog (v0.2)
 
 ### 5.1 Lex Errors (`MS1xxx`)
 
@@ -77,7 +92,7 @@ Stability requirements:
 
 1. `MS2001`: expected expression
 2. `MS2002`: expected token (generic)
-3. `MS2003`: invalid assignment target
+3. `MS2003`: invalid assignment target (canonical target; normalization alias may map from `MS2001` in transitional paths)
 
 ### 5.3 Resolve Errors (`MS3xxx`)
 
@@ -90,7 +105,7 @@ Stability requirements:
 
 1. `MS4001`: undefined variable
 2. `MS4002`: arity mismatch
-3. `MS4003`: invalid operand types
+3. `MS4003`: invalid operand types / runtime type contract violation
 4. `MS4004`: undefined property
 5. `MS4005`: non-callable value invocation
 
@@ -134,6 +149,7 @@ Suggested normalization:
 1. path separator normalization
 2. absolute path stripping
 3. optional column field tolerance during migration period
+4. code normalization and phase fallback behavior per `docs/spec/diagnostics-normalization-v0.2.md`
 
 ## 9. Versioning Rules
 
