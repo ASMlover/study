@@ -106,11 +106,10 @@ if(MAPLE_BUILD_TESTS)
   set_tests_properties(maple_tests_migration_debt PROPERTIES LABELS "migration_debt")
 
   add_test(
-    NAME maple_guard_interpreter_freeze
+    NAME maple_guard_vm_only
     COMMAND ${CMAKE_COMMAND}
-      -DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/src/runtime/script_interpreter.cc
-      -DEXPECTED_FILE=${CMAKE_CURRENT_SOURCE_DIR}/docs/migration/interpreter_freeze.sha256
-      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_interpreter_freeze.cmake
+      -DROOT_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+      -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/check_vm_only_guard.cmake
   )
-  set_tests_properties(maple_guard_interpreter_freeze PROPERTIES LABELS "migration_debt;guardrail")
+  set_tests_properties(maple_guard_vm_only PROPERTIES LABELS "migration_debt;guardrail")
 endif()
