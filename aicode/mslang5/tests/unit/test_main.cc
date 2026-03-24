@@ -9,6 +9,7 @@ int RunChunkDisasmTests();
 int RunLexerTests();
 int RunParserFacadeTests();
 int RunResolverPassTests();
+int RunLoweringPhaseTests();
 int RunVmCompilerTests();
 int RunModuleTests();
 int RunCliTests();
@@ -32,6 +33,7 @@ void RunUnitSuite() {
   RunLexerTests();
   RunParserFacadeTests();
   RunResolverPassTests();
+  RunLoweringPhaseTests();
   RunVmCompilerTests();
   RunModuleTests();
 }
