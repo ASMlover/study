@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "bytecode/opcode.hh"
-#include "frontend/lexer.hh"
+#include "frontend/parser_facade.hh"
 #include "frontend/parser.hh"
 
 namespace ms {
@@ -908,13 +908,16 @@ class CompilerImpl {
 }  // namespace
 
 CompileResult compile_to_chunk(const std::string& source) {
-  Lexer lexer(source, true);
-  Parser parser(lexer.scan_all_tokens());
+  ParserBoundary boundary = build_parser_boundary(source);
+  Parser parser(std::move(boundary.tokens));
   CompilerImpl compiler(std::move(parser));
   return compiler.compile();
 }
 
+
 }  // namespace ms
+
+
 
 
 

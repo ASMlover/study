@@ -7,6 +7,7 @@ int RunLoggerTests();
 int RunSourceTests();
 int RunChunkDisasmTests();
 int RunLexerTests();
+int RunParserFacadeTests();
 int RunVmCompilerTests();
 int RunModuleTests();
 int RunCliTests();
@@ -28,6 +29,7 @@ void RunUnitSuite() {
   RunSourceTests();
   RunChunkDisasmTests();
   RunLexerTests();
+  RunParserFacadeTests();
   RunVmCompilerTests();
   RunModuleTests();
 }
