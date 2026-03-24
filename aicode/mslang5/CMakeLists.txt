@@ -17,6 +17,7 @@ add_library(maple_core
   src/frontend/lexer.cc
   src/frontend/parser.cc
   src/frontend/parser_facade.cc
+  src/frontend/resolver_pass.cc
   src/frontend/compiler.cc
   src/runtime/object.cc
   src/runtime/value.cc
@@ -65,6 +66,7 @@ if(MAPLE_BUILD_TESTS)
     tests/unit/test_chunk_disasm.cc
     tests/unit/test_lexer.cc
     tests/unit/test_parser_facade.cc
+    tests/unit/test_resolver_pass.cc
     tests/unit/test_vm_compiler.cc
     tests/unit/test_module.cc
     tests/integration/test_cli.cc
@@ -115,6 +117,10 @@ if(MAPLE_BUILD_TESTS)
   )
   set_tests_properties(maple_guard_vm_only PROPERTIES LABELS "migration_debt;guardrail")
 endif()
+
+
+
+
 
 
 

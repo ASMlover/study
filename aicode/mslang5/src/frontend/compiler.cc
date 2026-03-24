@@ -10,6 +10,7 @@
 #include "bytecode/opcode.hh"
 #include "frontend/parser_facade.hh"
 #include "frontend/parser.hh"
+#include "frontend/resolver_pass.hh"
 
 namespace ms {
 
@@ -909,13 +910,19 @@ class CompilerImpl {
 
 CompileResult compile_to_chunk(const std::string& source) {
   ParserBoundary boundary = build_parser_boundary(source);
-  Parser parser(std::move(boundary.tokens));
+  ResolverPassResult resolver_result = run_resolver_pass(std::move(boundary.tokens));
+
+  Parser parser(std::move(resolver_result.tokens));
   CompilerImpl compiler(std::move(parser));
-  return compiler.compile();
+  CompileResult result = compiler.compile();
+  result.errors.insert(result.errors.end(), resolver_result.errors.begin(), resolver_result.errors.end());
+  return result;
 }
 
 
 }  // namespace ms
+
+
 
 
 
