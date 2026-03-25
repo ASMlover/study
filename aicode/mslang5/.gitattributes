@@ -1,0 +1,46 @@
+* text=auto
+
+# Implementation code and build scripts must use LF.
+*.cc text eol=lf
+*.hh text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.cxx text eol=lf
+*.hxx text eol=lf
+*.ixx text eol=lf
+*.inl text eol=lf
+*.ipp text eol=lf
+
+CMakeLists.txt text eol=lf
+*.cmake text eol=lf
+
+# Tooling and tests.
+*.py text eol=lf
+*.ps1 text eol=lf
+*.sh text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+
+# Data/config/docs in this repo.
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.ms text eol=lf
+
+# Binary assets.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.lib binary
+*.obj binary
+*.pdb binary
