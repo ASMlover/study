@@ -1,6 +1,7 @@
 #include "runtime/gc.hh"
 
 #include <algorithm>
+#include <cassert>
 
 #include "runtime/object.hh"
 
@@ -65,13 +66,41 @@ void GcController::mark_allocation(const void* key) noexcept {
   it->second.marked = true;
 }
 
+bool GcController::is_registered_object(const RuntimeObject* object) const noexcept {
+  return object != nullptr && object->gc_header().tracked;
+}
+
+bool GcController::is_registered_allocation(const void* key) const noexcept {
+  if (key == nullptr) {
+    return false;
+  }
+  return allocations_.contains(key);
+}
+
+bool GcController::is_allocation_marked(const void* key) const noexcept {
+  if (key == nullptr) {
+    return false;
+  }
+  const auto it = allocations_.find(key);
+  if (it == allocations_.end()) {
+    return false;
+  }
+  return it->second.marked;
+}
 bool GcController::should_collect() const noexcept {
   return stats_.bytes_allocated >= threshold_bytes_;
 }
 
 void GcController::collect(const RootTracer& trace_roots) noexcept {
+  const std::size_t previous_bytes_allocated = stats_.bytes_allocated;
+  const std::size_t previous_objects_tracked = stats_.objects_tracked;
+
   for (RuntimeObject* object = tracked_objects_head_; object != nullptr;
        object = object->gc_header().next) {
+#ifndef NDEBUG
+    assert(object->gc_header().tracked &&
+           "tracked object list should not contain unregistered objects");
+#endif
     object->gc_header().marked = false;
   }
 
@@ -101,6 +130,13 @@ void GcController::collect(const RootTracer& trace_roots) noexcept {
     ++reclaimed_objects;
     it = allocations_.erase(it);
   }
+
+#ifndef NDEBUG
+  assert(live_objects + reclaimed_objects == previous_objects_tracked &&
+         "GC object accounting should conserve tracked object count per cycle");
+  assert(live_bytes + reclaimed_bytes == previous_bytes_allocated &&
+         "GC byte accounting should conserve allocated bytes per cycle");
+#endif
 
   ++stats_.collections;
   stats_.bytes_live = live_bytes;

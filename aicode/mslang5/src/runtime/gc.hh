@@ -29,6 +29,9 @@ class GcController {
 
   void register_allocation(const void* key, std::size_t bytes) noexcept;
   void mark_allocation(const void* key) noexcept;
+  bool is_registered_object(const RuntimeObject* object) const noexcept;
+  bool is_registered_allocation(const void* key) const noexcept;
+  bool is_allocation_marked(const void* key) const noexcept;
   bool should_collect() const noexcept;
   void collect(const RootTracer& trace_roots) noexcept;
   void collect() noexcept;

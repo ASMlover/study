@@ -1,6 +1,7 @@
 #include "runtime/vm.hh"
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -1749,6 +1750,9 @@ std::size_t Vm::estimate_module_bytes(const std::shared_ptr<Module>& module) con
 void Vm::trace_gc_roots(GcController& gc) const {
   std::unordered_set<const void*> seen_modules;
   std::unordered_set<const void*> seen_objects;
+#ifndef NDEBUG
+  std::vector<const void*> cached_module_keys;
+#endif
 
   for (const auto& value : stack_) {
     trace_gc_value(value, gc, &seen_modules, &seen_objects);
@@ -1762,12 +1766,45 @@ void Vm::trace_gc_roots(GcController& gc) const {
   trace_gc_table(globals_, gc, &seen_modules, &seen_objects);
 
   if (current_module_ != nullptr) {
+#ifndef NDEBUG
+    assert(gc.is_registered_allocation(current_module_.get()) &&
+           "current module root must be registered before tracing");
+#endif
     trace_gc_module(current_module_, gc, &seen_modules, &seen_objects);
   }
-  modules_.for_each_cached_module([this, &gc, &seen_modules, &seen_objects](
-                                   const std::shared_ptr<Module>& module) {
+  modules_.for_each_cached_module([this, &gc, &seen_modules, &seen_objects
+#ifndef NDEBUG
+                                   , &cached_module_keys
+#endif
+                                   ](const std::shared_ptr<Module>& module) {
+#ifndef NDEBUG
+    assert(module != nullptr && "module cache must not contain null module entries");
+    if (module != nullptr) {
+      assert(gc.is_registered_allocation(module.get()) &&
+             "module cache entry must be registered before tracing");
+      cached_module_keys.push_back(module.get());
+    }
+#endif
     trace_gc_module(module, gc, &seen_modules, &seen_objects);
   });
+
+#ifndef NDEBUG
+  if (current_module_ != nullptr) {
+    assert(gc.is_allocation_marked(current_module_.get()) &&
+           "current module allocation should be marked by root tracing");
+  }
+  for (const void* key : cached_module_keys) {
+    assert(gc.is_allocation_marked(key) &&
+           "module cache allocation should be marked by root tracing");
+  }
+  for (const auto& object : gc_owned_objects_) {
+    assert(object != nullptr && "vm ownership container should not keep null entries");
+    if (object != nullptr) {
+      assert(gc.is_registered_object(object.get()) &&
+             "vm-owned object should remain GC-registered");
+    }
+  }
+#endif
 }
 
 void Vm::trace_gc_table(const Table& table, GcController& gc,
