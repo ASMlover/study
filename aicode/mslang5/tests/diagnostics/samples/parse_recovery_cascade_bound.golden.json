@@ -1,0 +1,11 @@
+[
+  {
+    "phase": "parse",
+    "code": "MS2001",
+    "span": {
+      "file": "tests/scripts/diagnostics/parse_recovery_cascade_bound.ms",
+      "line": 1
+    },
+    "notes": []
+  }
+]

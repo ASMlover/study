@@ -8,7 +8,9 @@
 #include <regex>
 #include <sstream>
 #include <string>
+#include <vector>
 
+#include "frontend/parser.hh"
 #include "runtime/vm.hh"
 
 namespace {
@@ -111,6 +113,58 @@ void RunGoldenCase(const std::string& id, const std::string& script_path,
   Expect(diag.span.line == expected->line, id + " line mismatch");
 }
 
+void RunParserCascadeBoundCase() {
+  const std::string id = "DIAG-PARSE-RECOVERY-BOUND-001";
+  const std::string script_path = RepoRoot() + "/tests/scripts/diagnostics/parse_recovery_cascade_bound.ms";
+  const std::string source = ReadAll(script_path);
+
+  ms::Vm first_vm;
+  first_vm.modules().add_search_path(RepoRoot() + "/tests/scripts/module");
+  std::ostringstream first_output;
+  first_vm.set_output(first_output);
+  std::string first_error;
+  const ms::InterpretResult first_result =
+      first_vm.execute_source_named(source, "tests/scripts/diagnostics/parse_recovery_cascade_bound.ms",
+                                    &first_error);
+  Expect(first_result == ms::InterpretResult::kCompileError, id + " should fail compile on first run");
+
+  const auto& first_diagnostics = first_vm.last_diagnostics();
+  Expect(!first_diagnostics.empty(), id + " should expose diagnostics on first run");
+  Expect(first_diagnostics.size() <= ms::Parser::kMaxErrorCascadeCount,
+         id + " should cap parse cascade count");
+
+  ms::Vm second_vm;
+  second_vm.modules().add_search_path(RepoRoot() + "/tests/scripts/module");
+  std::ostringstream second_output;
+  second_vm.set_output(second_output);
+  std::string second_error;
+  const ms::InterpretResult second_result =
+      second_vm.execute_source_named(source, "tests/scripts/diagnostics/parse_recovery_cascade_bound.ms",
+                                     &second_error);
+  Expect(second_result == ms::InterpretResult::kCompileError,
+         id + " should fail compile on second run");
+
+  const auto& second_diagnostics = second_vm.last_diagnostics();
+  Expect(!second_diagnostics.empty(), id + " should expose diagnostics on second run");
+  Expect(second_diagnostics.size() <= ms::Parser::kMaxErrorCascadeCount,
+         id + " should cap parse cascade count on second run");
+
+  if (first_diagnostics.empty() || second_diagnostics.empty()) {
+    return;
+  }
+
+  const auto& first = first_diagnostics.front();
+  const auto& second = second_diagnostics.front();
+  Expect(NormalizePhase(first.phase) == NormalizePhase(second.phase),
+         id + " should preserve first diagnostic phase across runs");
+  Expect(NormalizeCode(first.code) == NormalizeCode(second.code),
+         id + " should preserve first diagnostic code across runs");
+  Expect(NormalizePath(first.span.file) == NormalizePath(second.span.file),
+         id + " should preserve first diagnostic file across runs");
+  Expect(first.span.line == second.span.line,
+         id + " should preserve first diagnostic line across runs");
+}
+
 }  // namespace
 
 int RunDiagnosticsGoldenTests() {
@@ -131,8 +185,11 @@ int RunDiagnosticsGoldenTests() {
                 RepoRoot() + "/tests/scripts/diagnostics/module_not_found.ms",
                 ms::InterpretResult::kRuntimeError,
                 RepoRoot() + "/tests/diagnostics/samples/module_not_found.golden.json");
+  RunGoldenCase("DIAG-PARSE-RECOVERY-BOUND-001",
+                RepoRoot() + "/tests/scripts/diagnostics/parse_recovery_cascade_bound.ms",
+                ms::InterpretResult::kCompileError,
+                RepoRoot() +
+                    "/tests/diagnostics/samples/parse_recovery_cascade_bound.golden.json");
+  RunParserCascadeBoundCase();
   return 0;
 }
-
-
-
