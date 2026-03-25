@@ -4,7 +4,7 @@
     "code": "MS5001",
     "span": {
       "file": "tests/scripts/diagnostics/module_not_found.ms",
-      "line": 1
+      "line": 2
     },
     "notes": []
   }

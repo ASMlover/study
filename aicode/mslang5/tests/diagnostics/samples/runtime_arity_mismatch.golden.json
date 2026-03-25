@@ -4,7 +4,7 @@
     "code": "MS4002",
     "span": {
       "file": "tests/scripts/diagnostics/runtime_arity_mismatch.ms",
-      "line": 1
+      "line": 5
     },
     "notes": []
   }

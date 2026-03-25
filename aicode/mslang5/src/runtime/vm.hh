@@ -67,6 +67,12 @@ class Vm {
   bool is_falsey(const Value& value) const noexcept;
   Value constant_to_value(const Constant& constant);
   std::string last_segment(const std::string& dotted) const;
+  std::size_t line_for_instruction(const Chunk& chunk, std::size_t instruction_ip) const noexcept;
+  DiagnosticSpan current_runtime_span() const;
+  Diagnostic make_runtime_diagnostic(const std::string& code, const std::string& message) const;
+  Diagnostic parse_diagnostic_with_current_span(const std::string& text,
+                                                const std::string& phase,
+                                                const std::string& code) const;
   void set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error);
   void set_single_diagnostic(const Diagnostic& diagnostic, std::string* error);
 
@@ -126,6 +132,7 @@ class Vm {
   GcController gc_;
   std::shared_ptr<Module> current_module_;
   std::string current_source_name_ = "script.ms";
+  std::size_t current_runtime_line_ = 1;
   std::vector<Diagnostic> last_diagnostics_;
   SourceExecutionRoute last_source_route_ = SourceExecutionRoute::kVmPipeline;
 };

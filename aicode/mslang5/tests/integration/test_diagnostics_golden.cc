@@ -21,6 +21,13 @@ struct ExpectedDiagnostic {
   std::string file;
   std::size_t line = 1;
 };
+struct PrecisionCase {
+  std::string id;
+  std::string source;
+  std::string phase;
+  std::string code;
+  std::size_t line = 1;
+};
 
 std::string NormalizePath(std::string path) {
   std::replace(path.begin(), path.end(), '\\', '/');
@@ -165,6 +172,65 @@ void RunParserCascadeBoundCase() {
          id + " should preserve first diagnostic line across runs");
 }
 
+void RunRuntimeModuleSpanPrecisionCoverageCase() {
+  const std::vector<PrecisionCase> cases = {
+      {"DIAG-RUNTIME-SPAN-001", "\n\nprint missing_value\n", "runtime", "MS4001", 3},
+      {"DIAG-RUNTIME-SPAN-002", "fun add(a, b) {\n  return a + b\n}\n\nprint add(1)\n", "runtime",
+       "MS4002", 5},
+      {"DIAG-RUNTIME-SPAN-003", "class Foo {}\nvar f = Foo()\nprint f.nope\n", "runtime", "MS4004",
+       3},
+      {"DIAG-RUNTIME-SPAN-004", "var n = 42\nn()\n", "runtime", "MS4005", 2},
+      {"DIAG-RUNTIME-SPAN-005", "import std.str\nprint str.len(123, 456)\n", "runtime", "MS4002",
+       2},
+      {"DIAG-MODULE-SPAN-001", "\n\nimport no_such_module\n", "module", "MS5001", 4},
+      {"DIAG-MODULE-SPAN-002", "\nfrom util import not_exported as alias\n", "module", "MS5002", 4},
+      {"DIAG-MODULE-SPAN-003", "\n\n\nimport cycle_a\n", "module", "MS5003", 2},
+      {"DIAG-MODULE-SPAN-004", "import fail_init_runtime\n", "module", "MS5004", 2},
+  };
+
+  std::size_t precise_count = 0;
+  for (const auto& test_case : cases) {
+    ms::Vm vm;
+    vm.modules().add_search_path(RepoRoot() + "/tests/scripts/module");
+    std::ostringstream output;
+    vm.set_output(output);
+
+    std::string error;
+    const ms::InterpretResult result =
+        vm.execute_source_named(test_case.source, "tests/scripts/diagnostics/runtime_span_precision.ms",
+                                &error);
+    Expect(result == ms::InterpretResult::kRuntimeError, test_case.id + " should fail at runtime");
+
+    const auto& diagnostics = vm.last_diagnostics();
+    Expect(!diagnostics.empty(), test_case.id + " should expose diagnostics");
+    if (diagnostics.empty()) {
+      continue;
+    }
+
+    const auto& diagnostic = diagnostics.front();
+    const bool phase_matches = NormalizePhase(diagnostic.phase) == NormalizePhase(test_case.phase);
+    const bool code_matches = NormalizeCode(diagnostic.code) == NormalizeCode(test_case.code);
+    const bool line_matches = diagnostic.span.line == test_case.line;
+    const bool precise = phase_matches && code_matches && line_matches;
+    if (precise) {
+      ++precise_count;
+      continue;
+    }
+
+    std::ostringstream mismatch;
+    mismatch << test_case.id << " mismatch: expected " << test_case.phase << "/" << test_case.code
+             << " line " << test_case.line << ", got " << diagnostic.phase << "/"
+             << diagnostic.code << " line " << diagnostic.span.line;
+    Expect(false, mismatch.str());
+  }
+
+  const double precision_ratio =
+      cases.empty() ? 1.0 : static_cast<double>(precise_count) / static_cast<double>(cases.size());
+  std::ostringstream ratio_message;
+  ratio_message << "runtime/module span precision ratio should be >= 0.95, got "
+                << precision_ratio;
+  Expect(precision_ratio >= 0.95, ratio_message.str());
+}
 }  // namespace
 
 int RunDiagnosticsGoldenTests() {
@@ -191,5 +257,6 @@ int RunDiagnosticsGoldenTests() {
                 RepoRoot() +
                     "/tests/diagnostics/samples/parse_recovery_cascade_bound.golden.json");
   RunParserCascadeBoundCase();
+  RunRuntimeModuleSpanPrecisionCoverageCase();
   return 0;
 }

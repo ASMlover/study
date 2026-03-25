@@ -84,6 +84,7 @@ std::ostream& Vm::output() const noexcept { return *out_; }
 
 InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
   last_diagnostics_.clear();
+  current_runtime_line_ = 1;
   stack_.clear();
   open_upvalues_.clear();
   gc_frame_roots_.clear();
@@ -116,7 +117,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         frame.closure->function->prototype->chunk == nullptr) {
       set_single_diagnostic(
           make_diagnostic("runtime", "MS4003", "invalid call frame",
-                          DiagnosticSpan{current_source_name_, 1}),
+                          current_runtime_span()),
           error);
       return InterpretResult::kRuntimeError;
     }
@@ -126,13 +127,15 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
       return InterpretResult::kOk;
     }
 
+    const auto instruction_ip = frame.ip;
     const auto op = static_cast<OpCode>(active_chunk.code()[frame.ip++]);
+    current_runtime_line_ = line_for_instruction(active_chunk, instruction_ip);
     switch (op) {
       case OpCode::kConstant: {
         Constant c;
         if (!read_constant(active_chunk, frame.ip++, &c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid constant index",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -145,7 +148,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
             !std::holds_alternative<std::shared_ptr<FunctionPrototype>>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "closure operand must be function prototype",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -159,7 +162,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         for (int i = 0; i < prototype->upvalue_count; ++i) {
           if (frame.ip + 1 >= active_chunk.code().size()) {
             set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid closure operand",
-                                                  DiagnosticSpan{current_source_name_, 1}),
+                                                  current_runtime_span()),
                                   error);
             return InterpretResult::kRuntimeError;
           }
@@ -173,7 +176,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           if (static_cast<std::size_t>(index) >= frame.closure->upvalues.size()) {
             set_single_diagnostic(
                 make_diagnostic("runtime", "MS4003", "upvalue index out of range",
-                                DiagnosticSpan{current_source_name_, 1}),
+                                current_runtime_span()),
                 error);
             return InterpretResult::kRuntimeError;
           }
@@ -199,8 +202,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         pop(&b);
         pop(&a);
         if (!a.is_number() || !b.is_number()) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "operands must be numbers"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "operands must be numbers"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -221,8 +223,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           break;
         }
         if (!a.is_number() || !b.is_number()) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "operands must be numbers"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "operands must be numbers"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -241,8 +242,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         Value v;
         pop(&v);
         if (!v.is_number()) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "operand must be number"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "operand must be number"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -270,15 +270,14 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
       case OpCode::kSetLocal: {
         if (frame.ip >= active_chunk.code().size()) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid local slot operand",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         const std::size_t slot = active_chunk.code()[frame.ip++];
         const std::size_t absolute_slot = frame.slot_base + slot;
         if (absolute_slot >= stack_.size()) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4001", "undefined local slot"),
-                                                  "runtime", "MS4001", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4001", "undefined local slot"), "runtime", "MS4001"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -295,14 +294,14 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
       case OpCode::kSetUpvalue: {
         if (frame.ip >= active_chunk.code().size()) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid upvalue operand",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         const std::size_t slot = active_chunk.code()[frame.ip++];
         if (slot >= frame.closure->upvalues.size() || frame.closure->upvalues[slot] == nullptr) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "upvalue slot out of range",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -318,14 +317,14 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
       case OpCode::kCall: {
         if (frame.ip >= active_chunk.code().size()) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid call operand",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         const int arg_count = active_chunk.code()[frame.ip++];
         if (stack_.size() < static_cast<std::size_t>(arg_count + 1)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "stack underflow on call",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -340,20 +339,20 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &method_name) ||
             !std::holds_alternative<std::string>(method_name)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid invoke method operand",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         if (frame.ip >= active_chunk.code().size()) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid invoke argument operand",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         const int arg_count = active_chunk.code()[frame.ip++];
         if (stack_.size() < static_cast<std::size_t>(arg_count + 1)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "stack underflow on invoke",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -370,36 +369,34 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
             !std::holds_alternative<std::string>(method_name)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid super invoke method operand",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
         if (frame.ip >= active_chunk.code().size()) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid super invoke argument operand",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
         const int arg_count = active_chunk.code()[frame.ip++];
         if (stack_.size() < static_cast<std::size_t>(arg_count + 2)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "stack underflow on super invoke",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         const std::size_t super_index = stack_.size() - static_cast<std::size_t>(arg_count) - 1;
         const Value super_value = stack_[super_index];
         if (!super_value.is_object()) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "superclass must be a class"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         const auto superclass = dynamic_cast<ClassObject*>(super_value.as_object());
         if (superclass == nullptr) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "superclass must be a class"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -414,7 +411,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (stack_.empty()) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "stack underflow on close upvalue",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -428,7 +425,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &c) || !std::holds_alternative<std::string>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "class name must be string constant",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -443,7 +440,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!pop(&superclass_value) || !peek(&subclass_value)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid stack state for inheritance",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -455,8 +452,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
             subclass_value.is_object() ? dynamic_cast<ClassObject*>(subclass_value.as_object())
                                        : nullptr;
         if (superclass == nullptr || subclass == nullptr) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "superclass must be a class"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -468,7 +464,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &c) || !std::holds_alternative<std::string>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "method name must be string constant",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -477,7 +473,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!pop(&method_value) || !peek(&class_value)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid stack state for method binding",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -489,7 +485,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (klass == nullptr || method == nullptr) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid method declaration",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -501,14 +497,14 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &c) || !std::holds_alternative<std::string>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "property name must be string constant",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         Value receiver;
         if (!pop(&receiver)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003", "empty stack for property access",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -516,8 +512,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (receiver.is_module()) {
           Value exported;
           if (!receiver.as_module()->exports.get(name, &exported)) {
-            set_single_diagnostic(ParseWithFallback(RuntimeError("MS4004", "undefined property: " + name),
-                                                    "runtime", "MS4004", current_source_name_),
+            set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4004", "undefined property: " + name), "runtime", "MS4004"),
                                   error);
             return InterpretResult::kRuntimeError;
           }
@@ -527,8 +522,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         const auto instance =
             receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
         if (instance == nullptr) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "only instances have properties"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "only instances have properties"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -547,7 +541,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &c) || !std::holds_alternative<std::string>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "property name must be string constant",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -556,15 +550,14 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!pop(&value) || !pop(&receiver)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid stack state for property set",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
         const auto instance =
             receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
         if (instance == nullptr) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "only instances have fields"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "only instances have fields"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -577,7 +570,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &c) || !std::holds_alternative<std::string>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "super method name must be string constant",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -586,7 +579,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!pop(&superclass_value) || !pop(&receiver)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid stack state for super access",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -595,8 +588,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
                 ? dynamic_cast<ClassObject*>(superclass_value.as_object())
                 : nullptr;
         if (superclass == nullptr) {
-          set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "superclass must be a class"),
-                                                  "runtime", "MS4003", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "superclass must be a class"), "runtime", "MS4003"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -613,7 +605,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_constant(active_chunk, frame.ip++, &c) || !std::holds_alternative<std::string>(c)) {
           set_single_diagnostic(make_diagnostic("runtime", "MS4003",
                                                 "global name must be string constant",
-                                                DiagnosticSpan{current_source_name_, 1}),
+                                                current_runtime_span()),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -627,8 +619,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (op == OpCode::kGetGlobal) {
           Value v;
           if (!get_global(name, &v)) {
-            set_single_diagnostic(ParseWithFallback(RuntimeError("MS4001", "undefined variable: " + name),
-                                                    "runtime", "MS4001", current_source_name_),
+            set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4001", "undefined variable: " + name), "runtime", "MS4001"),
                                   error);
             return InterpretResult::kRuntimeError;
           }
@@ -639,8 +630,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           Value v;
           pop(&v);
           if (!set_global(name, v)) {
-            set_single_diagnostic(ParseWithFallback(RuntimeError("MS4001", "undefined variable: " + name),
-                                                    "runtime", "MS4001", current_source_name_),
+            set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4001", "undefined variable: " + name), "runtime", "MS4001"),
                                   error);
             return InterpretResult::kRuntimeError;
           }
@@ -649,7 +639,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         std::string module_error;
         auto module = modules_.load(name, *this, &module_error);
         if (!module) {
-          set_single_diagnostic(ParseWithFallback(module_error, "module", "MS5004", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(module_error, "module", "MS5004"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
@@ -668,7 +658,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
             !std::holds_alternative<std::string>(alias_name)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid from-import operand",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -679,16 +669,15 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         std::string module_error;
         auto loaded = modules_.load(module, *this, &module_error);
         if (!loaded) {
-          set_single_diagnostic(ParseWithFallback(module_error, "module", "MS5004", current_source_name_),
+          set_single_diagnostic(parse_diagnostic_with_current_span(module_error, "module", "MS5004"),
                                 error);
           return InterpretResult::kRuntimeError;
         }
         Value exported;
         if (!loaded->exports.get(symbol, &exported)) {
           set_single_diagnostic(
-              ParseWithFallback("module error (MS5002): module '" + module +
-                                    "' has no symbol '" + symbol + "'",
-                                "module", "MS5002", current_source_name_),
+              parse_diagnostic_with_current_span("module error (MS5002): module '" + module +
+                                    "' has no symbol '" + symbol + "'", "module", "MS5002"),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -702,7 +691,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
         if (!read_jump_offset(active_chunk, frame.ip, &offset)) {
           set_single_diagnostic(
               make_diagnostic("runtime", "MS4003", "invalid jump operand",
-                              DiagnosticSpan{current_source_name_, 1}),
+                              current_runtime_span()),
               error);
           return InterpretResult::kRuntimeError;
         }
@@ -716,7 +705,7 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
           if (!peek(&condition)) {
             set_single_diagnostic(
                 make_diagnostic("runtime", "MS4003", "empty stack for conditional jump",
-                                DiagnosticSpan{current_source_name_, 1}),
+                                current_runtime_span()),
                 error);
             return InterpretResult::kRuntimeError;
           }
@@ -755,6 +744,7 @@ InterpretResult Vm::execute_source(const std::string& source, std::string* error
 InterpretResult Vm::execute_source_named(const std::string& source, const std::string& source_name,
                                          std::string* error) {
   current_source_name_ = source_name;
+  current_runtime_line_ = 1;
   last_diagnostics_.clear();
   last_source_route_ = SourceExecutionRoute::kVmPipeline;
 
@@ -959,6 +949,37 @@ std::string Vm::last_segment(const std::string& dotted) const {
   }
   return dotted.substr(pos + 1);
 }
+std::size_t Vm::line_for_instruction(const Chunk& chunk,
+                                     const std::size_t instruction_ip) const noexcept {
+  const auto& lines = chunk.lines();
+  if (lines.empty()) {
+    return 1;
+  }
+  if (instruction_ip >= lines.size()) {
+    return lines.back();
+  }
+  return lines[instruction_ip];
+}
+
+DiagnosticSpan Vm::current_runtime_span() const {
+  return DiagnosticSpan{current_source_name_, current_runtime_line_};
+}
+
+Diagnostic Vm::make_runtime_diagnostic(const std::string& code,
+                                       const std::string& message) const {
+  return make_diagnostic("runtime", code, message, current_runtime_span());
+}
+
+Diagnostic Vm::parse_diagnostic_with_current_span(const std::string& text,
+                                                  const std::string& phase,
+                                                  const std::string& code) const {
+  Diagnostic diagnostic = ParseWithFallback(text, phase, code, current_source_name_);
+  diagnostic.span.file = current_source_name_;
+  diagnostic.span.line = current_runtime_line_;
+  diagnostic.span.column = std::nullopt;
+  diagnostic.span.length = std::nullopt;
+  return diagnostic;
+}
 
 void Vm::set_diagnostics(std::vector<Diagnostic> diagnostics, std::string* error) {
   last_diagnostics_ = std::move(diagnostics);
@@ -978,7 +999,7 @@ bool Vm::call_closure(ClosureObject* closure, const int arg_count,
       closure->function->prototype->chunk == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "invalid callable object",
-                        DiagnosticSpan{current_source_name_, 1}),
+                        current_runtime_span()),
         error);
     return false;
   }
@@ -986,9 +1007,8 @@ bool Vm::call_closure(ClosureObject* closure, const int arg_count,
   const int expected = closure->function->prototype->arity;
   if (arg_count != expected) {
     set_single_diagnostic(
-        ParseWithFallback(RuntimeError("MS4002", "expected " + std::to_string(expected) +
-                                                    " arguments but got " + std::to_string(arg_count)),
-                          "runtime", "MS4002", current_source_name_),
+        parse_diagnostic_with_current_span(RuntimeError("MS4002", "expected " + std::to_string(expected) +
+                                                    " arguments but got " + std::to_string(arg_count)), "runtime", "MS4002"),
         error);
     return false;
   }
@@ -996,7 +1016,7 @@ bool Vm::call_closure(ClosureObject* closure, const int arg_count,
   if (stack_.size() < static_cast<std::size_t>(arg_count + 1)) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "invalid stack state for call",
-                        DiagnosticSpan{current_source_name_, 1}),
+                        current_runtime_span()),
         error);
     return false;
   }
@@ -1013,14 +1033,13 @@ bool Vm::invoke_from_class(ClassObject* klass, const std::string& name,
   if (klass == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "invalid class receiver",
-                        DiagnosticSpan{current_source_name_, 1}),
+                        current_runtime_span()),
         error);
     return false;
   }
   Value method;
   if (!klass->methods.get(name, &method)) {
-    set_single_diagnostic(ParseWithFallback(RuntimeError("MS4004", "undefined property: " + name),
-                                            "runtime", "MS4004", current_source_name_),
+    set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4004", "undefined property: " + name), "runtime", "MS4004"),
                           error);
     return false;
   }
@@ -1029,7 +1048,7 @@ bool Vm::invoke_from_class(ClassObject* klass, const std::string& name,
   if (closure == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "method must be callable closure",
-                        DiagnosticSpan{current_source_name_, 1}),
+                        current_runtime_span()),
         error);
     return false;
   }
@@ -1043,8 +1062,7 @@ bool Vm::invoke_value(const Value& receiver, const std::string& name, const int 
     auto module = receiver.as_module();
     Value exported;
     if (!module->exports.get(name, &exported)) {
-      set_single_diagnostic(ParseWithFallback(RuntimeError("MS4004", "undefined property: " + name),
-                                              "runtime", "MS4004", current_source_name_),
+      set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4004", "undefined property: " + name), "runtime", "MS4004"),
                             error);
       return false;
     }
@@ -1055,8 +1073,7 @@ bool Vm::invoke_value(const Value& receiver, const std::string& name, const int 
   const auto instance =
       receiver.is_object() ? dynamic_cast<InstanceObject*>(receiver.as_object()) : nullptr;
   if (instance == nullptr) {
-    set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", "only instances have methods"),
-                                            "runtime", "MS4003", current_source_name_),
+    set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", "only instances have methods"), "runtime", "MS4003"),
                           error);
     return false;
   }
@@ -1074,14 +1091,13 @@ bool Vm::bind_method(ClassObject* klass, const std::string& name,
   if (klass == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "invalid class receiver",
-                        DiagnosticSpan{current_source_name_, 1}),
+                        current_runtime_span()),
         error);
     return false;
   }
   Value method;
   if (!klass->methods.get(name, &method)) {
-    set_single_diagnostic(ParseWithFallback(RuntimeError("MS4004", "undefined property: " + name),
-                                            "runtime", "MS4004", current_source_name_),
+    set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4004", "undefined property: " + name), "runtime", "MS4004"),
                           error);
     return false;
   }
@@ -1090,7 +1106,7 @@ bool Vm::bind_method(ClassObject* klass, const std::string& name,
   if (closure == nullptr) {
     set_single_diagnostic(
         make_diagnostic("runtime", "MS4003", "method must be callable closure",
-                        DiagnosticSpan{current_source_name_, 1}),
+                        current_runtime_span()),
         error);
     return false;
   }
@@ -1104,15 +1120,14 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
                        std::vector<CallFrame>* frames, std::string* error) {
   if (callee_index >= stack_.size()) {
     set_single_diagnostic(make_diagnostic("runtime", "MS4003", "invalid call target slot",
-                                          DiagnosticSpan{current_source_name_, 1}),
+                                          current_runtime_span()),
                           error);
     return false;
   }
 
   const Value callee = stack_[callee_index];
   if (!callee.is_object()) {
-    set_single_diagnostic(ParseWithFallback(RuntimeError("MS4005", "can only call functions and classes"),
-                                            "runtime", "MS4005", current_source_name_),
+    set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4005", "can only call functions and classes"), "runtime", "MS4005"),
                           error);
     return false;
   }
@@ -1125,9 +1140,8 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
   if (auto* native = dynamic_cast<NativeFunctionObject*>(object); native != nullptr) {
     if (native->arity != arg_count) {
       set_single_diagnostic(
-          ParseWithFallback(RuntimeError("MS4002", "expected " + std::to_string(native->arity) +
-                                                      " arguments but got " + std::to_string(arg_count)),
-                            "runtime", "MS4002", current_source_name_),
+          parse_diagnostic_with_current_span(RuntimeError("MS4002", "expected " + std::to_string(native->arity) +
+                                                      " arguments but got " + std::to_string(arg_count)), "runtime", "MS4002"),
           error);
       return false;
     }
@@ -1138,8 +1152,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     if (!native->callable || !native->callable(*this, args, &result, &native_error)) {
       const std::string reason =
           native_error.empty() ? "native callable execution failed" : native_error;
-      set_single_diagnostic(ParseWithFallback(RuntimeError("MS4003", reason),
-                                              "runtime", "MS4003", current_source_name_),
+      set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4003", reason), "runtime", "MS4003"),
                             error);
       return false;
     }
@@ -1157,9 +1170,8 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     if (!klass->methods.get("init", &init_method)) {
       if (arg_count != 0) {
         set_single_diagnostic(
-            ParseWithFallback(RuntimeError("MS4002", "expected 0 arguments but got " +
-                                                        std::to_string(arg_count)),
-                              "runtime", "MS4002", current_source_name_),
+            parse_diagnostic_with_current_span(RuntimeError("MS4002", "expected 0 arguments but got " +
+                                                        std::to_string(arg_count)), "runtime", "MS4002"),
             error);
         return false;
       }
@@ -1172,7 +1184,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     if (init_closure == nullptr) {
       set_single_diagnostic(
           make_diagnostic("runtime", "MS4003", "initializer must be callable closure",
-                          DiagnosticSpan{current_source_name_, 1}),
+                          current_runtime_span()),
           error);
       return false;
     }
@@ -1183,7 +1195,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     if (bound->method == nullptr) {
       set_single_diagnostic(
           make_diagnostic("runtime", "MS4003", "invalid bound method target",
-                          DiagnosticSpan{current_source_name_, 1}),
+                          current_runtime_span()),
           error);
       return false;
     }
@@ -1191,8 +1203,7 @@ bool Vm::call_value_at(const std::size_t callee_index, const int arg_count,
     return call_closure(bound->method, arg_count, frames, error);
   }
 
-  set_single_diagnostic(ParseWithFallback(RuntimeError("MS4005", "can only call functions and classes"),
-                                          "runtime", "MS4005", current_source_name_),
+  set_single_diagnostic(parse_diagnostic_with_current_span(RuntimeError("MS4005", "can only call functions and classes"), "runtime", "MS4005"),
                         error);
   return false;
 }
