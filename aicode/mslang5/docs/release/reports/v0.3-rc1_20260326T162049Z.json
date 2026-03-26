@@ -1,0 +1,288 @@
+{
+  "release": "v0.3-rc1",
+  "generated_at_utc": "2026-03-26T16:20:49Z",
+  "commit": "f031b984f1917c0876faf4800346d8810580a98d",
+  "branch": "master",
+  "decision": "promote",
+  "statuses": {
+    "allowed": [
+      "pass",
+      "warn",
+      "fail"
+    ],
+    "decision_policy": "promote only when all gates are pass; otherwise hold"
+  },
+  "gates": {
+    "G1": {
+      "status": "pass",
+      "evidence": [
+        {
+          "name": "configure",
+          "status": "pass",
+          "detail": "cmake configure must succeed"
+        },
+        {
+          "name": "build",
+          "status": "pass",
+          "detail": "cmake build must succeed"
+        },
+        {
+          "name": "unit",
+          "status": "pass",
+          "detail": "deterministic unit suite"
+        },
+        {
+          "name": "integration",
+          "status": "pass",
+          "detail": "deterministic integration suite"
+        },
+        {
+          "name": "vm_guard",
+          "status": "pass",
+          "detail": "stale guard should be blocked"
+        }
+      ]
+    },
+    "G2": {
+      "status": "pass",
+      "evidence": [
+        {
+          "name": "conformance",
+          "status": "pass",
+          "detail": "conformance must pass"
+        },
+        {
+          "name": "diagnostics",
+          "status": "pass",
+          "detail": "diagnostics contract must pass"
+        }
+      ]
+    },
+    "G3": {
+      "status": "pass",
+      "evidence": [
+        {
+          "name": "runtime_module_precision",
+          "status": "pass",
+          "detail": "maple_tests_diagnostics contains >=0.95 precision assertion for tracked runtime/module paths"
+        }
+      ]
+    },
+    "G4": {
+      "status": "pass",
+      "evidence": [
+        {
+          "name": "robustness_gc_profile",
+          "status": "pass",
+          "detail": "robustness deterministic suite should pass"
+        },
+        {
+          "name": "gc_metrics_present",
+          "status": "pass",
+          "detail": "min_live_bytes=1912 max_live_bytes=3148"
+        }
+      ]
+    },
+    "G5": {
+      "status": "pass",
+      "evidence": [
+        {
+          "name": "robustness_deterministic",
+          "status": "pass",
+          "detail": "required deterministic robustness suite"
+        },
+        {
+          "name": "migration_stress_scripts",
+          "status": "pass",
+          "detail": "selected migration stress scripts should pass"
+        },
+        {
+          "name": "critical_backlog",
+          "status": "pass",
+          "detail": "S0+S1 open count must be 0, got 0"
+        }
+      ]
+    },
+    "G6": {
+      "status": "pass",
+      "evidence": [
+        {
+          "name": "release_design_doc",
+          "status": "pass",
+          "detail": "release gate design doc exists"
+        },
+        {
+          "name": "progress_tracker",
+          "status": "pass",
+          "detail": "task tracker exists"
+        },
+        {
+          "name": "report_artifact",
+          "status": "pass",
+          "detail": "json/markdown report generated"
+        }
+      ]
+    }
+  },
+  "kpis": [
+    {
+      "id": "KPI-01",
+      "name": "conformance_pass_rate",
+      "value": 1.0,
+      "threshold": 1.0,
+      "status": "pass",
+      "source": "ctest -R maple_tests_conformance",
+      "owner": "language/frontend"
+    },
+    {
+      "id": "KPI-02",
+      "name": "diagnostics_contract_pass_rate",
+      "value": 1.0,
+      "threshold": 1.0,
+      "status": "pass",
+      "source": "ctest -R maple_tests_diagnostics",
+      "owner": "diagnostics"
+    },
+    {
+      "id": "KPI-03",
+      "name": "runtime_diagnostics_precision_coverage",
+      "value": 0.95,
+      "threshold": 0.95,
+      "status": "pass",
+      "source": "precision assertions in maple_tests_diagnostics",
+      "owner": "runtime_diagnostics"
+    },
+    {
+      "id": "KPI-04",
+      "name": "gc_stability_drift_ratio",
+      "value": 1.6464435146443515,
+      "threshold": "collections>0,reclaimed>0,drift_bounded",
+      "status": "pass",
+      "source": "maple_tests --suite=robustness",
+      "owner": "runtime_gc"
+    },
+    {
+      "id": "KPI-05",
+      "name": "guardrail_integrity",
+      "value": 0.0,
+      "threshold": 0.0,
+      "status": "pass",
+      "source": "maple_tests --suite=migration_debt + ctest -R maple_guard_vm_only",
+      "owner": "build_ci"
+    },
+    {
+      "id": "KPI-06",
+      "name": "robustness_critical_open_count",
+      "value": 0,
+      "threshold": 0,
+      "status": "pass",
+      "source": "manual inputs --s0-open/--s1-open",
+      "owner": "qa_release"
+    }
+  ],
+  "inputs": {
+    "s0_open": 0,
+    "s1_open": 0,
+    "s2_open": 0,
+    "build_dir": "C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build",
+    "config": "Debug"
+  },
+  "commands": [
+    {
+      "name": "configure",
+      "command": "cmake -S . -B C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build",
+      "returncode": 0,
+      "duration_seconds": 0.44209
+    },
+    {
+      "name": "build",
+      "command": "cmake --build C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --config Debug",
+      "returncode": 0,
+      "duration_seconds": 121.547565
+    },
+    {
+      "name": "ctest_all",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug",
+      "returncode": 0,
+      "duration_seconds": 1.705128
+    },
+    {
+      "name": "ctest:maple_tests_unit",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug -R maple_tests_unit",
+      "returncode": 0,
+      "duration_seconds": 0.177052
+    },
+    {
+      "name": "ctest:maple_tests_integration",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug -R maple_tests_integration",
+      "returncode": 0,
+      "duration_seconds": 0.125011
+    },
+    {
+      "name": "ctest:maple_tests_conformance",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug -R maple_tests_conformance",
+      "returncode": 0,
+      "duration_seconds": 0.096869
+    },
+    {
+      "name": "ctest:maple_tests_diagnostics",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug -R maple_tests_diagnostics",
+      "returncode": 0,
+      "duration_seconds": 0.092737
+    },
+    {
+      "name": "ctest:maple_tests_migration_debt",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug -R maple_tests_migration_debt",
+      "returncode": 0,
+      "duration_seconds": 0.061397
+    },
+    {
+      "name": "ctest:maple_guard_vm_only",
+      "command": "ctest --test-dir C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build --output-on-failure -C Debug -R maple_guard_vm_only",
+      "returncode": 0,
+      "duration_seconds": 0.081988
+    },
+    {
+      "name": "maple_tests:migration_debt",
+      "command": "C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build\\Debug\\maple_tests.exe --suite=migration_debt",
+      "returncode": 0,
+      "duration_seconds": 0.022153
+    },
+    {
+      "name": "maple_tests:robustness",
+      "command": "C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build\\Debug\\maple_tests.exe --suite=robustness",
+      "returncode": 0,
+      "duration_seconds": 0.039092
+    },
+    {
+      "name": "script:tests/scripts/migration/m5_gc_stress_mix.ms",
+      "command": "C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build\\Debug\\maple_cli.exe entry.ms",
+      "returncode": 0,
+      "duration_seconds": 0.347823
+    },
+    {
+      "name": "script:tests/scripts/migration/m6_vm_only_convergence.ms",
+      "command": "C:\\Workspace\\Repositories\\study\\aicode\\mslang5\\build\\Debug\\maple_cli.exe entry.ms",
+      "returncode": 0,
+      "duration_seconds": 0.19645
+    }
+  ],
+  "migration_scripts": [
+    {
+      "script": "tests/scripts/migration/m5_gc_stress_mix.ms",
+      "returncode": 0
+    },
+    {
+      "script": "tests/scripts/migration/m6_vm_only_convergence.ms",
+      "returncode": 0
+    }
+  ],
+  "raw_metrics": {
+    "fallback_rate": 0.0,
+    "gc_stress": {
+      "rounds": 4,
+      "min_live_bytes": 1912,
+      "max_live_bytes": 3148
+    }
+  }
+}
