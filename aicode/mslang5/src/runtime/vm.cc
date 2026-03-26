@@ -99,6 +99,15 @@ InterpretResult Vm::execute(const Chunk& chunk, std::string* error) {
     }
   } frame_roots_cleanup{&gc_frame_roots_};
 
+  std::string invariant_reason;
+  if (!validate_chunk_invariants(chunk, &invariant_reason)) {
+    set_single_diagnostic(make_diagnostic("runtime", "MS4003",
+                                          "bytecode invariant violated: " + invariant_reason,
+                                          current_runtime_span()),
+                          error);
+    return InterpretResult::kRuntimeError;
+  }
+
   auto script_proto = std::make_shared<FunctionPrototype>();
   script_proto->name = "<script>";
   script_proto->chunk = std::make_shared<Chunk>(chunk);
@@ -962,6 +971,194 @@ std::size_t Vm::line_for_instruction(const Chunk& chunk,
   return lines[instruction_ip];
 }
 
+bool Vm::validate_chunk_invariants(const Chunk& chunk, std::string* reason) const {
+  std::unordered_set<const Chunk*> visited_chunks;
+
+  const auto fail = [reason](const std::string& message) {
+    if (reason != nullptr) {
+      *reason = message;
+    }
+  };
+
+  const auto validate_chunk =
+      [&](auto&& self, const Chunk& current_chunk, const std::string& context) -> bool {
+    if (!visited_chunks.insert(&current_chunk).second) {
+      return true;
+    }
+
+    if (current_chunk.code().size() != current_chunk.lines().size()) {
+      fail(context + " line table length mismatch");
+      return false;
+    }
+
+    const auto& code = current_chunk.code();
+    const auto& constants = current_chunk.constants();
+    std::size_t ip = 0;
+    const std::uint8_t max_opcode = static_cast<std::uint8_t>(OpCode::kReturn);
+
+    while (ip < code.size()) {
+      const std::size_t op_ip = ip;
+      const std::uint8_t raw_opcode = code[ip++];
+      if (raw_opcode > max_opcode) {
+        fail(context + " unknown opcode at ip=" + std::to_string(op_ip));
+        return false;
+      }
+      const auto op = static_cast<OpCode>(raw_opcode);
+
+      const auto require_byte = [&](const std::string& operand_name, std::uint8_t* out) {
+        if (ip >= code.size()) {
+          fail(context + " missing " + operand_name + " at ip=" + std::to_string(op_ip));
+          return false;
+        }
+        if (out != nullptr) {
+          *out = code[ip];
+        }
+        ++ip;
+        return true;
+      };
+
+      const auto require_constant_index = [&](const std::string& operand_name,
+                                              std::uint8_t* out) {
+        std::uint8_t index = 0;
+        if (!require_byte(operand_name, &index)) {
+          return false;
+        }
+        if (index >= constants.size()) {
+          fail(context + " constant index out of range for " + operand_name +
+               " at ip=" + std::to_string(op_ip));
+          return false;
+        }
+        if (out != nullptr) {
+          *out = index;
+        }
+        return true;
+      };
+
+      switch (op) {
+        case OpCode::kConstant:
+        case OpCode::kClass:
+        case OpCode::kMethod:
+        case OpCode::kGetProperty:
+        case OpCode::kSetProperty:
+        case OpCode::kGetSuper:
+        case OpCode::kDefineGlobal:
+        case OpCode::kGetGlobal:
+        case OpCode::kSetGlobal:
+        case OpCode::kImportModule: {
+          if (!require_constant_index("constant operand", nullptr)) {
+            return false;
+          }
+          break;
+        }
+        case OpCode::kImportSymbol: {
+          if (!require_constant_index("module operand", nullptr) ||
+              !require_constant_index("symbol operand", nullptr) ||
+              !require_constant_index("alias operand", nullptr)) {
+            return false;
+          }
+          break;
+        }
+        case OpCode::kGetLocal:
+        case OpCode::kSetLocal:
+        case OpCode::kGetUpvalue:
+        case OpCode::kSetUpvalue:
+        case OpCode::kCall: {
+          if (!require_byte("byte operand", nullptr)) {
+            return false;
+          }
+          break;
+        }
+        case OpCode::kInvoke:
+        case OpCode::kSuperInvoke: {
+          if (!require_constant_index("method operand", nullptr) ||
+              !require_byte("arg count operand", nullptr)) {
+            return false;
+          }
+          break;
+        }
+        case OpCode::kJump:
+        case OpCode::kJumpIfFalse:
+        case OpCode::kLoop: {
+          std::uint8_t high = 0;
+          std::uint8_t low = 0;
+          if (!require_byte("jump high byte", &high) || !require_byte("jump low byte", &low)) {
+            return false;
+          }
+          const std::size_t offset =
+              (static_cast<std::size_t>(high) << 8U) | static_cast<std::size_t>(low);
+          if (op == OpCode::kLoop) {
+            if (offset == 0 || offset > ip) {
+              fail(context + " invalid loop offset at ip=" + std::to_string(op_ip));
+              return false;
+            }
+          } else if (ip + offset > code.size()) {
+            fail(context + " invalid forward jump offset at ip=" + std::to_string(op_ip));
+            return false;
+          }
+          break;
+        }
+        case OpCode::kClosure: {
+          std::uint8_t index = 0;
+          if (!require_constant_index("closure prototype operand", &index)) {
+            return false;
+          }
+          if (!std::holds_alternative<std::shared_ptr<FunctionPrototype>>(constants[index])) {
+            fail(context + " closure operand is not a function prototype at ip=" +
+                 std::to_string(op_ip));
+            return false;
+          }
+          const auto prototype = std::get<std::shared_ptr<FunctionPrototype>>(constants[index]);
+          if (prototype == nullptr) {
+            fail(context + " closure operand resolved to null prototype at ip=" +
+                 std::to_string(op_ip));
+            return false;
+          }
+          if (prototype->upvalue_count < 0) {
+            fail(context + " closure prototype has negative upvalue count at ip=" +
+                 std::to_string(op_ip));
+            return false;
+          }
+          const std::size_t operands = static_cast<std::size_t>(prototype->upvalue_count) * 2;
+          if (ip + operands > code.size()) {
+            fail(context + " truncated closure upvalue operands at ip=" +
+                 std::to_string(op_ip));
+            return false;
+          }
+          ip += operands;
+          if (prototype->chunk == nullptr) {
+            fail(context + " closure prototype missing bytecode chunk at ip=" +
+                 std::to_string(op_ip));
+            return false;
+          }
+          if (!self(self, *prototype->chunk,
+                    context + "/fn:" + (prototype->name.empty() ? "<anonymous>" : prototype->name))) {
+            return false;
+          }
+          break;
+        }
+        case OpCode::kEqual:
+        case OpCode::kGreater:
+        case OpCode::kLess:
+        case OpCode::kAdd:
+        case OpCode::kSubtract:
+        case OpCode::kMultiply:
+        case OpCode::kDivide:
+        case OpCode::kNot:
+        case OpCode::kNegate:
+        case OpCode::kPrint:
+        case OpCode::kPop:
+        case OpCode::kCloseUpvalue:
+        case OpCode::kInherit:
+        case OpCode::kReturn:
+          break;
+      }
+    }
+
+    return true;
+  };
+
+  return validate_chunk(validate_chunk, chunk, "chunk");
+}
 DiagnosticSpan Vm::current_runtime_span() const {
   return DiagnosticSpan{current_source_name_, current_runtime_line_};
 }

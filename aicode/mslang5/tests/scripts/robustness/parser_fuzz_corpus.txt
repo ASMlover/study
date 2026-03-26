@@ -1,0 +1,8 @@
+# id,path,tier
+seed_parse_expected_expression,tests/scripts/diagnostics/parse_expected_expression.ms,deterministic
+seed_parse_recovery_bound,tests/scripts/diagnostics/parse_recovery_cascade_bound.ms,deterministic
+seed_invalid_assignment,tests/scripts/language/error_parse_invalid_assignment.ms,deterministic
+seed_conformance_invalid_assignment,tests/conformance/grammar/parse_invalid_assignment_target_001.ms,deterministic
+seed_closure_capture,tests/scripts/language/closure_capture.ms,nondeterministic
+seed_newline_statement_end,tests/scripts/migration/newline/newline_statement_end_ok.ms,nondeterministic
+seed_module_import_cache,tests/scripts/module/import_cache_and_alias.ms,nondeterministic

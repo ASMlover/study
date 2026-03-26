@@ -82,6 +82,7 @@ if(MAPLE_BUILD_TESTS)
     tests/integration/test_migration_debt.cc
     tests/integration/test_conformance.cc
     tests/integration/test_diagnostics_golden.cc
+    tests/integration/test_robustness.cc
   )
   target_link_libraries(maple_tests PRIVATE maple_core)
   target_include_directories(maple_tests PRIVATE
@@ -111,6 +112,18 @@ if(MAPLE_BUILD_TESTS)
   add_test(NAME maple_tests_migration_debt COMMAND maple_tests --suite=migration_debt)
   set_tests_properties(maple_tests_migration_debt PROPERTIES LABELS "migration_debt")
 
+  add_test(NAME maple_tests_robustness COMMAND maple_tests --suite=robustness)
+  set_tests_properties(maple_tests_robustness PROPERTIES LABELS "robustness;deterministic;blocking")
+
+  add_test(
+    NAME maple_tests_robustness_nondeterministic
+    COMMAND maple_tests --suite=robustness_nondeterministic
+  )
+  set_tests_properties(
+    maple_tests_robustness_nondeterministic
+    PROPERTIES LABELS "robustness;non_deterministic;informational"
+  )
+
   add_test(
     NAME maple_guard_vm_only
     COMMAND ${CMAKE_COMMAND}
@@ -119,9 +132,3 @@ if(MAPLE_BUILD_TESTS)
   )
   set_tests_properties(maple_guard_vm_only PROPERTIES LABELS "migration_debt;guardrail")
 endif()
-
-
-
-
-
-

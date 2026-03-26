@@ -72,3 +72,8 @@ error path examples.
 - `side.ms`
 - `util.ms`
 - `cli_ok.ms`
+## Robustness Fixtures (`tests/scripts/robustness`)
+
+- `parser_fuzz_corpus.txt`: versioned parser fuzz seed manifest (`id,path,tier`) shared by deterministic and non-deterministic robustness suites.
+- deterministic seeds are replayed under a fixed RNG seed in `maple_tests_robustness`.
+- non-deterministic runs use `MAPLE_ROBUSTNESS_SEED` and `MAPLE_ROBUSTNESS_ROUNDS` for reproducible triage in `maple_tests_robustness_nondeterministic`.

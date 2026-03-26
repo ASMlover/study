@@ -23,6 +23,8 @@ int RunNewlineLexerIntegrationTests();
 int RunNewlineStatementEndIntegrationTests();
 int RunConformanceIntegrationTests();
 int RunDiagnosticsGoldenTests();
+int RunRobustnessDeterministicTests();
+int RunRobustnessNondeterministicTests();
 
 namespace {
 
@@ -47,6 +49,7 @@ void RunIntegrationSuite() {
   RunResolverIntegrationTests();
   RunNewlineLexerIntegrationTests();
   RunNewlineStatementEndIntegrationTests();
+  RunRobustnessDeterministicTests();
 }
 
 void RunMigrationDebtSuite() { RunMigrationDebtTests(); }
@@ -54,6 +57,10 @@ void RunMigrationDebtSuite() { RunMigrationDebtTests(); }
 void RunConformanceSuite() { RunConformanceIntegrationTests(); }
 
 void RunDiagnosticsSuite() { RunDiagnosticsGoldenTests(); }
+
+void RunRobustnessSuite() { RunRobustnessDeterministicTests(); }
+
+void RunRobustnessNondeterministicSuite() { RunRobustnessNondeterministicTests(); }
 
 }  // namespace
 
@@ -79,6 +86,11 @@ int main(int argc, char** argv) {
     RunConformanceSuite();
   } else if (suite == "--suite=diagnostics" || suite == "diagnostics") {
     RunDiagnosticsSuite();
+  } else if (suite == "--suite=robustness" || suite == "robustness") {
+    RunRobustnessSuite();
+  } else if (suite == "--suite=robustness_nondeterministic" ||
+             suite == "robustness_nondeterministic") {
+    RunRobustnessNondeterministicSuite();
   } else {
     std::cerr << "Unknown suite argument: " << suite << "\n";
     return 2;

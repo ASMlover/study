@@ -68,6 +68,7 @@ class Vm {
   Value constant_to_value(const Constant& constant);
   std::string last_segment(const std::string& dotted) const;
   std::size_t line_for_instruction(const Chunk& chunk, std::size_t instruction_ip) const noexcept;
+  bool validate_chunk_invariants(const Chunk& chunk, std::string* reason) const;
   DiagnosticSpan current_runtime_span() const;
   Diagnostic make_runtime_diagnostic(const std::string& code, const std::string& message) const;
   Diagnostic parse_diagnostic_with_current_span(const std::string& text,
