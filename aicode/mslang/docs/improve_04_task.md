@@ -1,6 +1,6 @@
 # Maple Language — 内存与性能优化实施计划
 
-> Version: 1.0 | Date: 2026-03-26
+> Version: 1.1 | Date: 2026-03-27
 
 本文档是对 Maple 语言运行时（mslang）的内存布局与执行性能进行系统性优化的实施计划。
 所有任务按优先级分级，每个任务均独立可实现、可构建、可测试。
@@ -11,21 +11,26 @@
 
 | 任务 ID | 标题 | 优先级 | 工作量 | 依赖 | 状态 |
 |---------|------|--------|--------|------|------|
-| OPT-P0-01 | 移除 Object 虚函数表 | P0 | 大 | — | `[ ]` |
+| OPT-P0-01 | 移除 Object 虚函数表（含虚析构） | P0 | 大 | — | `[ ]` |
 | OPT-P0-02 | ObjString 内联字符数据 | P0 | 大 | OPT-P0-01 | `[ ]` |
-| OPT-P0-03 | ObjUpvalue/ObjBoundMethod 固定池分配器 | P0 | 中 | — | `[ ]` |
-| OPT-P1-01 | ObjInstance 内联字段数组 | P1 | 大 | OPT-P0-01 | `[ ]` |
+| OPT-P0-03 | ObjUpvalue/ObjBoundMethod 固定池分配器 | P0 | 中 | OPT-P0-01 | `[ ]` |
+| OPT-P1-01 | ObjInstance 内联字段数组（SBO） | P1 | 大 | OPT-P0-01 | `[ ]` |
 | OPT-P1-02 | NativeFn 改为裸函数指针 | P1 | 小 | — | `[ ]` |
 | OPT-P1-03 | 常量池去重 | P1 | 小 | — | `[ ]` |
 | OPT-P1-04 | GETPROP/SETPROP 直接编码 IC 索引 | P1 | 中 | — | `[ ]` |
+| OPT-P1-05 | ObjMap 迭代 O(n²) 修复 | P1 | 小 | — | `[ ]` |
+| OPT-P1-06 | ASCII 单字符 ObjString 缓存 | P1 | 小 | — | `[ ]` |
+| OPT-P1-07 | ObjClosure 内联 upvalue 数组 | P1 | 中 | OPT-P0-01 | `[ ]` |
 | OPT-P2-01 | ObjClass 稀用 Table 按需分配 | P2 | 小 | — | `[ ]` |
 | OPT-P2-02 | Shape 小型线性映射替代 unordered_map | P2 | 小 | — | `[ ]` |
 | OPT-P2-03 | Remembered Set 去重 | P2 | 小 | — | `[ ]` |
-| OPT-P2-04 | ObjMap 改为开放地址哈希表 | P2 | 中 | — | `[ ]` |
-| OPT-P2-05 | Coroutine 独立栈段 | P2 | 中 | — | `[ ]` |
+| OPT-P2-04 | ObjMap 改为开放地址哈希表 | P2 | 中 | OPT-P1-05 | `[ ]` |
+| OPT-P2-05 | Coroutine SavedCallFrame 直接保存/恢复 | P2 | 小 | — | `[ ]` |
+| OPT-P2-06 | Peephole NOP 指令压缩 | P2 | 中 | — | `[ ]` |
 | OPT-P3-01 | CallFrame deferred 延迟分配 | P3 | 小 | — | `[ ]` |
 | OPT-P3-02 | Quickening deopt 计数器 | P3 | 小 | — | `[ ]` |
 | OPT-P3-03 | 编译器局部变量数组动态化 | P3 | 小 | — | `[ ]` |
+| OPT-P3-04 | Coroutine 独立栈段 | P3 | 大 | OPT-P2-05 | `[ ]` |
 
 ---
 
@@ -33,70 +38,80 @@
 
 ---
 
-### `[ ]` OPT-P0-01：移除 Object 虚函数表
+### `[ ]` OPT-P0-01：移除 Object 虚函数表（含虚析构）
 
 **目标**
 
-`Object` 基类因 `stringify()`、`trace_references()`、`size()` 三个虚函数携带 8 字节 vtable 指针。
-GC 热路径（`trace_references`、`size`）每次都需虚函数分派，带来不可预测的间接跳转和 I-cache 压力。
-去虚函数化后每个对象节省 8 字节，Object 从 ≥24 字节缩减为 16 字节。
+`Object` 基类因 `stringify()`、`trace_references()`、`size()` 三个虚函数以及 `virtual ~Object()`
+共携带 8 字节 vtable 指针。GC 热路径每次都需虚函数分派，带来不可预测的间接跳转和 I-cache 压力。
+**彻底去虚函数化**（包括析构）后每个对象节省 8 字节，Object 从 ≥24 字节缩减为 16 字节。
+
+> ⚠️ **关键约束**：只要 `Object` 保留任何 `virtual` 方法（含虚析构），编译器就会生成 vtable，
+> vtable 指针仍然占用 8B，内存节省目标完全落空。必须同时移除虚析构。
 
 **背景数据**
 
 - `trace_references()` 调用点：`VMGC.cc:113`（主追踪循环）、`VMGC.cc:157`（remembered set）、`VMGC.cc:422`（增量 GC）
 - `size()` 调用点：`VMGC.cc:142,185,212,452`（sweep 路径）
-- `stringify()` 调用点：调试日志 + `Value::stringify()` + `OP_PRINT` + 错误报告，不在热路径
+- `stringify()` 调用点：`VMGC.cc:110,139,191,209,419`（调试日志）+ `Value::stringify()` + `OP_PRINT` + 错误报告，不在热路径
+- `delete obj` 调用点（sweep 路径）：`VMGC.cc:143,215,453,495,504` — 移除虚析构后必须全部替换
 - 16 个子类均覆写这 3 个方法（ObjString/ObjNative/ObjStringBuilder/ObjFile/ObjWeakRef 未覆写 `trace_references`）
 
 **需修改的文件**
 
-- `src/Object.hh` — 移除 virtual，添加 dispatch 函数声明
-- `src/Object.cc` — 实现 dispatch 函数
-- `src/VMGC.cc` — 替换调用点
-- `src/Memory.cc` — 替换调用点（`stringify` 调试日志）
-- `src/VM.cc` — 替换 `stringify` 调用点
+- `src/Object.hh` — 移除所有 virtual（含析构），添加 4 个 dispatch 函数声明
+- `src/Object.cc` — 实现 4 个 dispatch 函数
+- `src/VMGC.cc` — 替换 trace/size 调用点，替换所有 `delete obj` 为 `object_destroy`
+- `src/Memory.cc` — 替换 `stringify` 调试日志调用
+- `src/VM.cc` — 替换 `stringify` 调用点；`free_objects()` 中的 `delete` 同样替换
 - `src/Value.cc` — `Value::stringify()` 通过 `object_stringify()` 调用
 - `src/VMBuiltins.cc`, `src/VMNatives.cc` — stringify 调用点
 - `src/Debug.cc` — disassembler stringify 调用点
 
 **实施步骤**
 
-1. **`src/Object.hh`**：移除三个 virtual 方法，保留虚析构函数（delete 时仍需正确销毁子类）；
-   在 `Object` 类外声明三个 dispatch 函数：
+1. **`src/Object.hh`**：移除四个 virtual 方法（三个虚方法 + 虚析构），将析构函数改为普通非虚：
    ```cpp
-   // 替换 virtual 方法的全局 dispatch 函数
-   str_t   object_stringify(const Object* obj) noexcept;
-   void    object_trace(Object* obj) noexcept;        // 替换 trace_references
-   sz_t    object_size(const Object* obj) noexcept;   // 替换 size
-   ```
-   去掉：
-   ```cpp
-   // 删除这三行
+   // 删除这四行：
+   virtual ~Object() = default;
    virtual str_t stringify() const noexcept = 0;
    virtual void  trace_references() noexcept {}
    virtual sz_t  size() const noexcept = 0;
+   // 改为：
+   ~Object() = default;   // 非虚析构
+   ```
+   在 `Object` 类外声明**四个** dispatch 函数：
+   ```cpp
+   str_t   object_stringify(const Object* obj) noexcept;
+   void    object_trace(Object* obj) noexcept;
+   sz_t    object_size(const Object* obj) noexcept;
+   void    object_destroy(Object* obj) noexcept;  // 替换 delete obj
    ```
 
-2. **`src/Object.cc`**：实现三个 dispatch 函数，内部用 `switch(obj->type())` 分发到各子类的静态成员函数（将原来的 override 方法改为 `static` 非虚函数，仅供 dispatch 调用）。
-   各子类原来的 override 方法重命名为普通 `static` 方法（如 `ObjString::do_stringify`），并从 dispatch 的 switch-case 调用。
+2. **`src/Object.cc`**：实现四个 dispatch 函数，内部用 `switch(obj->type())` 分发：
+   - `object_trace`：对有引用追踪逻辑的子类分支执行追踪，无引用的 `default: break;`
+   - `object_size`：每个分支返回 `sizeof(SubType)`（ObjString/ObjInstance/ObjClosure 需含 FAM 大小）
+   - `object_stringify`：每个分支调用子类的 `static str_t do_stringify(const SubType*)` 方法
+   - `object_destroy`：每个分支显式调用子类析构，如 `static_cast<ObjString*>(obj)->~ObjString()`
+   各子类原来的 `override` 方法重命名为 `static` 私有方法（如 `ObjString::do_stringify`）。
 
 3. **`src/VMGC.cc`**：
-   - `VMGC.cc:113`：`obj->trace_references()` → `object_trace(obj)`
-   - `VMGC.cc:157`：同上
-   - `VMGC.cc:422`：同上
+   - `VMGC.cc:113,157,422`：`obj->trace_references()` → `object_trace(obj)`
    - `VMGC.cc:142,185,212,452`：`obj->size()` → `object_size(obj)`
+   - `VMGC.cc:143,215,453,495,504`：`delete obj` → `object_destroy(obj); ::operator delete(obj);`
 
-4. **`src/Memory.cc`**：调试日志中的 `obj->stringify()` → `object_stringify(obj)`
+4. **`src/VMGC.cc`** 中所有调试日志的 `->stringify()` → `object_stringify(...)`
 
-5. **`src/VM.cc`**：`obj->stringify()` 调用点全部替换
+5. **`src/VM.cc`**（`free_objects` 等处）：`delete obj` → `object_destroy(obj); ::operator delete(obj);`
 
-6. **`src/Value.cc`**：`Value::stringify()` 中 `as_object()->stringify()` → `object_stringify(as_object())`
+6. **`src/Value.cc`**：`as_object()->stringify()` → `object_stringify(as_object())`
 
 7. **`src/VMBuiltins.cc`**、**`src/VMNatives.cc`**、**`src/Debug.cc`**：所有 `->stringify()` → `object_stringify(...)`
 
-8. 添加 size 验证（可选，在任意 .cc 文件顶部）：
+8. 添加布局验证：
    ```cpp
-   static_assert(sizeof(ObjString) <= 24, "ObjString should be smaller after devirt");
+   static_assert(!std::is_polymorphic_v<Object>, "Object must not have vtable");
+   static_assert(sizeof(Object) == 16, "Object base must be 16B after devirt");
    ```
 
 **验证**
@@ -111,7 +126,8 @@ python tests/run_tests.py
 
 **风险**
 
-- `delete object`（VMGC.cc:143,213,453）仍依赖虚析构函数，不受影响
+- `object_destroy` 中必须覆盖所有 16 个子类——遗漏任何一个将导致资源泄漏（ObjFile 未关闭、Shape 未递归释放等）。
+  建议在 switch 的 `default:` 中加 `MAPLE_UNREACHABLE()` 或 `assert(false)` 确保不会遗漏
 - 需确保所有子类的原 override 方法改为 `static` 后，返回类型和行为完全一致
 - `trace_references` 的空实现（ObjString 等未覆写的子类）在 switch 中对应 `default: break;` 即可
 
@@ -194,9 +210,19 @@ python tests/run_tests.py
    改为 `entry->key->length() == length && std::memcmp(entry->key->c_str(), chars, length) == 0`。
 
 5. **所有 `->value()` 调用点**：返回类型从 `const str_t&` 变为 `strv_t`。
-   大多数调用（字符串比较、拼接）直接接受 `strv_t`，少数需要 `str_t` 的地方用 `str_t(obj->value())` 显式构造。
+   大多数调用（字符串比较）直接接受 `strv_t`，拼接路径需要特殊处理。
    重点检查：
-   - `VMCall.cc:36`：`a->value() + b->value()` — 两个 `strv_t` 相加需改为 `str_t(a->value()) + str_t(b->value())`
+   - `VMCall.cc:36`（字符串拼接热路径）：不要写 `str_t(a->value()) + str_t(b->value())`（两次构造）；
+     应预分配缓冲区一次写入：
+     ```cpp
+     str_t result;
+     result.reserve(a->length() + b->length());
+     result.append(a->c_str(), a->length());
+     result.append(b->c_str(), b->length());
+     // 再调用 copy_string(result.c_str(), result.size())
+     ```
+     或添加双串版本 `copy_string(a, b)` 直接分配 `sizeof(ObjString) + a->length() + b->length() + 1` 并 memcpy 两段。
+   - `VM.cc:762`（OP_ADD_SS）和 `VM.cc:1973`（OP_ADD_SS quickened）：同样使用预分配方案
    - `Serializer.cc:191,246`：写入字符串内容，用 `obj->c_str()` + `obj->length()`
 
 6. **`src/Serializer.cc`**：反序列化时用 `ObjString::create` 替代原来的 `copy_string`（保持 intern 语义）。
@@ -287,16 +313,34 @@ python tests/run_tests.py
    ```
 
 5. **`src/VMGC.cc`** — sweep 路径：
-   在 `delete unreached` 前判断类型，改为 pool 归还：
+   OPT-P0-01 完成后，sweep 路径已无 `delete obj`，统一走 `object_destroy(obj) + ::operator delete(obj)`。
+   在 `object_destroy` 的 switch-case 中，对 ObjUpvalue 和 ObjBoundMethod 分支改为 pool 归还：
    ```cpp
-   if (obj->type() == ObjectType::OBJ_UPVALUE)
-     upvalue_pool_.free(static_cast<ObjUpvalue*>(obj));
-   else if (obj->type() == ObjectType::OBJ_BOUND_METHOD)
-     bound_method_pool_.free(static_cast<ObjBoundMethod*>(obj));
-   else
-     delete obj;
+   case ObjectType::OBJ_UPVALUE: {
+     auto* uv = static_cast<ObjUpvalue*>(obj);
+     uv->~ObjUpvalue();                  // 显式析构（trivial，但保持正确性）
+     upvalue_pool_.free(uv);             // 归还内存，不调用 ::operator delete
+     return;                             // 不执行后续的 ::operator delete
+   }
+   case ObjectType::OBJ_BOUND_METHOD: {
+     auto* bm = static_cast<ObjBoundMethod*>(obj);
+     bm->~ObjBoundMethod();
+     bound_method_pool_.free(bm);
+     return;
+   }
    ```
-   同时在 `free_objects()`（VM shutdown）中调用 `upvalue_pool_.destroy_all()`。
+   在 sweep 调用点的 `::operator delete(obj)` 改为仅在 `object_destroy` 返回后执行——pool 对象在
+   `object_destroy` 内已归还，外层的 `::operator delete` 需要跳过。
+   简化方案：让 `object_destroy` 对 pool 对象内部完成全部释放（含 free），返回 `false` 表示无需外部释放；
+   对普通对象析构后返回 `true`，调用方再执行 `::operator delete`。
+   同时在 `Memory.hh` 添加编译期守卫：
+   ```cpp
+   static_assert(std::is_trivially_destructible_v<ObjUpvalue>,
+                 "ObjUpvalue pool free skips destructor side effects");
+   static_assert(std::is_trivially_destructible_v<ObjBoundMethod>,
+                 "ObjBoundMethod pool free skips destructor side effects");
+   ```
+   在 `free_objects()`（VM shutdown）中调用 `upvalue_pool_.destroy_all()` 和 `bound_method_pool_.destroy_all()`。
 
 **验证**
 
@@ -313,7 +357,7 @@ mslang --benchmark 5 benchmarks/binary_trees.ms      # ObjUpvalue + 闭包
 **风险**
 
 - Pool 中的对象内存被 freelist 链表节点复用：`FreeNode*` 存储在对象起始地址处。确认 `sizeof(FreeNode*) <= sizeof(T)` 且 T 的 alignment 满足（ObjUpvalue ~40B，ObjBoundMethod ~40B，均远大于 8B 指针，安全）。
-- GC sweep 时如果错误地对 pool 对象调用 `delete`（而非 `pool.free`），会导致堆损坏。通过 STRESS_GC 模式 + Address Sanitizer（`-fsanitize=address`）检测。
+- 若未来 ObjUpvalue 或 ObjBoundMethod 添加非 trivial 成员（如 `std::vector`），`static_assert` 会立即编译失败，强制开发者更新 pool 释放逻辑。
 
 ---
 
@@ -321,91 +365,75 @@ mslang --benchmark 5 benchmarks/binary_trees.ms      # ObjUpvalue + 闭包
 
 ---
 
-### `[ ]` OPT-P1-01：ObjInstance 内联字段数组
+### `[ ]` OPT-P1-01：ObjInstance 内联字段数组（SBO）
 
 **目标**
 
 `ObjInstance::fields_`（`std::vector<Value>`）有 24 字节头部开销，且字段数据是堆上的第二次分配。
-改为 flexible array member 后，实例和字段数据合并为单次分配，
-彻底消除字段访问的二次间接寻址。
+采用 Small Buffer Optimization（SBO）方案：内联存储最多 `kInlineFields` 个字段，
+超出时使用 `overflow_` 指针指向堆上的 Value 数组。
+消除绝大多数实例（字段数 ≤8）的 vector 头部和堆分配开销，同时**不改变指针语义**（无悬垂指针风险）。
+
+> ⚠️ **不采用纯 FAM + realloc 方案**：realloc 后旧指针作废，需更新所有持有旧指针的栈槽、上值、
+> 全局变量、GC 链表等，在无转发指针的 mark-sweep GC 中不可安全实现。
 
 **背景数据**
 
 - `ObjInstance` 在 `VMCall.cc:133` 分配
 - 字段访问快速路径：`Object.hh:335`（`get_field(u32_t slot)`）和 `Object.hh:336`（`set_field(u32_t slot, val)`）
-- Shape 的 `slot_count()` 在分配时已知，可用于确定 flexible array 大小
-- Shape 转换时（`set_field(name, val)` 触发新属性）：目前用 `fields_.push_back`；
-  改为 FAM 后，新属性需要重新分配实例（reallocate）
+- Shape 的 `slot_count()` 在分配时已知；新属性追加时调用 `shape_->add_transition()` + `fields_.push_back`
 
 **依赖**：OPT-P0-01（Object 布局稳定后再改 ObjInstance）
 
 **需修改的文件**
 
-- `src/Object.hh` — 修改 ObjInstance 类定义
-- `src/Object.cc` — 修改构造、`set_field`（slow path）、`trace_references`、`size`
-- `src/VMCall.cc` — 修改 `ObjInstance` 分配调用（传入 slot_count）
-- `src/VM.cc` — `OP_SETPROP` slow path 可能触发 shape 转换后的实例替换
+- `src/Object.hh` — 修改 ObjInstance 类定义，移除 `std::vector<Value> fields_`
+- `src/Object.cc` — 修改字段访问、追加、GC trace、size
+- `src/VMCall.cc` — 分配时预留初始容量
 
 **实施步骤**
 
 1. **`src/Object.hh`** — 修改 `ObjInstance`：
    ```cpp
    class ObjInstance final : public Object {
+     static constexpr u32_t kInlineFields = 8;
      ObjClass* klass_{nullptr};
      Shape*    shape_{nullptr};
-     u32_t     field_count_{0};   // 实际已初始化的字段数
-     // fields_[] 紧跟在末尾
+     u32_t     field_count_{0};
+     u32_t     capacity_{kInlineFields};
+     Value     inline_fields_[kInlineFields]{};  // 内联字段槽
+     Value*    overflow_{nullptr};               // 仅超过 8 字段时分配
    public:
-     // 分配时传入初始 slot 容量
-     static ObjInstance* create(ObjClass* klass, u32_t capacity) noexcept;
-
      Value  get_field(u32_t slot) const noexcept;
      void   set_field(u32_t slot, Value val) noexcept;
      bool   get_field(ObjString* name, Value* out) const noexcept;
-     // set_field(name) 可能触发 shape 转换 + 实例替换，返回新实例指针
-     ObjInstance* set_field_or_grow(ObjString* name, Value val) noexcept;
-
+     void   add_field(ObjString* name, Value val) noexcept;  // shape 转换 + 追加
      ObjClass* klass() const noexcept { return klass_; }
      Shape*    shape() const noexcept { return shape_; }
      u32_t     field_count() const noexcept { return field_count_; }
    private:
      Value* fields_ptr() noexcept {
-       return reinterpret_cast<Value*>(this + 1);
-     }
-     const Value* fields_ptr() const noexcept {
-       return reinterpret_cast<const Value*>(this + 1);
+       return overflow_ ? overflow_ : inline_fields_;
      }
    };
    ```
 
-2. **`src/Object.cc`** — 实现 `ObjInstance::create`：
-   ```cpp
-   ObjInstance* ObjInstance::create(ObjClass* klass, u32_t capacity) noexcept {
-     void* mem = ::operator new(sizeof(ObjInstance) + capacity * sizeof(Value));
-     ObjInstance* inst = ::new(mem) ObjInstance();
-     inst->klass_ = klass;
-     inst->shape_ = klass->root_shape();
-     inst->field_count_ = 0;
-     // 初始化为 nil
-     Value* fields = inst->fields_ptr();
-     for (u32_t i = 0; i < capacity; ++i)
-       fields[i] = Value{};  // nil
-     return inst;
-   }
-   ```
-   `set_field_or_grow`：若 shape 转换后 slot 数超出当前容量，重新分配更大实例并复制字段，返回新指针（调用方需更新栈/GC 根上的引用）。
+2. **`src/Object.cc`** — 实现字段操作：
+   - `get_field(u32_t slot)`：`return fields_ptr()[slot]`
+   - `set_field(u32_t slot, Value val)`：`fields_ptr()[slot] = val`
+   - `add_field(ObjString* name, Value val)`：
+     - 调用 `shape_->add_transition(name)` 获取新 shape 和新 slot_index
+     - 若 `field_count_ < capacity_`：写入 `fields_ptr()[field_count_++]`
+     - 否则：`capacity_ *= 2`，重新分配 `overflow_` 并从旧位置复制（`overflow_` 指针本身不变，仅值被移动，ObjInstance 指针不变）
 
-3. **`src/VMCall.cc:133`** — 将 `allocate<ObjInstance>()` 替换为 `ObjInstance::create(klass, klass->root_shape()->slot_count())`，
-   初始容量取类的根 shape slot_count（通常为 0，第一次 set_field 时按需增长）。
-   实际更好的策略：初始容量取 8 或类在构造时分析出的预期字段数。
+3. **`src/VMCall.cc:133`** — 无需特殊修改（默认构造即可）；内联缓冲自动初始化为 nil。
 
-4. **`src/VM.cc`** — `OP_SETPROP` slow path（`VM.cc:~693`）：
-   原来 `instance->set_field(name, rhs)` 返回 void，改为检查返回的新实例指针，
-   若发生 realloc，需更新栈槽中的 instance 引用。
+4. **`trace_references`**：遍历 `fields_ptr()[0..field_count_-1]`，调用 `mark_value`。
+   注意：`overflow_` 是裸指针，不是 GC 对象，仅需在析构时 `delete[] overflow_`。
 
-5. **`trace_references`**：遍历 `fields_ptr()[0..field_count_-1]`，调用 `mark_value`。
+5. **`size`**：`sizeof(ObjInstance) + (overflow_ ? capacity_ * sizeof(Value) : 0)`。
 
-6. **`size`**：`sizeof(ObjInstance) + field_count_ * sizeof(Value)`。
+6. **析构**：`ObjInstance` 的析构（在 `object_destroy` 中）调用 `delete[] overflow_;`（若非 null）。
 
 **验证**
 
@@ -419,9 +447,8 @@ mslang --benchmark 5 benchmarks/binary_trees.ms    # 实例分配压力
 
 **风险**
 
-- Shape 转换触发实例 realloc 时，旧实例指针作废。需确保所有持有旧指针的栈槽和上值都被更新——这是此任务中最复杂的部分。
-  简化方案：初始容量设为类中已定义方法数的 2 倍（作为字段数上限的启发式猜测），避免绝大多数 realloc。
-- GC `delete` 改为 `::operator delete`（同 ObjString 处理）。
+- `overflow_` 是非 GC 管理的裸指针——GC 不追踪它，只追踪其指向的 Value 内容。确保 `object_destroy` 中 `delete[] overflow_`，避免内存泄漏。
+- `kInlineFields=8` 是调优参数，可在实测后调整；每个 ObjInstance 增加 `8 * 8 = 64B` 内联存储，需权衡内存占用与分配次数。
 
 ---
 
@@ -632,12 +659,216 @@ mslang tests/inline_cache.ms   # 应正确通过
 python tests/run_tests.py
 mslang --benchmark 5 benchmarks/field_access.ms    # 预期有明显提速
 mslang --benchmark 5 benchmarks/method_dispatch.ms
+# 回退路径压力测试：构造一个函数内有 >256 个不同属性名的访问（自动生成代码场景）
+# 确认 ic_slot=0xFF 回退路径正确生成双指令格式
 ```
 
 **风险**
 
-- 指令格式变化需要同步更新序列化（Serializer），但由于 32 位指令是逐字节存储的，Bx 字段的重新解释只影响语义而不影响存储；已有的 `.msc` 缓存文件使用旧格式，需在 Serializer 版本号中递增（或清理 `.msc` 文件）以强制重新编译。
-- 推荐：在 `Serializer.hh` 中将 `kMagic` 版本号 +1，使 take_string/load_cache 自动失效旧缓存。
+- 指令格式变化需要同步更新序列化（Serializer）；已有的 `.msc` 缓存文件使用旧格式，必须递增版本号：
+  在 `Serializer.hh` 中将 `kMSC_VERSION_MINOR` +1（当前为 1.1），使旧缓存自动失效。
+- Bx 中 name_const 限 8 位（0-255）——若单个函数访问超过 255 个不同属性名，自动回退到双指令格式
+  （`ic_slot=0xFF` 为标记，下一条 EXTRAARG 携带真实 ic_slot）。需验证回退路径在压力测试中正确工作。
+
+---
+
+## P1（新增） — 重要改进（补充任务）
+
+---
+
+### `[ ]` OPT-P1-05：ObjMap 迭代 O(n²) 修复
+
+**目标**
+
+`OP_FORITER`（`VM.cc:1737-1747`）对 `ObjMap` 的迭代使用 `std::advance(it, idx)` 模式，
+每次迭代都从头部遍历 `idx` 步，导致总时间复杂度 O(n²)。在 P2-04（ObjMap 开放地址）实施前，
+提供一个独立的临时修复。
+
+**背景数据**
+
+- `VM.cc:1743-1744`：`auto it = entries.begin(); std::advance(it, idx);`
+- `ObjMap::entries()` 返回 `std::unordered_map<Value,Value,...>&`，迭代器只支持 forward traversal
+- 对 1000 元素的 map，总迭代 500K 步（O(n²)），性能极差
+
+**需修改的文件**
+
+- `src/Object.hh` — 在 `ObjMap` 中添加 `keys_` 快照辅助成员（懒建）
+- `src/VM.cc` — `OP_FORITER` OBJ_MAP 分支
+
+**实施步骤**
+
+1. **`src/Object.hh`** — 在 `ObjMap` 中添加迭代辅助：
+   ```cpp
+   class ObjMap final : public Object {
+     ValueMap entries_;
+     // 迭代器快照：首次 FORITER 时构建，map 修改后失效
+     mutable std::vector<Value> iter_keys_;
+     mutable bool iter_dirty_{true};
+   public:
+     const std::vector<Value>& iter_snapshot() const noexcept {
+       if (iter_dirty_) {
+         iter_keys_.clear();
+         for (auto& [k, _] : entries_) iter_keys_.push_back(k);
+         iter_dirty_ = false;
+       }
+       return iter_keys_;
+     }
+     void mark_dirty() noexcept { iter_dirty_ = true; }
+   };
+   ```
+   所有修改 map 的操作（`map_set`, `map_del`，`VMBuiltins.cc`）调用 `map->mark_dirty()`。
+
+2. **`src/VM.cc`** — `OP_FORITER` OBJ_MAP 分支（`VM.cc:1737`）：
+   ```cpp
+   const auto& keys = map->iter_snapshot();
+   if (idx >= static_cast<int>(keys.size())) {
+     frame->ip += sBx;
+   } else {
+     frame->slots[A + 2] = keys[static_cast<sz_t>(idx)];  // O(1) 随机访问
+     index_val = Value(static_cast<double>(idx + 1));
+   }
+   ```
+
+**注意**：OPT-P2-04（ObjMap 开放地址）完成后，此临时方案可移除——开放地址表支持直接下标访问，
+迭代自然为 O(n)。P2-04 的验证步骤中应确认 map 迭代不再是 O(n²)。
+
+**验证**
+
+```bash
+cmake --build build
+python tests/run_tests.py
+# 添加迭代大型 map 的性能测试脚本（1000 个键），确认时间接近 O(n)
+```
+
+---
+
+### `[ ]` OPT-P1-06：ASCII 单字符 ObjString 缓存
+
+**目标**
+
+字符串迭代（`VM.cc:1733-1734`）每次调用 `copy_string(char_ptr, 1)` 分配一个新 ObjString。
+虽然 intern 机制确保相同字符只存一份，但**首次**遍历 ASCII 字符串仍会分配最多 128 个单字符对象，
+每次 GC 都需追踪它们，并在第一次迭代时触发大量小对象分配。
+预缓存 128 个 ASCII 单字符 ObjString，字符串迭代变为 O(1) 无分配。
+
+**需修改的文件**
+
+- `src/VM.hh` — 添加 `ascii_char_cache_[128]` 成员
+- `src/VM.cc` — VM 初始化时创建缓存；`copy_string` 对 length==1 && char<128 直接返回缓存
+
+**实施步骤**
+
+1. **`src/VM.hh`**：
+   ```cpp
+   ObjString* ascii_char_cache_[128]{};  // ASCII 单字符 ObjString 缓存
+   ```
+
+2. **`src/VM.cc`** — VM 构造（或 `init()` 函数）中：
+   ```cpp
+   for (int c = 0; c < 128; ++c) {
+     char buf[1] = {static_cast<char>(c)};
+     ascii_char_cache_[c] = copy_string(buf, 1);  // intern + 分配，永久驻留
+   }
+   ```
+   这 128 个对象作为 GC 根（永久 old gen），在 `mark_roots` 中标记。
+
+3. **`src/VM.cc`** — `copy_string` 快速路径：
+   ```cpp
+   ObjString* VM::copy_string(cstr_t chars, sz_t length) noexcept {
+     if (length == 1 && static_cast<u8_t>(chars[0]) < 128 && ascii_char_cache_[chars[0]])
+       return ascii_char_cache_[chars[0]];
+     // ...原有逻辑
+   }
+   ```
+
+4. **`src/VMGC.cc`** — `mark_roots`：
+   ```cpp
+   for (ObjString* s : ascii_char_cache_)
+     if (s) mark_object(s);
+   ```
+
+**验证**
+
+```bash
+cmake --build build
+python tests/run_tests.py
+# 验证字符串迭代（for c in "hello"）正常工作
+# 验证 ASCII 缓存对象不被 GC 回收
+```
+
+---
+
+### `[ ]` OPT-P1-07：ObjClosure 内联 upvalue 数组
+
+**目标**
+
+`ObjClosure::upvalues_`（`std::vector<ObjUpvalue*>`）的元素数量在编译期已知
+（`function->upvalue_count()`），但仍使用 vector（24B 头部 + 堆分配）。
+改为 flexible array member，每次创建闭包消除一次堆分配。
+
+**背景数据**
+
+- `Object.hh:271`：`std::vector<ObjUpvalue*> upvalues_`
+- `ObjClosure` 构造：`Object.cc` — `upvalues_.resize(function->upvalue_count())`
+- 访问模式：`upvalues_[i]` 随机访问，无扩容需求
+
+**依赖**：OPT-P0-01（Object 布局稳定后再改 ObjClosure）
+
+**需修改的文件**
+
+- `src/Object.hh` — 修改 ObjClosure 类定义，移除 `std::vector<ObjUpvalue*>`
+- `src/Object.cc` — 修改构造、trace_references、size；添加 `ObjClosure::create`
+- `src/VM.cc` — 分配调用改为 `ObjClosure::create(function)`
+
+**实施步骤**
+
+1. **`src/Object.hh`** — 修改 `ObjClosure`：
+   ```cpp
+   class ObjClosure final : public Object {
+     ObjFunction* function_{nullptr};
+     int upvalue_count_{0};
+     // upvalues_[] 紧跟末尾（flexible array member 模式）
+   public:
+     static ObjClosure* create(ObjFunction* function) noexcept;
+     ObjUpvalue*& upvalue(int idx) noexcept {
+       return reinterpret_cast<ObjUpvalue**>(this + 1)[idx];
+     }
+     ObjUpvalue* upvalue(int idx) const noexcept {
+       return reinterpret_cast<ObjUpvalue* const*>(this + 1)[idx];
+     }
+     int upvalue_count() const noexcept { return upvalue_count_; }
+     ObjFunction* function() const noexcept { return function_; }
+   };
+   ```
+
+2. **`src/Object.cc`** — 实现 `ObjClosure::create`：
+   ```cpp
+   ObjClosure* ObjClosure::create(ObjFunction* function) noexcept {
+     int n = function->upvalue_count();
+     void* mem = ::operator new(sizeof(ObjClosure) + n * sizeof(ObjUpvalue*));
+     ObjClosure* c = ::new(mem) ObjClosure();
+     c->function_ = function;
+     c->upvalue_count_ = n;
+     auto** upvalues = reinterpret_cast<ObjUpvalue**>(c + 1);
+     for (int i = 0; i < n; ++i) upvalues[i] = nullptr;
+     return c;
+   }
+   ```
+
+3. **`src/Object.cc`** — `trace_references`：遍历 `upvalue(0..upvalue_count_-1)`，调用 `mark_object`
+
+4. **`size`**：`sizeof(ObjClosure) + upvalue_count_ * sizeof(ObjUpvalue*)`
+
+5. **`src/VM.cc`** — 将所有 `allocate<ObjClosure>(function)` 替换为 `ObjClosure::create(function)`
+
+**验证**
+
+```bash
+cmake -B build -DMAPLE_DEBUG_STRESS_GC=ON && cmake --build build
+python tests/run_tests.py
+# 重点：tests/closures.ms, tests/upvalues.ms
+mslang --benchmark 5 benchmarks/binary_trees.ms  # 闭包密集场景
+```
 
 ---
 
@@ -732,14 +963,18 @@ python tests/run_tests.py
      struct Entry { K key; V value; };
      Entry  data[N]{};
      int    count{0};
-     bool   overflow{false};   // 超过 N 条目时切换到 heap map
 
-     // 若 overflow，使用 std::unordered_map* extra
-     std::unordered_map<K,V>* extra{nullptr};
+     // 超过 N 条目时切换到 heap map；用 unique_ptr 确保自动析构，无泄漏风险
+     std::unique_ptr<std::unordered_map<K,V>> extra;
 
-     V* find(K key) noexcept { /* 线性扫描 data[0..count-1] */ }
-     void insert(K key, V val) noexcept { /* 插入或切换 overflow */ }
+     bool overflow() const noexcept { return extra != nullptr; }
+
+     V* find(K key) noexcept { /* 线性扫描 data[0..count-1]，overflow 时查 *extra */ }
+     void insert(K key, V val) noexcept {
+       /* count < N：写入 data；count == N：extra = make_unique<...>，移入所有 data，再插入 */
+     }
      void mark_keys() noexcept { /* 遍历所有 key，调用 mark_object */ }
+     // 默认析构即可：unique_ptr 自动释放 extra
    };
 
    class Shape {
@@ -749,6 +984,8 @@ python tests/run_tests.py
      u32_t slot_count_{0};
    };
    ```
+   > Shape 不是 GC 管理对象，由 ObjClass 析构时递归 delete。SmallMap 使用 `unique_ptr` 确保
+   > overflow 堆内存在 Shape 析构时自动释放，无需手动管理。
 
 2. **`src/Object.cc`**：
    - `find_slot`：调用 `slots_.find(name)`
@@ -889,61 +1126,65 @@ python tests/run_tests.py
 
 ---
 
-### `[ ]` OPT-P2-05：Coroutine 独立栈段
+### `[ ]` OPT-P2-05：Coroutine SavedCallFrame 直接保存/恢复
 
 **目标**
 
-当前 coroutine yield/resume 拷贝整个活跃调用栈（`SavedCallFrame` 数组 + `saved_stack_` vector），
-O(frame_depth)。给每个 coroutine 分配独立的栈缓冲区，yield/resume 只交换几个指针，变为 O(1)。
+当前 yield/resume 时，`CallFrame`（含 `Value* slots` 绝对指针）被保存为 `SavedCallFrame`
+（含 `ptrdiff_t slots_offset` 相对偏移）。每次恢复需要将相对偏移重新计算为绝对指针，
+且 `SavedCallFrame::deferred` 是 `std::vector<ObjClosure*>` 的完整拷贝。
+
+本任务消除 `slots_offset` ↔ 绝对指针的转换开销，并消除 deferred vector 的拷贝：
+直接用 `CallFrame` 的 raw bytes（固定大小）序列化到 `saved_frames_`，
+恢复时直接 memcpy 回来并修正 `slots` 指针（基地址 + 已保存的 offset）。
 
 **背景数据**
 
-- OP_YIELD：`VM.cc:1820-1858`，保存 `frame_count - parent_frame_count` 个帧 + 对应栈值
-- OP_RESUME：`VM.cc:1863-1928`，恢复帧和栈
-- 每个 coroutine 有独立的 `ObjCoroutine::saved_stack_` (`std::vector<Value>`) 和 `saved_frames_` (`std::vector<SavedCallFrame>`)
+- `SavedCallFrame` 定义：`Object.hh:498-505`，含 slots_offset、deferred vector
+- OP_YIELD 保存：`VM.cc:1826-1848`（逐字段构造 SavedCallFrame）
+- OP_RESUME 恢复：`VM.cc:1906+`（逐字段还原 CallFrame）
 
 **需修改的文件**
 
-- `src/Object.hh` — 修改 ObjCoroutine 类，添加独立栈缓冲区
-- `src/Object.cc` — 修改 trace_references 和 size
-- `src/VM.cc` — 修改 OP_YIELD / OP_RESUME handlers
-- `src/VMCall.cc` — 修改 resume_coroutine
+- `src/Object.hh` — 简化 `SavedCallFrame`，直接存储 slots_offset（u32_t）而非 ptrdiff_t 冗余类型
+- `src/VM.cc` — OP_YIELD / OP_RESUME：简化保存/恢复逻辑，删除 deferred vector 的拷贝
 
 **实施步骤**
 
-1. **`src/Object.hh`** — 修改 `ObjCoroutine`：
+1. **`src/Object.hh`** — 简化 `SavedCallFrame`（不再需要整个 vector 拷贝）：
    ```cpp
-   class ObjCoroutine final : public Object {
-     static constexpr sz_t kCoroStackSize = 256;  // 每个 coroutine 最多 256 个 Value 槽
-     ObjClosure*  closure_{nullptr};
-     CoroutineState state_{CoroutineState::CREATED};
-     Value yielded_value_{};
-     Value sent_value_{};
-     std::vector<Value> init_args_;
-
-     // 独立栈段（替代 saved_stack_ + saved_frames_ 拷贝）
-     std::unique_ptr<Value[]>         coro_stack_;      // 固定大小栈
-     std::unique_ptr<CallFrame[]>     coro_frames_;     // 固定大小帧数组
-     int    coro_frame_count_{0};
-     Value* coro_stack_top_{nullptr};
-     Instruction* coro_ip_{nullptr};   // 保存 ip（yield 时）
+   struct SavedCallFrame {
+     ObjClosure*  closure{nullptr};
+     Instruction* ip{nullptr};
+     u32_t        slots_offset{0};   // stack_.data() 的下标，恢复时 stack_.data() + offset
+     Value        pending_return{};
+     bool         returning{false};
+     // deferred 不拷贝——yield 时 deferred 必须为空（Maple 语义保证 defer 在 return 前执行）
    };
    ```
 
-2. **`src/VM.cc`** — OP_YIELD（`VM.cc:1820`）：
-   - 不再拷贝栈值和帧，而是：
-     1. 设 `coro->coro_frame_count_ = frame_count_ - ce.parent_frame_count`
-     2. 设 `coro->coro_stack_top_ = stack_top_`（保存当前 stack_top 指针位置相对偏移）
-     3. 保存当前 ip：`coro->coro_ip_ = frame->ip`
-     4. 恢复 parent 的 frame_count 和 stack_top（`ce.parent_frame_count`、`ce.parent_stack_top`）
-   - 注意：此方案需要 coroutine 栈和 VM 主栈分离（coroutine 使用 `coro_stack_` 缓冲区而非主栈）
+2. **`src/VM.cc`** — OP_YIELD（`VM.cc:1826`）：
+   ```cpp
+   SavedCallFrame sf;
+   sf.closure  = f.closure;
+   sf.ip       = f.ip;
+   sf.slots_offset = static_cast<u32_t>(f.slots - stack_.data());
+   sf.pending_return = f.pending_return;
+   sf.returning = f.returning;
+   // assert(f.deferred.empty()); defer 必须已执行完
+   coro->saved_frames().push_back(sf);
+   ```
 
-3. **OP_RESUME 首次进入**（`VM.cc:1863`）：将 coroutine 的栈帧切换到 `coro_stack_` 缓冲区上运行（`stack_top_` 指向 `coro_stack_.get()`，`frames_[frame_count_]` 的 slots 指向 coroutine 栈）。
-
-4. **`src/Object.cc`** — `trace_references`：遍历 `coro_stack_[0..coro_stack_top-1]` 和 `coro_frames_[0..coro_frame_count-1]`。
-
-> **注意**：此任务实施复杂度较高，需仔细处理 coroutine 栈指针与 VM 主栈的切换边界。
-> 建议先在 `tests/coroutines.ms` 上建立完整测试基线，再实施改动。
+3. **`src/VM.cc`** — OP_RESUME 恢复（`VM.cc:1906`）：
+   ```cpp
+   CallFrame& f = frames_[frame_count_++];
+   f.closure  = sf.closure;
+   f.ip       = sf.ip;
+   f.slots    = stack_.data() + sf.slots_offset;
+   f.pending_return = sf.pending_return;
+   f.returning = sf.returning;
+   f.deferred.clear();   // 已执行完，无需恢复
+   ```
 
 **验证**
 
@@ -951,6 +1192,57 @@ O(frame_depth)。给每个 coroutine 分配独立的栈缓冲区，yield/resume 
 cmake -B build -DMAPLE_DEBUG_STRESS_GC=ON && cmake --build build
 python tests/run_tests.py
 # 重点：tests/coroutines.ms
+```
+
+**注意**：Coroutine 独立栈段（彻底的 O(1) yield/resume）移至 **OPT-P3-04**（低优先级），
+因为它需要将 VM 主栈和 coroutine 栈分离，影响数百处栈访问路径，复杂度极高。
+
+---
+
+### `[ ]` OPT-P2-06：Peephole NOP 指令压缩
+
+**目标**
+
+`Optimize.cc` 的 peephole 优化器用 `OP_NOP` 替换死代码，但不移除这些 NOP。
+NOP 残留在字节码中，每次经过 dispatch 循环时仍需解码和跳过，浪费 I-cache。
+添加 compaction pass，移除所有 NOP 并修正跳转偏移。
+
+**背景数据**
+
+- NOP 产生位置：`Optimize.cc:84,105,117,150,171`
+- VM 的 NOP handler：`VM.cc:1803`（`VM_CASE(OP_NOP) { VM_DISPATCH(); }`）
+- Chunk 中跳转指令使用相对偏移（sBx 字段），NOP 移除后偏移需修正
+
+**需修改的文件**
+
+- `src/Chunk.hh` — 添加 `compact_nops()` 方法声明
+- `src/Chunk.cc` — 实现 compaction pass
+- `src/Optimize.cc` — 在 peephole pass 后调用 `chunk.compact_nops()`
+
+**实施步骤**
+
+1. **`src/Chunk.cc`** — 实现 `compact_nops()`：
+   - 第一遍：构建 `offset_map[old_offset] = new_offset`（跳过所有 NOP）
+   - 第二遍：复制非 NOP 指令到新序列；对所有跳转指令（OP_JUMP, OP_JUMP_IF_FALSE, OP_FORITER 等）
+     重新计算 sBx = `offset_map[target] - current_new_offset - 1`
+   - 同步更新 `lines_`（RLE 行信息）：NOP 指令对应的 run 计数减少
+
+2. **IC slot 偏移问题**：IC slot 存储在 `ObjFunction::ic_` 中，通过 ic_index 而非字节码偏移访问，
+   不受 compaction 影响。确认：`OP_GETPROP/SETPROP/INVOKE` 的 ic_slot 是 ic_ 向量的索引，
+   与指令在 code_ 中的位置无关。
+
+3. **需要处理的跳转指令**：扫描 `Opcode.hh`，找出所有使用相对跳转（sBx 字段）的指令
+   （OP_JUMP, OP_JUMP_IF_FALSE, OP_JUMP_IF_TRUE, OP_FORITER, OP_LOOP 等），
+   在 compaction 时修正其 sBx。
+
+**验证**
+
+```bash
+cmake -B build -DMAPLE_DEBUG_PRINT=ON && cmake --build build
+# 运行任意脚本，确认反汇编输出中不再含 NOP（或极少出现）
+# 确认跳转目标正确（如 if/else/while/for 循环）
+python tests/run_tests.py
+# 重点：tests/control_flow.ms, tests/loops.ms, tests/coroutines.ms
 ```
 
 ---
@@ -1023,34 +1315,49 @@ python tests/run_tests.py
 
 **需修改的文件**
 
-- `src/ObjFunction` 中的 `ic_` 可扩展存储 deopt 计数，或用独立 `std::unordered_map<u32_t,u8_t>`
+- `src/Object.hh` — 在 `ICEntry` 中添加 `deopt_count` 字段（复用现有结构，零额外分配）
 - `src/VM.cc` — deopt 点递增计数并在阈值时锁定
 
 **实施步骤**
 
-1. **`src/Object.hh`** — 在 `ObjFunction` 中添加：
+1. **`src/Object.hh`** — 在 `ICEntry` 中添加（利用现有 padding，零内存增加）：
    ```cpp
-   std::unordered_map<u32_t, u8_t> deopt_counts_;  // bytecode offset → deopt count
-   // 或用 std::vector<u8_t> deopt_counts_ 按 ic slot 索引（复用 ic_ 大小）
+   struct ICEntry {
+     ObjClass* klass{nullptr};
+     ICKind    kind{ICKind::UNINITIALIZED};
+     Value     cached{};
+     u32_t     shape_id{0};
+     u32_t     slot_index{0};
+     u8_t      deopt_count{0};  // 新增：deopt 计数，≥3 时锁定为 generic
+     // padding 对齐不变（原本有 padding）
+   };
    ```
-   添加方法：
+   在 `ObjFunction` 中添加方法：
    ```cpp
-   u8_t increment_deopt(u32_t offset) noexcept { return ++deopt_counts_[offset]; }
+   u8_t increment_deopt(u8_t ic_slot) noexcept {
+     if (ic_slot < ic_.size()) return ++ic_[ic_slot].deopt_count;
+     return 255;  // 超出范围，视为已锁定
+   }
    ```
+   注意：quickened 指令（OP_ADD_II 等）不使用 IC slot，需从字节码偏移映射到一个专用 slot 或
+   使用独立的 `std::vector<u8_t> arith_deopt_` 数组（每字节码位置一个计数，按需分配）。
 
 2. **`src/VM.cc`** — 所有 deopt 点（如 `VM.cc:1949`）：
    ```cpp
    // 原来：直接 revert opcode
    // const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD, A, B, C);
    // 改为：
-   auto ip_offset = static_cast<u32_t>(frame->ip - 1 - frame->closure->function()->chunk().code().data());
-   u8_t count = frame->closure->function()->increment_deopt(ip_offset);
+   u32_t instr_offset = static_cast<u32_t>(
+       frame->ip - 1 - frame->closure->function()->chunk().code().data());
+   u8_t count = frame->closure->function()->increment_arith_deopt(instr_offset);
    if (count < 3) {
-     // 还未锁定，revert（下次可再次 quicken）
+     // 未锁定：revert，下次可再 quicken
      const_cast<Instruction*>(frame->ip)[-1] = encode_ABC(OpCode::OP_ADD, A, B, C);
    }
-   // else：保持 quickened 形式但执行 generic 逻辑（或直接 fall through 到 generic handler）
+   // count >= 3：不 revert，保持 quickened 形式但执行 generic 逻辑
+   // 后续每次执行此 quickened 指令都会 deopt 并执行 generic 逻辑（稳定状态）
    ```
+   在 `ObjFunction` 中添加 `std::vector<u8_t> arith_deopt_`（按 bytecode offset 索引，懒分配）。
 
 **验证**
 
@@ -1101,6 +1408,44 @@ python tests/run_tests.py
 cmake --build build
 python tests/run_tests.py
 # 所有测试通过即可；可用深度嵌套 closure 脚本验证不再栈溢出
+```
+
+---
+
+### `[ ]` OPT-P3-04：Coroutine 独立栈段（O(1) yield/resume）
+
+**目标**
+
+在 OPT-P2-05 基础上进一步优化：给每个 coroutine 分配独立的栈缓冲区，
+yield/resume 变为指针交换，实现真正的 O(1)。
+
+**依赖**：OPT-P2-05（SavedCallFrame 已简化）
+
+**背景数据**
+
+- 当前 yield 仍需拷贝 `saved_stack_`（`std::vector<Value>`）和 `saved_frames_`
+- 独立栈方案：每个 coroutine 持有自己的 `Value stack_[kCoroStackSize]` 和
+  `CallFrame frames_[kCoroFrameMax]`，VM 切换时只交换几个指针
+
+**需修改的文件**
+
+- `src/Object.hh` — 修改 ObjCoroutine，添加独立栈缓冲区
+- `src/VM.cc` — OP_YIELD / OP_RESUME：指针交换而非数据拷贝
+- `src/VMGC.cc` — mark_roots 需追踪 coroutine 独立栈上的 Value
+
+**⚠️ 重要提示**
+
+独立栈方案需要 VM 的 `stack_top_`、`frames_` 等指针在 yield 时切换到不同缓冲区。
+所有通过 `stack_top_` 访问栈的代码路径（数百处）必须能透明地操作当前活跃的栈缓冲区。
+建议实现前先确保 coroutine 相关的测试覆盖率达 100%（`tests/coroutines.ms` + 边界场景）。
+
+**验证**
+
+```bash
+cmake -B build -DMAPLE_DEBUG_STRESS_GC=ON && cmake --build build
+python tests/run_tests.py
+# 重点：tests/coroutines.ms
+# 性能对比：深度 coroutine 嵌套 yield/resume 基准测试
 ```
 
 ---
