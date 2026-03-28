@@ -108,7 +108,7 @@ str_t Value::stringify() const noexcept {
     return std::format("{:g}", val);
   }
   if (is_object()) {
-    return as_object()->stringify();
+    return object_stringify(as_object());
   }
   return "nil";
 }
@@ -215,7 +215,7 @@ str_t Value::stringify() const noexcept {
     return std::format("{:g}", val);
   }
   if (is_object()) {
-    return as_object()->stringify();
+    return object_stringify(as_object());
   }
   return "nil";
 }

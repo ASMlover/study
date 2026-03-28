@@ -24,6 +24,7 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
+#include <cassert>
 #include <cstring>
 #include <format>
 #include <sstream>
@@ -513,13 +514,98 @@ ObjWeakRef::ObjWeakRef(Object* target) noexcept
 
 str_t ObjWeakRef::stringify() const noexcept {
   if (target_ != nullptr) {
-    return std::format("<weak_ref {}>", target_->stringify());
+    return std::format("<weak_ref {}>", object_stringify(target_));
   }
   return "<weak_ref (dead)>";
 }
 
 sz_t ObjWeakRef::size() const noexcept {
   return sizeof(ObjWeakRef);
+}
+
+// --- Devirtualized dispatch functions ---
+
+str_t object_stringify(const Object* obj) noexcept {
+  switch (obj->type()) {
+    case ObjectType::OBJ_STRING:         return static_cast<const ObjString*>(obj)->stringify();
+    case ObjectType::OBJ_FUNCTION:       return static_cast<const ObjFunction*>(obj)->stringify();
+    case ObjectType::OBJ_NATIVE:         return static_cast<const ObjNative*>(obj)->stringify();
+    case ObjectType::OBJ_UPVALUE:        return static_cast<const ObjUpvalue*>(obj)->stringify();
+    case ObjectType::OBJ_CLOSURE:        return static_cast<const ObjClosure*>(obj)->stringify();
+    case ObjectType::OBJ_CLASS:          return static_cast<const ObjClass*>(obj)->stringify();
+    case ObjectType::OBJ_INSTANCE:       return static_cast<const ObjInstance*>(obj)->stringify();
+    case ObjectType::OBJ_BOUND_METHOD:   return static_cast<const ObjBoundMethod*>(obj)->stringify();
+    case ObjectType::OBJ_LIST:           return static_cast<const ObjList*>(obj)->stringify();
+    case ObjectType::OBJ_MAP:            return static_cast<const ObjMap*>(obj)->stringify();
+    case ObjectType::OBJ_MODULE:         return static_cast<const ObjModule*>(obj)->stringify();
+    case ObjectType::OBJ_STRING_BUILDER: return static_cast<const ObjStringBuilder*>(obj)->stringify();
+    case ObjectType::OBJ_TUPLE:          return static_cast<const ObjTuple*>(obj)->stringify();
+    case ObjectType::OBJ_FILE:           return static_cast<const ObjFile*>(obj)->stringify();
+    case ObjectType::OBJ_WEAK_REF:       return static_cast<const ObjWeakRef*>(obj)->stringify();
+    case ObjectType::OBJ_COROUTINE:      return static_cast<const ObjCoroutine*>(obj)->stringify();
+  }
+  return "<unknown>";
+}
+
+void object_trace(Object* obj) noexcept {
+  switch (obj->type()) {
+    case ObjectType::OBJ_FUNCTION:       static_cast<ObjFunction*>(obj)->trace_references();    break;
+    case ObjectType::OBJ_UPVALUE:        static_cast<ObjUpvalue*>(obj)->trace_references();     break;
+    case ObjectType::OBJ_CLOSURE:        static_cast<ObjClosure*>(obj)->trace_references();     break;
+    case ObjectType::OBJ_CLASS:          static_cast<ObjClass*>(obj)->trace_references();       break;
+    case ObjectType::OBJ_INSTANCE:       static_cast<ObjInstance*>(obj)->trace_references();    break;
+    case ObjectType::OBJ_BOUND_METHOD:   static_cast<ObjBoundMethod*>(obj)->trace_references(); break;
+    case ObjectType::OBJ_LIST:           static_cast<ObjList*>(obj)->trace_references();        break;
+    case ObjectType::OBJ_MAP:            static_cast<ObjMap*>(obj)->trace_references();         break;
+    case ObjectType::OBJ_MODULE:         static_cast<ObjModule*>(obj)->trace_references();      break;
+    case ObjectType::OBJ_TUPLE:          static_cast<ObjTuple*>(obj)->trace_references();       break;
+    case ObjectType::OBJ_COROUTINE:      static_cast<ObjCoroutine*>(obj)->trace_references();   break;
+    default: break; // OBJ_STRING, OBJ_NATIVE, OBJ_STRING_BUILDER, OBJ_FILE, OBJ_WEAK_REF: no refs
+  }
+}
+
+sz_t object_size(const Object* obj) noexcept {
+  switch (obj->type()) {
+    case ObjectType::OBJ_STRING:         return static_cast<const ObjString*>(obj)->size();
+    case ObjectType::OBJ_FUNCTION:       return static_cast<const ObjFunction*>(obj)->size();
+    case ObjectType::OBJ_NATIVE:         return static_cast<const ObjNative*>(obj)->size();
+    case ObjectType::OBJ_UPVALUE:        return static_cast<const ObjUpvalue*>(obj)->size();
+    case ObjectType::OBJ_CLOSURE:        return static_cast<const ObjClosure*>(obj)->size();
+    case ObjectType::OBJ_CLASS:          return static_cast<const ObjClass*>(obj)->size();
+    case ObjectType::OBJ_INSTANCE:       return static_cast<const ObjInstance*>(obj)->size();
+    case ObjectType::OBJ_BOUND_METHOD:   return static_cast<const ObjBoundMethod*>(obj)->size();
+    case ObjectType::OBJ_LIST:           return static_cast<const ObjList*>(obj)->size();
+    case ObjectType::OBJ_MAP:            return static_cast<const ObjMap*>(obj)->size();
+    case ObjectType::OBJ_MODULE:         return static_cast<const ObjModule*>(obj)->size();
+    case ObjectType::OBJ_STRING_BUILDER: return static_cast<const ObjStringBuilder*>(obj)->size();
+    case ObjectType::OBJ_TUPLE:          return static_cast<const ObjTuple*>(obj)->size();
+    case ObjectType::OBJ_FILE:           return static_cast<const ObjFile*>(obj)->size();
+    case ObjectType::OBJ_WEAK_REF:       return static_cast<const ObjWeakRef*>(obj)->size();
+    case ObjectType::OBJ_COROUTINE:      return static_cast<const ObjCoroutine*>(obj)->size();
+  }
+  return 0;
+}
+
+void object_destroy(Object* obj) noexcept {
+  switch (obj->type()) {
+    case ObjectType::OBJ_STRING:         delete static_cast<ObjString*>(obj);        break;
+    case ObjectType::OBJ_FUNCTION:       delete static_cast<ObjFunction*>(obj);      break;
+    case ObjectType::OBJ_NATIVE:         delete static_cast<ObjNative*>(obj);        break;
+    case ObjectType::OBJ_UPVALUE:        delete static_cast<ObjUpvalue*>(obj);       break;
+    case ObjectType::OBJ_CLOSURE:        delete static_cast<ObjClosure*>(obj);       break;
+    case ObjectType::OBJ_CLASS:          delete static_cast<ObjClass*>(obj);         break;
+    case ObjectType::OBJ_INSTANCE:       delete static_cast<ObjInstance*>(obj);      break;
+    case ObjectType::OBJ_BOUND_METHOD:   delete static_cast<ObjBoundMethod*>(obj);   break;
+    case ObjectType::OBJ_LIST:           delete static_cast<ObjList*>(obj);          break;
+    case ObjectType::OBJ_MAP:            delete static_cast<ObjMap*>(obj);           break;
+    case ObjectType::OBJ_MODULE:         delete static_cast<ObjModule*>(obj);        break;
+    case ObjectType::OBJ_STRING_BUILDER: delete static_cast<ObjStringBuilder*>(obj); break;
+    case ObjectType::OBJ_TUPLE:          delete static_cast<ObjTuple*>(obj);         break;
+    case ObjectType::OBJ_FILE:           delete static_cast<ObjFile*>(obj);          break;
+    case ObjectType::OBJ_WEAK_REF:       delete static_cast<ObjWeakRef*>(obj);       break;
+    case ObjectType::OBJ_COROUTINE:      delete static_cast<ObjCoroutine*>(obj);     break;
+    default: assert(false && "object_destroy: unknown type");                        break;
+  }
 }
 
 // --- ObjCoroutine ---

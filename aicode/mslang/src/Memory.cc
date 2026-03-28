@@ -37,7 +37,7 @@ void mark_object(Object* object) noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
   auto& logger = Logger::get_instance();
   logger.debug("GC", "mark {} ({})",
-      static_cast<void*>(object), object->stringify());
+      static_cast<void*>(object), object_stringify(object));
 #endif
 
   object->set_marked(true);

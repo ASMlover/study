@@ -107,10 +107,10 @@ void VM::trace_references() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
     auto& logger = Logger::get_instance();
     logger.debug("GC", "blacken {} ({})",
-        static_cast<void*>(object), object->stringify());
+        static_cast<void*>(object), object_stringify(object));
 #endif
 
-    object->trace_references();
+    object_trace(object);
   }
 }
 
@@ -136,11 +136,11 @@ void VM::sweep() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
       auto& logger = Logger::get_instance();
       logger.debug("GC", "free old {} ({})",
-          static_cast<void*>(unreached), unreached->stringify());
+          static_cast<void*>(unreached), object_stringify(unreached));
 #endif
 
-      bytes_allocated_ -= unreached->size();
-      delete unreached;
+      bytes_allocated_ -= object_size(unreached);
+      object_destroy(unreached);
     }
   }
 }
@@ -154,7 +154,7 @@ void VM::collect_garbage() noexcept {
 void VM::mark_remembered_set() noexcept {
   for (Object* obj : remembered_set_) {
     // Mark reachable young objects from old-gen references
-    obj->trace_references();
+    object_trace(obj);
   }
 }
 
@@ -182,13 +182,13 @@ void VM::sweep_young() noexcept {
         } else {
           young_objects_ = object;
         }
-        young_bytes_ -= promoted->size();
+        young_bytes_ -= object_size(promoted);
         promote_object(promoted);
 
 #ifdef MAPLE_DEBUG_LOG_GC
         auto& logger = Logger::get_instance();
         logger.debug("GC", "promote {} ({})",
-            static_cast<void*>(promoted), promoted->stringify());
+            static_cast<void*>(promoted), object_stringify(promoted));
 #endif
       } else {
         previous = object;
@@ -206,13 +206,13 @@ void VM::sweep_young() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
       auto& logger = Logger::get_instance();
       logger.debug("GC", "free young {} ({})",
-          static_cast<void*>(unreached), unreached->stringify());
+          static_cast<void*>(unreached), object_stringify(unreached));
 #endif
 
-      sz_t obj_size = unreached->size();
+      sz_t obj_size = object_size(unreached);
       bytes_allocated_ -= obj_size;
       young_bytes_ -= obj_size;
-      delete unreached;
+      object_destroy(unreached);
     }
   }
 }
@@ -416,10 +416,10 @@ void VM::incremental_mark_step() noexcept {
 #ifdef MAPLE_DEBUG_LOG_GC
     auto& logger = Logger::get_instance();
     logger.debug("GC", "incremental blacken {} ({})",
-        static_cast<void*>(object), object->stringify());
+        static_cast<void*>(object), object_stringify(object));
 #endif
 
-    object->trace_references();
+    object_trace(object);
     work++;
   }
 
@@ -449,8 +449,8 @@ void VM::incremental_sweep_step() noexcept {
       } else {
         old_objects_ = sweep_cursor_;
       }
-      bytes_allocated_ -= unreached->size();
-      delete unreached;
+      bytes_allocated_ -= object_size(unreached);
+      object_destroy(unreached);
     }
     work++;
   }
@@ -492,7 +492,7 @@ void VM::free_objects() noexcept {
   Object* object = young_objects_;
   while (object != nullptr) {
     Object* next = object->next();
-    delete object;
+    object_destroy(object);
     object = next;
   }
   young_objects_ = nullptr;
@@ -501,7 +501,7 @@ void VM::free_objects() noexcept {
   object = old_objects_;
   while (object != nullptr) {
     Object* next = object->next();
-    delete object;
+    object_destroy(object);
     object = next;
   }
   old_objects_ = nullptr;

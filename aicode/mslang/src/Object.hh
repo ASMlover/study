@@ -72,11 +72,7 @@ class Object {
 
 public:
   explicit Object(ObjectType type) noexcept : type_(type) {}
-  virtual ~Object() = default;
-
-  virtual str_t stringify() const noexcept = 0;
-  virtual void trace_references() noexcept {}
-  virtual sz_t size() const noexcept = 0;
+  ~Object() = default;
 
   ObjectType type() const noexcept { return type_; }
   bool is_marked() const noexcept { return is_marked_; }
@@ -108,6 +104,12 @@ inline bool is_obj_type(const Value& value, ObjectType type) noexcept {
   return value.is_object() && value.as_object()->type() == type;
 }
 
+// --- Devirtualized dispatch functions (replaces virtual methods on Object) ---
+str_t object_stringify(const Object* obj) noexcept;
+void  object_trace(Object* obj) noexcept;
+sz_t  object_size(const Object* obj) noexcept;
+void  object_destroy(Object* obj) noexcept;  // replaces delete obj
+
 // --- ObjString ---
 class ObjString final : public Object {
   str_t value_;
@@ -115,8 +117,8 @@ class ObjString final : public Object {
 
 public:
   ObjString(str_t value, u32_t hash) noexcept;
-  str_t stringify() const noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  sz_t size() const noexcept;
 
   const str_t& value() const noexcept { return value_; }
   u32_t hash() const noexcept { return hash_; }
@@ -199,9 +201,9 @@ class ObjFunction final : public Object {
 
 public:
   ObjFunction() noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   int arity() const noexcept { return arity_; }
   void set_arity(int arity) noexcept { arity_ = arity; }
@@ -240,8 +242,8 @@ class ObjNative final : public Object {
 
 public:
   explicit ObjNative(NativeFn function) noexcept;
-  str_t stringify() const noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  sz_t size() const noexcept;
 
   NativeFn& function() noexcept { return function_; }
 };
@@ -254,9 +256,9 @@ class ObjUpvalue final : public Object {
 
 public:
   explicit ObjUpvalue(Value* slot) noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   Value* location() const noexcept { return location_; }
   void set_location(Value* loc) noexcept { location_ = loc; }
@@ -273,9 +275,9 @@ class ObjClosure final : public Object {
 
 public:
   explicit ObjClosure(ObjFunction* function) noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   ObjFunction* function() const noexcept { return function_; }
   int upvalue_count() const noexcept { return upvalue_count_; }
@@ -296,10 +298,10 @@ class ObjClass final : public Object {
 
 public:
   explicit ObjClass(ObjString* name) noexcept;
-  ~ObjClass() noexcept override;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  ~ObjClass() noexcept;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   ObjString* name() const noexcept { return name_; }
   Table& methods() noexcept { return methods_; }
@@ -324,9 +326,9 @@ class ObjInstance final : public Object {
 
 public:
   explicit ObjInstance(ObjClass* klass) noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   ObjClass* klass() const noexcept { return klass_; }
   Shape* shape() const noexcept { return shape_; }
@@ -347,9 +349,9 @@ class ObjBoundMethod final : public Object {
 
 public:
   ObjBoundMethod(Value receiver, ObjClosure* method) noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   const Value& receiver() const noexcept { return receiver_; }
   ObjClosure* method() const noexcept { return method_; }
@@ -361,9 +363,9 @@ class ObjList final : public Object {
 
 public:
   ObjList() noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   std::vector<Value>& elements() noexcept { return elements_; }
   const std::vector<Value>& elements() const noexcept { return elements_; }
@@ -388,9 +390,9 @@ class ObjMap final : public Object {
 
 public:
   ObjMap() noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   ValueMap& entries() noexcept { return entries_; }
   const ValueMap& entries() const noexcept { return entries_; }
@@ -404,9 +406,9 @@ class ObjModule final : public Object {
 
 public:
   explicit ObjModule(ObjString* name) noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   ObjString* name() const noexcept { return name_; }
   Table& exports() noexcept { return exports_; }
@@ -419,8 +421,8 @@ class ObjStringBuilder final : public Object {
 
 public:
   ObjStringBuilder() noexcept;
-  str_t stringify() const noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  sz_t size() const noexcept;
 
   str_t& buffer() noexcept { return buffer_; }
   const str_t& buffer() const noexcept { return buffer_; }
@@ -436,9 +438,9 @@ class ObjTuple final : public Object {
 
 public:
   explicit ObjTuple(std::vector<Value> elements) noexcept;
-  str_t stringify() const noexcept override;
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  void trace_references() noexcept;
+  sz_t size() const noexcept;
 
   const std::vector<Value>& elements() const noexcept { return elements_; }
   sz_t len() const noexcept { return elements_.size(); }
@@ -458,8 +460,8 @@ class ObjFile final : public Object {
 public:
   ObjFile(str_t path, str_t mode) noexcept;
   ~ObjFile() noexcept;
-  str_t stringify() const noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  sz_t size() const noexcept;
 
   const str_t& path() const noexcept { return path_; }
   const str_t& mode() const noexcept { return mode_; }
@@ -479,8 +481,8 @@ class ObjWeakRef final : public Object {
 
 public:
   explicit ObjWeakRef(Object* target) noexcept;
-  str_t stringify() const noexcept override;
-  sz_t size() const noexcept override;
+  str_t stringify() const noexcept;
+  sz_t size() const noexcept;
   // No trace_references: GC does not trace through weak refs
 
   Object* target() const noexcept { return target_; }
@@ -521,11 +523,11 @@ public:
   explicit ObjCoroutine(ObjClosure* closure) noexcept
       : Object(ObjectType::OBJ_COROUTINE), closure_(closure) {}
 
-  str_t stringify() const noexcept override {
+  str_t stringify() const noexcept {
     return std::format("<coroutine {}>", closure_ ? closure_->function()->stringify() : "?");
   }
-  void trace_references() noexcept override;
-  sz_t size() const noexcept override { return sizeof(ObjCoroutine); }
+  void trace_references() noexcept;
+  sz_t size() const noexcept { return sizeof(ObjCoroutine); }
 
   ObjClosure* closure() const noexcept { return closure_; }
   CoroutineState state() const noexcept { return state_; }
@@ -606,5 +608,8 @@ inline ObjCoroutine* as_coroutine(const Value& v) noexcept {
 inline strv_t as_cppstring(const Value& v) noexcept {
   return as_string(v)->value();
 }
+
+static_assert(!std::is_polymorphic_v<Object>, "Object must not have vtable");
+static_assert(sizeof(Object) == 16, "Object base must be 16B after devirt");
 
 } // namespace ms
