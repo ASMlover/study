@@ -46,3 +46,4 @@ For full style guidelines, examples, and conventions, see [REQUIREMENTS.md §2.3
 7. **Test your code**: Write unit tests (`tests/unit/`) and Maple script tests
 8. **Incremental progress**: Follow the 10 phases in REQUIREMENTS.md §4
 9. **Gitmoji commits**: Use gitmoji identifiers and English messages
+10. **Quick git**: When user types `git`, auto `git add` all changes (new/modified/deleted) under current project dir (`mslang4/`), generate gitmoji commit message, and commit. Do not push.

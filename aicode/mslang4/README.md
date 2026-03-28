@@ -1,146 +1,164 @@
 # Maple Scripting Language
 
-A modern C++23 implementation of a bytecode-compiled scripting language, inspired by the `clox` interpreter from [Crafting Interpreters](https://craftinginterpreters.com/).
+A pure **C11** bytecode-compiled scripting language, inspired by the `clox` interpreter from [Crafting Interpreters](https://craftinginterpreters.com/).
 
-## Overview
+```
+Source (.ms) → Scanner → Parser → Compiler → VM ←→ GC
+```
 
-Maple (namespace `ms`) is a dynamically-typed, object-oriented scripting language featuring:
+## Features
 
-- **Bytecode Compilation**: Source code compiled to efficient bytecode
-- **Stack-based VM**: High-performance virtual machine execution
-- **Garbage Collection**: Automatic memory management with mark-and-sweep GC
-- **Module System**: Import/export functionality with multiple syntax forms
-- **Cross-Platform**: Windows (MSVC) and Linux (GCC) support
-- **Modern C++**: Built with C++23 features and best practices
-
-## Documentation
-
-- **[REQUIREMENTS.md](REQUIREMENTS.md)** - Complete requirements specification
-- **[DESIGN.md](DESIGN.md)** - Detailed design and architecture documentation
+- **Bytecode compilation** with single-pass compiler
+- **Stack-based VM** with switch dispatch
+- **Mark-and-sweep GC** with tri-color marking
+- **First-class functions** with closures and upvalues
+- **Classes & inheritance** with constructors, `this`, `super`
+- **Module system** — `import` / `from ... import ... as`
+- **List/array** support with literal syntax
+- **Cross-platform** — Windows (MSVC) and Linux (GCC/Clang)
+- **Zero dependencies** — C standard library only
 
 ## Quick Start
 
 ### Prerequisites
 
-- **C++23 compliant compiler**:
-  - Windows: MSVC 2022 (v143) or later
-  - Linux: GCC 12+ or Clang 15+
-- **CMake 3.25+**
+- C11 compiler: MSVC 2022+ / GCC 5+ / Clang 3.6+
+- CMake 3.10+
 
-### Building
+### Build & Run
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd mslang4
+cmake -B build
+cmake --build build
 
-# Create build directory
-mkdir build && cd build
-
-# Configure and build
-cmake ..
-cmake --build .
-```
-
-### Running
-
-```bash
 # Interactive REPL
-./maple
+./build/maple
 
 # Execute a script
-./maple script.ms
+./build/maple script.ms
 ```
 
-## Language Features
+### CLI
 
-### Basic Types
-
-```maple
-var number = 42
-var text = "Hello, Maple!"
-var flag = true
-var nothing = nil
+```
+maple                  Interactive REPL
+maple script.ms        Run a script
+maple --path dir script.ms    Add module search path
+maple --version        Show version
+maple --help           Show help
 ```
 
-### Control Flow
+## Language Tour
 
 ```maple
-if (condition) {
-    // ...
+// Variables
+var x = 42
+var greeting = "Hello, Maple!"
+
+// Control flow
+if (x > 10) {
+    print "big"
 } else {
-    // ...
+    print "small"
 }
 
-while (condition) {
-    // ...
+for (var i = 0; i < 5; i = i + 1) {
+    print i
 }
 
-for (var i = 0; i < 10; i = i + 1) {
-    print(i)
-}
-```
-
-### Functions
-
-```maple
-fn greet(name) {
-    return "Hello, " + name + "!"
-}
-
-print(greet("World"))
-
-// Closures
+// Functions & closures
 fn makeCounter() {
     var count = 0
-    fn counter() {
+    fn increment() {
         count = count + 1
         return count
     }
-    return counter
+    return increment
 }
 
-var counter = makeCounter()
-print(counter()) // 1
-print(counter()) // 2
-```
+var c = makeCounter()
+print c()  // 1
+print c()  // 2
 
-### Classes
-
-```maple
-class Person {
-    init(name, age) {
+// Classes & inheritance
+class Animal {
+    init(name) {
         this.name = name
-        this.age = age
     }
-    
-    greet() {
-        print("Hello, I'm " + this.name)
+    speak() {
+        print this.name + " makes a sound"
     }
 }
 
-class Employee : Person {
-    init(name, age, position) {
-        super.init(name, age)
-        this.position = position
+class Dog < Animal {
+    speak() {
+        print this.name + " barks"
     }
 }
 
-var person = Person("Alice", 30)
-person.greet()
+var dog = Dog("Rex")
+dog.speak()
+
+// Modules
+import math
+from utils import helper as myHelper
+
+// Lists
+var list = [1, 2, 3]
+list[0] = 10
+print len(list)
 ```
 
-### Module System
+## Documentation
 
-```maple
-// Import entire module
-import math
+| Document | Purpose |
+|----------|---------|
+| [REQUIREMENTS.md](REQUIREMENTS.md) | Features, code style, testing, implementation phases |
+| [DESIGN.md](DESIGN.md) | Architecture, data structures, APIs, algorithms |
+| [AGENTS.md](AGENTS.md) | AI assistant configuration and code conventions |
 
-// Import specific items
-from utils import helper, logger
+### Implementation Tasks
 
-// Import with alias
-from collections import List as ArrayList
+The project is decomposed into 24 TDD-driven tasks in [docs/](docs/). Each task follows Red-Green-Refactor cycles and is independently compilable and testable.
+
+| # | Task | Phase | Dependencies |
+|---|------|-------|--------------|
+| [T01](docs/T01-project-skeleton.md) | Project Skeleton & Build System | 1 Foundation | — |
+| [T02](docs/T02-common-definitions.md) | Common Definitions | 1 Foundation | T01 |
+| [T03](docs/T03-memory-subsystem.md) | Memory Subsystem | 1 Foundation | T02 |
+| [T04](docs/T04-platform-layer.md) | Platform Layer | 1 Foundation | T02, T03 |
+| [T05](docs/T05-logger.md) | Debug Logger | 1 Foundation | T03, T04 |
+| [T06](docs/T06-token-types.md) | Token Types | 1 Foundation | T02 |
+| [T07](docs/T07-value-system.md) | Value System | 2 Core Types | T02, T03 |
+| [T08](docs/T08-object-system-strings.md) | Object System — Strings | 2 Core Types | T07 |
+| [T09](docs/T09-hash-table.md) | Hash Table | 2 Core Types | T07, T08 |
+| [T10](docs/T10-scanner.md) | Scanner (Lexer) | 3 Scanner | T06 |
+| [T11](docs/T11-ast-nodes.md) | AST Nodes | 4 AST & Parser | T06 |
+| [T12](docs/T12-bytecode-chunk.md) | Bytecode Chunk | 5 Bytecode | T07 |
+| [T13](docs/T13-parser.md) | Parser | 4 AST & Parser | T10, T11 |
+| [T14](docs/T14-compiler-basic.md) | Compiler — Basic | 6 Compiler & VM | T12, T13 |
+| [T15](docs/T15-vm-core.md) | VM Core | 6 Compiler & VM | T14, T09 |
+| [T16](docs/T16-functions-closures.md) | Functions & Closures | 7 Functions | T15 |
+| [T17](docs/T17-garbage-collection.md) | Garbage Collection | 8 GC | T16 |
+| [T18](docs/T18-classes-inheritance.md) | Classes & Inheritance | 9 Classes | T16, T17 |
+| [T19](docs/T19-list-support.md) | List/Array Support | 10 Lists | T15, T17 |
+| [T20](docs/T20-module-system.md) | Module System | 11 Modules | T15, T04 |
+| [T21](docs/T21-builtin-functions.md) | Built-in Functions | 12 Builtins | T16 |
+| [T22](docs/T22-main-repl.md) | Main Entry Point & REPL | 13 Integration | T21, T20 |
+| [T23](docs/T23-error-handling.md) | Error Handling Polish | 13 Integration | T22 |
+| [T24](docs/T24-testing-polish.md) | Testing & Polish | 14 Polish | T23 |
+
+### Dependency Graph
+
+```
+T01 → T02 → T03 → T04 → T05
+                ↘ T07 → T08 → T09 ─────────────────────────┐
+         T06 → T10 ─┐                              T15 ←───┘
+           ↘ T11 ──→ T13 → T14 → T15 → T16 → T17 → T18
+           ↘ T12 ──────────→ T14      T15 → T19
+                                    T16 → T21
+                                    T15+T04 → T20
+                                    T21+T20 → T22 → T23 → T24
 ```
 
 ## Project Structure
@@ -148,57 +166,57 @@ from collections import List as ArrayList
 ```
 mslang4/
 ├── CMakeLists.txt          # Build configuration
-├── README.md               # This file
-├── REQUIREMENTS.md         # Requirements specification
-├── DESIGN.md               # Design documentation
-├── src/                    # Source code
-│   ├── main.cc             # Entry point
-│   ├── common.hh           # Common definitions
-│   ├── logger.hh/cc        # Logger system
-│   ├── token.hh            # Token definitions
-│   ├── scanner.hh/cc       # Lexer
-│   ├── ast.hh              # AST node definitions
-│   ├── parser.hh/cc        # Parser
-│   ├── compiler.hh/cc      # Compiler
-│   ├── chunk.hh/cc         # Bytecode chunk
-│   ├── value.hh/cc         # Value representation
-│   ├── object.hh/cc        # Object system
-│   ├── table.hh/cc         # Hash table
-│   ├── memory.hh/cc        # Memory management
-│   ├── vm.hh/cc            # Virtual machine
-│   ├── module.hh/cc        # Module system
-│   ├── builtins.hh/cc      # Built-in functions
-│   └── platform.hh/cc      # Platform utilities
-├── include/ms/             # Public headers
-│   └── maple.hh            # Main API header
-├── tests/                  # Test suite
-│   ├── basic/              # Basic functionality tests
-│   ├── functions/          # Function tests
+├── src/
+│   ├── main.c              # Entry point & CLI
+│   ├── common.h            # Constants, result types, debug macros
+│   ├── memory.h/c          # Allocation wrapper & GC
+│   ├── platform.h/c        # Cross-platform file I/O, paths, colors
+│   ├── logger.h/c          # Leveled, colored logging
+│   ├── token.h             # Token type enum & struct
+│   ├── scanner.h/c         # Lexer
+│   ├── ast.h               # AST node definitions
+│   ├── parser.h/c          # Pratt parser + recursive descent
+│   ├── chunk.h/c           # Bytecode instruction set & storage
+│   ├── value.h/c           # Tagged-union value representation
+│   ├── object.h/c          # Object system (strings, functions, classes...)
+│   ├── table.h/c           # Hash table (open addressing)
+│   ├── compiler.h/c        # Single-pass AST → bytecode compiler
+│   ├── vm.h/c              # Stack-based virtual machine
+│   ├── module.h/c          # Module loader & import resolution
+│   ├── builtins.h/c        # print, clock, type, len, input, str, num
+│   └── platform.h/c        # Platform abstraction
+├── tests/
+│   ├── unit/               # C unit tests
+│   ├── basic/              # .ms integration tests
+│   ├── functions/          # Function/closure tests
 │   ├── classes/            # OOP tests
-│   ├── modules/            # Import system tests
-│   └── regression/         # Bug regression tests
-└── examples/               # Example programs
+│   └── modules/            # Import system tests
+├── docs/                   # T01–T24 implementation task docs
+└── examples/               # Example .ms programs
 ```
 
-## Development Status
+## Built-in Functions
 
-See [REQUIREMENTS.md](REQUIREMENTS.md) for implementation phases and current status.
+| Function | Description |
+|----------|-------------|
+| `print(value)` | Print value to stdout |
+| `clock()` | Return elapsed time in seconds |
+| `type(value)` | Return type name as string |
+| `len(string\|list)` | Return length |
+| `input([prompt])` | Read line from stdin |
+| `str(value)` | Convert to string |
+| `num(value)` | Convert to number |
 
-## Contributing
+## Code Conventions
 
-This project is currently in development. Contribution guidelines will be added once the core implementation is complete.
+- **C11 only** — no C++ features, no external dependencies
+- **Naming**: `MsPascalCase` types, `ms_snake_case` functions, `MS_UPPER_CASE` macros
+- **Memory**: All allocation via `ms_reallocate()`, init/free lifecycle pairs
+- **Style**: Linux Kernel Coding Style, 4-space indentation, UTF-8/LF
+- **Error handling**: `MsResult` return codes with line/column info
 
-## License
-
-[License to be determined]
+See [AGENTS.md](AGENTS.md) and [REQUIREMENTS.md](REQUIREMENTS.md) §2.3 for full conventions.
 
 ## Acknowledgments
 
-- Robert Nystrom's [Crafting Interpreters](https://craftinginterpreters.com/) for the foundational design
-- The C++ community for excellent language features and standards
-
-## References
-
-- [Crafting Interpreters Book](https://craftinginterpreters.com/)
-- [Crafting Interpreters GitHub](https://github.com/munificent/craftinginterpreters)
-- [C++23 Reference](https://en.cppreference.com/w/cpp/23)
+- Robert Nystrom's [Crafting Interpreters](https://craftinginterpreters.com/) — foundational design
