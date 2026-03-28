@@ -1488,6 +1488,10 @@ dispatch_loop:
       for (int i = 0; i < B; i++) {
         list->elements()[static_cast<sz_t>(i)] = frame->slots[A + 1 + i];
       }
+      // Charge the vector storage allocated by resize()
+      sz_t elem_bytes = static_cast<sz_t>(B) * sizeof(Value);
+      bytes_allocated_ += elem_bytes;
+      young_bytes_ += elem_bytes;
       frame->slots[A] = Value(static_cast<Object*>(list));
       VM_DISPATCH();
     }
@@ -1501,6 +1505,10 @@ dispatch_loop:
         Value val = frame->slots[A + 1 + i * 2 + 1];
         map->entries()[key] = val;
       }
+      // Charge the unordered_map bucket storage allocated during insertions
+      sz_t map_bytes = static_cast<sz_t>(B) * sizeof(Value) * 2;
+      bytes_allocated_ += map_bytes;
+      young_bytes_ += map_bytes;
       frame->slots[A] = Value(static_cast<Object*>(map));
       VM_DISPATCH();
     }
@@ -1512,6 +1520,10 @@ dispatch_loop:
       for (int i = 0; i < B; i++) {
         elements[static_cast<sz_t>(i)] = frame->slots[A + 1 + i];
       }
+      // Charge element storage before allocating (vector is moved in)
+      sz_t tup_bytes = static_cast<sz_t>(B) * sizeof(Value);
+      bytes_allocated_ += tup_bytes;
+      young_bytes_ += tup_bytes;
       ObjTuple* tuple = allocate<ObjTuple>(std::move(elements));
       frame->slots[A] = Value(static_cast<Object*>(tuple));
       VM_DISPATCH();
