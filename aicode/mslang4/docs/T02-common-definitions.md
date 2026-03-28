@@ -3,6 +3,7 @@
 **Phase**: 1 - Foundation
 **Dependencies**: T01 (Project Skeleton)
 **Estimated Complexity**: Low
+**Status**: ✅ COMPLETED
 
 ## Goal
 
@@ -287,12 +288,12 @@ Expected: compiles and test passes (macros expand to nothing when flags not defi
 
 ## Acceptance Criteria
 
-- [ ] `common.h` compiles when included from a `.c` file
-- [ ] All constants are defined with correct values
-- [ ] `MsResult` enum has exactly 3 values
-- [ ] Debug macros expand to nothing when their flag is not defined
-- [ ] Debug macros expand to their argument when the flag IS defined
-- [ ] No warnings with strict compilation flags
+- [x] `common.h` compiles when included from a `.c` file
+- [x] All constants are defined with correct values
+- [x] `MsResult` enum has exactly 3 values
+- [x] Debug macros expand to nothing when their flag is not defined
+- [x] Debug macros expand to their argument when the flag IS defined
+- [x] No warnings with strict compilation flags
 
 ## Notes
 
