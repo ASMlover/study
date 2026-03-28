@@ -1,5 +1,9 @@
 # Task 01 - Build Bootstrap and Test Harness
 
+## Status
+
+Complete. Verified on 2026-03-28 with the acceptance commands in this document.
+
 ## Goal
 
 Create the minimal project skeleton that can be configured, built, executed, and tested before any language feature work starts.
