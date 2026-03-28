@@ -1,5 +1,9 @@
 # Task 04 - Lexer
 
+## Status
+
+Complete. Verified on 2026-03-29 with the acceptance commands in this document.
+
 ## Goal
 
 Implement the tokenization layer as the only input source for the parser.

@@ -1,0 +1,3 @@
+1:1-5 PRINT "print"
+1:12-12 NEWLINE "\n"
+2:1-1 EOF ""

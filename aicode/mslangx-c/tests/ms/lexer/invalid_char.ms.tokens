@@ -1,0 +1,8 @@
+1:1-3 VAR "var"
+1:5-5 IDENTIFIER "x"
+1:7-7 EQUAL "="
+1:10-10 NEWLINE "\n"
+2:1-5 PRINT "print"
+2:7-7 IDENTIFIER "x"
+2:8-8 NEWLINE "\n"
+3:1-1 EOF ""
