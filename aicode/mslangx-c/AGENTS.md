@@ -19,7 +19,7 @@ Do not restate architecture decisions in new docs unless necessary. Link to the 
 - Treat the `docs/` task files as the execution plan and acceptance baseline.
 - When changing design, update `mslangc-design.md` first, then adjust affected task docs.
 - When implementing code, preserve the pure C direction. Do not introduce C++-only mechanisms.
-- Follow the Linux kernel coding style as the default C coding style reference:
+- Follow the Linux kernel coding style as the default C coding style reference, with 2 spaces used for indentation in this repository:
   https://www.kernel.org/doc/html/v4.10/process/coding-style.html
 - All text files must use UTF-8 encoding and LF line endings.
 - Trailing whitespace must be removed automatically before completion.
