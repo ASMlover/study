@@ -1,1177 +1,456 @@
 # Maple Scripting Language - Design Specification
 
-## 1. Architecture Overview
+> **Convention**: All code blocks below omit `#ifndef`/`#define`/`#endif` include guards and `#include` directives for brevity. Every `.h` file uses them in practice.
 
-### 1.1 High-Level Architecture
-
-```
-Source Code (.maple)
-       │
-       ▼
-   ┌─────────┐
-   │ Scanner │  → Token Stream
-   └─────────┘
-       │
-       ▼
-   ┌─────────┐
-   │ Parser  │  → Abstract Syntax Tree (AST)
-   └─────────┘
-       │
-       ▼
-   ┌───────────┐
-   │ Compiler  │  → Bytecode Chunks
-   └───────────┘
-       │
-       ▼
-   ┌──────────────┐
-   │ Virtual      │  ←→ Garbage Collector
-   │ Machine (VM) │
-   └──────────────┘
-       │
-       ▼
-   Execution Result
-```
-
-### 1.2 Component Diagram
+## 1. Architecture
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                         Maple Runtime                       │
-├────────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │  Logger  │  │ Platform │  │  Memory  │  │  Module  │  │
-│  │  System  │  │  Layer   │  │ Manager  │  │  Loader  │  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-├────────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │ Scanner  │  │  Parser  │  │Compiler  │  │   VM     │  │
-│  │          │→ │          │→ │          │→ │          │  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-├────────────────────────────────────────────────────────────┤
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │  Value   │  │  Object  │  │  Table   │  │  Chunk   │  │
-│  │  System  │  │  System  │  │(HashMap) │  │(Bytecode)│  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-└────────────────────────────────────────────────────────────┘
+Source (.ms) → Scanner → Parser → Compiler → VM ←→ GC
 ```
 
-### 1.3 Data Flow
+Data flow: `"var x = 42"` → `[VAR, IDENTIFIER("x"), EQUAL, NUMBER(42)]` → `VarDecl{name:"x", init:Literal(42)}` → `[OP_CONSTANT, 0, OP_DEFINE_GLOBAL, 1]` → VM executes.
 
-```
-1. Lexical Analysis:
-   "var x = 42;" → [VAR, IDENTIFIER("x"), EQUAL, NUMBER(42), SEMICOLON]
+## 2. Component APIs
 
-2. Parsing:
-   Token Stream → VarDecl { name: "x", initializer: Literal(42) }
+### 2.1 Common (`common.h`)
 
-3. Compilation:
-   AST → Bytecode: [OP_CONSTANT, 0, OP_DEFINE_GLOBAL, 1]
+```c
+#define MS_STACK_MAX    256
+#define MS_FRAMES_MAX   64
+#define MS_GC_HEAP_GROW_FACTOR 2
+#define MS_MAX_LOCALS   256
+#define MS_MAX_UPVALUES 256
+#define MS_TABLE_MAX_LOAD 0.75
 
-4. Execution:
-   VM interprets bytecode → Memory state updated
-```
+typedef enum { MS_OK, MS_COMPILE_ERROR, MS_RUNTIME_ERROR } MsResult;
 
-## 2. Detailed Component Design
+#ifdef MS_DEBUG_LOG_GC
+  #define MS_DEBUG_LOG_GC_EXECUTE(code) code
+#else
+  #define MS_DEBUG_LOG_GC_EXECUTE(code)
+#endif
 
-### 2.1 Token and Lexer System
+#ifdef MS_DEBUG_STRESS_GC
+  #define MS_DEBUG_STRESS_GC_EXECUTE(code) code
+#else
+  #define MS_DEBUG_STRESS_GC_EXECUTE(code)
+#endif
 
-#### 2.1.1 Token Types (`token.hh`)
-
-```cpp
-namespace ms {
-
-enum class TokenType {
-    // Single-character tokens
-    LEFT_PAREN, RIGHT_PAREN,
-    LEFT_BRACE, RIGHT_BRACE,
-    LEFT_BRACKET, RIGHT_BRACKET,  // For arrays
-    COMMA, DOT, SEMICOLON, COLON,
-    
-    // Operators
-    BANG, BANG_EQUAL,
-    EQUAL, EQUAL_EQUAL,
-    GREATER, GREATER_EQUAL,
-    LESS, LESS_EQUAL,
-    PLUS, MINUS, STAR, SLASH, PERCENT,
-    
-    // Literals
-    IDENTIFIER, STRING, NUMBER,
-    
-    // Keywords
-    AND, CLASS, ELSE, FALSE, FUN, FOR,
-    IF, NIL, OR, PRINT, RETURN, SUPER,
-    THIS, TRUE, VAR, WHILE,
-    BREAK, CONTINUE,  // Loop control
-    
-    // Module system
-    IMPORT, FROM, AS,
-    
-    // Special
-    ERROR, END_OF_FILE
-};
-
-struct Token {
-    TokenType type;
-    std::string_view lexeme;
-    std::variant<std::monostate, double, std::string_view> literal;
-    size_t line;
-    size_t column;
-    std::source_location location;  // C++23 feature
-};
-
-} // namespace ms
+#ifdef MS_DEBUG_TRACE_EXECUTION
+  #define MS_DEBUG_TRACE_EXECUTE(code) code
+#else
+  #define MS_DEBUG_TRACE_EXECUTE(code)
+#endif
 ```
 
-#### 2.1.2 Scanner Design (`scanner.hh/cc`)
+### 2.2 Tokens (`token.h`)
 
-**Responsibilities**:
-- Convert source code to token stream
-- Track line and column numbers
-- Handle string interpolation (optional)
-- Report lexical errors
+```c
+typedef enum {
+    MS_TOKEN_LEFT_PAREN, MS_TOKEN_RIGHT_PAREN,
+    MS_TOKEN_LEFT_BRACE, MS_TOKEN_RIGHT_BRACE,
+    MS_TOKEN_LEFT_BRACKET, MS_TOKEN_RIGHT_BRACKET,
+    MS_TOKEN_COMMA, MS_TOKEN_DOT, MS_TOKEN_NEWLINE, MS_TOKEN_SEMICOLON, MS_TOKEN_COLON,
+    MS_TOKEN_BANG, MS_TOKEN_BANG_EQUAL,
+    MS_TOKEN_EQUAL, MS_TOKEN_EQUAL_EQUAL,
+    MS_TOKEN_GREATER, MS_TOKEN_GREATER_EQUAL,
+    MS_TOKEN_LESS, MS_TOKEN_LESS_EQUAL,
+    MS_TOKEN_PLUS, MS_TOKEN_MINUS, MS_TOKEN_STAR, MS_TOKEN_SLASH, MS_TOKEN_PERCENT,
+    MS_TOKEN_IDENTIFIER, MS_TOKEN_STRING, MS_TOKEN_NUMBER,
+    MS_TOKEN_AND, MS_TOKEN_CLASS, MS_TOKEN_ELSE, MS_TOKEN_FALSE,
+    MS_TOKEN_FN, MS_TOKEN_FOR, MS_TOKEN_IF, MS_TOKEN_NIL,
+    MS_TOKEN_OR, MS_TOKEN_PRINT, MS_TOKEN_RETURN, MS_TOKEN_SUPER,
+    MS_TOKEN_THIS, MS_TOKEN_TRUE, MS_TOKEN_VAR, MS_TOKEN_WHILE,
+    MS_TOKEN_BREAK, MS_TOKEN_CONTINUE,
+    MS_TOKEN_IMPORT, MS_TOKEN_FROM, MS_TOKEN_AS,
+    MS_TOKEN_ERROR, MS_TOKEN_EOF
+} MsTokenType;
 
-**Key Methods**:
-```cpp
-class Scanner {
-public:
-    explicit Scanner(std::string_view source);
-    
-    Token scanToken();
-    bool isAtEnd() const;
-    size_t getCurrentLine() const;
-    
-private:
-    std::string_view source_;
-    size_t start_;
-    size_t current_;
-    size_t line_;
-    size_t column_;
-    
-    char advance();
-    char peek() const;
-    char peekNext() const;
-    bool match(char expected);
-    
-    Token makeToken(TokenType type);
-    Token errorToken(std::string_view message);
-    
-    void skipWhitespace();
-    Token scanString();
-    Token scanNumber();
-    Token scanIdentifier();
-    TokenType identifierType();
-    TokenType checkKeyword(size_t start, size_t length, 
-                          std::string_view rest, TokenType type);
-};
+typedef struct {
+    MsTokenType type;
+    const char* start;
+    int length;
+    int line;
+    int column;
+} MsToken;
 ```
 
-### 2.2 Abstract Syntax Tree (`ast.hh`)
+### 2.3 Scanner (`scanner.h / .c`)
 
-#### 2.2.1 AST Node Design
+```c
+typedef struct {
+    const char* start;
+    const char* current;
+    int line;
+    int column;
+} MsScanner;
 
-Using modern C++23 with `std::variant` for type-safe AST nodes:
-
-```cpp
-namespace ms {
-
-// Forward declarations
-struct Expr;
-struct Stmt;
-
-// Expressions
-struct AssignExpr {
-    Token name;
-    std::unique_ptr<Expr> value;
-};
-
-struct BinaryExpr {
-    std::unique_ptr<Expr> left;
-    Token op;
-    std::unique_ptr<Expr> right;
-};
-
-struct CallExpr {
-    std::unique_ptr<Expr> callee;
-    Token paren;
-    std::vector<std::unique_ptr<Expr>> arguments;
-};
-
-struct GetExpr {
-    std::unique_ptr<Expr> object;
-    Token name;
-};
-
-struct GroupingExpr {
-    std::unique_ptr<Expr> expression;
-};
-
-struct LiteralExpr {
-    Token literal;
-    std::variant<std::monostate, double, std::string> value;
-};
-
-struct LogicalExpr {
-    std::unique_ptr<Expr> left;
-    Token op;
-    std::unique_ptr<Expr> right;
-};
-
-struct SetExpr {
-    std::unique_ptr<Expr> object;
-    Token name;
-    std::unique_ptr<Expr> value;
-};
-
-struct SuperExpr {
-    Token keyword;
-    Token method;
-};
-
-struct ThisExpr {
-    Token keyword;
-};
-
-struct UnaryExpr {
-    Token op;
-    std::unique_ptr<Expr> right;
-};
-
-struct VariableExpr {
-    Token name;
-};
-
-struct ListExpr {  // For array literals
-    Token bracket;
-    std::vector<std::unique_ptr<Expr>> elements;
-};
-
-struct SubscriptExpr {  // For array indexing
-    std::unique_ptr<Expr> object;
-    Token bracket;
-    std::unique_ptr<Expr> index;
-};
-
-using Expr = std::variant<
-    AssignExpr,
-    BinaryExpr,
-    CallExpr,
-    GetExpr,
-    GroupingExpr,
-    LiteralExpr,
-    LogicalExpr,
-    SetExpr,
-    SuperExpr,
-    ThisExpr,
-    UnaryExpr,
-    VariableExpr,
-    ListExpr,
-    SubscriptExpr
->;
-
-// Statements
-struct BlockStmt {
-    std::vector<std::unique_ptr<Stmt>> statements;
-};
-
-struct ClassStmt {
-    Token name;
-    std::optional<Token> superclass;
-    std::vector<std::unique_ptr<Stmt>> methods;
-};
-
-struct ExpressionStmt {
-    std::unique_ptr<Expr> expression;
-};
-
-struct FunctionStmt {
-    Token name;
-    std::vector<Token> params;
-    std::vector<std::unique_ptr<Stmt>> body;
-};
-
-struct IfStmt {
-    Token ifToken;
-    std::unique_ptr<Expr> condition;
-    std::unique_ptr<Stmt> thenBranch;
-    std::unique_ptr<Stmt> elseBranch;
-};
-
-struct ImportStmt {
-    Token importToken;
-    Token moduleName;
-    std::vector<std::pair<Token, std::optional<Token>>> items;  // (name, alias)
-    bool isFromImport;  // true for "from X import Y"
-};
-
-struct ReturnStmt {
-    Token keyword;
-    std::unique_ptr<Expr> value;
-};
-
-struct VarStmt {
-    Token name;
-    std::unique_ptr<Expr> initializer;
-};
-
-struct WhileStmt {
-    Token whileToken;
-    std::unique_ptr<Expr> condition;
-    std::unique_ptr<Stmt> body;
-};
-
-struct ForStmt {
-    Token forToken;
-    std::unique_ptr<Stmt> initializer;
-    std::unique_ptr<Expr> condition;
-    std::unique_ptr<Expr> increment;
-    std::unique_ptr<Stmt> body;
-};
-
-struct BreakStmt {
-    Token keyword;
-};
-
-struct ContinueStmt {
-    Token keyword;
-};
-
-using Stmt = std::variant<
-    BlockStmt,
-    ClassStmt,
-    ExpressionStmt,
-    FunctionStmt,
-    IfStmt,
-    ImportStmt,
-    ReturnStmt,
-    VarStmt,
-    WhileStmt,
-    ForStmt,
-    BreakStmt,
-    ContinueStmt
->;
-
-} // namespace ms
+void ms_scanner_init(MsScanner* scanner, const char* source);
+MsToken ms_scanner_scan_token(MsScanner* scanner);
 ```
 
-### 2.3 Parser Design (`parser.hh/cc`)
+Internal helpers (all `static`): `advance()`, `peek()`, `peekNext()`, `match()`, `skipWhitespace()`, `scanString()`, `scanNumber()`, `scanIdentifier()`, `identifierType()`, `checkKeyword()`. Token lexeme is pointer+length into original source (no allocation).
 
-#### 2.3.1 Recursive Descent Parser
+### 2.4 AST (`ast.h`)
 
-**Design Pattern**: Pratt parser for expressions, recursive descent for statements
+```c
+typedef struct MsExpr MsExpr;
+typedef struct MsStmt MsStmt;
 
-```cpp
-namespace ms {
+typedef enum {
+    MS_EXPR_ASSIGN, MS_EXPR_BINARY, MS_EXPR_CALL, MS_EXPR_GET,
+    MS_EXPR_GROUPING, MS_EXPR_LITERAL, MS_EXPR_LOGICAL, MS_EXPR_SET,
+    MS_EXPR_SUPER, MS_EXPR_THIS, MS_EXPR_UNARY, MS_EXPR_VARIABLE,
+    MS_EXPR_LIST, MS_EXPR_SUBSCRIPT
+} MsExprType;
 
-class Parser {
-public:
-    explicit Parser(std::string_view source);
-    
-    std::expected<std::vector<std::unique_ptr<Stmt>>, 
-                  ParseError> parse();
-    
-private:
-    Scanner scanner_;
-    Token current_;
-    Token previous_;
-    bool hadError_;
-    bool panicMode_;
-    
-    // Error handling
-    struct ParseError {
-        Token token;
-        std::string message;
-    };
-    
-    ParseError error(Token token, std::string_view message);
-    void synchronize();
-    
-    // Token consumption
-    Token advance();
-    Token consume(TokenType type, std::string_view message);
-    bool check(TokenType type) const;
-    bool match(TokenType type);
-    
-    // Expression parsing (Pratt parser)
-    std::unique_ptr<Expr> parseExpression();
-    std::unique_ptr<Expr> parseAssignment();
-    std::unique_ptr<Expr> parseOr();
-    std::unique_ptr<Expr> parseAnd();
-    std::unique_ptr<Expr> parseEquality();
-    std::unique_ptr<Expr> parseComparison();
-    std::unique_ptr<Expr> parseTerm();
-    std::unique_ptr<Expr> parseFactor();
-    std::unique_ptr<Expr> parseUnary();
-    std::unique_ptr<Expr> parseCall();
-    std::unique_ptr<Expr> parsePrimary();
-    
-    // Statement parsing
-    std::unique_ptr<Stmt> parseStatement();
-    std::unique_ptr<Stmt> parseDeclaration();
-    std::unique_ptr<Stmt> parseVarDeclaration();
-    std::unique_ptr<Stmt> parseFunctionDeclaration();
-    std::unique_ptr<Stmt> parseClassDeclaration();
-    std::unique_ptr<Stmt> parseImportStatement();
-    std::unique_ptr<Stmt> parseBlock();
-    std::unique_ptr<Stmt> parseIfStatement();
-    std::unique_ptr<Stmt> parseWhileStatement();
-    std::unique_ptr<Stmt> parseForStatement();
-    std::unique_ptr<Stmt> parseReturnStatement();
-    
-    // Helper methods
-    std::vector<std::unique_ptr<Stmt>> parseBlockStatements();
-    std::vector<Token> parseFunctionParameters();
-    std::vector<std::unique_ptr<Expr>> parseCallArguments();
-};
+typedef enum { MS_LITERAL_NIL, MS_LITERAL_BOOL, MS_LITERAL_NUMBER, MS_LITERAL_STRING } MsLiteralType;
 
-} // namespace ms
-```
-
-### 2.4 Bytecode Design (`chunk.hh/cc`)
-
-#### 2.4.1 Instruction Set
-
-```cpp
-namespace ms {
-
-enum class OpCode : uint8_t {
-    // Stack operations
-    OP_CONSTANT,        // Load constant
-    OP_NIL,            // Push nil
-    OP_TRUE,           // Push true
-    OP_FALSE,          // Push false
-    OP_POP,            // Pop top of stack
-    
-    // Variable operations
-    OP_DEFINE_GLOBAL,  // Define global variable
-    OP_GET_GLOBAL,     // Get global variable
-    OP_SET_GLOBAL,     // Set global variable
-    OP_GET_LOCAL,      // Get local variable
-    OP_SET_LOCAL,      // Set local variable
-    OP_GET_UPVALUE,    // Get upvalue
-    OP_SET_UPVALUE,    // Set upvalue
-    
-    // Property access
-    OP_GET_PROPERTY,   // Get object property
-    OP_SET_PROPERTY,   // Set object property
-    OP_GET_SUPER,      // Get superclass method
-    
-    // Array operations
-    OP_BUILD_LIST,     // Build list from stack elements
-    OP_GET_SUBSCRIPT,  // Get list element by index
-    OP_SET_SUBSCRIPT,  // Set list element by index
-    
-    // Comparison
-    OP_EQUAL,
-    OP_NOT_EQUAL,
-    OP_GREATER,
-    OP_GREATER_EQUAL,
-    OP_LESS,
-    OP_LESS_EQUAL,
-    
-    // Arithmetic
-    OP_ADD,
-    OP_SUBTRACT,
-    OP_MULTIPLY,
-    OP_DIVIDE,
-    OP_MODULO,
-    OP_NEGATE,
-    
-    // Logic
-    OP_NOT,
-    OP_AND,            // Short-circuit and
-    OP_OR,             // Short-circuit or
-    
-    // Control flow
-    OP_JUMP,           // Unconditional jump
-    OP_JUMP_IF_FALSE,  // Conditional jump
-    OP_LOOP,           // Jump backward for loops
-    OP_BREAK,          // Break from loop (internal)
-    OP_CONTINUE,       // Continue loop (internal)
-    
-    // Functions
-    OP_CALL,           // Function call
-    OP_INVOKE,         // Method call (optimized)
-    OP_SUPER_INVOKE,   // Super method call
-    OP_CLOSURE,        // Create closure
-    OP_CLOSE_UPVALUE,  // Close upvalue
-    
-    // Classes
-    OP_CLASS,          // Create class
-    OP_INHERIT,        // Inherit from superclass
-    OP_METHOD,         // Define method
-    
-    // Modules
-    OP_IMPORT,         // Import module
-    OP_IMPORT_FROM,    // Import specific items from module
-    
-    // Return
-    OP_RETURN,
-    
-    // Debug
-    OP_DEBUG_BREAK,    // Debugger breakpoint (optional)
-};
-
-struct BytecodeChunk {
-    std::vector<uint8_t> code;
-    std::vector<Value> constants;
-    std::vector<size_t> lines;  // Line numbers for debugging
-    
-    void write(uint8_t byte, size_t line);
-    void writeOp(OpCode op, size_t line);
-    size_t addConstant(Value value);
-    size_t getCount() const;
-    OpCode getOp(size_t offset) const;
-    uint8_t getByte(size_t offset) const;
-    size_t getLine(size_t offset) const;
-};
-
-} // namespace ms
-```
-
-### 2.5 Value Representation (`value.hh/cc`)
-
-#### 2.5.1 Tagged Union Design
-
-Using NaN boxing for efficient value representation (or simple tagged union for clarity):
-
-```cpp
-namespace ms {
-
-// Forward declarations
-class Object;
-
-// Value type enumeration
-enum class ValueType {
-    NIL,
-    BOOL,
-    NUMBER,
-    OBJECT
-};
-
-// Value representation
-struct Value {
-    ValueType type;
+typedef struct {
+    MsLiteralType type;
     union {
         bool boolean;
         double number;
-        Object* object;
-    } as;
-    
-    // Type queries
-    bool isNil() const { return type == ValueType::NIL; }
-    bool isBool() const { return type == ValueType::BOOL; }
-    bool isNumber() const { return type == ValueType::NUMBER; }
-    bool isObject() const { return type == ValueType::OBJECT; }
-    
-    // Type-safe accessors
-    bool asBool() const;
-    double asNumber() const;
-    Object* asObject() const;
-    
-    // Factory methods
-    static Value nilVal();
-    static Value boolVal(bool value);
-    static Value numberVal(double value);
-    static Value objectVal(Object* obj);
-    
-    // Comparison
-    bool operator==(const Value& other) const;
-    bool isFalsey() const;
+        struct { const char* start; int length; };
+    };
+} MsLiteralValue;
+
+struct MsExpr {
+    MsExprType type;
+    union {
+        struct { MsToken name; MsExpr* value; } assign;
+        struct { MsExpr* left; MsToken op; MsExpr* right; } binary;
+        struct { MsExpr* callee; MsToken paren; MsExpr** args; int argCount; } call;
+        struct { MsExpr* object; MsToken name; } get;
+        struct { MsExpr* expression; } grouping;
+        struct { MsLiteralValue value; MsToken token; } literal;
+        struct { MsExpr* left; MsToken op; MsExpr* right; } logical;
+        struct { MsExpr* object; MsToken name; MsExpr* value; } set;
+        struct { MsToken keyword; MsToken method; } super;
+        struct { MsToken keyword; } this_expr;
+        struct { MsToken op; MsExpr* right; } unary;
+        struct { MsToken name; } variable;
+        struct { MsToken bracket; MsExpr** elements; int elementCount; } list;
+        struct { MsExpr* object; MsToken bracket; MsExpr* index; } subscript;
+    };
 };
 
-// Value array for constants
-class ValueArray {
-public:
-    void write(Value value);
-    size_t getCount() const { return values_.size(); }
-    Value operator[](size_t index) const { return values_[index]; }
-    
-private:
-    std::vector<Value> values_;
+typedef enum {
+    MS_STMT_BLOCK, MS_STMT_CLASS, MS_STMT_EXPRESSION, MS_STMT_FUNCTION,
+    MS_STMT_IF, MS_STMT_IMPORT, MS_STMT_RETURN, MS_STMT_VAR,
+    MS_STMT_WHILE, MS_STMT_FOR, MS_STMT_BREAK, MS_STMT_CONTINUE
+} MsStmtType;
+
+typedef struct {
+    MsToken name;
+    MsToken alias;  // alias.length == 0 if no alias
+} MsImportItem;
+
+struct MsStmt {
+    MsStmtType type;
+    union {
+        struct { MsStmt** statements; int count; } block;
+        struct { MsToken name; MsToken superclass; MsStmt** methods; int methodCount; } class_stmt;
+        struct { MsExpr* expression; } expression;
+        struct { MsToken name; MsToken* params; int paramCount; MsStmt** body; int bodyCount; } function;
+        struct { MsToken keyword; MsExpr* condition; MsStmt* thenBranch; MsStmt* elseBranch; } if_stmt;
+        struct { MsToken importToken; MsToken moduleName; MsImportItem* items; int itemCount; bool isFromImport; } import;
+        struct { MsToken keyword; MsExpr* value; } return_stmt;
+        struct { MsToken name; MsExpr* initializer; } var;
+        struct { MsToken keyword; MsExpr* condition; MsStmt* body; } while_stmt;
+        struct { MsToken keyword; MsStmt* initializer; MsExpr* condition; MsExpr* increment; MsStmt* body; } for_stmt;
+        struct { MsToken keyword; } break_stmt;
+        struct { MsToken keyword; } continue_stmt;
+    };
 };
 
-} // namespace ms
+MsExpr* ms_expr_create(MsExprType type);
+MsStmt* ms_stmt_create(MsStmtType type);
+void ms_expr_free(MsExpr* expr);
+void ms_stmt_free(MsStmt* stmt);
+void ms_stmt_list_free(MsStmt** stmts, int count);
 ```
 
-### 2.6 Object System (`object.hh/cc`)
+### 2.5 Parser (`parser.h / .c`)
 
-#### 2.6.1 Object Types and Structure
+Pratt parser for expressions, recursive descent for statements.
 
-```cpp
-namespace ms {
+```c
+typedef struct {
+    MsToken token;
+    char message[256];
+} MsParseError;
 
-enum class ObjectType {
-    STRING,
-    FUNCTION,
-    CLOSURE,
-    UPVALUE,
-    CLASS,
-    INSTANCE,
-    BOUND_METHOD,
-    MODULE,
-    LIST
+typedef struct {
+    MsScanner scanner;
+    MsToken current;
+    MsToken previous;
+    bool hadError;
+    bool panicMode;
+    MsParseError lastError;
+} MsParser;
+
+void ms_parser_init(MsParser* parser, const char* source);
+int ms_parser_parse(MsParser* parser, MsStmt*** outStatements);  // returns count, -1 on error
+bool ms_parser_had_error(const MsParser* parser);
+```
+
+Internal (static in `parser.c`): `advance()`, `consume()`, `check()`, `match()`, `synchronize()`. Expression parsing by precedence: `parseAssignment→parseOr→parseAnd→parseEquality→parseComparison→parseTerm→parseFactor→parseUnary→parseCall→parsePrimary`. Statement parsing: `parseStatement→parseDeclaration`, `parseVarDeclaration`, `parseFunctionDeclaration`, `parseClassDeclaration`, `parseImportStatement`, `parseBlock`, `parseIfStatement`, `parseWhileStatement`, `parseForStatement`, `parseReturnStatement`.
+
+### 2.6 Bytecode (`chunk.h / .c`)
+
+```c
+typedef enum {
+    MS_OP_CONSTANT, MS_OP_NIL, MS_OP_TRUE, MS_OP_FALSE, MS_OP_POP,
+    MS_OP_DEFINE_GLOBAL, MS_OP_GET_GLOBAL, MS_OP_SET_GLOBAL,
+    MS_OP_GET_LOCAL, MS_OP_SET_LOCAL, MS_OP_GET_UPVALUE, MS_OP_SET_UPVALUE,
+    MS_OP_GET_PROPERTY, MS_OP_SET_PROPERTY, MS_OP_GET_SUPER,
+    MS_OP_BUILD_LIST, MS_OP_GET_SUBSCRIPT, MS_OP_SET_SUBSCRIPT,
+    MS_OP_EQUAL, MS_OP_NOT_EQUAL, MS_OP_GREATER, MS_OP_GREATER_EQUAL, MS_OP_LESS, MS_OP_LESS_EQUAL,
+    MS_OP_ADD, MS_OP_SUBTRACT, MS_OP_MULTIPLY, MS_OP_DIVIDE, MS_OP_MODULO, MS_OP_NEGATE,
+    MS_OP_NOT, MS_OP_AND, MS_OP_OR,
+    MS_OP_JUMP, MS_OP_JUMP_IF_FALSE, MS_OP_LOOP, MS_OP_BREAK, MS_OP_CONTINUE,
+    MS_OP_CALL, MS_OP_INVOKE, MS_OP_SUPER_INVOKE, MS_OP_CLOSURE, MS_OP_CLOSE_UPVALUE,
+    MS_OP_CLASS, MS_OP_INHERIT, MS_OP_METHOD,
+    MS_OP_IMPORT, MS_OP_IMPORT_FROM,
+    MS_OP_RETURN,
+    MS_OP_DEBUG_BREAK
+} MsOpCode;
+
+typedef struct {
+    uint8_t* code;
+    int* lines;
+    int count;
+    int capacity;
+    MsValueArray constants;
+} MsChunk;
+
+void ms_chunk_init(MsChunk* chunk);
+void ms_chunk_free(MsChunk* chunk);
+void ms_chunk_write(MsChunk* chunk, uint8_t byte, int line);
+int ms_chunk_add_constant(MsChunk* chunk, MsValue value);
+void ms_chunk_disassemble(const MsChunk* chunk, const char* name);
+int ms_chunk_disassemble_instruction(const MsChunk* chunk, int offset);
+```
+
+### 2.7 Values (`value.h / .c`)
+
+```c
+typedef struct MsObject MsObject;
+
+typedef enum { MS_VAL_NIL, MS_VAL_BOOL, MS_VAL_NUMBER, MS_VAL_OBJ } MsValueType;
+
+typedef struct {
+    MsValueType type;
+    union { bool boolean; double number; MsObject* obj; };
+} MsValue;
+
+static inline MsValue ms_nil_val(void)    { return (MsValue){ .type = MS_VAL_NIL, .number = 0 }; }
+static inline MsValue ms_bool_val(bool v) { return (MsValue){ .type = MS_VAL_BOOL, .boolean = v }; }
+static inline MsValue ms_number_val(double v) { return (MsValue){ .type = MS_VAL_NUMBER, .number = v }; }
+static inline MsValue ms_obj_val(MsObject* o) { return (MsValue){ .type = MS_VAL_OBJ, .obj = o }; }
+
+static inline bool ms_is_nil(MsValue v)    { return v.type == MS_VAL_NIL; }
+static inline bool ms_is_bool(MsValue v)   { return v.type == MS_VAL_BOOL; }
+static inline bool ms_is_number(MsValue v) { return v.type == MS_VAL_NUMBER; }
+static inline bool ms_is_obj(MsValue v)    { return v.type == MS_VAL_OBJ; }
+
+static inline bool ms_as_bool(MsValue v)     { return v.boolean; }
+static inline double ms_as_number(MsValue v) { return v.number; }
+static inline MsObject* ms_as_obj(MsValue v) { return v.obj; }
+
+bool ms_values_equal(MsValue a, MsValue b);
+bool ms_is_falsey(MsValue value);
+void ms_print_value(MsValue value);
+
+typedef struct { MsValue* values; int count; int capacity; } MsValueArray;
+void ms_value_array_init(MsValueArray* array);
+void ms_value_array_free(MsValueArray* array);
+void ms_value_array_write(MsValueArray* array, MsValue value);
+```
+
+### 2.8 Objects (`object.h / .c`)
+
+```c
+typedef enum {
+    MS_OBJ_STRING, MS_OBJ_FUNCTION, MS_OBJ_CLOSURE, MS_OBJ_UPVALUE,
+    MS_OBJ_CLASS, MS_OBJ_INSTANCE, MS_OBJ_BOUND_METHOD, MS_OBJ_MODULE,
+    MS_OBJ_LIST, MS_OBJ_NATIVE
+} MsObjectType;
+
+struct MsObject {
+    MsObjectType type;
+    MsObject* next;
+    bool isMarked;
 };
 
-// Base object class
-class Object {
-public:
-    ObjectType type;
-    Object* next;  // Intrusive linked list for GC
-    bool isMarked; // GC mark bit
-    
-    virtual ~Object() = default;
-    virtual std::string toString() const = 0;
-    virtual void traceReferences() = 0;  // For GC
-    
-protected:
-    explicit Object(ObjectType type);
-};
+typedef struct { MsObject base; char* chars; int length; uint32_t hash; } MsString;
+typedef MsValue (*MsNativeFn)(MsVM* vm, int argCount, MsValue* args);
+typedef struct { MsObject base; MsNativeFn function; MsString* name; int arity; } MsNative;
+typedef struct { MsObject base; int arity; int upvalueCount; MsChunk chunk; MsString* name; } MsFunction;
+typedef struct MsUpvalue { MsObject base; MsValue* location; MsValue closed; struct MsUpvalue* next; } MsUpvalue;
+typedef struct { MsObject base; MsFunction* function; MsUpvalue** upvalues; int upvalueCount; } MsClosure;
+typedef struct { MsObject base; MsString* name; struct MsClass* superclass; MsTable methods; } MsClass;
+typedef struct { MsObject base; MsClass* klass; MsTable fields; } MsInstance;
+typedef struct { MsObject base; MsValue receiver; MsClosure* method; } MsBoundMethod;
+typedef struct { MsObject base; MsString* name; char* path; MsTable exports; bool isLoaded; } MsModule;
+typedef struct { MsObject base; MsValue* elements; int count; int capacity; } MsList;
 
-// String object
-class StringObject : public Object {
-public:
-    std::string chars;
-    uint32_t hash;  // Cached hash for table use
-    
-    static StringObject* create(std::string_view str);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit StringObject(std::string_view str);
-};
+#define MS_IS_STRING(v)  (ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_STRING)
+#define MS_IS_FUNCTION(v)(ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_FUNCTION)
+#define MS_IS_CLOSURE(v) (ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_CLOSURE)
+#define MS_IS_CLASS(v)   (ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_CLASS)
+#define MS_IS_INSTANCE(v)(ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_INSTANCE)
+#define MS_IS_MODULE(v)  (ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_MODULE)
+#define MS_IS_LIST(v)    (ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_LIST)
+#define MS_IS_NATIVE(v)  (ms_is_obj(v) && ms_as_obj(v)->type == MS_OBJ_NATIVE)
 
-// Function object
-class FunctionObject : public Object {
-public:
-    int arity;
+#define MS_AS_STRING(v)  ((MsString*)ms_as_obj(v))
+#define MS_AS_FUNCTION(v)((MsFunction*)ms_as_obj(v))
+#define MS_AS_CLOSURE(v) ((MsClosure*)ms_as_obj(v))
+#define MS_AS_CLASS(v)   ((MsClass*)ms_as_obj(v))
+#define MS_AS_INSTANCE(v)((MsInstance*)ms_as_obj(v))
+#define MS_AS_MODULE(v)  ((MsModule*)ms_as_obj(v))
+#define MS_AS_LIST(v)    ((MsList*)ms_as_obj(v))
+#define MS_AS_NATIVE(v)  ((MsNative*)ms_as_obj(v))
+
+MsString* ms_string_copy(const char* chars, int length);
+MsString* ms_string_take(char* chars, int length);
+uint32_t ms_string_hash(const char* key, int length);
+MsString* ms_string_concat(MsString* a, MsString* b);
+MsFunction* ms_function_new(MsString* name);
+MsNative* ms_native_new(MsNativeFn fn, MsString* name, int arity);
+MsClosure* ms_closure_new(MsFunction* function);
+MsUpvalue* ms_upvalue_new(MsValue* slot);
+MsClass* ms_class_new(MsString* name);
+MsInstance* ms_instance_new(MsClass* klass);
+MsBoundMethod* ms_bound_method_new(MsValue receiver, MsClosure* method);
+MsModule* ms_module_new(MsString* name);
+MsList* ms_list_new(void);
+void ms_list_append(MsList* list, MsValue value);
+MsValue ms_list_get(MsList* list, int index);
+void ms_list_set(MsList* list, int index, MsValue value);
+int ms_list_length(MsList* list);
+void ms_object_free(MsObject* obj);
+void ms_object_print(MsValue value);
+```
+
+### 2.9 Hash Table (`table.h / .c`)
+
+```c
+typedef struct { MsString* key; MsValue value; } MsTableEntry;
+typedef struct { MsTableEntry* entries; int count; int capacity; } MsTable;
+
+void ms_table_init(MsTable* table);
+void ms_table_free(MsTable* table);
+bool ms_table_set(MsTable* table, MsString* key, MsValue value);
+bool ms_table_get(MsTable* table, MsString* key, MsValue* outValue);
+bool ms_table_remove(MsTable* table, MsString* key);
+void ms_table_add_all(MsTable* from, MsTable* to);
+MsString* ms_table_find_string(MsTable* table, const char* chars, int length, uint32_t hash);
+void ms_table_remove_white(MsTable* table);
+void ms_table_mark(MsTable* table);
+```
+
+### 2.10 Compiler (`compiler.h / .c`)
+
+Single-pass compiler: walks AST and emits bytecode.
+
+```c
+typedef enum { MS_FUNC_SCRIPT, MS_FUNC_FUNCTION, MS_FUNC_METHOD, MS_FUNC_INITIALIZER } MsFunctionType;
+
+typedef struct MsLocal { MsToken name; int depth; bool isCaptured; } MsLocal;
+typedef struct MsCompilerUpvalue { int index; bool isLocal; } MsCompilerUpvalue;
+
+typedef struct MsCompilerState {
+    struct MsCompilerState* enclosing;
+    MsFunction* function;
+    MsFunctionType type;
+    MsLocal locals[MS_MAX_LOCALS];
+    int localCount;
+    int scopeDepth;
+    MsCompilerUpvalue upvalues[MS_MAX_UPVALUES];
     int upvalueCount;
-    BytecodeChunk chunk;
-    StringObject* name;
-    bool isMethod;  // Distinguish methods from functions
-    
-    static FunctionObject* create(StringObject* name);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit FunctionObject(StringObject* name);
-};
+    int* breakJumps; int breakJumpCount; int breakJumpCapacity;
+    int* continueJumps; int continueJumpCount; int continueJumpCapacity;
+    int loopStart;
+} MsCompilerState;
 
-// Upvalue object
-class UpvalueObject : public Object {
-public:
-    Value* location;  // Pointer to stack slot
-    Value closed;     // Captured value when closed
-    UpvalueObject* next;
-    
-    static UpvalueObject* create(Value* slot);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit UpvalueObject(Value* slot);
-};
+typedef struct { MsParser parser; MsCompilerState* current; } MsCompiler;
 
-// Closure object
-class ClosureObject : public Object {
-public:
-    FunctionObject* function;
-    std::vector<UpvalueObject*> upvalues;
-    
-    static ClosureObject* create(FunctionObject* function);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit ClosureObject(FunctionObject* function);
-};
-
-// Class object
-class ClassObject : public Object {
-public:
-    StringObject* name;
-    ClassObject* superclass;
-    Table methods;
-    
-    static ClassObject* create(StringObject* name);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit ClassObject(StringObject* name);
-};
-
-// Instance object
-class InstanceObject : public Object {
-public:
-    ClassObject* klass;
-    Table fields;
-    
-    static InstanceObject* create(ClassObject* klass);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit InstanceObject(ClassObject* klass);
-};
-
-// Bound method object
-class BoundMethodObject : public Object {
-public:
-    Value receiver;
-    ClosureObject* method;
-    
-    static BoundMethodObject* create(Value receiver, ClosureObject* method);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    BoundMethodObject(Value receiver, ClosureObject* method);
-};
-
-// Module object
-class ModuleObject : public Object {
-public:
-    StringObject* name;
-    std::string path;
-    Table exports;  // Exported symbols
-    bool isLoaded;
-    
-    static ModuleObject* create(StringObject* name);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-private:
-    explicit ModuleObject(StringObject* name);
-};
-
-// List object (for arrays)
-class ListObject : public Object {
-public:
-    std::vector<Value> elements;
-    
-    static ListObject* create();
-    static ListObject* create(std::vector<Value>&& elements);
-    std::string toString() const override;
-    void traceReferences() override;
-    
-    // List methods
-    void append(Value value);
-    Value get(size_t index);
-    void set(size_t index, Value value);
-    size_t length() const { return elements.size(); }
-    
-private:
-    ListObject() : Object(ObjectType::LIST) {}
-};
-
-} // namespace ms
+void ms_compiler_init(MsCompiler* compiler);
+void ms_compiler_free(MsCompiler* compiler);
+MsFunction* ms_compiler_compile(MsCompiler* compiler, const char* source);
+void ms_compiler_mark_roots(MsCompiler* compiler);
 ```
 
-### 2.7 Hash Table (`table.hh/cc`)
+Internal (static): emit: `emitByte`, `emitBytes`, `emitLoop`, `emitJump`, `emitReturn`, `emitConstant`, `patchJump`. Constants: `makeConstant`, `identifierConstant`. Variables: `declareVariable`, `defineVariable`, `markInitialized`, `resolveLocal`, `addUpvalue`, `resolveUpvalue`. Scope: `beginScope`, `endScope`. Compile expressions: `compileExpr`, `compileLiteral`, `compileVariable`, `compileAssign`, `compileBinary`, `compileUnary`, `compileLogical`, `compileCall`, `compileGet`, `compileSet`, `compileThis`, `compileSuper`, `compileList`, `compileSubscript`. Compile statements: `compileStmt`, `compileBlock`, `compileVarDecl`, `compileFuncDecl`, `compileClassDecl`, `compileIfStmt`, `compileWhileStmt`, `compileForStmt`, `compileReturnStmt`, `compileImportStmt`, `compileBreakStmt`, `compileContinueStmt`, `compileExprStmt`.
 
-#### 2.7.1 Open Addressing Hash Map
+### 2.11 Virtual Machine (`vm.h / .c`)
 
-```cpp
-namespace ms {
+```c
+typedef struct { MsClosure* closure; uint8_t* ip; MsValue* slots; } MsCallFrame;
 
-struct TableEntry {
-    StringObject* key;
-    Value value;
-    
-    TableEntry() : key(nullptr), value(Value::nilVal()) {}
-};
+typedef struct {
+    MsValue stack[MS_STACK_MAX];
+    MsValue* stackTop;
+    MsCallFrame frames[MS_FRAMES_MAX];
+    int frameCount;
+    MsTable globals;
+    MsTable strings;
+    MsTable modules;
+    char** modulePaths; int modulePathCount; int modulePathCapacity;
+    MsObject* objects;
+    size_t bytesAllocated;
+    size_t nextGC;
+    MsObject** grayStack; int grayCount; int grayCapacity;
+    MsCompiler* compiler;
+    bool initialized;
+} MsVM;
 
-class Table {
-public:
-    Table();
-    
-    bool set(StringObject* key, Value value);
-    bool get(StringObject* key, Value* value) const;
-    bool remove(StringObject* key);
-    void addAll(Table* from);
-    StringObject* findString(std::string_view chars) const;
-    
-    size_t getCount() const { return count_; }
-    size_t getCapacity() const { return entries_.size(); }
-    
-    // Iteration
-    class Iterator {
-        // ... iterator implementation
-    };
-    Iterator begin();
-    Iterator end();
-    
-    // GC support
-    void removeWhite();
-    void mark();
-    
-private:
-    std::vector<TableEntry> entries_;
-    size_t count_;
-    
-    Entry* findEntry(StringObject* key);
-    void adjustCapacity(size_t capacity);
-};
+typedef enum { MS_INTERPRET_OK, MS_INTERPRET_COMPILE_ERROR, MS_INTERPRET_RUNTIME_ERROR } MsInterpretResult;
 
-} // namespace ms
+void ms_vm_init(MsVM* vm);
+void ms_vm_free(MsVM* vm);
+MsInterpretResult ms_vm_interpret(MsVM* vm, const char* source);
+MsInterpretResult ms_vm_import_module(MsVM* vm, const char* moduleName);
+MsInterpretResult ms_vm_import_from(MsVM* vm, const char* moduleName, const char* itemName, const char* alias);
+void ms_vm_add_module_path(MsVM* vm, const char* path);
 ```
 
-### 2.8 Compiler (`compiler.hh/cc`)
+Internal (static): Stack: `push`, `pop`, `peek`, `resetStack`. Execution: `run` (switch-based dispatch). Call: `callValue`, `call`, `invokeFromClass`, `invoke`, `bindMethod`. Upvalue: `captureUpvalue`, `closeUpvalues`. Error: `runtimeError`. GC: `collectGarbage`, `markObject`, `markValue`, `markRoots`, `traceReferences`, `sweep`, `blackenObject`. Natives: `defineNative`, `defineNatives`. Module: `resolveModulePath`, `loadModule`. Debug: `printStack`, `disassembleInstruction`.
 
-#### 2.8.1 Single-Pass Compiler
+### 2.12 Module System (`module.h / .c`)
 
-```cpp
-namespace ms {
+```c
+typedef struct { char* moduleName; char* message; int line; } MsModuleError;
 
-class Compiler {
-public:
-    Compiler();
-    
-    std::expected<FunctionObject*, CompileError> 
-    compile(std::vector<std::unique_ptr<Stmt>> statements);
-    
-private:
-    // Compilation state
-    struct Local {
-        Token name;
-        size_t depth;
-        bool isCaptured;
-    };
-    
-    struct Upvalue {
-        size_t index;
-        bool isLocal;
-    };
-    
-    enum class FunctionType {
-        FUNCTION,
-        METHOD,
-        INITIALIZER,
-        SCRIPT
-    };
-    
-    struct CompilerState {
-        CompilerState* enclosing;
-        FunctionObject* function;
-        FunctionType type;
-        
-        std::vector<Local> locals;
-        std::vector<Upvalue> upvalues;
-        int scopeDepth;
-        
-        std::vector<size_t> breakJumps;     // For break statements
-        std::vector<size_t> continueJumps;  // For continue statements
-        size_t loopStart;                   // Loop start for continue
-    };
-    
-    CompilerState* current_;
-    Parser parser_;
-    
-    // Code emission
-    void emitByte(uint8_t byte);
-    void emitBytes(uint8_t byte1, uint8_t byte2);
-    void emitLoop(size_t loopStart);
-    size_t emitJump(uint8_t instruction);
-    void emitReturn();
-    void emitConstant(Value value);
-    void patchJump(size_t offset);
-    void emitJumpIfFalse(size_t offset);
-    
-    // Constant management
-    size_t makeConstant(Value value);
-    size_t identifierConstant(Token name);
-    
-    // Variable handling
-    void declareVariable();
-    void defineVariable(size_t global);
-    void markInitialized();
-    int resolveLocal(CompilerState* state, Token name);
-    int addUpvalue(CompilerState* state, size_t index, bool isLocal);
-    int resolveUpvalue(CompilerState* state, Token name);
-    
-    // Scope handling
-    void beginScope();
-    void endScope();
-    
-    // Expression compilation
-    void compileExpression(const Expr& expr);
-    void compileLiteral(const LiteralExpr& expr);
-    void compileVariable(const VariableExpr& expr);
-    void compileAssignment(const AssignExpr& expr);
-    void compileBinary(const BinaryExpr& expr);
-    void compileUnary(const UnaryExpr& expr);
-    void compileLogical(const LogicalExpr& expr);
-    void compileCall(const CallExpr& expr);
-    void compileGet(const GetExpr& expr);
-    void compileSet(const SetExpr& expr);
-    void compileThis(const ThisExpr& expr);
-    void compileSuper(const SuperExpr& expr);
-    void compileList(const ListExpr& expr);
-    void compileSubscript(const SubscriptExpr& expr);
-    
-    // Statement compilation
-    void compileStatement(const Stmt& stmt);
-    void compileBlock(const BlockStmt& stmt);
-    void compileVarDeclaration(const VarStmt& stmt);
-    void compileFunctionDeclaration(const FunctionStmt& stmt);
-    void compileClassDeclaration(const ClassStmt& stmt);
-    void compileIfStatement(const IfStmt& stmt);
-    void compileWhileStatement(const WhileStmt& stmt);
-    void compileForStatement(const ForStmt& stmt);
-    void compileReturnStatement(const ReturnStmt& stmt);
-    void compileImportStatement(const ImportStmt& stmt);
-    void compileBreakStatement(const BreakStmt& stmt);
-    void compileContinueStatement(const ContinueStmt& stmt);
-    void compileExpressionStatement(const ExpressionStmt& stmt);
-    
-    // Function compilation
-    FunctionObject* compileFunction(const FunctionStmt& stmt, 
-                                    FunctionType type);
-};
-
-} // namespace ms
+MsResult ms_module_load(MsVM* vm, const char* moduleName, MsModule** outModule);
+MsModule* ms_module_get_loaded(MsVM* vm, const char* moduleName);
+void ms_module_add_search_path(MsVM* vm, const char* path);
+char* ms_module_resolve_path(MsVM* vm, const char* moduleName);
 ```
 
-### 2.9 Virtual Machine (`vm.hh/cc`)
+Internal (static): `readFile`, `fileExists`, `detectCircularDependency`.
 
-#### 2.9.1 Stack-Based VM
+### 2.13 Logger (`logger.h / .c`)
 
-```cpp
-namespace ms {
+```c
+typedef enum { MS_LOG_TRACE, MS_LOG_DEBUG, MS_LOG_INFO, MS_LOG_WARN, MS_LOG_ERROR, MS_LOG_FATAL, MS_LOG_OFF } MsLogLevel;
 
-class VM {
-public:
-    VM();
-    ~VM();
-    
-    InterpretResult interpret(const std::string& source);
-    InterpretResult interpret(FunctionObject* function);
-    
-    // Module support
-    bool importModule(const std::string& moduleName);
-    bool importFromModule(const std::string& moduleName,
-                         const std::string& itemName,
-                         const std::string& alias = "");
-    
-private:
-    // Execution state
-    static constexpr size_t STACK_MAX = 256;
-    static constexpr size_t FRAMES_MAX = 64;
-    static constexpr size_t GC_HEAP_GROW_FACTOR = 2;
-    
-    struct CallFrame {
-        ClosureObject* closure;
-        uint8_t* ip;          // Instruction pointer
-        Value* slots;         // Stack slots for this frame
-    };
-    
-    // VM state
-    std::array<Value, STACK_MAX> stack_;
-    Value* stackTop_;
-    std::array<CallFrame, FRAMES_MAX> frames_;
-    size_t frameCount_;
-    
-    // Global state
-    Table globals_;
-    Table strings_;          // String interning table
-    
-    // Module system
-    std::unordered_map<std::string, ModuleObject*> modules_;
-    std::vector<std::string> modulePaths_;
-    
-    // Memory management
-    Object* objects_;        // Linked list of all objects
-    size_t bytesAllocated_;
-    size_t nextGC_;
-    size_t grayCount_;
-    size_t grayCapacity_;
-    std::vector<Object*> grayStack_;
-    
-    // Built-in functions
-    void defineNatives();
-    
-    // Stack operations
-    void push(Value value);
-    Value pop();
-    Value peek(int distance);
-    void resetStack();
-    
-    // Execution
-    InterpretResult run();
-    bool callValue(Value callee, int argCount);
-    bool call(ClosureObject* closure, int argCount);
-    bool invokeFromClass(ClassObject* klass, 
-                        StringObject* name, 
-                        int argCount);
-    bool invoke(StringObject* name, int argCount);
-    bool bindMethod(ClassObject* klass, StringObject* name);
-    
-    // Upvalue handling
-    UpvalueObject* captureUpvalue(Value* local);
-    void closeUpvalues(Value* last);
-    
-    // Error handling
-    void runtimeError(const std::string& message);
-    
-    // Garbage collection
-    void collectGarbage();
-    void markObject(Object* object);
-    void markValue(Value value);
-    void markRoots();
-    void traceReferences();
-    void sweep();
-    void blackenObject(Object* object);
-    
-    // Module helpers
-    std::string resolveModulePath(const std::string& moduleName);
-    bool loadModule(const std::string& path, ModuleObject* module);
-    
-    // Debug support
-    void printStack();
-    void disassembleInstruction(uint8_t* code, size_t offset);
-};
+void ms_logger_set_level(MsLogLevel level);
+void ms_logger_set_output(FILE* stream);
+void ms_logger_enable_colors(bool enable);
+void ms_logger_enable_timestamp(bool enable);
+void ms_logger_log(MsLogLevel level, const char* file, int line, const char* func, const char* fmt, ...);
 
-enum class InterpretResult {
-    OK,
-    COMPILE_ERROR,
-    RUNTIME_ERROR
-};
+#define ms_logger_trace(...) ms_logger_log(MS_LOG_TRACE, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define ms_logger_debug(...) ms_logger_log(MS_LOG_DEBUG, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define ms_logger_info(...)  ms_logger_log(MS_LOG_INFO,  __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define ms_logger_warn(...)  ms_logger_log(MS_LOG_WARN,  __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define ms_logger_error(...) ms_logger_log(MS_LOG_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
+#define ms_logger_fatal(...) ms_logger_log(MS_LOG_FATAL, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-} // namespace ms
-```
-
-### 2.10 Module System (`module.hh/cc`)
-
-#### 2.10.1 Module Loader Design
-
-```cpp
-namespace ms {
-
-class ModuleLoader {
-public:
-    ModuleLoader();
-    
-    std::expected<ModuleObject*, ModuleError> 
-    loadModule(const std::string& moduleName, VM& vm);
-    
-    void addSearchPath(const std::string& path);
-    void setSearchPaths(const std::vector<std::string>& paths);
-    
-    ModuleObject* getLoadedModule(const std::string& moduleName);
-    bool isModuleLoaded(const std::string& moduleName) const;
-    
-private:
-    std::vector<std::string> searchPaths_;
-    std::unordered_map<std::string, ModuleObject*> loadedModules_;
-    
-    std::string resolvePath(const std::string& moduleName);
-    bool fileExists(const std::string& path);
-    std::string readFile(const std::string& path);
-    
-    bool detectCircularDependency(const std::string& moduleName);
-};
-
-struct ModuleError {
-    std::string moduleName;
-    std::string message;
-    std::source_location location;
-};
-
-} // namespace ms
-```
-
-### 2.11 Logger System (`logger.hh/cc`)
-
-#### 2.11.1 Colored Logger Implementation
-
-```cpp
-namespace ms {
-
-enum class LogLevel {
-    TRACE,
-    DEBUG,
-    INFO,
-    WARN,
-    ERROR,
-    FATAL,
-    OFF
-};
-
-class Logger {
-public:
-    static void setLevel(LogLevel level);
-    static void setOutput(std::ostream* stream);
-    static void enableColors(bool enable);
-    static void enableTimestamp(bool enable);
-    static void enableSourceLocation(bool enable);
-    
-    // Logging functions
-    template<typename... Args>
-    static void trace(std::format_string<Args...> fmt, Args&&... args);
-    
-    template<typename... Args>
-    static void debug(std::format_string<Args...> fmt, Args&&... args);
-    
-    template<typename... Args>
-    static void info(std::format_string<Args...> fmt, Args&&... args);
-    
-    template<typename... Args>
-    static void warn(std::format_string<Args...> fmt, Args&&... args);
-    
-    template<typename... Args>
-    static void error(std::format_string<Args...> fmt, Args&&... args);
-    
-    template<typename... Args>
-    static void fatal(std::format_string<Args...> fmt, Args&&... args);
-    
-    // With source location (C++23 feature)
-    template<typename... Args>
-    static void trace(std::format_string<Args...> fmt,
-                     std::source_location loc = std::source_location::current(),
-                     Args&&... args);
-    
-private:
-    static LogLevel currentLevel_;
-    static std::ostream* output_;
-    static bool colorsEnabled_;
-    static bool timestampEnabled_;
-    static bool sourceLocationEnabled_;
-    
-    static void log(LogLevel level, const std::string& message,
-                   std::source_location loc = std::source_location::current());
-    
-    static std::string levelToString(LogLevel level);
-    static std::string levelToColor(LogLevel level);
-    static std::string getTimestamp();
-    static void resetColor();
-};
-
-// ANSI color codes
-namespace Color {
-    constexpr const char* RESET   = "\033[0m";
-    constexpr const char* BLACK   = "\033[30m";
-    constexpr const char* RED     = "\033[31m";
-    constexpr const char* GREEN   = "\033[32m";
-    constexpr const char* YELLOW  = "\033[33m";
-    constexpr const char* BLUE    = "\033[34m";
-    constexpr const char* MAGENTA = "\033[35m";
-    constexpr const char* CYAN    = "\033[36m";
-    constexpr const char* WHITE   = "\033[37m";
-    constexpr const char* GRAY    = "\033[90m";
-    
-    // Bright colors
-    constexpr const char* BRIGHT_RED     = "\033[91m";
-    constexpr const char* BRIGHT_GREEN   = "\033[92m";
-    constexpr const char* BRIGHT_YELLOW  = "\033[93m";
-    constexpr const char* BRIGHT_BLUE    = "\033[94m";
-    constexpr const char* BRIGHT_MAGENTA = "\033[95m";
-}
-
-} // namespace ms
-
-// Macro helpers for conditional compilation
 #ifdef MS_LOG_LEVEL_TRACE
   #define MS_LOG_LEVEL 0
 #elif defined(MS_LOG_LEVEL_DEBUG)
@@ -1183,378 +462,251 @@ namespace Color {
 #elif defined(MS_LOG_LEVEL_ERROR)
   #define MS_LOG_LEVEL 4
 #else
-  #define MS_LOG_LEVEL 5  // Default to INFO
+  #define MS_LOG_LEVEL 2
 #endif
 ```
 
-### 2.12 Memory Management (`memory.hh/cc`)
+### 2.14 Memory (`memory.h / .c`)
 
-#### 2.12.1 Garbage Collector
+```c
+void* ms_reallocate(void* pointer, size_t oldSize, size_t newSize);
 
-```cpp
-namespace ms {
+#define MS_ALLOCATE(type, count) \
+    (type*)ms_reallocate(NULL, 0, sizeof(type) * (count))
+#define MS_FREE(type, pointer, count) \
+    ms_reallocate(pointer, sizeof(type) * (count), 0)
+#define MS_GROW_CAPACITY(capacity) \
+    ((capacity) < 8 ? 8 : (capacity) * 2)
+#define MS_GROW_ARRAY(type, pointer, oldCount, newCount) \
+    (type*)ms_reallocate(pointer, sizeof(type) * (oldCount), sizeof(type) * (newCount))
+#define MS_FREE_ARRAY(type, pointer, oldCount) \
+    ms_reallocate(pointer, sizeof(type) * (oldCount), 0)
 
-class MemoryManager {
-public:
-    MemoryManager();
-    ~MemoryManager();
-    
-    // Allocation
-    void* allocate(size_t size);
-    void* reallocate(void* pointer, size_t oldSize, size_t newSize);
-    void deallocate(void* pointer, size_t size);
-    
-    // Object management
-    template<typename T, typename... Args>
-    T* createObject(Args&&... args);
-    
-    void addObject(Object* object);
-    void freeObject(Object* object);
-    void freeObjects();
-    
-    // Garbage collection
-    void collectGarbage();
-    void setGCThreshold(size_t bytes);
-    void enableGC(bool enable);
-    
-    // Statistics
-    size_t getBytesAllocated() const { return bytesAllocated_; }
-    size_t getObjectCount() const { return objectCount_; }
-    size_t getGCCollectionCount() const { return gcCount_; }
-    
-private:
-    Object* objects_;
-    size_t bytesAllocated_;
-    size_t objectCount_;
-    size_t nextGC_;
-    size_t gcCount_;
-    bool gcEnabled_;
-    
-    // GC state
-    std::vector<Object*> grayStack_;
-    
-    // Tracking allocations (debug mode)
-#ifdef MS_DEBUG_MEMORY
-    std::unordered_map<void*, AllocationInfo> allocations_;
-#endif
-};
+void ms_gc_collect(MsVM* vm);
+void ms_gc_mark_object(MsVM* vm, MsObject* obj);
+void ms_gc_mark_value(MsVM* vm, MsValue value);
+void ms_gc_mark_roots(MsVM* vm);
+void ms_gc_trace_references(MsVM* vm);
+void ms_gc_sweep(MsVM* vm);
+void ms_gc_blacken_object(MsVM* vm, MsObject* obj);
 
-// RAII wrapper for GC roots
-class GCRoot {
-public:
-    explicit GCRoot(Value* value);
-    ~GCRoot();
-    
-    GCRoot(const GCRoot&) = delete;
-    GCRoot& operator=(const GCRoot&) = delete;
-    
-private:
-    Value* value_;
-};
-
-} // namespace ms
+#define MS_NEW_OBJ(vm, type, objType) \
+    (type*)ms_alloc_object(vm, sizeof(type), objType)
+MsObject* ms_alloc_object(MsVM* vm, size_t size, MsObjectType type);
+void ms_free_objects(MsVM* vm);
 ```
 
-### 2.13 Platform Abstraction (`platform.hh/cc`)
+### 2.15 Platform (`platform.h / .c`)
 
-```cpp
-namespace ms::platform {
+```c
+bool ms_platform_file_exists(const char* path);
+char* ms_platform_read_file(const char* path);
+bool ms_platform_write_file(const char* path, const char* content);
+char* ms_platform_get_cwd(void);
+char* ms_platform_join_path(const char* a, const char* b);
+char* ms_platform_get_executable_path(void);
+void ms_platform_enable_console_colors(void);
+bool ms_platform_supports_colors(void);
+void ms_platform_set_console_color(const char* ansi_code);
+void ms_platform_reset_console_color(void);
+double ms_platform_get_time_seconds(void);
+char* ms_platform_get_env(const char* name);
 
-// File operations
-bool fileExists(const std::string& path);
-std::string readFile(const std::string& path);
-bool writeFile(const std::string& path, const std::string& content);
-std::string getCurrentDirectory();
-std::string joinPath(const std::string& a, const std::string& b);
-std::string getExecutablePath();
-
-// Console operations
-void enableConsoleColors();
-bool supportsConsoleColors();
-void setConsoleColor(const std::string& color);
-void resetConsoleColor();
-
-// Time operations
-double getTimeInSeconds();  // High-resolution timer
-std::string formatTimestamp(std::chrono::system_clock::time_point time);
-
-// Environment
-std::string getEnvironmentVariable(const std::string& name);
-std::vector<std::string> getPathSeparator();
-
-// Platform detection
-inline constexpr bool isWindows() {
 #ifdef _WIN32
-    return true;
+  #define MS_PLATFORM_WINDOWS 1
 #else
-    return false;
+  #define MS_PLATFORM_WINDOWS 0
 #endif
-}
-
-inline constexpr bool isLinux() {
 #ifdef __linux__
-    return true;
+  #define MS_PLATFORM_LINUX 1
 #else
-    return false;
+  #define MS_PLATFORM_LINUX 0
 #endif
-}
-
-inline constexpr bool isMacOS() {
 #ifdef __APPLE__
-    return true;
+  #define MS_PLATFORM_MACOS 1
 #else
-    return false;
+  #define MS_PLATFORM_MACOS 0
 #endif
-}
 
-} // namespace ms::platform
+#if MS_PLATFORM_WINDOWS
+  #define MS_PATH_SEPARATOR '\\'
+  #define MS_PATH_SEPARATOR_STR "\\"
+#else
+  #define MS_PATH_SEPARATOR '/'
+  #define MS_PATH_SEPARATOR_STR "/"
+#endif
 ```
 
-## 3. Import System Design
+### 2.16 Builtins (`builtins.h / .c`)
 
-### 3.1 Import Statement Parsing
-
-```
-import <module> ;
-from <module> import <item> (as <alias>)? (, <item> (as <alias>)?)* ;
-```
-
-### 3.2 Module Resolution Algorithm
-
-```
-1. Check if module already loaded (cache)
-   - If yes, return cached module
-   - If no, continue
-
-2. Resolve module path:
-   a. Try current directory: "./<module>.maple"
-   b. Try search paths: for path in searchPaths:
-      - "<path>/<module>.maple"
-   c. If not found, error
-
-3. Check for circular dependencies
-   - Maintain loading stack
-   - If module in loading stack, error
-
-4. Load and compile module:
-   a. Read file
-   b. Compile to bytecode
-   c. Create ModuleObject
-   d. Execute module code
-   e. Capture exports (top-level declarations)
-
-5. Cache module for future imports
-
-6. Bind imported symbols to current scope
+```c
+void ms_builtins_define_all(MsVM* vm);
+MsValue ms_builtin_print(MsVM* vm, int argCount, MsValue* args);
+MsValue ms_builtin_clock(MsVM* vm, int argCount, MsValue* args);
+MsValue ms_builtin_type(MsVM* vm, int argCount, MsValue* args);
+MsValue ms_builtin_len(MsVM* vm, int argCount, MsValue* args);
+MsValue ms_builtin_input(MsVM* vm, int argCount, MsValue* args);
+MsValue ms_builtin_str(MsVM* vm, int argCount, MsValue* args);
+MsValue ms_builtin_num(MsVM* vm, int argCount, MsValue* args);
 ```
 
-### 3.3 Bytecode for Imports
+## 3. Import System
 
-```
-OP_IMPORT <module_name_constant>
-  → Pushes module object onto stack
-  → Module object contains all exports
+**Syntax**: `import <module>` | `from <module> import <item> (as <alias>)? (, <item> (as <alias>)?)*`
 
-OP_IMPORT_FROM <module_constant> <item_constant> <alias_constant?>
-  → Imports specific item from module
-  → If alias provided, binds to alias name
-  → Otherwise binds to original name
-```
+**Resolution**:
+1. Cache lookup in `vm->modules` → return if found
+2. Resolve path: try `"./<module>.ms"`, then each `vm->modulePaths` entry
+3. Circular dependency check via per-VM loading stack
+4. Load file → compile via `ms_compiler_compile()` → execute module body → capture top-level declarations as exports
+5. Cache module, bind imported symbols to current scope
 
-## 4. Error Handling Strategy
+**Bytecodes**:
+- `MS_OP_IMPORT <constant>` — push module object (contains exports table)
+- `MS_OP_IMPORT_FROM <module_const> <item_const> <alias_const?>` — import specific item, optionally aliased
 
-### 4.1 Compile-Time Errors
+## 4. Error Handling
 
-```cpp
-struct CompileError {
-    std::string message;
-    Token token;
-    std::string sourceLine;
-    std::vector<std::string> suggestions;
-    
-    std::string format() const;
-};
-```
+```c
+typedef struct {
+    char message[256];
+    MsToken token;
+    char sourceLine[512];
+} MsCompileError;
 
-### 4.2 Runtime Errors
-
-```cpp
-struct RuntimeError {
-    std::string message;
-    std::vector<StackFrame> stackTrace;
-    std::source_location location;
-    
-    std::string format() const;
-};
+typedef struct {
+    char message[256];
+    MsCallFrame* frames[MS_FRAMES_MAX];
+    int frameCount;
+} MsRuntimeError;
 ```
 
-### 4.3 Error Recovery
+**Recovery**: Lexer → skip to next token, return `MS_TOKEN_ERROR`. Parser → synchronize to next boundary (newline, `}`, class, fn, var, for, if, while, print, return). Compiler → stop after first error. VM → unwind stack, print stack trace.
 
-- **Lexer**: Skip to next token
-- **Parser**: Synchronization (skip to next statement)
-- **Compiler**: Stop after first error
-- **VM**: Unwind stack, report error
+## 5. Testing
 
-## 5. Testing Strategy
-
-### 5.1 Unit Tests
+### 5.1 Test Files
 
 ```
-tests/
-├── unit/
-│   ├── test_scanner.cc
-│   ├── test_parser.cc
-│   ├── test_compiler.cc
-│   ├── test_vm.cc
-│   ├── test_gc.cc
-│   ├── test_table.cc
-│   └── test_logger.cc
+tests/unit/:    test_scanner.c, test_parser.c, test_compiler.c, test_vm.c, test_gc.c, test_table.c, test_logger.c
+tests/basic/:   arithmetic.ms, strings.ms, variables.ms, control_flow.ms
+tests/functions/: basic.ms, closures.ms, recursion.ms
+tests/classes/:  basic.ms, inheritance.ms, methods.ms
+tests/modules/:  math.ms, utils.ms, test_import.ms, test_from_import.ms
+tests/errors/:   syntax_errors.ms, runtime_errors.ms, import_errors.ms
 ```
 
-### 5.2 Integration Tests (Maple Scripts)
+### 5.2 Test Framework
 
-```
-tests/
-├── basic/
-│   ├── arithmetic.maple
-│   ├── strings.maple
-│   ├── variables.maple
-│   └── control_flow.maple
-├── functions/
-│   ├── basic.maple
-│   ├── closures.maple
-│   └── recursion.maple
-├── classes/
-│   ├── basic.maple
-│   ├── inheritance.maple
-│   └── methods.maple
-├── modules/
-│   ├── math.maple
-│   ├── utils.maple
-│   ├── test_import.maple
-│   └── test_from_import.maple
-└── errors/
-    ├── syntax_errors.maple
-    ├── runtime_errors.maple
-    └── import_errors.maple
-```
+```c
+typedef struct { const char* name; void (*func)(void); bool passed; char error[256]; } MsTest;
+typedef struct { MsTest* tests; int count; int capacity; int passed; int failed; } MsTestSuite;
 
-### 5.3 Test Framework
+void ms_test_suite_init(MsTestSuite* suite);
+void ms_test_suite_free(MsTestSuite* suite);
+void ms_test_suite_add(MsTestSuite* suite, const char* name, void (*func)(void));
+int ms_test_suite_run(MsTestSuite* suite);
+void ms_test_suite_report(const MsTestSuite* suite);
 
-Simple test framework using C++23 features:
-
-```cpp
-namespace ms::test {
-
-class TestSuite {
-public:
-    void addTest(std::string name, std::function<void()> test);
-    void run();
-    void reportResults();
-    
-private:
-    struct Test {
-        std::string name;
-        std::function<void()> func;
-        bool passed;
-        std::string error;
-    };
-    
-    std::vector<Test> tests_;
-};
-
-// Assertions
-#define ASSERT_TRUE(cond) \
-    if (!(cond)) throw TestFailure(#cond);
-    
-#define ASSERT_EQ(expected, actual) \
-    if ((expected) != (actual)) \
-        throw TestFailure(std::format("Expected {}, got {}", expected, actual));
-
-} // namespace ms::test
+extern MsTestSuite* ms_current_suite;
+#define TEST(name) static void test_##name(void)
+#define RUN_TEST(suite, name) ms_test_suite_add(suite, #name, test_##name)
+#define ASSERT_TRUE(cond) do { if (!(cond)) { /* snprintf error + return */ } } while(0)
+#define ASSERT_EQ(expected, actual) do { if ((expected) != (actual)) { /* snprintf error + return */ } } while(0)
+#define ASSERT_STR_EQ(expected, actual) do { if (strcmp((expected),(actual)) != 0) { /* snprintf error + return */ } } while(0)
 ```
 
 ## 6. Build Configuration
 
-### 6.1 CMakeLists.txt Structure
-
 ```cmake
-cmake_minimum_required(VERSION 3.25)
-project(Maple LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.10)
+project(Maple LANGUAGES C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
-# C++23 standard
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Compiler-specific flags
 if(MSVC)
-    add_compile_options(/W4 /WX-)
-    add_compile_options(/utf-8)
+    add_compile_options(/W4 /WX- /utf-8)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
-    add_compile_options(-Werror)
 endif()
 
-# Source files
-file(GLOB_RECURSE SOURCES "src/*.cc")
-file(GLOB_RECURSE HEADERS "src/*.hh" "include/**/*.hh")
-
-# Main executable
+file(GLOB_RECURSE SOURCES "src/*.c")
 add_executable(maple ${SOURCES})
-target_include_directories(maple PRIVATE src include)
+target_include_directories(maple PRIVATE src)
+add_library(maple_lib STATIC ${SOURCES})
+target_include_directories(maple_lib PUBLIC src)
 
-# Optional: Shared library
-add_library(maple_lib SHARED ${SOURCES})
-target_include_directories(maple_lib PUBLIC include)
+target_compile_definitions(maple PRIVATE
+    $<$<CONFIG:Debug>:MS_DEBUG_TRACE_EXECUTION>
+    $<$<CONFIG:Debug>:MS_DEBUG_LOG_GC>)
 
-# Tests
 option(BUILD_TESTS "Build test suite" ON)
 if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
-# Installation
 install(TARGETS maple RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
 ```
 
-## 7. Performance Considerations
+## 7. Memory Patterns
 
-### 7.1 Optimizations
+### 7.1 Dynamic Arrays
 
-1. **String Interning**: All strings are interned in a global table
-2. **Inline Caching**: Cache method lookups (future)
-3. **Bytecode Optimization**: Peephole optimizer (optional)
-4. **Stack Allocation**: Pre-allocate stack to avoid reallocation
-5. **Hash Table**: Prime number sizes, good hash function
+All dynamic arrays follow: `init(data=NULL, count=0, capacity=0)` → `write` grows with `MS_GROW_CAPACITY` + `MS_GROW_ARRAY` → `free` uses `MS_FREE_ARRAY` then re-inits.
 
-### 7.2 Memory Layout
+### 7.2 Object Allocation
 
-- Objects allocated on heap
-- Values stored inline (NaN boxing or tagged union)
-- Stack pre-allocated, fixed size
-- Bytecode chunks grow dynamically
+All VM-managed objects allocated via `ms_alloc_object(vm, size, type)` which calls `ms_reallocate`, links into `vm->objects` list, tracks `vm->bytesAllocated`.
 
-## 8. Future Extensions
+### 7.3 GC Lifecycle
 
-### 8.1 Potential Enhancements
+1. Threshold: `if (bytesAllocated > nextGC) ms_gc_collect()`
+2. Mark: stack → call frames → globals → open upvalues → compiler roots → trace gray stack
+3. Sweep: walk object list, free unmarked, reset marks on survivors, update nextGC
 
-- **JIT Compilation**: Compile hot paths to native code
-- **Generational GC**: Improve collection performance
-- **Coroutines**: Lightweight concurrency
-- **Pattern Matching**: Destructuring assignments
-- **Type System**: Optional static typing
-- **Standard Library**: I/O, networking, etc.
+## 8. Performance
 
-### 8.2 Tooling
+- **String interning** in `vm->strings` table
+- **Switch dispatch** (computed goto optional for GCC/Clang via labels-as-values)
+- **Fixed stack**: pre-allocated `MsValue[MS_STACK_MAX]`
+- **Values**: 16-byte tagged union inline (type + union)
+- **Objects**: heap via `ms_reallocate`, intrusive linked list
 
-- **Debugger**: Breakpoints, stepping, inspection
-- **Profiler**: Identify hot spots
-- **LSP**: IDE integration
-- **Package Manager**: Dependency management
+Computed goto (optional):
+```c
+#ifdef __GNUC__
+  #define MS_DISPATCH() goto *dispatch_table[*ip++]
+  #define MS_OPCODE(op) &&label_##op
+  static void* dispatch_table[] = { &&label_MS_OP_CONSTANT, &&label_MS_OP_NIL, ... };
+#else
+  #define MS_DISPATCH() switch (*ip++)
+#endif
+```
 
----
+## 9. C vs C++ Pattern Mapping
 
-This design document provides a comprehensive blueprint for implementing the Maple scripting language, covering all major components, data structures, algorithms, and implementation strategies necessary to build a production-ready interpreter.
+| C++ | C |
+|---|---|
+| `namespace ms {}` | `ms_` function prefix |
+| class/struct with methods | `struct` + separate functions |
+| `std::vector<T>` | Dynamic array (`T*` + count + capacity) |
+| `std::string` | `char*` + `int length` |
+| `std::string_view` | `const char*` + `int length` |
+| `std::variant<A,B,C>` | Tagged union (enum type + union) |
+| `std::expected<T,E>` | Return `MsResult` + output param |
+| `std::optional<T>` | Return bool + output param |
+| virtual/polymorphism | Function pointers / tag dispatch |
+| `std::unique_ptr` | Manual init/free pairs |
+| `std::unordered_map` | Custom `MsTable` |
+| `std::format()` | `snprintf()` |
+| `std::source_location` | `__FILE__`, `__LINE__`, `__func__` |
+| `#pragma once` | `#ifndef`/`#define`/`#endif` guards |
+| RAII destructors | Explicit `ms_xxx_free()` |
+| `template<typename T>` | Macros (`MS_GROW_ARRAY`, etc.) |
+| `static_assert(cond)` | `_Static_assert(cond, msg)` |
+| Exceptions | Error codes + `setjmp`/`longjmp` (optional) |
+
+## 10. Future Extensions
+
+JIT compilation, generational GC, coroutines (setjmp/longjmp or ucontext), pattern matching, optional static typing, standard library, debugger, profiler, LSP, package manager.

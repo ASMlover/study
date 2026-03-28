@@ -35,9 +35,9 @@ CTestTestfile.cmake
 .DS_Store
 Thumbs.db
 
-*.maple
-!examples/*.maple
-!tests/**/*.maple
+*.ms
+!examples/*.ms
+!tests/**/*.ms
 
 .idea/
 *.iml

@@ -49,7 +49,7 @@ cmake --build .
 ./maple
 
 # Execute a script
-./maple script.maple
+./maple script.ms
 ```
 
 ## Language Features
@@ -57,10 +57,10 @@ cmake --build .
 ### Basic Types
 
 ```maple
-var number = 42;
-var text = "Hello, Maple!";
-var flag = true;
-var nothing = nil;
+var number = 42
+var text = "Hello, Maple!"
+var flag = true
+var nothing = nil
 ```
 
 ### Control Flow
@@ -77,32 +77,32 @@ while (condition) {
 }
 
 for (var i = 0; i < 10; i = i + 1) {
-    print(i);
+    print(i)
 }
 ```
 
 ### Functions
 
 ```maple
-fun greet(name) {
-    return "Hello, " + name + "!";
+fn greet(name) {
+    return "Hello, " + name + "!"
 }
 
-print(greet("World"));
+print(greet("World"))
 
 // Closures
-fun makeCounter() {
-    var count = 0;
-    fun counter() {
-        count = count + 1;
-        return count;
+fn makeCounter() {
+    var count = 0
+    fn counter() {
+        count = count + 1
+        return count
     }
-    return counter;
+    return counter
 }
 
-var counter = makeCounter();
-print(counter()); // 1
-print(counter()); // 2
+var counter = makeCounter()
+print(counter()) // 1
+print(counter()) // 2
 ```
 
 ### Classes
@@ -110,37 +110,37 @@ print(counter()); // 2
 ```maple
 class Person {
     init(name, age) {
-        this.name = name;
-        this.age = age;
+        this.name = name
+        this.age = age
     }
     
     greet() {
-        print("Hello, I'm " + this.name);
+        print("Hello, I'm " + this.name)
     }
 }
 
 class Employee : Person {
     init(name, age, position) {
-        super.init(name, age);
-        this.position = position;
+        super.init(name, age)
+        this.position = position
     }
 }
 
-var person = Person("Alice", 30);
-person.greet();
+var person = Person("Alice", 30)
+person.greet()
 ```
 
 ### Module System
 
 ```maple
 // Import entire module
-import math;
+import math
 
 // Import specific items
-from utils import helper, logger;
+from utils import helper, logger
 
 // Import with alias
-from collections import List as ArrayList;
+from collections import List as ArrayList
 ```
 
 ## Project Structure
