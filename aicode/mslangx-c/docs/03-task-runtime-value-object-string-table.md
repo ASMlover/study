@@ -1,5 +1,9 @@
 # Task 03 - Runtime Value, Object Header, String, Table
 
+## Status
+
+Complete. Verified on 2026-03-29 with the acceptance commands in this document.
+
 ## Goal
 
 Define the runtime core data model so later VM, classes, containers, and modules all share one stable object and table foundation.
