@@ -1,5 +1,9 @@
 # Task 02 - Support Layer, Diagnostics, Arena, Buffer
 
+## Status
+
+Complete. Verified on 2026-03-29 with the acceptance commands in this document.
+
 ## Goal
 
 Implement the shared support layer that later frontend and runtime tasks can build on without redesigning memory and diagnostics APIs.

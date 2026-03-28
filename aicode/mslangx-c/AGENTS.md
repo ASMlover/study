@@ -21,6 +21,8 @@ Do not restate architecture decisions in new docs unless necessary. Link to the 
 - When implementing code, preserve the pure C direction. Do not introduce C++-only mechanisms.
 - Follow the Google C Coding Style as the repository C coding style standard:
   https://google.github.io/styleguide/cguide.html
+- For C source and header files, use 2-space indentation, no tab indentation, and same-line opening braces for functions and control statements.
+- Do not fall back to Linux kernel coding style conventions in this repository.
 - All text files must use UTF-8 encoding and LF line endings.
 - Trailing whitespace must be removed automatically before completion.
 - Implement all tasks with TDD: write tests first or alongside the implementation, then make the code pass.

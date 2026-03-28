@@ -12,11 +12,24 @@ add_executable(mslangc
   src/main.c)
 
 target_compile_features(mslangc PRIVATE c_std_11)
+target_include_directories(mslangc PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+add_library(mslang_support
+  src/support/arena.c
+  src/support/buffer.c
+  src/support/diag.c)
+
+target_compile_features(mslang_support PUBLIC c_std_11)
+target_include_directories(mslang_support PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 if(MSVC)
   target_compile_options(mslangc PRIVATE /W4 /WX)
+  target_compile_options(mslang_support PRIVATE /W4 /WX)
 else()
   target_compile_options(mslangc PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(mslang_support PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
 add_custom_target(check
@@ -26,3 +39,8 @@ add_custom_target(check
   COMMENT "Running mslangc test suite")
 
 add_subdirectory(tests)
+
+add_dependencies(check
+  support.diag
+  support.arena
+  support.buffer)
