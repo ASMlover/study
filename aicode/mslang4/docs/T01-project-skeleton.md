@@ -3,6 +3,7 @@
 **Phase**: 1 - Foundation
 **Dependencies**: None
 **Estimated Complexity**: Low
+**Status**: ✅ COMPLETED
 
 ## Goal
 
@@ -172,11 +173,11 @@ Expected: full configure + build + run succeeds, version string prints
 
 ## Acceptance Criteria
 
-- [ ] `cmake -B build` succeeds
-- [ ] `cmake --build build` compiles without errors
-- [ ] `./build/maple` (or `build\Debug\maple.exe`) prints "Maple Scripting Language v0.1"
-- [ ] Directory structure matches REQUIREMENTS.md §2.3.1
-- [ ] No warnings with `-Wall -Wextra -Wpedantic` (GCC/Clang) or `/W4` (MSVC)
+- [x] `cmake -B build` succeeds
+- [x] `cmake --build build` compiles without errors
+- [x] `./build/maple` (or `build\Debug\maple.exe`) prints "Maple Scripting Language v0.1"
+- [x] Directory structure matches REQUIREMENTS.md §2.3.1
+- [x] No warnings with `-Wall -Wextra -Wpedantic` (GCC/Clang) or `/W4` (MSVC)
 
 ## Notes
 
