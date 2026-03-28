@@ -1,16 +1,14 @@
 #include <stdio.h>
 #include <string.h>
 
-static void mslangc_print_help(FILE *stream)
-{
+static void mslangc_print_help(FILE *stream) {
   fprintf(stream,
     "usage: mslangc [--help] [-e code] [script]\n"
     "\n"
     "Bootstrap CLI for the mslangc runtime.\n");
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   if (argc <= 1) {
     mslangc_print_help(stdout);
     return 0;
