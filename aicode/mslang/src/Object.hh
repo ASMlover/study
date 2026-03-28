@@ -112,17 +112,24 @@ void  object_destroy(Object* obj) noexcept;  // replaces delete obj
 
 // --- ObjString ---
 class ObjString final : public Object {
-  str_t value_;
   u32_t hash_{0};
+  u32_t length_{0};
+  char  data_[];   // flexible array member — always null-terminated
 
 public:
-  ObjString(str_t value, u32_t hash) noexcept;
-  str_t stringify() const noexcept;
-  sz_t size() const noexcept;
+  ObjString() noexcept : Object(ObjectType::OBJ_STRING) {}
+  ObjString(const ObjString&) = delete;
+  ObjString& operator=(const ObjString&) = delete;
 
-  const str_t& value() const noexcept { return value_; }
-  u32_t hash() const noexcept { return hash_; }
+  str_t  stringify() const noexcept;
+  sz_t   size()      const noexcept;
 
+  strv_t value()   const noexcept { return {data_, length_}; }
+  u32_t  hash()    const noexcept { return hash_; }
+  u32_t  length()  const noexcept { return length_; }
+  cstr_t c_str()   const noexcept { return data_; }
+
+  static ObjString* create(cstr_t chars, u32_t length, u32_t hash) noexcept;
   static u32_t hash_string(cstr_t chars, sz_t length) noexcept;
 };
 

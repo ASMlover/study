@@ -158,8 +158,8 @@ ObjString* Table::find_string(cstr_t chars, sz_t length, u32_t hash) const noexc
     const Entry& entry = entries_[index];
     if (entry.key == nullptr) return nullptr;
     if (entry.key->hash() == hash &&
-               entry.key->value().length() == length &&
-               std::memcmp(entry.key->value().c_str(), chars, length) == 0) {
+               entry.key->length() == length &&
+               std::memcmp(entry.key->c_str(), chars, length) == 0) {
       return entry.key;
     }
 

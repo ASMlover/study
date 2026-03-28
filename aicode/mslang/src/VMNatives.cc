@@ -110,7 +110,7 @@ void VM::register_natives() noexcept {
       runtime_error("num() argument must be a string.");
       return Value();
     }
-    const str_t& s = as_string(args[0])->value();
+    str_t s{as_string(args[0])->value()};
     sz_t pos = 0;
     double result;
     try {
@@ -241,7 +241,7 @@ void VM::register_natives() noexcept {
       return Value(static_cast<i64_t>(args[0].as_boolean() ? 1 : 0));
     }
     if (args[0].is_string()) {
-      const str_t& s = as_string(args[0])->value();
+      str_t s{as_string(args[0])->value()};
       try {
         sz_t pos = 0;
         long long result = std::stoll(s, &pos);
@@ -274,7 +274,7 @@ void VM::register_natives() noexcept {
       runtime_error("read_file() takes exactly 1 string argument.");
       return Value();
     }
-    const str_t& path = as_string(args[0])->value();
+    str_t path{as_string(args[0])->value()};
     std::ifstream file(path, std::ios::in | std::ios::binary);
     if (!file) {
       runtime_error(std::format("Could not open file '{}'.", path));
@@ -291,8 +291,8 @@ void VM::register_natives() noexcept {
       runtime_error("write_file() takes exactly 2 string arguments (path, data).");
       return Value();
     }
-    const str_t& path = as_string(args[0])->value();
-    const str_t& data = as_string(args[1])->value();
+    str_t path{as_string(args[0])->value()};
+    strv_t data = as_string(args[1])->value();
     std::ofstream file(path, std::ios::out | std::ios::binary);
     if (!file) {
       runtime_error(std::format("Could not open file '{}' for writing.", path));

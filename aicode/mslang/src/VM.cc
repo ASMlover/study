@@ -174,12 +174,37 @@ void VM::define_native(strv_t name, NativeFn function) noexcept {
   pop();
 }
 
+ObjString* VM::alloc_string(cstr_t chars, u32_t length, u32_t hash) noexcept {
+  sz_t sz = sizeof(ObjString) + length + 1;
+  bytes_allocated_ += sz;
+  young_bytes_     += sz;
+
+#ifdef MAPLE_DEBUG_STRESS_GC
+  collect_garbage();
+#else
+  if (young_bytes_ > next_minor_gc_) minor_gc();
+  if (bytes_allocated_ > next_gc_)   major_gc();
+#endif
+
+  ObjString* s = ObjString::create(chars, length, hash);
+  s->set_generation(GcGeneration::YOUNG);
+  s->set_next(young_objects_);
+  young_objects_ = s;
+
+#ifdef MAPLE_DEBUG_LOG_GC
+  auto& logger = Logger::get_instance();
+  logger.debug("GC", "allocate {} for {} (\"{}\")", sz, static_cast<void*>(s), s->stringify());
+#endif
+
+  return s;
+}
+
 ObjString* VM::copy_string(cstr_t chars, sz_t length) noexcept {
   u32_t hash = ObjString::hash_string(chars, length);
   ObjString* interned = strings_.find_string(chars, length, hash);
   if (interned != nullptr) return interned;
 
-  auto* string = allocate<ObjString>(str_t(chars, length), hash);
+  auto* string = alloc_string(chars, static_cast<u32_t>(length), hash);
   push(Value(static_cast<Object*>(string)));
   strings_.set(string, Value());
   pop();
@@ -191,7 +216,7 @@ ObjString* VM::take_string(str_t value) noexcept {
   ObjString* interned = strings_.find_string(value.c_str(), value.length(), hash);
   if (interned != nullptr) return interned;
 
-  auto* string = allocate<ObjString>(std::move(value), hash);
+  auto* string = alloc_string(value.c_str(), static_cast<u32_t>(value.length()), hash);
   push(Value(static_cast<Object*>(string)));
   strings_.set(string, Value());
   pop();

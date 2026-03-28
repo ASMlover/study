@@ -12,7 +12,7 @@ All tasks are independently implementable, buildable, and testable, ordered by p
 | Task ID | Title | Priority | Effort | Deps | Status |
 |---------|-------|----------|--------|------|--------|
 | OPT-P0-01 | Remove Object vtable (incl. virtual dtor) | P0 | Large | — | `[x]` |
-| OPT-P0-02 | ObjString inline character data (FAM) | P0 | Large | OPT-P0-01 | `[ ]` |
+| OPT-P0-02 | ObjString inline character data (FAM) | P0 | Large | OPT-P0-01 | `[x]` |
 | OPT-P0-03 | ObjUpvalue/ObjBoundMethod slab pool allocator | P0 | Medium | OPT-P0-01 | `[ ]` |
 | OPT-P1-01 | ObjInstance inline field array (SBO) | P1 | Large | OPT-P0-01 | `[ ]` |
 | OPT-P1-02 | NativeFn as raw function pointer | P1 | Small | — | `[ ]` |
@@ -134,7 +134,7 @@ python tests/run_tests.py
 
 ---
 
-### `[ ]` OPT-P0-02: ObjString inline character data (FAM)
+### `[x]` OPT-P0-02: ObjString inline character data (FAM)
 
 **Goal**
 

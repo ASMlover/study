@@ -318,7 +318,8 @@ bool Compiler::try_fold_binary(OpCode op) noexcept {
 
   // String concatenation folding
   if (op == OpCode::OP_ADD && left.is_string() && right.is_string()) {
-    str_t result = as_string(left)->value() + as_string(right)->value();
+    str_t result{as_string(left)->value()};
+    result += as_string(right)->value();
     current_chunk().truncate(prev_const_.code_offset);
     invalidate_constants();
     sz_t code_offset = current_chunk().count();

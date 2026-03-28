@@ -69,16 +69,22 @@ void Shape::mark_keys() noexcept {
 
 // --- ObjString ---
 
-ObjString::ObjString(str_t value, u32_t hash) noexcept
-    : Object(ObjectType::OBJ_STRING), value_(std::move(value)), hash_(hash) {
+ObjString* ObjString::create(cstr_t chars, u32_t length, u32_t hash) noexcept {
+  void* mem = ::operator new(sizeof(ObjString) + length + 1);
+  ObjString* s = ::new(mem) ObjString();
+  s->hash_   = hash;
+  s->length_ = length;
+  std::memcpy(s->data_, chars, length);
+  s->data_[length] = '\0';
+  return s;
 }
 
 str_t ObjString::stringify() const noexcept {
-  return value_;
+  return str_t(data_, length_);
 }
 
 sz_t ObjString::size() const noexcept {
-  return sizeof(ObjString) + value_.capacity();
+  return sizeof(ObjString) + length_ + 1;
 }
 
 u32_t ObjString::hash_string(cstr_t chars, sz_t length) noexcept {
@@ -188,7 +194,7 @@ ObjClass::~ObjClass() noexcept {
 }
 
 str_t ObjClass::stringify() const noexcept {
-  return name_->value();
+  return str_t(name_->value());
 }
 
 void ObjClass::trace_references() noexcept {
@@ -588,7 +594,7 @@ sz_t object_size(const Object* obj) noexcept {
 
 void object_destroy(Object* obj) noexcept {
   switch (obj->type()) {
-    case ObjectType::OBJ_STRING:         delete static_cast<ObjString*>(obj);        break;
+    case ObjectType::OBJ_STRING:         static_cast<ObjString*>(obj)->~ObjString(); ::operator delete(obj); break;
     case ObjectType::OBJ_FUNCTION:       delete static_cast<ObjFunction*>(obj);      break;
     case ObjectType::OBJ_NATIVE:         delete static_cast<ObjNative*>(obj);        break;
     case ObjectType::OBJ_UPVALUE:        delete static_cast<ObjUpvalue*>(obj);       break;

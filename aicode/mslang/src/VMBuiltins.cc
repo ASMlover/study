@@ -32,7 +32,7 @@
 namespace ms {
 
 bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) noexcept {
-  const str_t& sv = str->value();
+  strv_t sv = str->value();
   strv_t method_name = name->value();
 
   if (method_name == "len") {
@@ -58,8 +58,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
     if (end < 0) end += len;
     start = std::clamp(start, 0, len);
     end = std::clamp(end, start, len);
-    str_t result = sv.substr(start, end - start);
-    ObjString* res = copy_string(result.data(), result.length());
+    ObjString* res = copy_string(sv.data() + start, static_cast<sz_t>(end - start));
     stack_top_[-arg_count - 1] = Value(static_cast<Object*>(res));
     stack_top_ -= arg_count;
     return true;
@@ -72,7 +71,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("find() argument must be a string.");
       return false;
     }
-    const str_t& needle = as_string(peek(0))->value();
+    strv_t needle = as_string(peek(0))->value();
     auto pos = sv.find(needle);
     double result = (pos == str_t::npos) ? -1.0 : static_cast<double>(pos);
     stack_top_[-arg_count - 1] = Value(result);
@@ -87,9 +86,9 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("replace() arguments must be strings.");
       return false;
     }
-    const str_t& old_str = as_string(peek(1))->value();
-    const str_t& new_str = as_string(peek(0))->value();
-    str_t result = sv;
+    strv_t old_str = as_string(peek(1))->value();
+    strv_t new_str = as_string(peek(0))->value();
+    str_t result{sv};
     auto pos = result.find(old_str);
     if (pos != str_t::npos) {
       result.replace(pos, old_str.length(), new_str);
@@ -107,7 +106,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("split() argument must be a string.");
       return false;
     }
-    const str_t& delim = as_string(peek(0))->value();
+    strv_t delim = as_string(peek(0))->value();
     ObjList* list = allocate<ObjList>();
     // Push list to protect from GC during string allocations
     push(Value(static_cast<Object*>(list)));
@@ -120,14 +119,12 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
     } else {
       sz_t start = 0;
       sz_t pos;
-      while ((pos = sv.find(delim, start)) != str_t::npos) {
-        str_t part = sv.substr(start, pos - start);
-        ObjString* s = copy_string(part.data(), part.length());
+      while ((pos = sv.find(delim, start)) != strv_t::npos) {
+        ObjString* s = copy_string(sv.data() + start, pos - start);
         list->elements().push_back(Value(static_cast<Object*>(s)));
         start = pos + delim.length();
       }
-      str_t part = sv.substr(start);
-      ObjString* s = copy_string(part.data(), part.length());
+      ObjString* s = copy_string(sv.data() + start, sv.length() - start);
       list->elements().push_back(Value(static_cast<Object*>(s)));
     }
     pop(); // pop GC guard
@@ -140,7 +137,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("upper() takes no arguments.");
       return false;
     }
-    str_t result = sv;
+    str_t result{sv};
     std::transform(result.begin(), result.end(), result.begin(),
       [](unsigned char c) { return std::toupper(c); });
     ObjString* res = copy_string(result.data(), result.length());
@@ -151,7 +148,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("lower() takes no arguments.");
       return false;
     }
-    str_t result = sv;
+    str_t result{sv};
     std::transform(result.begin(), result.end(), result.begin(),
       [](unsigned char c) { return std::tolower(c); });
     ObjString* res = copy_string(result.data(), result.length());
@@ -168,8 +165,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       stack_top_[-1] = Value(static_cast<Object*>(res));
     } else {
       auto last = sv.find_last_not_of(" \t\n\r\f\v");
-      str_t result = sv.substr(first, last - first + 1);
-      ObjString* res = copy_string(result.data(), result.length());
+      ObjString* res = copy_string(sv.data() + first, last - first + 1);
       stack_top_[-1] = Value(static_cast<Object*>(res));
     }
     return true;
@@ -182,7 +178,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("starts_with() argument must be a string.");
       return false;
     }
-    const str_t& prefix = as_string(peek(0))->value();
+    strv_t prefix = as_string(peek(0))->value();
     bool result = sv.starts_with(prefix);
     stack_top_[-arg_count - 1] = Value(result);
     stack_top_ -= arg_count;
@@ -196,7 +192,7 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("ends_with() argument must be a string.");
       return false;
     }
-    const str_t& suffix = as_string(peek(0))->value();
+    strv_t suffix = as_string(peek(0))->value();
     bool result = sv.ends_with(suffix);
     stack_top_[-arg_count - 1] = Value(result);
     stack_top_ -= arg_count;
@@ -210,8 +206,8 @@ bool VM::invoke_string_method(ObjString* str, ObjString* name, int arg_count) no
       runtime_error("contains() argument must be a string.");
       return false;
     }
-    const str_t& needle = as_string(peek(0))->value();
-    bool result = sv.find(needle) != str_t::npos;
+    strv_t needle = as_string(peek(0))->value();
+    bool result = sv.find(needle) != strv_t::npos;
     stack_top_[-arg_count - 1] = Value(result);
     stack_top_ -= arg_count;
     return true;

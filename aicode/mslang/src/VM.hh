@@ -222,6 +222,7 @@ public:
   InterpretResult interpret_bytecode(ObjFunction* function, strv_t source, strv_t script_path) noexcept;
 
   // Object allocation (accessible from Compiler)
+  ObjString* alloc_string(cstr_t chars, u32_t length, u32_t hash) noexcept;
   ObjString* copy_string(cstr_t chars, sz_t length) noexcept;
   ObjString* take_string(str_t value) noexcept;
 
