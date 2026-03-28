@@ -1,0 +1,1 @@
+fn(left, right) { return {self: self, base: super.run} }

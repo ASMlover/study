@@ -23,7 +23,9 @@ add_library(mslang_runtime_core
   src/runtime/value.c)
 
 add_library(mslang_frontend
-  src/frontend/lexer.c)
+  src/frontend/ast.c
+  src/frontend/lexer.c
+  src/frontend/parser_expr.c)
 
 target_compile_features(mslangc PRIVATE c_std_11)
 target_compile_features(mslang_support PUBLIC c_std_11)
@@ -70,4 +72,6 @@ add_dependencies(check
   runtime_core.string
   runtime_core.table
   lexer.unit
-  lexer.fixture)
+  lexer.fixture
+  parser_expr.unit
+  parser_expr.fixture)

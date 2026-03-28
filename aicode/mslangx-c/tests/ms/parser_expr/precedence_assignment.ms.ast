@@ -1,0 +1,18 @@
+assign
+  variable "a"
+  assign
+    variable "b"
+    logical "or"
+      variable "c"
+      logical "and"
+        variable "d"
+        binary "=="
+          variable "e"
+          binary "<"
+            variable "f"
+            binary "+"
+              variable "g"
+              binary "*"
+                variable "h"
+                unary "-"
+                  variable "i"

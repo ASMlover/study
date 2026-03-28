@@ -1,0 +1,15 @@
+map count=1
+  entry
+    string "\"items\""
+    list count=4
+      index
+        call argc=2
+          property "bar"
+            variable "foo"
+          number "1"
+          tuple count=1
+            variable "two"
+        variable "index"
+      nil
+      true
+      false

@@ -1,5 +1,9 @@
 # Task 05 - AST and Expression Parser
 
+## Status
+
+Complete. Verified on 2026-03-29 with the acceptance commands in this document.
+
 ## Goal
 
 Define the AST and make expression parsing stable before declaration and statement parsing is added.
