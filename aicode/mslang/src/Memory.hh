@@ -30,6 +30,53 @@
 
 namespace ms {
 
+// Slab pool for fixed-size objects; 64 objects per slab.
+// alloc() returns raw memory; caller must use placement new.
+// free()  expects the destructor to have already been called.
+template <typename T>
+class ObjectPool {
+  static constexpr sz_t kSlabSize = 64;
+  struct Slab { alignas(T) char data[sizeof(T) * kSlabSize]; };
+  struct FreeNode { FreeNode* next; };
+
+  std::vector<std::unique_ptr<Slab>> slabs_;
+  FreeNode*  free_list_{nullptr};
+  sz_t       allocated_{0};
+
+public:
+  void* alloc() noexcept {
+    if (free_list_ == nullptr) {
+      auto slab = std::make_unique<Slab>();
+      char* base = slab->data;
+      for (sz_t i = 0; i < kSlabSize; ++i) {
+        auto* node = reinterpret_cast<FreeNode*>(base + i * sizeof(T));
+        node->next = free_list_;
+        free_list_ = node;
+      }
+      slabs_.push_back(std::move(slab));
+    }
+    FreeNode* node = free_list_;
+    free_list_ = node->next;
+    ++allocated_;
+    return static_cast<void*>(node);
+  }
+
+  void free(T* obj) noexcept {
+    auto* node = reinterpret_cast<FreeNode*>(obj);
+    node->next = free_list_;
+    free_list_ = node;
+    --allocated_;
+  }
+
+  void destroy_all() noexcept {
+    slabs_.clear();
+    free_list_ = nullptr;
+    allocated_ = 0;
+  }
+
+  sz_t size_bytes() const noexcept { return slabs_.size() * sizeof(Slab); }
+};
+
 void mark_object(Object* object) noexcept;
 void mark_value(Value& value) noexcept;
 

@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <vector>
 #include "Common.hh"
+#include "Memory.hh"
 #include "Module.hh"
 #include "Object.hh"
 #include "Table.hh"
@@ -90,6 +91,10 @@ class VM : public Singleton<VM> {
   sz_t gc_count_{0};  // total GC collections (for benchmark reporting)
   std::vector<Object*> gray_stack_;
 
+  // Slab pools for high-frequency fixed-size objects
+  ObjectPool<ObjUpvalue>     upvalue_pool_;
+  ObjectPool<ObjBoundMethod> bound_method_pool_;
+
   // Remembered set: old-gen objects holding young-gen references
   std::vector<Object*> remembered_set_;
 
@@ -144,6 +149,7 @@ class VM : public Singleton<VM> {
   InterpretResult run() noexcept;
 
   // GC internals
+  void destroy_object(Object* obj) noexcept;  // pool-aware object release
   void mark_roots() noexcept;
   void collect_garbage() noexcept;
   void trace_references() noexcept;

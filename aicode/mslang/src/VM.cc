@@ -240,7 +240,14 @@ T* VM::allocate(Args&&... args) noexcept {
   }
 #endif
 
-  auto* object = new T(std::forward<Args>(args)...);
+  T* object;
+  if constexpr (std::is_same_v<T, ObjUpvalue>) {
+    object = ::new(upvalue_pool_.alloc()) T(std::forward<Args>(args)...);
+  } else if constexpr (std::is_same_v<T, ObjBoundMethod>) {
+    object = ::new(bound_method_pool_.alloc()) T(std::forward<Args>(args)...);
+  } else {
+    object = new T(std::forward<Args>(args)...);
+  }
   object->set_generation(GcGeneration::YOUNG);
   object->set_next(young_objects_);
   young_objects_ = object;

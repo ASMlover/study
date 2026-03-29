@@ -140,7 +140,7 @@ void VM::sweep() noexcept {
 #endif
 
       bytes_allocated_ -= object_size(unreached);
-      object_destroy(unreached);
+      destroy_object(unreached);
     }
   }
 }
@@ -212,7 +212,7 @@ void VM::sweep_young() noexcept {
       sz_t obj_size = object_size(unreached);
       bytes_allocated_ -= obj_size;
       young_bytes_ -= obj_size;
-      object_destroy(unreached);
+      destroy_object(unreached);
     }
   }
 }
@@ -450,7 +450,7 @@ void VM::incremental_sweep_step() noexcept {
         old_objects_ = sweep_cursor_;
       }
       bytes_allocated_ -= object_size(unreached);
-      object_destroy(unreached);
+      destroy_object(unreached);
     }
     work++;
   }
@@ -487,12 +487,32 @@ void VM::incremental_gc_step() noexcept {
   }
 }
 
+void VM::destroy_object(Object* obj) noexcept {
+  switch (obj->type()) {
+    case ObjectType::OBJ_UPVALUE: {
+      auto* uv = static_cast<ObjUpvalue*>(obj);
+      uv->~ObjUpvalue();
+      upvalue_pool_.free(uv);
+      return;
+    }
+    case ObjectType::OBJ_BOUND_METHOD: {
+      auto* bm = static_cast<ObjBoundMethod*>(obj);
+      bm->~ObjBoundMethod();
+      bound_method_pool_.free(bm);
+      return;
+    }
+    default:
+      object_destroy(obj);
+      return;
+  }
+}
+
 void VM::free_objects() noexcept {
   // Free young generation
   Object* object = young_objects_;
   while (object != nullptr) {
     Object* next = object->next();
-    object_destroy(object);
+    destroy_object(object);
     object = next;
   }
   young_objects_ = nullptr;
@@ -501,10 +521,14 @@ void VM::free_objects() noexcept {
   object = old_objects_;
   while (object != nullptr) {
     Object* next = object->next();
-    object_destroy(object);
+    destroy_object(object);
     object = next;
   }
   old_objects_ = nullptr;
+
+  // Release pool slab memory
+  upvalue_pool_.destroy_all();
+  bound_method_pool_.destroy_all();
 }
 
 } // namespace ms
