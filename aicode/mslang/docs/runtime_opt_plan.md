@@ -18,7 +18,7 @@ All tasks are independently implementable, buildable, and testable, ordered by p
 | OPT-P1-02 | NativeFn as raw function pointer | P1 | Small | — | `[x]` |
 | OPT-P1-03 | Constant pool deduplication | P1 | Small | — | `[x]` |
 | OPT-P1-04 | Encode IC index directly in GETPROP/SETPROP/INVOKE | P1 | Medium | — | `[x]` |
-| OPT-P1-05 | Fix ObjMap iteration O(n²) | P1 | Small | — | `[ ]` |
+| OPT-P1-05 | Fix ObjMap iteration O(n²) | P1 | Small | — | `[x]` |
 | OPT-P1-06 | ASCII single-char ObjString cache | P1 | Small | — | `[ ]` |
 | OPT-P1-07 | ObjClosure inline upvalue array (FAM) | P1 | Medium | OPT-P0-01 | `[ ]` |
 | OPT-P2-01 | ObjClass lazy-allocate sparse Tables | P2 | Small | — | `[ ]` |
@@ -657,7 +657,7 @@ mslang --benchmark 5 benchmarks/method_dispatch.ms
 
 ---
 
-### `[ ]` OPT-P1-05: Fix ObjMap iteration O(n²)
+### `[x]` OPT-P1-05: Fix ObjMap iteration O(n²)
 
 **Goal**
 

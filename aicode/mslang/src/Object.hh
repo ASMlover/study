@@ -409,6 +409,8 @@ using ValueMap = std::unordered_map<Value, Value, ValueHash, ValueEqual>;
 
 class ObjMap final : public Object {
   ValueMap entries_;
+  mutable std::vector<Value> iter_keys_;
+  mutable bool iter_dirty_{true};
 
 public:
   ObjMap() noexcept;
@@ -419,6 +421,16 @@ public:
   ValueMap& entries() noexcept { return entries_; }
   const ValueMap& entries() const noexcept { return entries_; }
   sz_t len() const noexcept { return entries_.size(); }
+
+  const std::vector<Value>& iter_snapshot() const noexcept {
+    if (iter_dirty_) {
+      iter_keys_.clear();
+      for (auto& [k, _] : entries_) iter_keys_.push_back(k);
+      iter_dirty_ = false;
+    }
+    return iter_keys_;
+  }
+  void mark_dirty() noexcept { iter_dirty_ = true; }
 };
 
 // --- ObjModule ---

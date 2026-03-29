@@ -315,6 +315,7 @@ bool VM::invoke_map_method(ObjMap* map, ObjString* name, int arg_count) noexcept
     }
     Value key = stack_top_[-1];
     map->entries().erase(key);
+    map->mark_dirty();
     stack_top_ -= 2; // pop arg and receiver
     push(Value()); // return nil
     return true;

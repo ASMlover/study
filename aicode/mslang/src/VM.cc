@@ -1661,6 +1661,7 @@ dispatch_loop:
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(receiver);
         map->entries()[index_val] = value;
+        map->mark_dirty();
         write_barrier_value(map, value);
       } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
         runtime_error("Tuples are immutable.");
@@ -1799,13 +1800,11 @@ dispatch_loop:
         }
       } else if (is_obj_type(iterable, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(iterable);
-        auto& entries = map->entries();
-        if (idx >= static_cast<int>(entries.size())) {
+        const auto& keys = map->iter_snapshot();
+        if (idx >= static_cast<int>(keys.size())) {
           frame->ip += sBx;
         } else {
-          auto it = entries.begin();
-          std::advance(it, idx);
-          frame->slots[A + 2] = it->first;
+          frame->slots[A + 2] = keys[static_cast<sz_t>(idx)];
           index_val = Value(static_cast<double>(idx + 1));
         }
       } else if (is_obj_type(iterable, ObjectType::OBJ_COROUTINE)) {
