@@ -100,6 +100,8 @@ void VM::push_gray(Object* object) noexcept {
 }
 
 void VM::remember(Object* object) noexcept {
+  if (object->in_remembered()) return;
+  object->set_in_remembered(true);
   remembered_set_.push_back(object);
 }
 
@@ -346,6 +348,7 @@ void VM::minor_gc() noexcept {
   sweep_young();
 
   // Clear remembered set (will be rebuilt by write barriers)
+  for (Object* obj : remembered_set_) obj->set_in_remembered(false);
   remembered_set_.clear();
 
   next_minor_gc_ = young_bytes_ + kGC_NURSERY_SIZE;
@@ -392,6 +395,7 @@ void VM::major_gc() noexcept {
   sweep();
 
   // Clear remembered set
+  for (Object* obj : remembered_set_) obj->set_in_remembered(false);
   remembered_set_.clear();
 
   next_gc_ = bytes_allocated_ * kGC_HEAP_GROW;
@@ -466,6 +470,7 @@ void VM::incremental_sweep_step() noexcept {
 
 void VM::finish_major_gc() noexcept {
   gc_phase_ = GcPhase::IDLE;
+  for (Object* obj : remembered_set_) obj->set_in_remembered(false);
   remembered_set_.clear();
   next_gc_ = bytes_allocated_ * kGC_HEAP_GROW;
 

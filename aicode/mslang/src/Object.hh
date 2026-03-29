@@ -64,14 +64,16 @@ enum class ObjectType : int {
 
 class Object {
   ObjectType type_;
-  bool is_marked_{false};
-  bool finalized_{false};
+  bool is_marked_ : 1;        // } packed into 1B (offset 4)
+  bool finalized_ : 1;        // }
+  bool in_remembered_ : 1;    // }
   GcGeneration generation_{GcGeneration::YOUNG};
   u8_t age_{0};
   Object* next_{nullptr};
 
 public:
-  explicit Object(ObjectType type) noexcept : type_(type) {}
+  explicit Object(ObjectType type) noexcept
+      : type_(type), is_marked_(false), finalized_(false), in_remembered_(false) {}
   ~Object() = default;
 
   ObjectType type() const noexcept { return type_; }
@@ -88,6 +90,8 @@ public:
   bool is_old() const noexcept { return generation_ == GcGeneration::OLD; }
   u8_t age() const noexcept { return age_; }
   void increment_age() noexcept { age_++; }
+  bool in_remembered() const noexcept { return in_remembered_; }
+  void set_in_remembered(bool v) noexcept { in_remembered_ = v; }
 };
 
 template <typename T>
