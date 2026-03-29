@@ -209,6 +209,9 @@ class VM : public Singleton<VM> {
   // Error reporting
   str_t get_source_line(const str_t& script_path, int line) const noexcept;
 
+  // Closure allocation (FAM-aware, bypasses generic allocate<T>)
+  ObjClosure* alloc_closure(ObjFunction* function) noexcept;
+
   // String concatenation
   void concatenate() noexcept;
 

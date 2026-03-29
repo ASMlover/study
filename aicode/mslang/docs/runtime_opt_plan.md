@@ -20,7 +20,7 @@ All tasks are independently implementable, buildable, and testable, ordered by p
 | OPT-P1-04 | Encode IC index directly in GETPROP/SETPROP/INVOKE | P1 | Medium | — | `[x]` |
 | OPT-P1-05 | Fix ObjMap iteration O(n²) | P1 | Small | — | `[x]` |
 | OPT-P1-06 | ASCII single-char ObjString cache | P1 | Small | — | `[x]` |
-| OPT-P1-07 | ObjClosure inline upvalue array (FAM) | P1 | Medium | OPT-P0-01 | `[ ]` |
+| OPT-P1-07 | ObjClosure inline upvalue array (FAM) | P1 | Medium | OPT-P0-01 | `[x]` |
 | OPT-P2-01 | ObjClass lazy-allocate sparse Tables | P2 | Small | — | `[ ]` |
 | OPT-P2-02 | Shape: small linear map instead of unordered_map | P2 | Small | — | `[ ]` |
 | OPT-P2-03 | Remembered set deduplication | P2 | Small | — | `[ ]` |
@@ -778,7 +778,7 @@ python tests/run_tests.py
 
 ---
 
-### `[ ]` OPT-P1-07: ObjClosure inline upvalue array (FAM)
+### `[x]` OPT-P1-07: ObjClosure inline upvalue array (FAM)
 
 **Goal**
 

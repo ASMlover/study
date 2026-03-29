@@ -232,6 +232,31 @@ ObjString* VM::take_string(str_t value) noexcept {
   return string;
 }
 
+ObjClosure* VM::alloc_closure(ObjFunction* function) noexcept {
+  sz_t sz = sizeof(ObjClosure) + static_cast<sz_t>(function->upvalue_count()) * sizeof(ObjUpvalue*);
+  bytes_allocated_ += sz;
+  young_bytes_     += sz;
+
+#ifdef MAPLE_DEBUG_STRESS_GC
+  collect_garbage();
+#else
+  if (young_bytes_ > next_minor_gc_) minor_gc();
+  if (bytes_allocated_ > next_gc_)   major_gc();
+#endif
+
+  ObjClosure* c = ObjClosure::create(function);
+  c->set_generation(GcGeneration::YOUNG);
+  c->set_next(young_objects_);
+  young_objects_ = c;
+
+#ifdef MAPLE_DEBUG_LOG_GC
+  auto& logger = Logger::get_instance();
+  logger.debug("GC", "allocate {} for {} ({})", sz, static_cast<void*>(c), c->stringify());
+#endif
+
+  return c;
+}
+
 template <typename T, typename... Args>
 T* VM::allocate(Args&&... args) noexcept {
   bytes_allocated_ += sizeof(T);
@@ -359,7 +384,7 @@ InterpretResult VM::interpret(strv_t source, strv_t script_path) noexcept {
   if (function == nullptr) return InterpretResult::INTERPRET_COMPILE_ERROR;
 
   push(Value(static_cast<Object*>(function)));
-  ObjClosure* closure = allocate<ObjClosure>(function);
+  ObjClosure* closure = alloc_closure(function);
   pop();
   push(Value(static_cast<Object*>(closure)));
   call(closure, 0);
@@ -371,7 +396,7 @@ InterpretResult VM::interpret_bytecode(ObjFunction* function) noexcept {
   current_script_path_ = function->script_path();
 
   push(Value(static_cast<Object*>(function)));
-  ObjClosure* closure = allocate<ObjClosure>(function);
+  ObjClosure* closure = alloc_closure(function);
   pop();
   push(Value(static_cast<Object*>(closure)));
   call(closure, 0);
@@ -1425,7 +1450,7 @@ dispatch_loop:
       u8_t A = decode_A(instr);
       u16_t Bx = decode_Bx(instr);
       ObjFunction* function = as_function(K[Bx]);
-      ObjClosure* closure = allocate<ObjClosure>(function);
+      ObjClosure* closure = alloc_closure(function);
       frame->slots[A] = Value(static_cast<Object*>(closure));
 
       for (int i = 0; i < closure->upvalue_count(); i++) {

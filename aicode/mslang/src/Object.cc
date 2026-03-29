@@ -162,11 +162,16 @@ sz_t ObjUpvalue::size() const noexcept {
 
 // --- ObjClosure ---
 
-ObjClosure::ObjClosure(ObjFunction* function) noexcept
-    : Object(ObjectType::OBJ_CLOSURE)
-    , function_(function)
-    , upvalues_(static_cast<sz_t>(function->upvalue_count()), nullptr)
-    , upvalue_count_(function->upvalue_count()) {
+ObjClosure* ObjClosure::create(ObjFunction* function) noexcept {
+  int n = function->upvalue_count();
+  sz_t sz = sizeof(ObjClosure) + static_cast<sz_t>(n) * sizeof(ObjUpvalue*);
+  void* mem = ::operator new(sz);
+  ObjClosure* c = ::new(mem) ObjClosure();
+  c->function_ = function;
+  c->upvalue_count_ = n;
+  auto** upvalues = reinterpret_cast<ObjUpvalue**>(c + 1);
+  for (int i = 0; i < n; ++i) upvalues[i] = nullptr;
+  return c;
 }
 
 str_t ObjClosure::stringify() const noexcept {
@@ -175,13 +180,12 @@ str_t ObjClosure::stringify() const noexcept {
 
 void ObjClosure::trace_references() noexcept {
   mark_object(function_);
-  for (auto* upvalue : upvalues_) {
-    mark_object(upvalue);
-  }
+  for (int i = 0; i < upvalue_count_; ++i)
+    mark_object(upvalue_at(static_cast<sz_t>(i)));
 }
 
 sz_t ObjClosure::size() const noexcept {
-  return sizeof(ObjClosure) + upvalues_.capacity() * sizeof(ObjUpvalue*);
+  return sizeof(ObjClosure) + static_cast<sz_t>(upvalue_count_) * sizeof(ObjUpvalue*);
 }
 
 // --- ObjClass ---
@@ -616,7 +620,12 @@ void object_destroy(Object* obj) noexcept {
     case ObjectType::OBJ_FUNCTION:       delete static_cast<ObjFunction*>(obj);      break;
     case ObjectType::OBJ_NATIVE:         delete static_cast<ObjNative*>(obj);        break;
     case ObjectType::OBJ_UPVALUE:        delete static_cast<ObjUpvalue*>(obj);       break;
-    case ObjectType::OBJ_CLOSURE:        delete static_cast<ObjClosure*>(obj);       break;
+    case ObjectType::OBJ_CLOSURE: {
+      auto* c = static_cast<ObjClosure*>(obj);
+      c->~ObjClosure();
+      ::operator delete(c);
+      break;
+    }
     case ObjectType::OBJ_CLASS:          delete static_cast<ObjClass*>(obj);         break;
     case ObjectType::OBJ_INSTANCE:       delete static_cast<ObjInstance*>(obj);      break;
     case ObjectType::OBJ_BOUND_METHOD:   delete static_cast<ObjBoundMethod*>(obj);   break;

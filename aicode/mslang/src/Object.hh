@@ -279,19 +279,25 @@ public:
 // --- ObjClosure ---
 class ObjClosure final : public Object {
   ObjFunction* function_{nullptr};
-  std::vector<ObjUpvalue*> upvalues_;
   int upvalue_count_{0};
+  // ObjUpvalue* upvalues_[] immediately follows in memory (FAM pattern)
+
+  ObjClosure() noexcept : Object(ObjectType::OBJ_CLOSURE) {}
 
 public:
-  explicit ObjClosure(ObjFunction* function) noexcept;
+  static ObjClosure* create(ObjFunction* function) noexcept;
   str_t stringify() const noexcept;
   void trace_references() noexcept;
   sz_t size() const noexcept;
 
   ObjFunction* function() const noexcept { return function_; }
   int upvalue_count() const noexcept { return upvalue_count_; }
-  ObjUpvalue* upvalue_at(sz_t index) const noexcept { return upvalues_[index]; }
-  void set_upvalue_at(sz_t index, ObjUpvalue* uv) noexcept { upvalues_[index] = uv; }
+  ObjUpvalue* upvalue_at(sz_t index) const noexcept {
+    return reinterpret_cast<ObjUpvalue* const*>(this + 1)[index];
+  }
+  void set_upvalue_at(sz_t index, ObjUpvalue* uv) noexcept {
+    reinterpret_cast<ObjUpvalue**>(this + 1)[index] = uv;
+  }
 };
 
 // --- ObjClass ---

@@ -122,7 +122,7 @@ void VM::import_module(ObjString* path) noexcept {
   current_script_path_ = resolved;
 
   // Execute module
-  ObjClosure* closure = allocate<ObjClosure>(function);
+  ObjClosure* closure = alloc_closure(function);
   push(Value(static_cast<Object*>(closure)));
   call(closure, 0);
 
