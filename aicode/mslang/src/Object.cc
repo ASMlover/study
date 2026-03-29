@@ -217,33 +217,50 @@ ObjInstance::ObjInstance(ObjClass* klass) noexcept
     : Object(ObjectType::OBJ_INSTANCE), klass_(klass), shape_(klass->root_shape()) {
 }
 
+ObjInstance::~ObjInstance() noexcept {
+  delete[] overflow_;
+}
+
 str_t ObjInstance::stringify() const noexcept {
   return std::format("{} instance", klass_->name()->value());
 }
 
 void ObjInstance::trace_references() noexcept {
   mark_object(klass_);
-  for (auto& val : fields_) mark_value(val);
+  Value* flds = fields_ptr();
+  for (u32_t i = 0; i < field_count_; ++i) mark_value(flds[i]);
 }
 
 sz_t ObjInstance::size() const noexcept {
-  return sizeof(ObjInstance) + fields_.capacity() * sizeof(Value);
+  return sizeof(ObjInstance) + (overflow_ ? capacity_ * sizeof(Value) : 0);
 }
 
 bool ObjInstance::get_field(ObjString* name, Value* value) const noexcept {
   i32_t slot = shape_->find_slot(name);
   if (slot < 0) return false;
-  *value = fields_[static_cast<u32_t>(slot)];
+  *value = fields_ptr()[static_cast<u32_t>(slot)];
   return true;
 }
 
 void ObjInstance::set_field(ObjString* name, Value value) noexcept {
   i32_t slot = shape_->find_slot(name);
   if (slot >= 0) {
-    fields_[static_cast<u32_t>(slot)] = value;
+    fields_ptr()[static_cast<u32_t>(slot)] = value;
   } else {
     shape_ = shape_->add_transition(name, klass_->next_shape_id_ref());
-    fields_.push_back(value);
+    if (field_count_ < capacity_) {
+      fields_ptr()[field_count_++] = value;
+    } else {
+      // Spill: double capacity and move to heap
+      u32_t new_cap = capacity_ * 2;
+      Value* new_buf = new Value[new_cap];
+      Value* old_buf = fields_ptr();
+      for (u32_t i = 0; i < field_count_; ++i) new_buf[i] = old_buf[i];
+      delete[] overflow_;
+      overflow_ = new_buf;
+      capacity_ = new_cap;
+      overflow_[field_count_++] = value;
+    }
   }
 }
 

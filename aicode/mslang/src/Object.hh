@@ -327,22 +327,35 @@ public:
 
 // --- ObjInstance ---
 class ObjInstance final : public Object {
+  static constexpr u32_t kInlineFields = 8;
   ObjClass* klass_{nullptr};
-  Shape* shape_{nullptr};
-  std::vector<Value> fields_;
+  Shape*    shape_{nullptr};
+  u32_t     field_count_{0};
+  u32_t     capacity_{kInlineFields};
+  Value     inline_fields_[kInlineFields]{};  // inline field slots (SBO)
+  Value*    overflow_{nullptr};               // heap array, only when > kInlineFields
+
+  Value* fields_ptr() noexcept {
+    return overflow_ ? overflow_ : inline_fields_;
+  }
+  const Value* fields_ptr() const noexcept {
+    return overflow_ ? overflow_ : inline_fields_;
+  }
 
 public:
   explicit ObjInstance(ObjClass* klass) noexcept;
+  ~ObjInstance() noexcept;
   str_t stringify() const noexcept;
   void trace_references() noexcept;
   sz_t size() const noexcept;
 
   ObjClass* klass() const noexcept { return klass_; }
   Shape* shape() const noexcept { return shape_; }
+  u32_t field_count() const noexcept { return field_count_; }
 
   // Fast path: direct slot access
-  Value get_field(u32_t slot) const noexcept { return fields_[slot]; }
-  void set_field(u32_t slot, Value val) noexcept { fields_[slot] = val; }
+  Value get_field(u32_t slot) const noexcept { return fields_ptr()[slot]; }
+  void set_field(u32_t slot, Value val) noexcept { fields_ptr()[slot] = val; }
 
   // Slow path: name-based lookup
   bool get_field(ObjString* name, Value* value) const noexcept;
