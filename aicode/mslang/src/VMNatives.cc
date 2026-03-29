@@ -37,16 +37,16 @@
 namespace ms {
 
 void VM::register_natives() noexcept {
-  define_native("clock", [](int, Value*) -> Value {
+  define_native("clock", [](VM& vm, int, Value*) -> Value {
     using namespace std::chrono;
     auto now = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(now.time_since_epoch());
     return Value(static_cast<double>(duration.count()) / 1000000.0);
   });
 
-  define_native("type", [this](int arg_count, Value* args) -> Value {
+  define_native("type", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("type() takes exactly 1 argument.");
+      vm.runtime_error("type() takes exactly 1 argument.");
       return Value();
     }
     Value& val = args[0];
@@ -76,38 +76,38 @@ void VM::register_natives() noexcept {
       default:                              type_str = "object"; break;
       }
     }
-    return Value(static_cast<Object*>(copy_string(type_str, std::strlen(type_str))));
+    return Value(static_cast<Object*>(vm.copy_string(type_str, std::strlen(type_str))));
   });
 
-  define_native("strlen", [this](int arg_count, Value* args) -> Value {
+  define_native("strlen", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("strlen() takes exactly 1 argument.");
+      vm.runtime_error("strlen() takes exactly 1 argument.");
       return Value();
     }
     if (!args[0].is_string()) {
-      runtime_error("strlen() argument must be a string.");
+      vm.runtime_error("strlen() argument must be a string.");
       return Value();
     }
     return Value(static_cast<double>(as_string(args[0])->value().length()));
   });
 
-  define_native("str", [this](int arg_count, Value* args) -> Value {
+  define_native("str", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("str() takes exactly 1 argument.");
+      vm.runtime_error("str() takes exactly 1 argument.");
       return Value();
     }
     if (args[0].is_string()) return args[0];
     str_t s = args[0].stringify();
-    return Value(static_cast<Object*>(copy_string(s.data(), s.length())));
+    return Value(static_cast<Object*>(vm.copy_string(s.data(), s.length())));
   });
 
-  define_native("num", [this](int arg_count, Value* args) -> Value {
+  define_native("num", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("num() takes exactly 1 argument.");
+      vm.runtime_error("num() takes exactly 1 argument.");
       return Value();
     }
     if (!args[0].is_string()) {
-      runtime_error("num() argument must be a string.");
+      vm.runtime_error("num() argument must be a string.");
       return Value();
     }
     str_t s{as_string(args[0])->value()};
@@ -116,24 +116,24 @@ void VM::register_natives() noexcept {
     try {
       result = std::stod(s, &pos);
     } catch (...) {
-      runtime_error(std::format("Could not convert '{}' to a number.", s));
+      vm.runtime_error(std::format("Could not convert '{}' to a number.", s));
       return Value();
     }
     if (pos != s.length()) {
-      runtime_error(std::format("Could not convert '{}' to a number.", s));
+      vm.runtime_error(std::format("Could not convert '{}' to a number.", s));
       return Value();
     }
     return Value(result);
   });
 
-  define_native("input", [this](int arg_count, Value* args) -> Value {
+  define_native("input", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count > 1) {
-      runtime_error("input() takes 0 or 1 arguments.");
+      vm.runtime_error("input() takes 0 or 1 arguments.");
       return Value();
     }
     if (arg_count == 1) {
       if (!args[0].is_string()) {
-        runtime_error("input() prompt must be a string.");
+        vm.runtime_error("input() prompt must be a string.");
         return Value();
       }
       std::cout << as_string(args[0])->value();
@@ -143,81 +143,81 @@ void VM::register_natives() noexcept {
     if (!std::getline(std::cin, line)) {
       return Value(); // nil on EOF
     }
-    return Value(static_cast<Object*>(copy_string(line.data(), line.length())));
+    return Value(static_cast<Object*>(vm.copy_string(line.data(), line.length())));
   });
 
   // --- Math natives ---
 
-  define_native("abs", [this](int arg_count, Value* args) -> Value {
+  define_native("abs", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1 || !args[0].is_number()) {
-      runtime_error("abs() takes exactly 1 number argument.");
+      vm.runtime_error("abs() takes exactly 1 number argument.");
       return Value();
     }
     return Value(std::abs(args[0].as_number()));
   });
 
-  define_native("ceil", [this](int arg_count, Value* args) -> Value {
+  define_native("ceil", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1 || !args[0].is_number()) {
-      runtime_error("ceil() takes exactly 1 number argument.");
+      vm.runtime_error("ceil() takes exactly 1 number argument.");
       return Value();
     }
     return Value(std::ceil(args[0].as_number()));
   });
 
-  define_native("floor", [this](int arg_count, Value* args) -> Value {
+  define_native("floor", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1 || !args[0].is_number()) {
-      runtime_error("floor() takes exactly 1 number argument.");
+      vm.runtime_error("floor() takes exactly 1 number argument.");
       return Value();
     }
     return Value(std::floor(args[0].as_number()));
   });
 
-  define_native("round", [this](int arg_count, Value* args) -> Value {
+  define_native("round", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1 || !args[0].is_number()) {
-      runtime_error("round() takes exactly 1 number argument.");
+      vm.runtime_error("round() takes exactly 1 number argument.");
       return Value();
     }
     return Value(std::round(args[0].as_number()));
   });
 
-  define_native("sqrt", [this](int arg_count, Value* args) -> Value {
+  define_native("sqrt", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1 || !args[0].is_number()) {
-      runtime_error("sqrt() takes exactly 1 number argument.");
+      vm.runtime_error("sqrt() takes exactly 1 number argument.");
       return Value();
     }
     double x = args[0].as_number();
     if (x < 0) {
-      runtime_error("sqrt() argument must be non-negative.");
+      vm.runtime_error("sqrt() argument must be non-negative.");
       return Value();
     }
     return Value(std::sqrt(x));
   });
 
-  define_native("pow", [this](int arg_count, Value* args) -> Value {
+  define_native("pow", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 2 || !args[0].is_number() || !args[1].is_number()) {
-      runtime_error("pow() takes exactly 2 number arguments.");
+      vm.runtime_error("pow() takes exactly 2 number arguments.");
       return Value();
     }
     return Value(std::pow(args[0].as_number(), args[1].as_number()));
   });
 
-  define_native("min", [this](int arg_count, Value* args) -> Value {
+  define_native("min", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 2 || !args[0].is_number() || !args[1].is_number()) {
-      runtime_error("min() takes exactly 2 number arguments.");
+      vm.runtime_error("min() takes exactly 2 number arguments.");
       return Value();
     }
     return Value(std::min(args[0].as_number(), args[1].as_number()));
   });
 
-  define_native("max", [this](int arg_count, Value* args) -> Value {
+  define_native("max", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 2 || !args[0].is_number() || !args[1].is_number()) {
-      runtime_error("max() takes exactly 2 number arguments.");
+      vm.runtime_error("max() takes exactly 2 number arguments.");
       return Value();
     }
     return Value(std::max(args[0].as_number(), args[1].as_number()));
   });
 
-  define_native("random", [](int arg_count, Value*) -> Value {
+  define_native("random", [](VM& vm, int arg_count, Value*) -> Value {
     if (arg_count != 0) return Value();
     static std::mt19937 gen{std::random_device{}()};
     static std::uniform_real_distribution<double> dist(0.0, 1.0);
@@ -226,9 +226,9 @@ void VM::register_natives() noexcept {
 
   // --- Conversion natives ---
 
-  define_native("int", [this](int arg_count, Value* args) -> Value {
+  define_native("int", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("int() takes exactly 1 argument.");
+      vm.runtime_error("int() takes exactly 1 argument.");
       return Value();
     }
     if (args[0].is_integer()) {
@@ -246,22 +246,22 @@ void VM::register_natives() noexcept {
         sz_t pos = 0;
         long long result = std::stoll(s, &pos);
         if (pos != s.length()) {
-          runtime_error(std::format("Could not convert '{}' to an integer.", s));
+          vm.runtime_error(std::format("Could not convert '{}' to an integer.", s));
           return Value();
         }
         return Value(static_cast<i64_t>(result));
       } catch (...) {
-        runtime_error(std::format("Could not convert '{}' to an integer.", s));
+        vm.runtime_error(std::format("Could not convert '{}' to an integer.", s));
         return Value();
       }
     }
-    runtime_error("int() argument must be a number, bool, or string.");
+    vm.runtime_error("int() argument must be a number, bool, or string.");
     return Value();
   });
 
-  define_native("bool", [this](int arg_count, Value* args) -> Value {
+  define_native("bool", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("bool() takes exactly 1 argument.");
+      vm.runtime_error("bool() takes exactly 1 argument.");
       return Value();
     }
     return Value(args[0].is_truthy());
@@ -269,33 +269,33 @@ void VM::register_natives() noexcept {
 
   // --- I/O natives ---
 
-  define_native("read_file", [this](int arg_count, Value* args) -> Value {
+  define_native("read_file", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1 || !args[0].is_string()) {
-      runtime_error("read_file() takes exactly 1 string argument.");
+      vm.runtime_error("read_file() takes exactly 1 string argument.");
       return Value();
     }
     str_t path{as_string(args[0])->value()};
     std::ifstream file(path, std::ios::in | std::ios::binary);
     if (!file) {
-      runtime_error(std::format("Could not open file '{}'.", path));
+      vm.runtime_error(std::format("Could not open file '{}'.", path));
       return Value();
     }
     std::ostringstream oss;
     oss << file.rdbuf();
     str_t content = oss.str();
-    return Value(static_cast<Object*>(copy_string(content.data(), content.length())));
+    return Value(static_cast<Object*>(vm.copy_string(content.data(), content.length())));
   });
 
-  define_native("write_file", [this](int arg_count, Value* args) -> Value {
+  define_native("write_file", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 2 || !args[0].is_string() || !args[1].is_string()) {
-      runtime_error("write_file() takes exactly 2 string arguments (path, data).");
+      vm.runtime_error("write_file() takes exactly 2 string arguments (path, data).");
       return Value();
     }
     str_t path{as_string(args[0])->value()};
     strv_t data = as_string(args[1])->value();
     std::ofstream file(path, std::ios::out | std::ios::binary);
     if (!file) {
-      runtime_error(std::format("Could not open file '{}' for writing.", path));
+      vm.runtime_error(std::format("Could not open file '{}' for writing.", path));
       return Value();
     }
     file.write(data.data(), static_cast<std::streamsize>(data.length()));
@@ -304,16 +304,16 @@ void VM::register_natives() noexcept {
 
   // --- Assert native ---
 
-  define_native("assert", [this](int arg_count, Value* args) -> Value {
+  define_native("assert", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count < 1 || arg_count > 2) {
-      runtime_error("assert() takes 1 or 2 arguments.");
+      vm.runtime_error("assert() takes 1 or 2 arguments.");
       return Value();
     }
     if (!args[0].is_truthy()) {
       if (arg_count == 2 && args[1].is_string()) {
-        runtime_error(std::format("Assertion failed: {}.", as_string(args[1])->value()));
+        vm.runtime_error(std::format("Assertion failed: {}.", as_string(args[1])->value()));
       } else {
-        runtime_error("Assertion failed.");
+        vm.runtime_error("Assertion failed.");
       }
       return Value();
     }
@@ -322,14 +322,14 @@ void VM::register_natives() noexcept {
 
   // --- range() native ---
 
-  define_native("range", [this](int arg_count, Value* args) -> Value {
+  define_native("range", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count < 1 || arg_count > 3) {
-      runtime_error("range() takes 1 to 3 arguments.");
+      vm.runtime_error("range() takes 1 to 3 arguments.");
       return Value();
     }
     for (int i = 0; i < arg_count; i++) {
       if (!args[i].is_number()) {
-        runtime_error("range() arguments must be numbers.");
+        vm.runtime_error("range() arguments must be numbers.");
         return Value();
       }
     }
@@ -347,13 +347,13 @@ void VM::register_natives() noexcept {
     }
 
     if (step == 0) {
-      runtime_error("range() step argument must not be zero.");
+      vm.runtime_error("range() step argument must not be zero.");
       return Value();
     }
 
-    ObjList* list = allocate<ObjList>();
+    ObjList* list = vm.allocate<ObjList>();
     // Push to stack immediately so GC can find it
-    push(Value(static_cast<Object*>(list)));
+    vm.push(Value(static_cast<Object*>(list)));
 
     if (step > 0) {
       for (double i = start; i < stop; i += step)
@@ -363,33 +363,33 @@ void VM::register_natives() noexcept {
         list->elements().push_back(Value(i));
     }
 
-    pop(); // pop the list we pushed for GC safety
+    vm.pop(); // pop the list we pushed for GC safety
     return Value(static_cast<Object*>(list));
   });
 
   // --- StringBuilder native ---
 
-  define_native("weak_ref", [this](int arg_count, Value* args) -> Value {
+  define_native("weak_ref", [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 1) {
-      runtime_error("weak_ref() takes exactly 1 argument.");
+      vm.runtime_error("weak_ref() takes exactly 1 argument.");
       return Value();
     }
     if (!args[0].is_object()) {
-      runtime_error("weak_ref() argument must be an object.");
+      vm.runtime_error("weak_ref() argument must be an object.");
       return Value();
     }
-    ObjWeakRef* ref = allocate<ObjWeakRef>(args[0].as_object());
-    weak_refs_.push_back(ref);
+    ObjWeakRef* ref = vm.allocate<ObjWeakRef>(args[0].as_object());
+    vm.weak_refs().push_back(ref);
     return Value(static_cast<Object*>(ref));
   });
 
-  define_native("StringBuilder", [this](int arg_count, Value* args) -> Value {
-    ObjStringBuilder* sb = allocate<ObjStringBuilder>();
+  define_native("StringBuilder", [](VM& vm, int arg_count, Value* args) -> Value {
+    ObjStringBuilder* sb = vm.allocate<ObjStringBuilder>();
     if (arg_count == 1) {
       str_t s = args[0].stringify();
       sb->append(s);
     } else if (arg_count > 1) {
-      runtime_error("StringBuilder() takes 0 or 1 arguments.");
+      vm.runtime_error("StringBuilder() takes 0 or 1 arguments.");
       return Value();
     }
     return Value(static_cast<Object*>(sb));

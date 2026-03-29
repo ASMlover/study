@@ -242,7 +242,8 @@ public:
 };
 
 // --- ObjNative ---
-using NativeFn = std::function<Value(int arg_count, Value* args)>;
+class VM;  // forward declaration for NativeFn signature
+using NativeFn = Value(*)(VM& vm, int arg_count, Value* args);
 
 class ObjNative final : public Object {
   NativeFn function_;
@@ -252,7 +253,7 @@ public:
   str_t stringify() const noexcept;
   sz_t size() const noexcept;
 
-  NativeFn& function() noexcept { return function_; }
+  NativeFn function() const noexcept { return function_; }
 };
 
 // --- ObjUpvalue ---

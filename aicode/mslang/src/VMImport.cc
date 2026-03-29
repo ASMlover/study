@@ -37,16 +37,16 @@ void VM::register_io_module() noexcept {
   push(Value(static_cast<Object*>(module))); // GC root
 
   // io.open(path, mode) -> ObjFile
-  auto open_fn = [this](int arg_count, Value* args) -> Value {
+  auto open_fn = [](VM& vm, int arg_count, Value* args) -> Value {
     if (arg_count != 2 || !args[0].is_string() || !args[1].is_string()) {
-      runtime_error("io.open() takes exactly 2 string arguments (path, mode).");
+      vm.runtime_error("io.open() takes exactly 2 string arguments (path, mode).");
       return Value();
     }
     str_t path = str_t(as_string(args[0])->value());
     str_t mode = str_t(as_string(args[1])->value());
-    ObjFile* file = allocate<ObjFile>(std::move(path), std::move(mode));
+    ObjFile* file = vm.allocate<ObjFile>(std::move(path), std::move(mode));
     if (!file->open()) {
-      runtime_error(std::format("Could not open file '{}'.", file->path()));
+      vm.runtime_error(std::format("Could not open file '{}'.", file->path()));
       return Value();
     }
     return Value(static_cast<Object*>(file));

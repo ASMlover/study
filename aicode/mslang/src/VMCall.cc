@@ -121,8 +121,8 @@ bool VM::call_value(Value callee, int arg_count) noexcept {
     }
 
     case ObjectType::OBJ_NATIVE: {
-      NativeFn& native = as_native(callee)->function();
-      Value result = native(arg_count, stack_top_ - arg_count);
+      NativeFn native = as_native(callee)->function();
+      Value result = native(*this, arg_count, stack_top_ - arg_count);
       stack_top_ -= arg_count + 1;
       push(result);
       return true;

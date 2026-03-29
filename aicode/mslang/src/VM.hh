@@ -174,9 +174,7 @@ class VM : public Singleton<VM> {
   void incremental_sweep_step() noexcept;
   void finish_major_gc() noexcept;
 
-  // Stack operations
-  void push(Value value) noexcept;
-  Value pop() noexcept;
+  // Stack operations (private helpers)
   Value peek(int distance) const noexcept;
   void reset_stack() noexcept;
 
@@ -208,7 +206,6 @@ class VM : public Singleton<VM> {
   void register_io_module() noexcept;
 
   // Error reporting
-  void runtime_error(strv_t message) noexcept;
   str_t get_source_line(const str_t& script_path, int line) const noexcept;
 
   // String concatenation
@@ -244,6 +241,16 @@ public:
   // GC statistics (for benchmark reporting)
   sz_t gc_count() const noexcept { return gc_count_; }
   void reset_gc_count() noexcept { gc_count_ = 0; }
+
+  // Stack operations (also used by native lambdas)
+  void push(Value value) noexcept;
+  Value pop() noexcept;
+
+  // Error reporting (also used by native lambdas)
+  void runtime_error(strv_t message) noexcept;
+
+  // Weak-reference list accessor (used by native lambdas)
+  std::vector<ObjWeakRef*>& weak_refs() noexcept { return weak_refs_; }
 };
 
 } // namespace ms
