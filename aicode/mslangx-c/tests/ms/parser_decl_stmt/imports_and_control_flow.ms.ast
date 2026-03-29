@@ -1,0 +1,27 @@
+program count=6
+  import path="core.io"
+  from_import path="tools.util" name="helper" alias="alias"
+  var "answer"
+    nil
+  function_decl "compute" params=1
+    param "limit"
+    block count=2
+      if
+        variable "limit"
+        print
+          variable "limit"
+        print
+          nil
+      return
+        variable "answer"
+  class_decl "Derived"
+    superclass "Base"
+    methods count=1
+      function_decl "run" params=0
+        block count=1
+          return
+            super "run"
+  expr_stmt
+    call argc=1
+      variable "compute"
+      variable "answer"

@@ -1,0 +1,2 @@
+parse MS2001 2:1+5 expected expression
+parse MS2002 3:23+2 expected imported name after 'import'

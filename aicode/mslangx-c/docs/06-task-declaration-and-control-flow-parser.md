@@ -1,5 +1,9 @@
 # Task 06 - Declaration and Control-Flow Parser
 
+## Status
+
+Complete. Verified on 2026-03-29 with the acceptance commands in this document.
+
 ## Goal
 
 Complete statement and declaration parsing so the frontend can build a full AST for a source file.
@@ -37,7 +41,7 @@ Complete statement and declaration parsing so the frontend can build a full AST 
 1. `include/ms/parser.h`
 2. `src/frontend/parser_decl_stmt.c`
 3. `src/frontend/parser_recovery.c`
-4. parser statement/declaration tests under `tests/unit/` and `tests/ms/parser/`
+4. parser statement/declaration tests under `tests/unit/` and `tests/ms/parser_decl_stmt/`
 
 ## Diagnostics Contract
 

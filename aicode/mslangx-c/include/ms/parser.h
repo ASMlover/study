@@ -30,5 +30,9 @@ MsAstNode *ms_parse_expression(const char *file,
                                const char *source,
                                MsArena *arena,
                                MsDiagnosticList *diagnostics);
+MsAstNode *ms_parse_source(const char *file,
+                           const char *source,
+                           MsArena *arena,
+                           MsDiagnosticList *diagnostics);
 
 #endif

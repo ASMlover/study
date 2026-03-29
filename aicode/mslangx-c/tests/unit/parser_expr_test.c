@@ -125,7 +125,15 @@ static int test_function_map_self_and_super_shapes(void) {
       "function params=2\n"
       "  param \"left\"\n"
       "  param \"right\"\n"
-      "  block raw=\"return {self: self, base: super.run}\"\n";
+      "  block count=1\n"
+      "    return\n"
+      "      map count=2\n"
+      "        entry\n"
+      "          self\n"
+      "          self\n"
+      "        entry\n"
+      "          variable \"base\"\n"
+      "          super \"run\"\n";
 
   TEST_ASSERT(parse_expression_snapshot(
       "fn(left, right) { return {self: self, base: super.run} }\n",

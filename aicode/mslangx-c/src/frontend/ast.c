@@ -134,6 +134,72 @@ static int ms_ast_append_line_with_params(MsBuffer *buffer,
   return ms_ast_append_line(buffer, depth, line);
 }
 
+static int ms_ast_token_present(MsToken token) {
+  return token.start != NULL || token.length > 0;
+}
+
+static int ms_ast_append_module_path(MsBuffer *buffer, MsTokenArray path) {
+  size_t i;
+
+  for (i = 0; i < path.count; ++i) {
+    if (i > 0 && !ms_ast_append_char(buffer, '.')) {
+      return 0;
+    }
+    if (!ms_ast_append_escaped_slice(buffer,
+                                     path.items[i].start,
+                                     path.items[i].length)) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+static int ms_ast_append_import_line(MsBuffer *buffer,
+                                     int depth,
+                                     const MsAstNode *node) {
+  if (!ms_ast_append_indent(buffer, depth) ||
+      !ms_ast_append_string(buffer, "import path=\"") ||
+      !ms_ast_append_module_path(buffer, node->as.import_stmt.path) ||
+      !ms_ast_append_char(buffer, '"')) {
+    return 0;
+  }
+
+  if (ms_ast_token_present(node->as.import_stmt.alias) &&
+      (!ms_ast_append_string(buffer, " alias=") ||
+       !ms_ast_append_quoted_slice(buffer,
+                                   node->as.import_stmt.alias.start,
+                                   node->as.import_stmt.alias.length))) {
+    return 0;
+  }
+
+  return ms_ast_append_char(buffer, '\n');
+}
+
+static int ms_ast_append_from_import_line(MsBuffer *buffer,
+                                          int depth,
+                                          const MsAstNode *node) {
+  if (!ms_ast_append_indent(buffer, depth) ||
+      !ms_ast_append_string(buffer, "from_import path=\"") ||
+      !ms_ast_append_module_path(buffer, node->as.from_import_stmt.path) ||
+      !ms_ast_append_string(buffer, "\" name=") ||
+      !ms_ast_append_quoted_slice(buffer,
+                                  node->as.from_import_stmt.name.start,
+                                  node->as.from_import_stmt.name.length)) {
+    return 0;
+  }
+
+  if (ms_ast_token_present(node->as.from_import_stmt.alias) &&
+      (!ms_ast_append_string(buffer, " alias=") ||
+       !ms_ast_append_quoted_slice(buffer,
+                                   node->as.from_import_stmt.alias.start,
+                                   node->as.from_import_stmt.alias.length))) {
+    return 0;
+  }
+
+  return ms_ast_append_char(buffer, '\n');
+}
+
 static int ms_ast_dump_node(MsBuffer *buffer, const MsAstNode *node, int depth) {
   size_t i;
 
@@ -142,6 +208,154 @@ static int ms_ast_dump_node(MsBuffer *buffer, const MsAstNode *node, int depth) 
   }
 
   switch (node->kind) {
+    case MS_AST_PROGRAM:
+      if (!ms_ast_append_line_with_count(buffer,
+                                         depth,
+                                         "program",
+                                         node->as.program.declarations.count)) {
+        return 0;
+      }
+      for (i = 0; i < node->as.program.declarations.count; ++i) {
+        if (!ms_ast_dump_node(buffer,
+                              node->as.program.declarations.items[i],
+                              depth + 1)) {
+          return 0;
+        }
+      }
+      return 1;
+    case MS_AST_VAR_DECL:
+      return ms_ast_append_line_with_token(buffer,
+                                           depth,
+                                           "var",
+                                           node->as.var_decl.name) &&
+             ms_ast_dump_node(buffer, node->as.var_decl.initializer, depth + 1);
+    case MS_AST_FUNCTION_DECL:
+      {
+        char count_text[32];
+        int written = snprintf(count_text,
+                               sizeof(count_text),
+                               "%zu",
+                               node->as.function_decl.parameters.count);
+        if (written < 0 || (size_t) written >= sizeof(count_text)) {
+          return 0;
+        }
+        if (!ms_ast_append_indent(buffer, depth) ||
+            !ms_ast_append_string(buffer, "function_decl ") ||
+            !ms_ast_append_quoted_slice(buffer,
+                                        node->as.function_decl.name.start,
+                                        node->as.function_decl.name.length) ||
+            !ms_ast_append_string(buffer, " params=") ||
+            !ms_ast_append_string(buffer, count_text) ||
+            !ms_ast_append_char(buffer, '\n')) {
+          return 0;
+        }
+      }
+      for (i = 0; i < node->as.function_decl.parameters.count; ++i) {
+        if (!ms_ast_append_line_with_token(buffer,
+                                           depth + 1,
+                                           "param",
+                                           node->as.function_decl.parameters.items[i])) {
+          return 0;
+        }
+      }
+      return ms_ast_dump_node(buffer, node->as.function_decl.body, depth + 1);
+    case MS_AST_CLASS_DECL:
+      if (!ms_ast_append_line_with_token(buffer,
+                                         depth,
+                                         "class_decl",
+                                         node->as.class_decl.name)) {
+        return 0;
+      }
+      if (ms_ast_token_present(node->as.class_decl.superclass) &&
+          !ms_ast_append_line_with_token(buffer,
+                                         depth + 1,
+                                         "superclass",
+                                         node->as.class_decl.superclass)) {
+        return 0;
+      }
+      if (!ms_ast_append_line_with_count(buffer,
+                                         depth + 1,
+                                         "methods",
+                                         node->as.class_decl.methods.count)) {
+        return 0;
+      }
+      for (i = 0; i < node->as.class_decl.methods.count; ++i) {
+        if (!ms_ast_dump_node(buffer,
+                              node->as.class_decl.methods.items[i],
+                              depth + 2)) {
+          return 0;
+        }
+      }
+      return 1;
+    case MS_AST_IMPORT_STMT:
+      return ms_ast_append_import_line(buffer, depth, node);
+    case MS_AST_FROM_IMPORT_STMT:
+      return ms_ast_append_from_import_line(buffer, depth, node);
+    case MS_AST_EXPR_STMT:
+      return ms_ast_append_line(buffer, depth, "expr_stmt") &&
+             ms_ast_dump_node(buffer, node->as.expr_stmt.expression, depth + 1);
+    case MS_AST_PRINT_STMT:
+      return ms_ast_append_line(buffer, depth, "print") &&
+             ms_ast_dump_node(buffer, node->as.print_stmt.expression, depth + 1);
+    case MS_AST_RETURN_STMT:
+      if (!ms_ast_append_line(buffer, depth, "return")) {
+        return 0;
+      }
+      if (node->as.return_stmt.value != NULL) {
+        return ms_ast_dump_node(buffer, node->as.return_stmt.value, depth + 1);
+      }
+      return 1;
+    case MS_AST_BREAK_STMT:
+      return ms_ast_append_line(buffer, depth, "break");
+    case MS_AST_CONTINUE_STMT:
+      return ms_ast_append_line(buffer, depth, "continue");
+    case MS_AST_IF_STMT:
+      if (!ms_ast_append_line(buffer, depth, "if") ||
+          !ms_ast_dump_node(buffer, node->as.if_stmt.condition, depth + 1) ||
+          !ms_ast_dump_node(buffer, node->as.if_stmt.then_branch, depth + 1)) {
+        return 0;
+      }
+      if (node->as.if_stmt.else_branch != NULL) {
+        return ms_ast_dump_node(buffer, node->as.if_stmt.else_branch, depth + 1);
+      }
+      return 1;
+    case MS_AST_WHILE_STMT:
+      return ms_ast_append_line(buffer, depth, "while") &&
+             ms_ast_dump_node(buffer, node->as.while_stmt.condition, depth + 1) &&
+             ms_ast_dump_node(buffer, node->as.while_stmt.body, depth + 1);
+    case MS_AST_FOR_STMT:
+      if (!ms_ast_append_line(buffer, depth, "for") ||
+          !ms_ast_append_line(buffer, depth + 1, "init")) {
+        return 0;
+      }
+      if (node->as.for_stmt.initializer != NULL) {
+        if (!ms_ast_dump_node(buffer, node->as.for_stmt.initializer, depth + 2)) {
+          return 0;
+        }
+      } else if (!ms_ast_append_line(buffer, depth + 2, "<none>")) {
+        return 0;
+      }
+      if (!ms_ast_append_line(buffer, depth + 1, "condition")) {
+        return 0;
+      }
+      if (node->as.for_stmt.condition != NULL) {
+        if (!ms_ast_dump_node(buffer, node->as.for_stmt.condition, depth + 2)) {
+          return 0;
+        }
+      } else if (!ms_ast_append_line(buffer, depth + 2, "<none>")) {
+        return 0;
+      }
+      if (!ms_ast_append_line(buffer, depth + 1, "increment")) {
+        return 0;
+      }
+      if (node->as.for_stmt.increment != NULL) {
+        if (!ms_ast_dump_node(buffer, node->as.for_stmt.increment, depth + 2)) {
+          return 0;
+        }
+      } else if (!ms_ast_append_line(buffer, depth + 2, "<none>")) {
+        return 0;
+      }
+      return ms_ast_dump_node(buffer, node->as.for_stmt.body, depth + 1);
     case MS_AST_LITERAL:
       switch (node->as.literal.token.kind) {
         case MS_TOKEN_NUMBER:
@@ -295,12 +509,20 @@ static int ms_ast_dump_node(MsBuffer *buffer, const MsAstNode *node, int depth) 
       }
       return ms_ast_dump_node(buffer, node->as.function.body, depth + 1);
     case MS_AST_BLOCK:
-      return ms_ast_append_indent(buffer, depth) &&
-             ms_ast_append_string(buffer, "block raw=") &&
-             ms_ast_append_quoted_slice(buffer,
-                                        node->as.block.raw_start,
-                                        node->as.block.raw_length) &&
-             ms_ast_append_char(buffer, '\n');
+      if (!ms_ast_append_line_with_count(buffer,
+                                         depth,
+                                         "block",
+                                         node->as.block.statements.count)) {
+        return 0;
+      }
+      for (i = 0; i < node->as.block.statements.count; ++i) {
+        if (!ms_ast_dump_node(buffer,
+                              node->as.block.statements.items[i],
+                              depth + 1)) {
+          return 0;
+        }
+      }
+      return 1;
   }
 
   return 0;
@@ -308,6 +530,34 @@ static int ms_ast_dump_node(MsBuffer *buffer, const MsAstNode *node, int depth) 
 
 const char *ms_ast_kind_name(MsAstKind kind) {
   switch (kind) {
+    case MS_AST_PROGRAM:
+      return "program";
+    case MS_AST_VAR_DECL:
+      return "var_decl";
+    case MS_AST_FUNCTION_DECL:
+      return "function_decl";
+    case MS_AST_CLASS_DECL:
+      return "class_decl";
+    case MS_AST_IMPORT_STMT:
+      return "import_stmt";
+    case MS_AST_FROM_IMPORT_STMT:
+      return "from_import_stmt";
+    case MS_AST_EXPR_STMT:
+      return "expr_stmt";
+    case MS_AST_PRINT_STMT:
+      return "print_stmt";
+    case MS_AST_RETURN_STMT:
+      return "return_stmt";
+    case MS_AST_BREAK_STMT:
+      return "break_stmt";
+    case MS_AST_CONTINUE_STMT:
+      return "continue_stmt";
+    case MS_AST_IF_STMT:
+      return "if_stmt";
+    case MS_AST_WHILE_STMT:
+      return "while_stmt";
+    case MS_AST_FOR_STMT:
+      return "for_stmt";
     case MS_AST_LITERAL:
       return "literal";
     case MS_AST_VARIABLE:

@@ -1,4 +1,12 @@
 function params=2
   param "left"
   param "right"
-  block raw="return {self: self, base: super.run}"
+  block count=1
+    return
+      map count=2
+        entry
+          self
+          self
+        entry
+          variable "base"
+          super "run"
