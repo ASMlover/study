@@ -217,7 +217,7 @@ bool VM::invoke_from_class(ObjClass* klass, ObjString* name, int arg_count) noex
   }
 
   Value dummy;
-  if (klass->abstract_methods().get(name, &dummy)) {
+  if (klass->has_abstract_methods() && klass->abstract_methods().get(name, &dummy)) {
     runtime_error(std::format("Cannot call abstract method '{}' on '{}'.", name->value(), klass->name()->value()));
     return false;
   }
@@ -247,7 +247,7 @@ void VM::bind_method(ObjClass* klass, ObjString* name) noexcept {
   }
 
   Value dummy;
-  if (klass->abstract_methods().get(name, &dummy)) {
+  if (klass->has_abstract_methods() && klass->abstract_methods().get(name, &dummy)) {
     runtime_error(std::format("Cannot call abstract method '{}' on '{}'.", name->value(), klass->name()->value()));
     return;
   }

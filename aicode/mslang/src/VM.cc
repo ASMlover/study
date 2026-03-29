@@ -693,7 +693,7 @@ dispatch_loop:
         }
 
         Value getter;
-        if (klass->getters().get(name, &getter)) {
+        if (klass->has_getters() && klass->getters().get(name, &getter)) {
           ICEntry new_e;
           new_e.klass = klass; new_e.kind = ICKind::IC_GETTER; new_e.cached = getter;
           if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
@@ -771,7 +771,7 @@ dispatch_loop:
 
         // IC miss — full lookup + append to PIC
         Value setter_val;
-        if (klass->setters().get(name, &setter_val)) {
+        if (klass->has_setters() && klass->setters().get(name, &setter_val)) {
           ICEntry new_e;
           new_e.klass = klass; new_e.kind = ICKind::IC_SETTER; new_e.cached = setter_val;
           if (!ic.megamorphic && !ic.append_entry(new_e)) ic.megamorphic = true;
@@ -813,7 +813,7 @@ dispatch_loop:
       }
 
       Value dummy;
-      if (superclass->abstract_methods().get(name, &dummy)) {
+      if (superclass->has_abstract_methods() && superclass->abstract_methods().get(name, &dummy)) {
         runtime_error(std::format("Cannot call abstract method '{}' on '{}'.",
             name->value(), superclass->name()->value()));
         goto handle_runtime_error;
@@ -1499,9 +1499,9 @@ dispatch_loop:
       ObjClass* super = as_class(superclass);
       subclass->methods().add_all(super->methods());
       subclass->static_methods().add_all(super->static_methods());
-      subclass->getters().add_all(super->getters());
-      subclass->setters().add_all(super->setters());
-      subclass->abstract_methods().add_all(super->abstract_methods());
+      if (super->has_getters())          subclass->getters().add_all(super->getters());
+      if (super->has_setters())          subclass->setters().add_all(super->setters());
+      if (super->has_abstract_methods()) subclass->abstract_methods().add_all(super->abstract_methods());
       VM_DISPATCH();
     }
 
@@ -1513,7 +1513,7 @@ dispatch_loop:
       ObjClass* klass = as_class(frame->slots[A]);
       klass->methods().set(name, frame->slots[C]);
       write_barrier_value(klass, frame->slots[C]);
-      klass->abstract_methods().remove(name);
+      if (klass->has_abstract_methods()) klass->abstract_methods().remove(name);
       VM_DISPATCH();
     }
 

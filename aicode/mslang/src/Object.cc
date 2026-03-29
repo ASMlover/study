@@ -206,14 +206,17 @@ void ObjClass::trace_references() noexcept {
   mark_object(name_);
   methods_.mark_table();
   static_methods_.mark_table();
-  getters_.mark_table();
-  setters_.mark_table();
-  abstract_methods_.mark_table();
+  if (getters_) getters_->mark_table();
+  if (setters_) setters_->mark_table();
+  if (abstract_methods_) abstract_methods_->mark_table();
   root_shape_->mark_keys();
 }
 
 sz_t ObjClass::size() const noexcept {
-  return sizeof(ObjClass);
+  return sizeof(ObjClass)
+      + (getters_ ? getters_->capacity() * sizeof(Entry) : 0)
+      + (setters_ ? setters_->capacity() * sizeof(Entry) : 0)
+      + (abstract_methods_ ? abstract_methods_->capacity() * sizeof(Entry) : 0);
 }
 
 // --- ObjInstance ---

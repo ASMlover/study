@@ -305,9 +305,9 @@ class ObjClass final : public Object {
   ObjString* name_{nullptr};
   Table methods_;
   Table static_methods_;
-  Table getters_;
-  Table setters_;
-  Table abstract_methods_;
+  std::unique_ptr<Table> getters_;
+  std::unique_ptr<Table> setters_;
+  std::unique_ptr<Table> abstract_methods_;
   Shape* root_shape_{nullptr};
   u32_t next_shape_id_{1};
 
@@ -323,12 +323,26 @@ public:
   const Table& methods() const noexcept { return methods_; }
   Table& static_methods() noexcept { return static_methods_; }
   const Table& static_methods() const noexcept { return static_methods_; }
-  Table& getters() noexcept { return getters_; }
-  const Table& getters() const noexcept { return getters_; }
-  Table& setters() noexcept { return setters_; }
-  const Table& setters() const noexcept { return setters_; }
-  Table& abstract_methods() noexcept { return abstract_methods_; }
-  const Table& abstract_methods() const noexcept { return abstract_methods_; }
+
+  // Lazy-init accessors (write path — creates table on first use)
+  Table& getters() noexcept {
+    if (!getters_) getters_ = std::make_unique<Table>();
+    return *getters_;
+  }
+  Table& setters() noexcept {
+    if (!setters_) setters_ = std::make_unique<Table>();
+    return *setters_;
+  }
+  Table& abstract_methods() noexcept {
+    if (!abstract_methods_) abstract_methods_ = std::make_unique<Table>();
+    return *abstract_methods_;
+  }
+
+  // Existence checks (read path — avoids allocating empty tables)
+  bool has_getters() const noexcept { return getters_ != nullptr; }
+  bool has_setters() const noexcept { return setters_ != nullptr; }
+  bool has_abstract_methods() const noexcept { return abstract_methods_ != nullptr; }
+
   Shape* root_shape() const noexcept { return root_shape_; }
   u32_t& next_shape_id_ref() noexcept { return next_shape_id_; }
 };
