@@ -29,6 +29,7 @@
 #include <array>
 #include <charconv>
 #include <cmath>
+#include <unordered_map>
 #include "Compiler.hh"
 #include "VM.hh"
 #include "Memory.hh"
@@ -157,6 +158,9 @@ class Compiler {
 
   // Expression descriptor for the last compiled expression
   ExprDesc last_expr_{};
+
+  // String constant deduplication cache: interned ObjString* → constant pool index
+  std::unordered_map<ObjString*, int> str_const_cache_;
 
   // Constant folding
   struct ConstRecord {

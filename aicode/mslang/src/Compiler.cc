@@ -490,8 +490,11 @@ sz_t Compiler::make_constant(Value value) noexcept {
 // =============================================================================
 
 u16_t Compiler::identifier_constant(const Token& name) noexcept {
-  sz_t index = make_constant(Value(static_cast<Object*>(
-      VM::get_instance().copy_string(name.lexeme.data(), name.lexeme.length()))));
+  ObjString* interned = VM::get_instance().copy_string(name.lexeme.data(), name.lexeme.length());
+  auto it = str_const_cache_.find(interned);
+  if (it != str_const_cache_.end()) return static_cast<u16_t>(it->second);
+  sz_t index = make_constant(Value(static_cast<Object*>(interned)));
+  str_const_cache_[interned] = static_cast<int>(index);
   return static_cast<u16_t>(index);
 }
 
