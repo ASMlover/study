@@ -739,7 +739,6 @@ void ObjCoroutine::trace_references() noexcept {
   for (auto& f : saved_frames_) {
     mark_object(f.closure);
     mark_value(const_cast<Value&>(f.pending_return));
-    for (auto* dc : f.deferred) mark_object(dc);
   }
 }
 

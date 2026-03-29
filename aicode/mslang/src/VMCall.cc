@@ -200,7 +200,7 @@ bool VM::resume_coroutine(ObjCoroutine* coro, Value sent_val, u8_t result_reg) n
       f.closure = sf.closure;
       f.ip = sf.ip;
       f.slots = new_base + sf.slots_offset;
-      f.deferred = sf.deferred;
+      f.deferred.clear();
       f.pending_return = sf.pending_return;
       f.returning = sf.returning;
     }

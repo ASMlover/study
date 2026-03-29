@@ -645,12 +645,12 @@ enum class CoroutineState : u8_t { CREATED, RUNNING, SUSPENDED, DEAD };
 // Properly-copyable snapshot of a CallFrame for coroutine save/restore.
 // Avoids std::memcpy on non-trivially-copyable std::vector/Value members.
 struct SavedCallFrame {
-  ObjClosure* closure{nullptr};
+  ObjClosure*  closure{nullptr};
   Instruction* ip{nullptr};
-  ptrdiff_t slots_offset{0};  // slots relative to coroutine stack base
-  std::vector<ObjClosure*> deferred{};
-  Value pending_return{};
-  bool returning{false};
+  u32_t        slots_offset{0};  // index into stack_.data(); restore as new_base + offset
+  Value        pending_return{};
+  bool         returning{false};
+  // deferred not saved — Maple semantics guarantee defer executes before yield
 };
 
 class ObjCoroutine final : public Object {

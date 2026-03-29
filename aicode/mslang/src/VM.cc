@@ -1936,8 +1936,7 @@ dispatch_loop:
           SavedCallFrame& sf = coro->saved_frames()[static_cast<sz_t>(fi)];
           sf.closure = f.closure;
           sf.ip = f.ip;
-          sf.slots_offset = f.slots - coro_stack_base;
-          sf.deferred = f.deferred;
+          sf.slots_offset = static_cast<u32_t>(f.slots - coro_stack_base);
           sf.pending_return = f.pending_return;
           sf.returning = f.returning;
         }
@@ -2011,7 +2010,7 @@ dispatch_loop:
             f.closure = sf.closure;
             f.ip = sf.ip;
             f.slots = new_base + sf.slots_offset;
-            f.deferred = sf.deferred;
+            f.deferred.clear();
             f.pending_return = sf.pending_return;
             f.returning = sf.returning;
           }
