@@ -168,9 +168,15 @@ void Compiler::list_comprehension_() noexcept {
       expr_to_reg(last_expr_, arg_reg);
 
       u16_t push_name = identifier_constant(Token{TokenType::TOKEN_IDENTIFIER, "push", ps_->previous.line});
-      emit_instr(encode_ABC(OpCode::OP_INVOKE, base, 1, static_cast<u8_t>(push_name)));
+      ObjString* push_str = as_string(current_chunk().constant_at(push_name));
       sz_t ic_slot = function_->add_ic();
-      emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+      function_->ic_at(ic_slot).name = push_str;
+      if (ic_slot <= 0xFE) {
+        emit_instr(encode_ABC(OpCode::OP_INVOKE, base, 1, static_cast<u8_t>(ic_slot)));
+      } else {
+        emit_instr(encode_ABC(OpCode::OP_INVOKE, base, 1, 0xFF));
+        emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+      }
       reg_top_ = base;
     }
 
@@ -193,9 +199,15 @@ void Compiler::list_comprehension_() noexcept {
     expr_to_reg(last_expr_, arg_reg);
 
     u16_t push_name = identifier_constant(Token{TokenType::TOKEN_IDENTIFIER, "push", ps_->previous.line});
-    emit_instr(encode_ABC(OpCode::OP_INVOKE, base, 1, static_cast<u8_t>(push_name)));
+    ObjString* push_str = as_string(current_chunk().constant_at(push_name));
     sz_t ic_slot = function_->add_ic();
-    emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    function_->ic_at(ic_slot).name = push_str;
+    if (ic_slot <= 0xFE) {
+      emit_instr(encode_ABC(OpCode::OP_INVOKE, base, 1, static_cast<u8_t>(ic_slot)));
+    } else {
+      emit_instr(encode_ABC(OpCode::OP_INVOKE, base, 1, 0xFF));
+      emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    }
     reg_top_ = base;
   }
 

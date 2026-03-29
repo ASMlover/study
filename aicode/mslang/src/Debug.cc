@@ -113,19 +113,30 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
     std::cout << std::format("{:<16s} upval[{}] := R({})\n", opcode_name(op), B, A);
     return offset + 1;
 
-  // --- iABC + EXTRAARG: properties with IC ---
+  // --- iABC: properties with IC slot in C (GETPROP/INVOKE) or B (SETPROP) ---
+  // C/B == 0xFF: fallback with EXTRAARG carrying ic_slot as u16_t
   case OpCode::OP_GETPROP: {
+    if (C != 0xFF) {
+      std::cout << std::format("{:<16s} R({}) := R({}). [ic:{}]\n",
+          opcode_name(op), A, B, C);
+      return offset + 1;
+    }
     Instruction extra = chunk.code_at(offset + 1);
-    u8_t ic = static_cast<u8_t>(decode_Bx(extra));
-    std::cout << std::format("{:<16s} R({}) := R({}).K({}) '{}' [ic:{}]\n",
-        opcode_name(op), A, B, C, chunk.constant_at(C).stringify(), ic);
+    u16_t ic = decode_Bx(extra);
+    std::cout << std::format("{:<16s} R({}) := R({}). [ic:{}] (fallback)\n",
+        opcode_name(op), A, B, ic);
     return offset + 2;
   }
   case OpCode::OP_SETPROP: {
+    if (B != 0xFF) {
+      std::cout << std::format("{:<16s} R({}).[ic:{}] := R({})\n",
+          opcode_name(op), A, B, C);
+      return offset + 1;
+    }
     Instruction extra = chunk.code_at(offset + 1);
-    u8_t ic = static_cast<u8_t>(decode_Bx(extra));
-    std::cout << std::format("{:<16s} R({}).K({}) '{}' := R({}) [ic:{}]\n",
-        opcode_name(op), A, B, chunk.constant_at(B).stringify(), C, ic);
+    u16_t ic = decode_Bx(extra);
+    std::cout << std::format("{:<16s} R({}).[ic:{}] := R({}) (fallback)\n",
+        opcode_name(op), A, ic, C);
     return offset + 2;
   }
 
@@ -182,10 +193,15 @@ sz_t disassemble_instruction(const Chunk& chunk, sz_t offset) noexcept {
     return offset + 1;
 
   case OpCode::OP_INVOKE: {
+    if (C != 0xFF) {
+      std::cout << std::format("{:<16s} R({}).({} args) [ic:{}]\n",
+          opcode_name(op), A, B, C);
+      return offset + 1;
+    }
     Instruction extra = chunk.code_at(offset + 1);
-    u8_t ic = static_cast<u8_t>(decode_Bx(extra));
-    std::cout << std::format("{:<16s} R({}).K({}) '{}' ({} args) [ic:{}]\n",
-        opcode_name(op), A, C, chunk.constant_at(C).stringify(), B, ic);
+    u16_t ic = decode_Bx(extra);
+    std::cout << std::format("{:<16s} R({}).({} args) [ic:{}] (fallback)\n",
+        opcode_name(op), A, B, ic);
     return offset + 2;
   }
 

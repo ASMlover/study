@@ -174,8 +174,9 @@ struct ICEntry {
 
 struct InlineCache {
   std::array<ICEntry, kIC_PIC_SIZE> entries{};
-  u8_t count{0};           // number of valid entries (0..kIC_PIC_SIZE)
-  bool megamorphic{false}; // true → skip IC entirely, use slow path
+  ObjString* name{nullptr}; // property/method name (pre-initialized by compiler)
+  u8_t count{0};            // number of valid entries (0..kIC_PIC_SIZE)
+  bool megamorphic{false};  // true → skip IC entirely, use slow path
 
   // Find entry matching klass; returns pointer or nullptr
   inline ICEntry* find_entry(ObjClass* klass) noexcept {

@@ -579,10 +579,17 @@ dispatch_loop:
       u8_t A = decode_A(instr);
       u8_t B = decode_B(instr);
       u8_t C = decode_C(instr);
-      Instruction extra = READ_INSTR(); // EXTRAARG with IC slot
-      u8_t ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      // C encodes ic_slot directly (0–254); 0xFF = fallback: read EXTRAARG for ic_slot
+      u8_t ic_slot;
+      if (C != 0xFF) {
+        ic_slot = C;
+      } else {
+        Instruction extra = READ_INSTR();
+        ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      }
       Value obj_val = frame->slots[B];
-      ObjString* name = as_string(K[C]);
+      InlineCache& ic_ref = frame->closure->function()->ic_at(ic_slot);
+      ObjString* name = ic_ref.name;
 
       if (is_obj_type(obj_val, ObjectType::OBJ_MODULE)) {
         ObjModule* module = as_module(obj_val);
@@ -614,7 +621,7 @@ dispatch_loop:
       {
         ObjInstance* instance = as_instance(obj_val);
         ObjClass* klass = instance->klass();
-        InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
+        InlineCache& ic = ic_ref;
 
         // IC fast path (PIC: up to 4 entries)
         if (!ic.megamorphic) {
@@ -685,10 +692,15 @@ dispatch_loop:
       u8_t A = decode_A(instr);
       u8_t B = decode_B(instr);
       u8_t C = decode_C(instr);
-      Instruction extra = READ_INSTR(); // EXTRAARG with IC slot
-      u8_t ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      // B encodes ic_slot directly (0–254); 0xFF = fallback: read EXTRAARG for ic_slot
+      u8_t ic_slot;
+      if (B != 0xFF) {
+        ic_slot = B;
+      } else {
+        Instruction extra = READ_INSTR();
+        ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      }
       Value obj_val = frame->slots[A];
-      ObjString* name = as_string(K[B]);
       Value rhs = frame->slots[C];
 
       if (!is_obj_type(obj_val, ObjectType::OBJ_INSTANCE)) {
@@ -700,6 +712,7 @@ dispatch_loop:
         ObjInstance* instance = as_instance(obj_val);
         ObjClass* klass = instance->klass();
         InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
+        ObjString* name = ic.name;
 
         // IC fast path (PIC)
         if (!ic.megamorphic) {
@@ -1201,13 +1214,19 @@ dispatch_loop:
     }
 
     VM_CASE(OP_INVOKE) {
-      // A=base, B=argc, C=name_K  [next: EXTRAARG ic_slot]
+      // A=base, B=argc, C=ic_slot (0-254; 0xFF=fallback with EXTRAARG)
       u8_t A = decode_A(instr);
       u8_t B = decode_B(instr);
       u8_t C = decode_C(instr);
-      Instruction extra = READ_INSTR();
-      u8_t ic_slot = static_cast<u8_t>(decode_Bx(extra));
-      ObjString* method_name = as_string(K[C]);
+      u8_t ic_slot;
+      if (C != 0xFF) {
+        ic_slot = C;
+      } else {
+        Instruction extra = READ_INSTR();
+        ic_slot = static_cast<u8_t>(decode_Bx(extra));
+      }
+      InlineCache& invoke_ic = frame->closure->function()->ic_at(ic_slot);
+      ObjString* method_name = invoke_ic.name;
       int arg_count = B;
 
       // Set stack_top_ past the arguments
@@ -1218,7 +1237,7 @@ dispatch_loop:
       if (is_obj_type(receiver, ObjectType::OBJ_INSTANCE)) {
         ObjInstance* instance = as_instance(receiver);
         ObjClass* klass = instance->klass();
-        InlineCache& ic = frame->closure->function()->ic_at(ic_slot);
+        InlineCache& ic = invoke_ic;
 
         // IC fast path (PIC)
         if (!ic.megamorphic) {

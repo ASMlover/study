@@ -113,8 +113,9 @@ void ObjFunction::trace_references() noexcept {
     // We need a non-const reference for marking
     mark_value(const_cast<Value&>(constant));
   }
-  // Mark inline cache entries (PIC: class pointers + cached closures)
+  // Mark inline cache entries (PIC: name, class pointers + cached closures)
   for (auto& ic : ic_) {
+    if (ic.name) mark_object(ic.name);
     for (u8_t i = 0; i < ic.count; ++i) {
       if (ic.entries[i].klass)
         mark_object(ic.entries[i].klass);

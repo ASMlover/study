@@ -17,7 +17,7 @@ All tasks are independently implementable, buildable, and testable, ordered by p
 | OPT-P1-01 | ObjInstance inline field array (SBO) | P1 | Large | OPT-P0-01 | `[x]` |
 | OPT-P1-02 | NativeFn as raw function pointer | P1 | Small | — | `[x]` |
 | OPT-P1-03 | Constant pool deduplication | P1 | Small | — | `[x]` |
-| OPT-P1-04 | Encode IC index directly in GETPROP/SETPROP/INVOKE | P1 | Medium | — | `[ ]` |
+| OPT-P1-04 | Encode IC index directly in GETPROP/SETPROP/INVOKE | P1 | Medium | — | `[x]` |
 | OPT-P1-05 | Fix ObjMap iteration O(n²) | P1 | Small | — | `[ ]` |
 | OPT-P1-06 | ASCII single-char ObjString cache | P1 | Small | — | `[ ]` |
 | OPT-P1-07 | ObjClosure inline upvalue array (FAM) | P1 | Medium | OPT-P0-01 | `[ ]` |
@@ -574,7 +574,7 @@ python tests/run_tests.py
 
 ---
 
-### `[ ]` OPT-P1-04: Encode IC index directly in GETPROP/SETPROP/INVOKE
+### `[x]` OPT-P1-04: Encode IC index directly in GETPROP/SETPROP/INVOKE
 
 **Goal**
 

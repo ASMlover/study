@@ -55,7 +55,7 @@ namespace ms {
 //       For each SourceRun: 4x i32 (line, column, token_length, count)
 
 inline constexpr u8_t kMSC_VERSION_MAJOR = 1;
-inline constexpr u8_t kMSC_VERSION_MINOR = 1;
+inline constexpr u8_t kMSC_VERSION_MINOR = 2;
 inline constexpr u16_t kMSC_FLAG_HAS_HASH = 0x0001;
 
 inline u64_t fnv1a_hash(strv_t source) noexcept {

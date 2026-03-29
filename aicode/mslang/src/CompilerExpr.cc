@@ -747,67 +747,75 @@ void Compiler::call(bool /*can_assign*/) noexcept {
 void Compiler::dot(bool can_assign) noexcept {
   consume(TokenType::TOKEN_IDENTIFIER, "Expect property name after '.'.");
   u16_t name_ki = identifier_constant(ps_->previous);
+  ObjString* prop_name = as_string(current_chunk().constant_at(name_ki));
 
   // Object is in last_expr_
   u8_t obj_reg = discharge(last_expr_);
 
+  // Emit helpers: encode IC slot directly in C (GETPROP/INVOKE) or B (SETPROP).
+  // C/B == 0xFF is a fallback sentinel: EXTRAARG follows with ic_slot as u16_t.
+  auto emit_getprop = [&](u8_t dest, u8_t obj) noexcept {
+    sz_t ic_slot = function_->add_ic();
+    function_->ic_at(ic_slot).name = prop_name;
+    if (ic_slot <= 0xFE) {
+      emit_instr(encode_ABC(OpCode::OP_GETPROP, dest, obj, static_cast<u8_t>(ic_slot)));
+    } else {
+      emit_instr(encode_ABC(OpCode::OP_GETPROP, dest, obj, 0xFF));
+      emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    }
+  };
+  auto emit_setprop = [&](u8_t obj, u8_t val) noexcept {
+    sz_t ic_slot = function_->add_ic();
+    function_->ic_at(ic_slot).name = prop_name;
+    if (ic_slot <= 0xFE) {
+      emit_instr(encode_ABC(OpCode::OP_SETPROP, obj, static_cast<u8_t>(ic_slot), val));
+    } else {
+      emit_instr(encode_ABC(OpCode::OP_SETPROP, obj, 0xFF, val));
+      emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    }
+  };
+
   if (can_assign && match(TokenType::TOKEN_EQUAL)) {
-    // SET_PROPERTY: R(obj).K(name) := R(value)
     expression();
     u8_t val_reg = discharge(last_expr_);
-    // SETPROP: R(A).K(B) := R(C)
-    emit_instr(encode_ABC(OpCode::OP_SETPROP, obj_reg, static_cast<u8_t>(name_ki), val_reg));
-    // EXTRAARG for IC slot
-    sz_t ic_slot = function_->add_ic();
-    emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    emit_setprop(obj_reg, val_reg);
     free_reg(val_reg);
     last_expr_ = {ExprDesc::VREG, obj_reg};
   } else if (match(TokenType::TOKEN_LEFT_PAREN)) {
-    // Method invocation: obj.method(args)
-    // INVOKE: A=base, B=argc, C=name_K
+    // Method invocation: INVOKE A=base, B=argc, C=ic_slot
     u8_t base = obj_reg;
-    // If receiver is a local variable, copy to temp to avoid clobbering
-    // (OP_RETURN writes result to R(base), which would overwrite the local)
     if (base < static_cast<u8_t>(local_count_)) {
       base = alloc_reg();
       emit_instr(encode_ABC(OpCode::OP_MOVE, base, obj_reg, 0));
     }
     u8_t arg_count = argument_list(base);
-    emit_instr(encode_ABC(OpCode::OP_INVOKE, base, arg_count, static_cast<u8_t>(name_ki)));
     sz_t ic_slot = function_->add_ic();
-    emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
-    // Result in R(base)
+    function_->ic_at(ic_slot).name = prop_name;
+    if (ic_slot <= 0xFE) {
+      emit_instr(encode_ABC(OpCode::OP_INVOKE, base, arg_count, static_cast<u8_t>(ic_slot)));
+    } else {
+      emit_instr(encode_ABC(OpCode::OP_INVOKE, base, arg_count, 0xFF));
+      emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    }
     reg_top_ = base + 1;
     last_expr_ = {ExprDesc::VREG, base};
   } else if (can_assign && is_compound_op(ps_->current.type)) {
-    // Compound assignment on property: obj.prop += expr
+    // Compound assignment: obj.prop op= expr
     OpCode op = compound_op(ps_->current.type);
     advance();
-
-    // Get property into a temp
     u8_t prop_reg = alloc_reg();
-    emit_instr(encode_ABC(OpCode::OP_GETPROP, prop_reg, obj_reg, static_cast<u8_t>(name_ki)));
-    sz_t ic_slot_get = function_->add_ic();
-    emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot_get)));
-
+    emit_getprop(prop_reg, obj_reg);
     expression();
     u8_t rk_right = to_rk(last_expr_);
     emit_instr(encode_ABC(op, prop_reg, prop_reg, rk_right));
     if (!is_rk_const(rk_right)) free_reg(rk_right);
-
-    // Set property
-    emit_instr(encode_ABC(OpCode::OP_SETPROP, obj_reg, static_cast<u8_t>(name_ki), prop_reg));
-    sz_t ic_slot_set = function_->add_ic();
-    emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot_set)));
-
+    emit_setprop(obj_reg, prop_reg);
     free_reg(prop_reg);
     last_expr_ = {ExprDesc::VREG, obj_reg};
   } else {
-    // GET_PROPERTY: R(A) := R(B).K(C)
+    // GET_PROPERTY: R(dest) := R(obj).prop
     u8_t dest = alloc_reg();
-    emit_instr(encode_ABC(OpCode::OP_GETPROP, dest, obj_reg, static_cast<u8_t>(name_ki)));
-    sz_t ic_slot = function_->add_ic();
-    emit_instr(encode_ABx(OpCode::OP_EXTRAARG, 0, static_cast<u16_t>(ic_slot)));
+    emit_getprop(dest, obj_reg);
     free_reg(obj_reg);
     last_expr_ = {ExprDesc::VREG, dest};
   }

@@ -262,8 +262,17 @@ static void write_function(ByteWriter& w, ObjFunction* fn,
     w.write_i32(run.count);
   }
 
-  // Inline cache slot count
+  // Inline cache: slot count + pre-initialized names
   w.write_u32(static_cast<u32_t>(fn->ic_count()));
+  for (sz_t i = 0; i < fn->ic_count(); ++i) {
+    ObjString* ic_name = fn->ic_at(i).name;
+    if (ic_name) {
+      w.write_u8(1);
+      w.write_str(ic_name->value());
+    } else {
+      w.write_u8(0);
+    }
+  }
 }
 
 static bool serialize_impl(ObjFunction* function, strv_t path,
@@ -385,9 +394,16 @@ static ObjFunction* read_function(ByteReader& r,
     lines.push_back(run);
   }
 
-  // Inline cache slots (allocate empty slots)
+  // Inline cache slots with pre-initialized names
   u32_t ic_count = r.read_u32();
-  for (u32_t i = 0; i < ic_count; ++i) fn->add_ic();
+  for (u32_t i = 0; i < ic_count; ++i) {
+    fn->add_ic();
+    u8_t has_name = r.read_u8();
+    if (has_name) {
+      str_t name_str = r.read_str();
+      fn->ic_at(i).name = vm.copy_string(name_str.c_str(), name_str.size());
+    }
+  }
 
   return fn;
 }
@@ -397,6 +413,7 @@ static ObjFunction* read_function(ByteReader& r,
 struct MscHeader {
   u16_t flags{0};
   u64_t source_hash{0};
+  u8_t minor{0};
   bool valid{false};
 };
 
@@ -449,6 +466,7 @@ static MscHeader parse_msc_header(ByteReader& r, bool quiet = false) noexcept {
     r.read_u8(); r.read_u8(); // v1.0 reserved
   }
 
+  hdr.minor = minor;
   hdr.valid = true;
   return hdr;
 }
@@ -485,6 +503,9 @@ ObjFunction* try_load_cache(strv_t msc_path, strv_t source) noexcept {
   ByteReader r(data.data(), data.size());
   MscHeader hdr = parse_msc_header(r, /*quiet=*/true);
   if (!hdr.valid) return nullptr;
+
+  // Reject caches from older minor versions (instruction format changed)
+  if (hdr.minor < kMSC_VERSION_MINOR) return nullptr;
 
   // Validate source hash
   if (!(hdr.flags & kMSC_FLAG_HAS_HASH)) return nullptr;
