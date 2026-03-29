@@ -39,32 +39,32 @@ void mark_value(Value& value) noexcept;
 // --- Shape ---
 
 Shape::~Shape() noexcept {
-  for (auto& [_, child] : transitions_) delete child;
+  transitions_.for_each_value([](Shape* child) { delete child; });
 }
 
 i32_t Shape::find_slot(ObjString* name) const noexcept {
-  auto it = slots_.find(name);
-  return (it != slots_.end()) ? static_cast<i32_t>(it->second) : -1;
+  const u32_t* p = slots_.find(name);
+  return p ? static_cast<i32_t>(*p) : -1;
 }
 
 Shape* Shape::add_transition(ObjString* name, u32_t& next_id) noexcept {
-  auto it = transitions_.find(name);
-  if (it != transitions_.end()) return it->second;
+  Shape** p = transitions_.find(name);
+  if (p) return *p;
 
   auto* child = new Shape(next_id++);
   child->slots_ = slots_;
-  child->slots_[name] = slot_count_;
+  child->slots_.insert(name, slot_count_);
   child->slot_count_ = slot_count_ + 1;
-  transitions_[name] = child;
+  transitions_.insert(name, child);
   return child;
 }
 
 void Shape::mark_keys() noexcept {
-  for (auto& [key, _] : slots_) mark_object(key);
-  for (auto& [key, child] : transitions_) {
-    mark_object(key);
+  slots_.for_each_key([](ObjString* k) { mark_object(k); });
+  transitions_.for_each([](ObjString* k, Shape* child) {
+    mark_object(k);
     child->mark_keys();
-  }
+  });
 }
 
 // --- ObjString ---

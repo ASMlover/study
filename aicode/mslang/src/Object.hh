@@ -133,11 +133,81 @@ public:
   static u32_t hash_string(cstr_t chars, sz_t length) noexcept;
 };
 
+// --- SmallMap: inline linear map for ≤N entries, spills to unordered_map ---
+template <typename K, typename V, int N = 8>
+struct SmallMap {
+  struct Entry { K key; V value; };
+  Entry data[N]{};
+  int count{0};
+  std::unique_ptr<std::unordered_map<K, V>> extra;
+
+  SmallMap() noexcept = default;
+  ~SmallMap() noexcept = default;
+
+  SmallMap(const SmallMap& o) noexcept : count(o.count) {
+    for (int i = 0; i < o.count; ++i) data[i] = o.data[i];
+    if (o.extra) extra = std::make_unique<std::unordered_map<K,V>>(*o.extra);
+  }
+  SmallMap& operator=(const SmallMap& o) noexcept {
+    if (this == &o) return *this;
+    count = o.count;
+    for (int i = 0; i < o.count; ++i) data[i] = o.data[i];
+    extra = o.extra ? std::make_unique<std::unordered_map<K,V>>(*o.extra) : nullptr;
+    return *this;
+  }
+  SmallMap(SmallMap&&) noexcept = default;
+  SmallMap& operator=(SmallMap&&) noexcept = default;
+
+  V* find(K key) noexcept {
+    if (extra) {
+      auto it = extra->find(key);
+      return (it != extra->end()) ? &it->second : nullptr;
+    }
+    for (int i = 0; i < count; ++i)
+      if (data[i].key == key) return &data[i].value;
+    return nullptr;
+  }
+  const V* find(K key) const noexcept {
+    if (extra) {
+      auto it = extra->find(key);
+      return (it != extra->end()) ? &it->second : nullptr;
+    }
+    for (int i = 0; i < count; ++i)
+      if (data[i].key == key) return &data[i].value;
+    return nullptr;
+  }
+
+  void insert(K key, V val) noexcept {
+    if (extra) { (*extra)[key] = val; return; }
+    for (int i = 0; i < count; ++i) {
+      if (data[i].key == key) { data[i].value = val; return; }
+    }
+    if (count < N) { data[count++] = {key, val}; return; }
+    extra = std::make_unique<std::unordered_map<K, V>>();
+    extra->reserve(static_cast<sz_t>(N) + 1);
+    for (int i = 0; i < count; ++i) (*extra)[data[i].key] = data[i].value;
+    (*extra)[key] = val;
+  }
+
+  template <typename Fn> void for_each_key(Fn&& fn) const noexcept {
+    if (extra) { for (auto& kv : *extra) fn(kv.first); }
+    else { for (int i = 0; i < count; ++i) fn(data[i].key); }
+  }
+  template <typename Fn> void for_each_value(Fn&& fn) const noexcept {
+    if (extra) { for (auto& kv : *extra) fn(kv.second); }
+    else { for (int i = 0; i < count; ++i) fn(data[i].value); }
+  }
+  template <typename Fn> void for_each(Fn&& fn) const noexcept {
+    if (extra) { for (auto& kv : *extra) fn(kv.first, kv.second); }
+    else { for (int i = 0; i < count; ++i) fn(data[i].key, data[i].value); }
+  }
+};
+
 // --- Shape (Hidden Class) ---
 class Shape {
   u32_t id_;
-  std::unordered_map<ObjString*, u32_t> slots_;
-  std::unordered_map<ObjString*, Shape*> transitions_;
+  SmallMap<ObjString*, u32_t>  slots_;
+  SmallMap<ObjString*, Shape*> transitions_;
   u32_t slot_count_{0};
 
 public:

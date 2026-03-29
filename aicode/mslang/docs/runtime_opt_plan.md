@@ -22,7 +22,7 @@ All tasks are independently implementable, buildable, and testable, ordered by p
 | OPT-P1-06 | ASCII single-char ObjString cache | P1 | Small | — | `[x]` |
 | OPT-P1-07 | ObjClosure inline upvalue array (FAM) | P1 | Medium | OPT-P0-01 | `[x]` |
 | OPT-P2-01 | ObjClass lazy-allocate sparse Tables | P2 | Small | — | `[x]` |
-| OPT-P2-02 | Shape: small linear map instead of unordered_map | P2 | Small | — | `[ ]` |
+| OPT-P2-02 | Shape: small linear map instead of unordered_map | P2 | Small | — | `[x]` |
 | OPT-P2-03 | Remembered set deduplication | P2 | Small | — | `[ ]` |
 | OPT-P2-04 | ObjMap open-addressing hash table | P2 | Medium | OPT-P1-05 | `[ ]` |
 | OPT-P2-05 | Coroutine SavedCallFrame direct save/restore | P2 | Small | — | `[ ]` |
@@ -922,7 +922,7 @@ python tests/run_tests.py
 
 ---
 
-### `[ ]` OPT-P2-02: Shape small linear map (replace unordered_map)
+### `[x]` OPT-P2-02: Shape small linear map (replace unordered_map)
 
 **Goal**
 
