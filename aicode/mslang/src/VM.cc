@@ -62,6 +62,12 @@ VM::VM() noexcept {
   op_str_string_ = copy_string("__str", 5);
   op_finalize_string_ = copy_string("__finalize", 10);
 
+  // Pre-cache all 128 ASCII single-char ObjStrings (permanently resident)
+  for (int c = 0; c < 128; ++c) {
+    char buf[1] = {static_cast<char>(c)};
+    ascii_char_cache_[c] = copy_string(buf, 1);
+  }
+
   // Register native functions
   register_natives();
 
@@ -200,6 +206,9 @@ ObjString* VM::alloc_string(cstr_t chars, u32_t length, u32_t hash) noexcept {
 }
 
 ObjString* VM::copy_string(cstr_t chars, sz_t length) noexcept {
+  if (length == 1 && static_cast<u8_t>(chars[0]) < 128 && ascii_char_cache_[static_cast<u8_t>(chars[0])])
+    return ascii_char_cache_[static_cast<u8_t>(chars[0])];
+
   u32_t hash = ObjString::hash_string(chars, length);
   ObjString* interned = strings_.find_string(chars, length, hash);
   if (interned != nullptr) return interned;

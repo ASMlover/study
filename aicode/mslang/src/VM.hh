@@ -79,6 +79,7 @@ class VM : public Singleton<VM> {
   ObjString* op_gt_string_{nullptr};
   ObjString* op_str_string_{nullptr};
   ObjString* op_finalize_string_{nullptr};
+  ObjString* ascii_char_cache_[128]{};   // ASCII single-char ObjString cache
   ObjUpvalue* open_upvalues_{nullptr};
 
   // Generational GC: separate young/old object lists

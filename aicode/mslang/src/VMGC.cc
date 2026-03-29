@@ -78,6 +78,10 @@ void VM::mark_roots() noexcept {
     mark_object(obj);
   }
 
+  // Mark ASCII single-char cache
+  for (ObjString* s : ascii_char_cache_)
+    if (s) mark_object(s);
+
   // Mark pending exception
   mark_value(pending_exception_);
 
