@@ -493,16 +493,34 @@ struct ValueHash {
   sz_t operator()(const Value& v) const noexcept;
 };
 
-struct ValueEqual {
-  bool operator()(const Value& a, const Value& b) const noexcept {
-    return a.is_equal(b);
+struct ValueEntry { Value key{}; Value value{}; bool tombstone{false}; };
+
+class ValueTable {
+  std::vector<ValueEntry> entries_;
+  int count_{0};    // live entries
+  int used_{0};     // live + tombstones
+  static constexpr double kMAX_LOAD = 0.75;
+
+  ValueEntry* find_entry(const Value& key) noexcept;
+  void grow() noexcept;
+public:
+  bool get(const Value& key, Value* out) const noexcept;
+  bool set(const Value& key, const Value& val) noexcept;  // true on insert
+  bool del(const Value& key) noexcept;
+  void mark_entries() noexcept;
+  int count() const noexcept { return count_; }
+
+  template<typename Fn>
+  void for_each(Fn&& fn) const noexcept {
+    for (const auto& e : entries_) {
+      if (!e.tombstone && !e.key.is_nil())
+        fn(e.key, e.value);
+    }
   }
 };
 
-using ValueMap = std::unordered_map<Value, Value, ValueHash, ValueEqual>;
-
 class ObjMap final : public Object {
-  ValueMap entries_;
+  ValueTable entries_;
   mutable std::vector<Value> iter_keys_;
   mutable bool iter_dirty_{true};
 
@@ -512,14 +530,15 @@ public:
   void trace_references() noexcept;
   sz_t size() const noexcept;
 
-  ValueMap& entries() noexcept { return entries_; }
-  const ValueMap& entries() const noexcept { return entries_; }
-  sz_t len() const noexcept { return entries_.size(); }
+  ValueTable& entries() noexcept { return entries_; }
+  sz_t len() const noexcept { return static_cast<sz_t>(entries_.count()); }
 
   const std::vector<Value>& iter_snapshot() const noexcept {
     if (iter_dirty_) {
       iter_keys_.clear();
-      for (auto& [k, _] : entries_) iter_keys_.push_back(k);
+      entries_.for_each([this](const Value& k, const Value&) {
+        iter_keys_.push_back(k);
+      });
       iter_dirty_ = false;
     }
     return iter_keys_;

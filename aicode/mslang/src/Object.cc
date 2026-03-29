@@ -346,6 +346,92 @@ sz_t ValueHash::operator()(const Value& v) const noexcept {
   return 0;
 }
 
+// --- ValueTable ---
+
+ValueEntry* ValueTable::find_entry(const Value& key) noexcept {
+  sz_t cap = entries_.size();
+  sz_t idx = ValueHash{}(key) % cap;
+  ValueEntry* first_tombstone = nullptr;
+  for (;;) {
+    ValueEntry* e = &entries_[idx];
+    if (e->tombstone) {
+      if (!first_tombstone) first_tombstone = e;
+    } else if (e->key.is_nil()) {
+      return first_tombstone ? first_tombstone : e;
+    } else if (e->key.is_equal(key)) {
+      return e;
+    }
+    idx = (idx + 1) % cap;
+  }
+}
+
+void ValueTable::grow() noexcept {
+  sz_t new_cap = entries_.size() < 8 ? 8 : entries_.size() * 2;
+  std::vector<ValueEntry> new_entries(new_cap);
+  int new_count = 0;
+  for (auto& e : entries_) {
+    if (e.tombstone || e.key.is_nil()) continue;
+    sz_t idx = ValueHash{}(e.key) % new_cap;
+    while (!new_entries[idx].key.is_nil()) idx = (idx + 1) % new_cap;
+    new_entries[idx] = e;
+    new_count++;
+  }
+  entries_ = std::move(new_entries);
+  count_ = new_count;
+  used_ = new_count;
+}
+
+bool ValueTable::get(const Value& key, Value* out) const noexcept {
+  if (entries_.empty()) return false;
+  sz_t cap = entries_.size();
+  sz_t idx = ValueHash{}(key) % cap;
+  for (;;) {
+    const ValueEntry& e = entries_[idx];
+    if (!e.tombstone && e.key.is_nil()) return false;
+    if (!e.tombstone && e.key.is_equal(key)) {
+      if (out) *out = e.value;
+      return true;
+    }
+    idx = (idx + 1) % cap;
+  }
+}
+
+bool ValueTable::set(const Value& key, const Value& val) noexcept {
+  sz_t cap = entries_.size();
+  if (cap == 0 || static_cast<double>(used_ + 1) > cap * kMAX_LOAD) {
+    grow();
+  }
+  ValueEntry* entry = find_entry(key);
+  bool was_new = (!entry->tombstone && entry->key.is_nil());
+  bool was_tombstone = entry->tombstone;
+  entry->key = key;
+  entry->value = val;
+  entry->tombstone = false;
+  if (was_new) { count_++; used_++; }
+  else if (was_tombstone) { count_++; }
+  return was_new || was_tombstone;
+}
+
+bool ValueTable::del(const Value& key) noexcept {
+  if (entries_.empty()) return false;
+  ValueEntry* entry = find_entry(key);
+  if (entry->key.is_nil() || entry->tombstone) return false;
+  entry->tombstone = true;
+  entry->key = Value();
+  entry->value = Value();
+  count_--;
+  return true;
+}
+
+void ValueTable::mark_entries() noexcept {
+  for (auto& e : entries_) {
+    if (!e.tombstone && !e.key.is_nil()) {
+      mark_value(e.key);
+      mark_value(e.value);
+    }
+  }
+}
+
 // --- ObjMap ---
 
 ObjMap::ObjMap() noexcept
@@ -355,7 +441,7 @@ ObjMap::ObjMap() noexcept
 str_t ObjMap::stringify() const noexcept {
   str_t result = "{";
   bool first = true;
-  for (auto& [key, val] : entries_) {
+  entries_.for_each([&](const Value& key, const Value& val) {
     if (!first) result += ", ";
     first = false;
     if (is_obj_type(key, ObjectType::OBJ_STRING)) {
@@ -369,20 +455,17 @@ str_t ObjMap::stringify() const noexcept {
     } else {
       result += val.stringify();
     }
-  }
+  });
   result += "}";
   return result;
 }
 
 void ObjMap::trace_references() noexcept {
-  for (auto& [key, val] : entries_) {
-    mark_value(const_cast<Value&>(key));
-    mark_value(val);
-  }
+  entries_.mark_entries();
 }
 
 sz_t ObjMap::size() const noexcept {
-  return sizeof(ObjMap) + entries_.size() * (sizeof(Value) * 2);
+  return sizeof(ObjMap) + sizeof(ValueEntry) * 8; // approximate
 }
 
 // --- ObjModule ---

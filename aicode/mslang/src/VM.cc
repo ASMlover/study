@@ -1588,9 +1588,8 @@ dispatch_loop:
       for (int i = 0; i < B; i++) {
         Value key = frame->slots[A + 1 + i * 2];
         Value val = frame->slots[A + 1 + i * 2 + 1];
-        map->entries()[key] = val;
+        map->entries().set(key, val);
       }
-      // Charge the unordered_map bucket storage allocated during insertions
       sz_t map_bytes = static_cast<sz_t>(B) * sizeof(Value) * 2;
       bytes_allocated_ += map_bytes;
       young_bytes_ += map_bytes;
@@ -1633,12 +1632,12 @@ dispatch_loop:
         frame->slots[A] = list->elements()[static_cast<sz_t>(index)];
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(receiver);
-        auto it = map->entries().find(index_val);
-        if (it == map->entries().end()) {
+        Value found_val;
+        if (!map->entries().get(index_val, &found_val)) {
           runtime_error("Key not found in map.");
           goto handle_runtime_error;
         }
-        frame->slots[A] = it->second;
+        frame->slots[A] = found_val;
       } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {
         if (!index_val.is_number()) {
           runtime_error("Tuple index must be a number.");
@@ -1694,7 +1693,7 @@ dispatch_loop:
         write_barrier_value(list, value);
       } else if (is_obj_type(receiver, ObjectType::OBJ_MAP)) {
         ObjMap* map = as_map(receiver);
-        map->entries()[index_val] = value;
+        map->entries().set(index_val, value);
         map->mark_dirty();
         write_barrier_value(map, value);
       } else if (is_obj_type(receiver, ObjectType::OBJ_TUPLE)) {

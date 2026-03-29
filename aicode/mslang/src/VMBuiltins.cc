@@ -282,9 +282,9 @@ bool VM::invoke_map_method(ObjMap* map, ObjString* name, int arg_count) noexcept
       return false;
     }
     ObjList* keys = allocate<ObjList>();
-    for (auto& [k, v] : map->entries()) {
+    map->entries().for_each([&](const Value& k, const Value&) {
       keys->elements().push_back(k);
-    }
+    });
     stack_top_[-1] = Value(static_cast<Object*>(keys));
     return true;
   } else if (method_name == "values") {
@@ -293,9 +293,9 @@ bool VM::invoke_map_method(ObjMap* map, ObjString* name, int arg_count) noexcept
       return false;
     }
     ObjList* vals = allocate<ObjList>();
-    for (auto& [k, v] : map->entries()) {
+    map->entries().for_each([&](const Value&, const Value& v) {
       vals->elements().push_back(v);
-    }
+    });
     stack_top_[-1] = Value(static_cast<Object*>(vals));
     return true;
   } else if (method_name == "has") {
@@ -304,7 +304,7 @@ bool VM::invoke_map_method(ObjMap* map, ObjString* name, int arg_count) noexcept
       return false;
     }
     Value key = stack_top_[-1];
-    bool found = map->entries().find(key) != map->entries().end();
+    bool found = map->entries().get(key, nullptr);
     stack_top_ -= 2; // pop arg and receiver
     push(Value(found));
     return true;
@@ -314,7 +314,7 @@ bool VM::invoke_map_method(ObjMap* map, ObjString* name, int arg_count) noexcept
       return false;
     }
     Value key = stack_top_[-1];
-    map->entries().erase(key);
+    map->entries().del(key);
     map->mark_dirty();
     stack_top_ -= 2; // pop arg and receiver
     push(Value()); // return nil
